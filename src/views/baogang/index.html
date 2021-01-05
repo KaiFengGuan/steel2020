@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Page Title</title>
+    <!-- <img src="b_icon__fire.png" alt=""> -->
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <!-- <script src='main.js'></script> -->
+</head>
+<body>
+
+</body>
+<script>
+    // const svg=d3.select("body").append("svg");
+    // // svg.call(g => g.append("image")
+    // //                             .attr("width", 50)
+    // //                             .attr("height", 50)
+    // //                             .attr("opacity", 0.35)
+    // //                             // .attr("href", "../../assets/images/heat.svg"))
+    // //                             .attr("href", "../../assets/images/heat.svg"))
+
+    //                             svg.call(g => g.append("svg:image")
+    //                             .attr("class", "select")
+    //                             // .attr("href", "../../assets/images/heat.svg"))
+    //                             // .attr("href", "../../assets/images/heat.svg"))
+    //                             .attr("xlink:href", "b_icon__fire.png"))
+
+    //                             console.log(d3.select(".select"))
+
+    var svg = d3.select("body").append("svg")
+        .attr("width", 400)
+        .attr("height", 300);
+
+    //Draw the Rectangle
+    var rect = svg.append("rect")
+        .attr("x", 0).attr("y", 0)
+        .attr("width", 50).attr("height", 100)
+        .style("fill", "purple");
+
+    var rotate = d3.svg.transform().rotate(-45);
+    var translate = d3.svg.transform().translate(200, 100);
+
+    rect.attr('transform', rotate);
+
+    var rect2 = rect.attr('transform', rotate);
+    rect2.attr('transform', translate);
+</script>
+</html>

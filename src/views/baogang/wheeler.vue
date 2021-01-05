@@ -1064,8 +1064,8 @@ export default {
                         // .sort((a, b) => d3.ascending(a.height, b.height) || d3.ascending(a.data.id, b.data.id))
                         ));
                     // console.log(root)
-                    console.log(root.leaves())
-                    console.log(root.leaves().flatMap(leaf => leaf.outgoing))
+                    // console.log(root.leaves())
+                    // console.log(root.leaves().flatMap(leaf => leaf.outgoing))
                     const node = svg.append("g")
                         .attr("font-family", "sans-serif")
                         .attr("font-size", 10)

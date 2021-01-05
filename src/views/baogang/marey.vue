@@ -246,10 +246,10 @@
 					<el-col :span="24" style="border-right: 2px solid #f3f3f3;" class="my-card">
 						<div class="my-card-title" width="10px">Diagnosis View</div>
 						<div class="my-card-body" >
-							<!-- <wheeler ref="wheelering" style="height:530px;width:530px"></wheeler> -->
-							<river-like ref="myRiverLikeChart" style="height: 135px;" chartName="单维特征诊断"></river-like>
+							<wheeler ref="wheelering" style="height:530px;width:530px"></wheeler>
+							<!-- <river-like ref="myRiverLikeChart" style="height: 135px;" chartName="单维特征诊断"></river-like>
 							<bar ref="outOfGau" style="height: 40px;" chartName="单维特征超限百分比"></bar>
-							<scatterAxis ref="PCA" style="height: 190px;"></scatterAxis>
+							<scatterAxis ref="PCA" style="height: 190px;"></scatterAxis> -->
 						</div>
 					</el-col>
 				</el-row>
@@ -438,9 +438,10 @@ export default {
 			this.plateTempPropvalue=['All']
 			this.isSearch = true
 			this.loadingDataLoading = true
-			let startDate = util.timeFormat(this.startDate);
-			let endDate = util.timeFormat(this.endDate);
-
+			// let startDate = util.timeFormat(this.startDate);
+			// let endDate = util.timeFormat(this.endDate);
+			let startDate="2018-11-01 00:00:00";
+			let endDate = "2018-11-01 12:00:00";
 			// request
 			// let stationsResponse = this.getStationsData(startDate, endDate);
 			// let jsonResponse = this.getJsonData(startDate, endDate);
@@ -486,7 +487,7 @@ export default {
 			if(this.jsonData.length===0){
 				this.erroralert('时间线图选择错误，请重新选择')
 			}
-			this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData, "conditionData");
+			this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData);
 
 			// clear
 			this.selectedTrainData = [];
@@ -835,41 +836,26 @@ export default {
 				if(item==='All'){
 					query.push(item)
 				}
-			}
+			}		
 			if(query.length===0)query=this.plateTempPropvalue
 			let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
 			this.diagnosisData=diagnosisData
-			let diagnosisSinData = diagnosisData.result
-			let diagnosisGauData = diagnosisData.outOfGau
-			let diagnosisT2Data = diagnosisData.PCAT2
-			let diagnosisSPEData = diagnosisData.PCASPE
-			if(!diagnosisGauData['xData']){
-				if(!diagnosisT2Data['xData']){
-					if(!diagnosisSPEData['xData']){
-						if(diagnosisSinData.length===0){
-					this.erroralert('Diagnosis View 数据不全')
-					this.errorflag=true
-						}
-					}
-				}
-			}
-			this.$refs.myRiverLikeChart.paint(diagnosisSinData, this.selectedTrainColor, false)
-			this.$refs.outOfGau.paint(diagnosisGauData, this.selectedTrainColor, false)
-			this.$refs.PCA.paint(diagnosisT2Data, diagnosisSPEData, this.selectedTrainColor)
+			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
+				this.$refs.wheelering.paintChart(diagnosisData,Response.data)
+			})
 			this.paintDetailPro(this.processTurn)
-			// this.$refs.PCASPE.paint(diagnosisSPEData)
 		},
 
 		async paintDetailPro(processNumber) {
 			this.processInTurn = [null, null]
-			// let proDetail = this.getDetailProcess(this.selectedTrainData[this.selectedTrainData.length-1], 1)
 			let processName = this.processArray[processNumber]||'heat'
 
 			
 			let biasData = []
 			if(this.selectedTrainData.length===0){
 				this.erroralert("未选择具体钢板进行分析，请在马雷图选择钢板")
-				 return}
+				return
+			}
 			if(this.plateTempPropvalue.length===0){
 				// this.erroralert("未选择合适的钢板类型进行分析，将默认为你选取所有钢板") 
 				this.plateTempPropvalue=['All'];

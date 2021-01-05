@@ -24,11 +24,11 @@
             </el-menu>
         </el-aside>
         <el-container class="right-layout">
-            <el-header height="2.5rem">
+            <!-- <el-header height="2.5rem">
                 <el-button @click="toggleCollapse" :icon="isCollapse ? 'el-icon-s-unfold' : 'el-icon-s-fold'"
                     class="collapseButton" type="text">
                 </el-button>
-                <span style="font-size:1.6rem">宝钢厚板大数据可视化分析与产品质量预报系统</span>
+                <span style="font-size:1.6rem">宝钢厚板大数据可视化分析与产品质量预报系统</span> -->
                 <!-- <span style="font-size:1rem">{{appObjById[loginAppId].version}}</span> -->
                 <!-- <el-dropdown  class="user-area" trigger="click" @command="handleCommand"> -->
                     <!-- <img src="../../assets/images/defaultUser.png" class="user-avatar"> -->
@@ -36,7 +36,7 @@
                         <!-- <el-dropdown-item command="exit">退出</el-dropdown-item> -->
                     <!-- </el-dropdown-menu> -->
                 <!-- </el-dropdown> -->
-            </el-header>
+            <!-- </el-header> -->
             <el-main>
                 <router-view></router-view>
             </el-main>

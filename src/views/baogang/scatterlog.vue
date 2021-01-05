@@ -93,7 +93,7 @@ export default {
 				.attr("fill",vm.tooltipColor)
 				.style("opacity", 0.8)
 				.on("mouseover", (event, d)=> {
-					console.log(d)
+					// console.log(d)
 					const label=d;
 					d3.selectAll("circle.dot").style("opacity", 0.4);
 					d3.select("#scatter"+label.upid).attr("r",3).style("opacity", 0.8);				

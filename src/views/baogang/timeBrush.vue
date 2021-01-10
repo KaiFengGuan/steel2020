@@ -30,7 +30,7 @@ export default {
           bottom: 0
         },
         tooltip: {
-          position: 'bottom'
+          position: 'right'
         },
         xAxis: {
           data: [],

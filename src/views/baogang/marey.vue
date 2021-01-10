@@ -205,9 +205,10 @@
 				v-loading="loadingDataLoading"
 				element-loading-text="loading..."
 				element-loading-spinner="el-icon-loading"
-				element-loading-background="rgba(0, 0, 0, 0.3)">
+				element-loading-background="rgba(0, 0, 0, 0.3)"
+				style="background: white">
 
-				<el-row>
+				<el-row class="my-card">
 					<div class="my-card-body" style="height:48px; width:100%; display:flex;">
 						<time-brush ref="timeBrush" style="flex: 1 0 800px;" 
 							@timeBrushed="setStartEndDate"
@@ -222,53 +223,41 @@
 					</div>
 				</el-row>
 
-				<el-row style="background: white; margin-top: 3px;">
-					<el-col :span="8" class="my-card"
+				<el-row style="margin-top: 3px;">
+					<el-col :span="8" 
 							v-loading="scatterLoading"
 							element-loading-text="拼命计算中"
 							element-loading-spinner="el-icon-loading"
 							element-loading-background="rgba(0, 0, 0, 0.3)">
-						<div class="my-card-title">Embedding View</div>
-						<div class="my-card-body">
-							<scatterlog ref="scatterloging" style="height:400px;width:500px"></scatterlog>
+						<div class="my-card">
+							<div class="my-card-title">Embedding View</div>
+							<div class="my-card-body">
+								<scatterlog ref="scatterloging" style="height:400px;"></scatterlog>
+							</div>
 						</div>
 					</el-col>
-					<el-col :span="16" style="border-right: 2px solid #f3f3f3;" class="my-card">
-						<div class="my-card-title">Condition View</div>
-						<div class="my-card-body">
-							<marey-chart style="text-align: center; height: 350px;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
-						</div>
-					</el-col>
-
-				</el-row>
-
-				<el-row style="margin: 1px 0;background: white;" >
-					<el-col :span="24" style="border-right: 2px solid #f3f3f3;" class="my-card">
-						<div class="my-card-title" width="10px">Diagnosis View</div>
-						<div class="my-card-body" >
-							<wheeler ref="wheelering" style="height:530px;width:530px"></wheeler>
-							<!-- <river-like ref="myRiverLikeChart" style="height: 135px;" chartName="单维特征诊断"></river-like>
-							<bar ref="outOfGau" style="height: 40px;" chartName="单维特征超限百分比"></bar>
-							<scatterAxis ref="PCA" style="height: 190px;"></scatterAxis> -->
+					<el-col :span="16" >
+						<div class="my-card">
+							<div class="my-card-title">Condition View</div>
+							<div class="my-card-body">
+								<marey-chart style="text-align: center; height: 400px;width:100%;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
+							</div>
 						</div>
 					</el-col>
 				</el-row>
-				<!-- <el-row style="margin: 6px 0;background: white;">
-					<el-col :span="24" style="border-right: 2px solid #f3f3f3;" class="my-card">
-						<div class="my-card-body">
-							<bar ref="outOfGau" style="height: 80px;"></bar>
-						</div>
+
+				<el-row style="margin: 1px 0" >
+					<el-col :span="8" >
+						<div class="my-card">
+							<div class="my-card-title">Diagnosis View</div>
+							<div class="my-card-body" >
+								<wheeler ref="wheelering" style="height:500px"></wheeler>
+							</div>
+						</div>	
 					</el-col>
-				</el-row> -->
-				<!-- <el-row style="margin: 2px 0;background: white;">
-					<el-col :span="24" style="border-right: 2px solid #f3f3f3;" class="my-card">
-						<div class="my-card-body">
-							<scatterAxis ref="PCA" style="height: 200px;"></scatterAxis>
-						</div>
-					</el-col>
-				</el-row> -->
-				<el-row style="margin: 2px 0;background: white; overflow:auto; display:flex;flex-wrap: nowrap;">
-					<el-col :span="8" style="border-right: 2px solid #f3f3f3;flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
+				</el-row>
+				<el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
+					<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
 						<el-card class="my-card-body-detail">
 							<div class="my-card-title" style="height: 3px;font-size:10px;font-weight:150">{{item}}</div>
 							<div class="my-card-body-detail-some">
@@ -340,8 +329,8 @@ export default {
 			errorflag:false,
 			plateTempPropvalue:['All'],
 			isSwitch: false,
-			startDate: new Date('2018-09-15 00:00:00'),
-			endDate: new Date('2018-09-15 04:00:00'),
+			startDate: new Date('2018-10-16 00:00:00'),
+			endDate: new Date('2018-10-19 04:00:00'),
 			dateselect:[new Date(2018, 10, 1, 0, 0), new Date(2018, 11, 1, 0, 0)],
 			display: false,
 			time: undefined,
@@ -438,10 +427,10 @@ export default {
 			this.plateTempPropvalue=['All']
 			this.isSearch = true
 			this.loadingDataLoading = true
-			// let startDate = util.timeFormat(this.startDate);
-			// let endDate = util.timeFormat(this.endDate);
-			let startDate="2018-11-01 00:00:00";
-			let endDate = "2018-11-01 12:00:00";
+			let startDate = util.timeFormat(this.startDate);
+			let endDate = util.timeFormat(this.endDate);
+			// let startDate="2018-11-01 00:00:00";
+			// let endDate = "2018-11-01 12:00:00";
 			// request
 			// let stationsResponse = this.getStationsData(startDate, endDate);
 			// let jsonResponse = this.getJsonData(startDate, endDate);
@@ -466,7 +455,8 @@ export default {
 				// });
 					})
 			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
-			if(this.scatterlogdata.length!==0)this.mergeflag()
+			console.log(d3.groups(this.jsonData , d => d.flag))
+			
 
 			let flagData = (await baogangAxios(`/baogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
 			// this.getplatetype();
@@ -484,18 +474,20 @@ export default {
 			this.loadingDataLoading = false
 			this.scatterLoading = false
 			this.isSearch = false
-			if(this.jsonData.length===0){
-				this.erroralert('时间线图选择错误，请重新选择')
-			}
+			if(this.jsonData.length===0)	this.erroralert('时间线图选择错误，请重新选择')
+			console.log(d3.groups(this.jsonData , d => d.flag))
+			if(this.scatterlogdata.length!==0)	this.mergeflag()
+			console.log(d3.groups(this.jsonData , d => d.flag))
 			this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData);
 
 			// clear
 			this.selectedTrainData = [];
-			this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
+			// this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
 			this.scatterLoading = false
 			this.isSearch = false
 		},
 		mergeflag(){
+			// let mergedata=this.scatterlogdata
 			let mergedata=[]
 			for (let item in this.scatterlogdata){
 				let toc=new Date(this.scatterlogdata[item].toc)
@@ -510,6 +502,17 @@ export default {
 					return json
 				})
 			})
+			// let mergejson = [];
+			// this.jsonData.map(item=>{				
+			// 	mergedata.map(json=>{
+			// 		if(item.upid===json.upid){
+			// 			item.flag=+json.label
+			// 			mergejson.push(item)
+			// 		}
+			// 		return json
+			// 	})
+			// })
+			// this.jsonData=mergejson;
 		},
 		// clearAllChart() {
 		//   this.$refs.mareyChart.paintMareyChart([], {}, "conditionData")
@@ -840,6 +843,10 @@ export default {
 			if(query.length===0)query=this.plateTempPropvalue
 			let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
 			this.diagnosisData=diagnosisData
+			if(diagnosisData["result"].length === 0){
+				this.erroralert("钢板数据标签不足")
+				return
+			}
 			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
 				this.$refs.wheelering.paintChart(diagnosisData,Response.data)
 			})
@@ -936,7 +943,6 @@ export default {
 		},
 		indicatorChange(value) {
 			this.indicators = value;
-			// this.paintRadar();
 		},
 		async getTimeBrushData() {
 			var s1 = this.dateselect[0].getTime(),s2 = this.dateselect[1].getTime();
@@ -981,6 +987,7 @@ export default {
 				color: util.labelColor,
 				starttime:util.timeFormat(this.startDate)
 			});
+			this.$refs.scatterloging.paintChart(this.scatterlogdata,[this.startDate, this.endDate])
 		},
 		async getRadarIndicatorOptions() {
 			let startDate = util.timeFormat(this.dateselect[0]);
@@ -991,7 +998,7 @@ export default {
 
 			await baogangAxios(`baogangapi/v1.0/model/VisualizationCorrelation/${startDate}/${endDate}/`).then(Response => {
 				this.forcedata=Response.data
-				this.$refs.force.paint(Response.data)
+				// this.$refs.force.paint(Response.data)
 			})
 
 		},
@@ -1056,16 +1063,22 @@ export default {
 		async scattlog() {
 			let startDate = util.timeFormat(this.dateselect[0]);
 			let endDate = util.timeFormat(this.dateselect[1])
-			await	baogangAxios(this.algorithmUrls[this.algorithmSelected]+ `${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
+			await baogangAxios(this.algorithmUrls[this.algorithmSelected]+ `${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
 				this.scatterlogdata=Response.data
 				this.$refs.scatterloging.paintChart(this.scatterlogdata)
+				this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
 			})
+			// await	baogangAxios(this.algorithmUrls[this.algorithmSelected]+ `${util.timeFormat(this.startDate)}/${util.timeFormat(this.endDate)}/`).then(Response => {
+			// 	this.scatterlogdata=Response.data
+			// 	this.$refs.scatterloging.paintChart(Response.data,[this.startDate, this.endDate])
+			// 	// this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
+			// })
 
 		},
 	},
 	mounted() {
 		// baogangAxios('/baogangapi/v1.0/getFlag/2018-10-15%2000:00:00/2018-10-16%2000:00:00/')
-		this.getRadarIndicatorOptions();
+		// this.getRadarIndicatorOptions();
 		this.getTimeBrushData();
 		this.click()
 		// this.paintDetailPro(2)
@@ -1180,11 +1193,26 @@ export default {
 	}
 }
 .my-card {
+	margin: 3px 5px;
+	// padding-top: 2px;
+	// border: solid 0.25px #ededed;
+	border: solid 0.25px #e0e0e0;
+	border-radius: 4px;
+	transform: translate(5px, 0px);
+	box-shadow: rgb(148, 148, 148) 2px 2px 2.5px;
+	// .my-card-body{
+	// }
 	.my-card-title {
-		// background-color:#f3f2f2;
+		text-indent:20px;
+		font-family: futura;
+		background-color: #f7f7f7;
 		font-weight: bold;
 		text-align: left;
-		transform: translate(10px, 3px);
+		font-size: 15px;
+		color: #6d7885;
+		height: 30px;
+		padding: 2px;
+		border-bottom: solid 0.25px #e0e0e0;
 	}
 }
 .process-choose {

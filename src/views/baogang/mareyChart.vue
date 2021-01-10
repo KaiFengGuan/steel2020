@@ -118,6 +118,8 @@ export default {
 		  })
 
 		  .on("mouseover", (event, d) => {
+			console.log(d)
+			
 			if (vm.changeColor) {
 			  vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(parseInt(d.train.flag)), mouse: 0});
 			  
@@ -128,6 +130,7 @@ export default {
 				if(!vm.changeColor){toopcolor=tooltipColors(d.train.productcategory)}
 				else{toopcolor=tooltiplabelColors(d.train.flag)}
 			let currentIdSearch = "#id" + d.train.upid;
+			console.log(toopcolor)
 			d3.select(currentIdSearch)
 			  .attr("stroke-width", highLightStrokeWidth)
 			  .selectAll("rect")

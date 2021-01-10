@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div :id="menuId" style="height: 100%;width:100%;border:solid 1px black;padding:5px"></div>
+		<div :id="menuId" style="height: 100%;width:100%;"></div>
         <!-- <div id="gamediv"></div> -->
         <!-- <img src='./b_icon__fire.png'/> -->
 	</div>
@@ -1206,9 +1206,9 @@ export default {
                                 .attr("fill", d3.color(lck).darker(4))
                         if(flag){
                             d3.selectAll(".clinein" + name)
-                                .attr("opacity", 1)
+                                .attr("opacity", 0.5)
                             d3.selectAll(".clineout" + name)
-                                .attr("opacity", 1)
+                                .attr("opacity", 0.5)
                         }
                     }
                     function axisout(name,key,lck,daker,flag){

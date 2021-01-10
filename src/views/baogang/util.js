@@ -29,11 +29,12 @@ var categoryslabel = {
     1:['H10','H20'],
     2:['L10','L20'],
     3:['P10','P20'],
-    6:['000','B10','Z10','T10','J20','H40'],
-    5:['S60','H30','SC0','H60','P30','S80','SA0','S50','S30','L30','SB0','S60']
+    6:['000','B10','Z10','T10','J20'],
+    5:['S60','H30','H40','SC0','H60','P30','S80','SA0','S50','S30','L30','SB0','S60']
 }
 // var labelColor = [ '#ff005a', '#3888fa']    //颜色控制
-var labelColor = [ '#fa558f', '#7f8df5']    //颜色控制
+// var labelColor = [ '#fa558f', '#7f8df5']    //颜色控制
+var labelColor = [ "#e0978f" , "#8fa4ae"]
 var labelColor2 = [ '#e34649', '#5164f5'] 
 // var labelColor = ['#ff005a', '#3888fa', '#88fa38', '#fa3888', '#38faaa']   //多个颜色
 export default {
@@ -75,6 +76,9 @@ export default {
         // for (let i = 0; i < categorys.length; i++) {
         //     colors[categorys[i]] = d3.schemeCategory10[i % 10]
         // }
+        if(index==='H40'){
+            return d3.schemeSet1[6]
+        }
         return index ? colors[index] : colors
     },
     // labelColor: ['red', d3.schemeCategory10[0]]

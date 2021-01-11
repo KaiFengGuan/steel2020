@@ -423,6 +423,8 @@ export default {
 			if(end)this.endDate = new Date(end)
 		},
 		async getHttpData() {
+			this.$refs.mareyChart.paintMareyChart()
+			return
 			// this.clearAllChart()
 			this.plateTempPropvalue=['All']
 			this.isSearch = true
@@ -478,7 +480,8 @@ export default {
 			console.log(d3.groups(this.jsonData , d => d.flag))
 			if(this.scatterlogdata.length!==0)	this.mergeflag()
 			console.log(d3.groups(this.jsonData , d => d.flag))
-			this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData);
+			// this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData);
+			this.$refs.mareyChart.paintMareyChart()
 
 			// clear
 			this.selectedTrainData = [];

@@ -21,6 +21,7 @@ export default {
 		trainGroupStyle: undefined,
 		showColor: util.categoryColor,
 		changeColor: false,
+		areaStyle : undefined,
 		data:[]
 		}
 	},
@@ -32,6 +33,7 @@ export default {
 		console.log(stationsData)
 		this.trainSelectedList = []; // 2019-5-16 23:29:30 清空选择列表
 		this.trainGroupStyle === undefined && (this.trainGroupStyle = d => this.categoryColors(d.productcategory));
+		this.areaStyle === undefined && (this.areaStyle = d => d3.color(this.categoryColors(d.productcategory)).brighter(2))
 		var vm = this;
 		
 		// data
@@ -75,120 +77,7 @@ export default {
 
 		var tooltipColors = this.categoryColors
 		var tooltiplabelColors = this.labelColorsFunc
-		var tooltip = (stopsdata) =>g => {
-			const tooltip = g.append("g")
-			.style("font", "15px sans-serif");
 
-			const path = tooltip.append("path")
-			.attr("fill", "rgba(245, 245, 230, 0.97)");
-
-			const text = tooltip.append("text");
-
-			const line1 = text.append("tspan")
-			.attr("x", 0)
-			.attr("y", 0)
-			.style("font-weight", "bold");
-
-			const line2 = text.append("tspan")
-			.attr("x", 0)
-			.attr("y", "1.1em");
-
-			const line3 = text.append("tspan")
-			.attr("x", 0)
-			.attr("y", "2.2em");
-
-			g.append("g")
-			.attr("fill", "none")
-			.attr("pointer-events", "all")
-			.selectAll("path")
-			.data(stopsdata)
-			.join("path")
-			.attr("d", (d, i) => voronoi.renderCell(i))
-
-			//.on("mouseout", () => tooltip.style("display", "none"))
-
-			.on("mouseout", (event, d) => {
-				if (vm.changeColor) {
-				vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(parseInt(d.train.flag)), mouse: 1});
-				
-				}else {
-				vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(d.train.productcategory), mouse: 1});
-				}
-				let currentIdSearch = "#id" + d.train.upid;
-				d3.select(currentIdSearch)
-				.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
-				.selectAll("rect")
-				.attr("stroke", "none");
-				tooltip.style("display", "none");
-			})
-
-			.on("mouseover", (event, d) => {
-				// console.log(d)
-				
-				if (vm.changeColor) {
-				vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(parseInt(d.train.flag)), mouse: 0});
-				
-				}else {
-				vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(d.train.productcategory), mouse: 0});
-				}
-				let toopcolor
-					if(!vm.changeColor){toopcolor=tooltipColors(d.train.productcategory)}
-					else{toopcolor=tooltiplabelColors(d.train.flag)}
-				let currentIdSearch = "#id" + d.train.upid;
-				// console.log(toopcolor)
-				d3.select(currentIdSearch)
-				.attr("stroke-width", highLightStrokeWidth)
-				.selectAll("rect")
-				.attr("stroke", "black");
-
-				tooltip
-				.style("display", null)
-				.attr("fill", "white");
-				line1.text(`upid: ${d.train.upid}`);
-				// line2.text(d.stop.station.name);productcategory
-				line2.text(`category: ${d.train.productcategory}`);
-				line3.text(`time: ${d.stop.realTime.toLocaleString(undefined, { hour: "numeric", minute: "numeric" })}`);
-				path
-				.attr("stroke", "none")
-				.attr("fill", toopcolor);
-				//.attr("opacity", 0.96);
-				const box = text.node().getBBox();
-				path.attr("d", `
-				M${box.x - 10},${box.y - 10}
-				H${box.width / 2 - 5}l5,-15l5,15
-				H${box.width + 10}
-				v${box.height + 20}
-				h-${box.width + 20}
-				z
-			`);
-				tooltip.attr("transform", `translate(${
-				x(d.stop.station.distance) - box.width / 2},${
-				y(new Date(d.stop.time)) + 37
-				})`);
-			})
-
-			.on("click", function (event, d) {
-				if (vm.trainSelectedList.includes(d.train.upid)) {
-				// 取消选中
-				vm.trainSelectedList = vm.trainSelectedList.filter(v => v !== d.train.upid)
-				let currentIdSearch = "#id" + d.train.upid;
-				d3.select(currentIdSearch).attr("fill", "white")
-				} else {
-				// 选中
-				vm.trainSelectedList.push(d.train.upid);
-				let currentIdSearch = "#id" + d.train.upid;
-				d3.select(currentIdSearch).attr("fill", "grey")
-				}
-				if (vm.changeColor) {
-				vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(parseInt(d.train.flag))});
-				
-				}else {
-				vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(d.train.productcategory)});
-				}
-				
-				// vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.trainSelectedColor});
-			})
-		}
 
 		this.svg !== undefined && this.svg.remove()
 		this.svg = d3.select('#' + this.menuId)
@@ -196,50 +85,366 @@ export default {
 			.attr("width", width)
 			.attr("height", height);
 
-		var train = this.svg.append("g")
-			.attr("fill", "white")
-			.selectAll("g")
-			.data(data)
-			.join("g")
-			.style("color", this.trainGroupStyle)
-			.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
-			.attr("id", d => ("id" + d.upid))
+		// var train = this.svg.append("g")
+		// 	.attr("fill", "white")
+		// 	.selectAll("g")
+		// 	.data(data)
+		// 	.join("g")
+		// 	.style("color", this.trainGroupStyle)
+		// 	.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
+		// 	.attr("id", d => ("id" + d.upid))
 
-		this.trainGroup = train;
+		// this.trainGroup = train;
 
-		train
-			.call(g => g.append("path")
-				.attr("fill", "none")
-				.attr("stroke", "currentColor")
-				.attr("d", d => line(d.stops)))
-			.call(g => g.append("g")
-				.attr("stroke", "none")
-				.selectAll("circle")
-				.data(d => d.stops)
-				.join("circle")
-				.attr("transform", d => `translate(${x(d.station.distance)},${y(new Date(d.time))})`)
-				.attr("r", d => d.station.name === "FuCharging" ? 3 :
-				(d.station.name === "FuDischarging" ? 1.5 : 0.5)
-				))
+		// var train = this.svg.append("g")
+		// 	.attr("fill", "white")
+		// 	.selectAll("g")
+		// 	.data(data)
+		// 	.join("g")
+		// 	.style("color", this.trainGroupStyle)
+		// 	.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
+		// 	.attr("id", d => ("id" + d.upid))
+		// 	.call(g => g.append("path")
+		// 		.attr("fill", "none")
+		// 		.attr("stroke", "currentColor")
+		// 		.attr("d", d => line(d.stops)))
+		// 	.call(g => g.append("g")
+		// 		.attr("stroke", "none")
+		// 		.selectAll("circle")
+		// 		.data(d => d.stops)
+		// 		.join("circle")
+		// 		.attr("transform", d => `translate(${x(d.station.distance)},${y(new Date(d.time))})`)
+		// 		.attr("r", d => d.station.name === "FuCharging" ? 3 :
+		// 		(d.station.name === "FuDischarging" ? 1.5 : 0.5)
+		// 		))
 
 		var mergeresult = this.merge(data , stations)
+		console.log(mergeresult)
 		var filterdata = this.deepCopy(data)
 		for (let item in mergeresult){
-			console.log(...mergeresult[mergeresult.length-item-1]["index"])
 			filterdata.splice(...mergeresult[mergeresult.length-item-1]["index"])
 		}
-		console.log(filterdata.length)
-		console.log(data.length)
-		var stops = d3.merge(data.map(d => d.stops.map(s => ({ train: d, stop: s }))))
-		this.svg.append("g")
-			.call(tooltip(stops));
+		
+		var merge = d3.map(d3.merge(d3.map(mergeresult , d => d.merge)) , d =>d.upid)
+		var select = d3.map(d3.merge(d3.map(mergeresult , d => d.select)) , d =>d.upid)
+		var filter = d3.filter(merge , d => select.indexOf(d) === -1 )
+		var indexname = ["fuTotalTimeAfter" , "ccTotalTime" , "mtotalTime"]
 
 		// private Object fuTotalTimeBefore;
 		// private Object fuTotalTimeAfter;
 		// private Object mTotalTime;
 		// private Object ccTotalTime;
+		var train = this.svg.append("g")
+			.attr("fill", "white")
+			.selectAll("g")
+			.data(filterdata)
+			.join("g")
+			.style("color", this.trainGroupStyle)
+			.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
+			.attr("id", d => ("id" + d.upid))
+			.call(g => g.append("path")
+				.attr("fill", "none")
+				.attr("stroke", "currentColor")
+				.attr("d", d => line(d.stops)))
 		
-		console.log(mergeresult)
+		for (let item in mergeresult){
+			var index = mergeresult[item]["data"]
+			var sDate = data[index[0]].stops[0].time;
+			var eDate = data[index[1]].stops[0].time
+			// var eDate = data.slice(index[1])[0].stops.slice(-1)[0].time
+			var lineheight = (y((new Date(eDate))) - y(new Date(sDate)))
+			// console.log(d3.mean(index))
+			var midindex=Math.floor(d3.mean(index))
+			// console.log(midindex)
+			// console.log(data.slice(midindex , midindex+1))
+
+			var linetransfrom = (y((new Date(data[midindex+1].stops[0].time))) - y(new Date(data[midindex].stops[0].time)))
+
+			this.svg.append("g")
+				.attr("fill", "white")
+				.selectAll(`g`+item)
+				.data(data.slice(midindex , midindex+1))
+				.join("g")
+				.style("color", this.trainGroupStyle)
+				// .attr("opacity" , 0.4)
+				.attr("stroke-width", lineheight )
+				.attr("id", d => ("id" + d.upid))
+				.attr("transform", `translate( 0 ,${ linetransfrom })`)
+				.call(g => g.append("path")
+					.attr("fill", "none")
+					.attr("stroke", "currentColor")
+					.attr("opacity" , 0.4)
+					.attr("d", d => line(d.stops)))
+			this.svg.append("g")
+				.attr("fill", "white")
+				.selectAll(`.select g`+item)
+				.data(mergeresult[item]["select"])
+				.join("g")
+				.style("color", this.trainGroupStyle)
+				.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) } )
+				.attr("id", d => ("id" + d.upid))
+				.attr("transform", `translate( 0 ,${ linetransfrom })`)
+				.call(g => g.append("path")
+					.attr("fill", "none")
+					.attr("stroke", "currentColor")
+					.attr("d", d => line(d.stops)))
+			
+
+			
+			// const vis = this._g.selectAll(".vis").data(this._chartData);
+			for (let i in indexname){
+				// if((+i)!==0) continue
+				// const categorys = d3.group(data , d => d.productcategory)[]
+				let linedata = d3.map(mergeresult[item]["merge"] , d => d[indexname[i]]).sort()
+				
+				if(d3.mean(linedata) === 0) continue
+				
+				var sortdata = [] , maxmin = d3.extent(linedata);
+				var linelength = (maxmin[1]*1.01 - maxmin[0]) / 3;
+				if(linelength === 0) continue
+				for (let j = 0 ; j < 3 ; j++ ){
+					sortdata.push([maxmin[0] + (j+0.5) * linelength , 0 ])
+				}
+				for (let j in linedata){
+					// console.log(linedata[j] - maxmin[0])
+					// console.log(Math.floor((linedata[j] - maxmin[0])/linelength))
+					sortdata[Math.floor((linedata[j] - maxmin[0])/linelength)][1] += 1
+					// console.log(Math.floor((linedata[j] - maxmin[0])/linedata))
+				}
+				if((+i)!==1) console.log(sortdata)
+				sortdata.push([maxmin[1] + 2 * linelength , 0])
+				sortdata.unshift([maxmin[0] - 2 * linelength , 0])
+
+				var axislength = 6 ;
+				let xline = d3.scaleLinear()
+					.domain([maxmin[0] - 2*linelength , maxmin[1] + 2*linelength ]).nice()
+					.range([0, 40])
+
+				let yline = d3.scaleLinear()
+					.domain([0, d3.max(sortdata, d => d[1])])
+					.range([axislength , 0])
+				let liner = d3.line()
+					// .curve(d3.curveBasis)
+				let position = [ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))-axislength]
+				
+				// .append("g").attr("class" , "scatter")
+				// .selectAll("circle.dot")
+				// .data(scatterdata)
+				// .join("circle").attr("class", "dot")
+				// .attr("r", 1.5)
+				this.svg.append("path")
+					.datum(sortdata)
+					.attr("fill", "lightblue")
+					.attr("class", "linedist")
+					.attr("stroke", "none")
+					.attr("transform", `rotate(${(+i)*120 +30} ,${[ position[0] , position[1]+axislength ]}) translate( ${position})  `)
+					// rotate(${ 120 *(1+(+i)) -60} ,${[ 0 , 0 ]})
+					.attr("stroke-width", 1.5)
+					.attr("opacity" , 0.8)
+					.attr("stroke-linejoin", "round")
+					.attr("d", 
+							liner.x(d => xline(d[0]))
+								.y(d => yline(d[1])));
+				this.svg.append("path")
+					.datum(sortdata)
+					.attr("fill", "lightblue")
+					.attr("class", "linedist")
+					.attr("stroke", "none")
+					.attr("transform", `rotate(${(+i)*120 +30} ,${[ position[0] , position[1]+axislength ]}) translate( ${[ position[0] , position[1]+ 2* axislength ]})  `)
+					// rotate(${ 120 *(1+(+i)) -60} ,${[ 0 , 0 ]})
+					.attr("stroke-width", 1.5)
+					.attr("opacity" , 0.8)
+					.attr("stroke-linejoin", "round")
+					.attr("d", 
+							liner.x(d => xline(d[0]))
+								.y(d => -yline(d[1])))
+				// this.svg.append("path")
+				// 	.datum(sortdata)
+				// 	.attr("fill", "none")
+				// 	.attr("class", "linedist")
+				// 	.attr("stroke", "lightblue")
+				// 	.attr("transform", `rotate(${(+i)*120 +30} ,${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))]}) translate( ${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))+40]})  `)
+				// 	// rotate(${ 120 *(1+(+i)) -60} ,${[ 0 , 0 ]})
+				// 	.attr("stroke-width", 1.5)
+				// 	.attr("stroke-linejoin", "round")
+				// 	.attr("d", liner.x(d => {
+				// 		console.log(xline(d[0]))
+				// 		return xline(d[0])
+				// 		})
+				// 	.y(d => -yline(d[1])));
+				// let xline = d3.scaleLinear()
+				// 	.domain(d3.extent(linedata)).nice()
+				// 	.range([0, 40])
+
+				// let bins = d3.histogram()
+				// 	.domain(xline.domain())
+				// 	.thresholds(xline.ticks(5))(linedata)
+				// function kde(kernel, thresholds, data) {
+				// 	return thresholds.map(t => [t, d3.mean(data, d => kernel(t - d))]);
+				// }
+
+				// function epanechnikov(bandwidth) {
+				// 	return x => Math.abs(x /= bandwidth) <= 1 ? 0.75 * (1 - x * x) / bandwidth : 0;
+				// }
+				
+				// let yline = d3.scaleLinear()
+				// 	.domain([0, d3.max(bins, d => d.length) / linedata.length])
+				// 	.range([40 , 0])
+				// let liner = d3.line()
+				// 	.curve(d3.curveCardinal)
+					
+				// let density = kde(epanechnikov(1), xline.ticks(5), linedata)
+
+				// this.svg.append("path")
+				// 	.datum(density)
+				// 	.attr("fill", "lightblue")
+				// 	.attr("class", "linedist")
+				// 	.attr("stroke", "none")
+				// 	.attr("transform", `rotate(${(+i)*120 +30} ,${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))]}) translate( ${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))-40]})  `)
+				// 	// rotate(${ 120 *(1+(+i)) -60} ,${[ 0 , 0 ]})
+				// 	.attr("stroke-width", 1.5)
+				// 	.attr("stroke-linejoin", "round")
+				// 	.attr("d", liner.x(d => xline(d[0]))
+				// 	.y(d => yline(d[1])));
+				// this.svg.append("path")
+				// 	.datum(density)
+				// 	.attr("fill", "lightblue")
+				// 	.attr("class", "linedist")
+				// 	.attr("stroke", "none")
+				// 	.attr("transform", `rotate(${(+i)*120 +30} ,${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))]}) translate( ${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))+40]})  `)
+				// 	// rotate(${ 120 *(1+(+i)) -60} ,${[ 0 , 0 ]})
+				// 	.attr("stroke-width", 1.5)
+				// 	.attr("stroke-linejoin", "round")
+				// 	.attr("d", liner.x(d => xline(d[0]))
+				// 	.y(d => -yline(d[1])));
+
+				// console.log(linedata)
+			}
+			this.svg.call(g => g.selectAll(".radar_line").data([0 , 1 , 2]).join("g")
+				.attr("transform", ` translate( ${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time))) ]})`)
+				.call(g => g.append("line")
+					.attr("x1",0)
+					.attr("y1", 0)
+					.style("stroke", "black")
+					.attr("transform", (d , i) => ` rotate( ${ d * 120} ) `)
+					.attr("x2", 0)
+					.attr("y2", -40)
+					.style("stroke-width", 0.5))
+			)
+			
+			
+		}
+		this.svg.append("g")
+			.call(g => {
+				const tooltip = g.append("g")
+					.style("font", "15px sans-serif");
+				const path = tooltip.append("path")
+					.attr("fill", "rgba(245, 245, 230, 0.97)");
+
+				const text = tooltip.append("text");
+
+				const line1 = text.append("tspan")
+					.attr("x", 0)
+					.attr("y", 0)
+					.style("font-weight", "bold");
+				const line2 = text.append("tspan")
+					.attr("x", 0)
+					.attr("y", "1.1em");
+				const line3 = text.append("tspan")
+					.attr("x", 0)
+					.attr("y", "2.2em");
+
+				g.append("g")
+					.attr("fill", "none")
+					.attr("pointer-events", "all")
+					.selectAll("path")
+					.data(stops)
+					.join("path")
+					.attr("d", (d, i) => voronoi.renderCell(i))
+
+				.on("mouseout", (event, d) => {
+					if( filter.indexOf(d.train.upid) !==-1 ) return
+					if (vm.changeColor) {
+					vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(parseInt(d.train.flag)), mouse: 1});
+					
+					}else {
+					vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(d.train.productcategory), mouse: 1});
+					}
+					let currentIdSearch = "#id" + d.train.upid;
+					d3.select(currentIdSearch)
+					.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
+					.selectAll("rect")
+					.attr("stroke", "none");
+					tooltip.style("display", "none");
+				})
+
+				.on("mouseover", (event, d) => {
+					// console.log(d)
+					if( filter.indexOf(d.train.upid) !== -1 ) return
+					if (vm.changeColor) {
+					vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(parseInt(d.train.flag)), mouse: 0});
+					
+					}else {
+					vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(d.train.productcategory), mouse: 0});
+					}
+					let toopcolor
+						if(!vm.changeColor){toopcolor=tooltipColors(d.train.productcategory)}
+						else{toopcolor=tooltiplabelColors(d.train.flag)}
+					let currentIdSearch = "#id" + d.train.upid;
+					// console.log(toopcolor)
+					d3.select(currentIdSearch)
+					.attr("stroke-width", highLightStrokeWidth)
+					.selectAll("rect")
+					.attr("stroke", "black");
+
+					tooltip
+					.style("display", null)
+					.attr("fill", "white");
+					line1.text(`upid: ${d.train.upid}`);
+					// line2.text(d.stop.station.name);productcategory
+					line2.text(`category: ${d.train.productcategory}`);
+					line3.text(`time: ${d.stop.realTime.toLocaleString(undefined, { hour: "numeric", minute: "numeric" })}`);
+					path
+					.attr("stroke", "none")
+					.attr("fill", toopcolor);
+					//.attr("opacity", 0.96);
+					const box = text.node().getBBox();
+					path.attr("d", `
+					M${box.x - 10},${box.y - 10}
+					H${box.width / 2 - 5}l5,-15l5,15
+					H${box.width + 10}
+					v${box.height + 20}
+					h-${box.width + 20}
+					z
+				`);
+					tooltip.attr("transform", `translate(${
+					x(d.stop.station.distance) - box.width / 2},${
+					y(new Date(d.stop.time)) + 37
+					})`);
+				})
+
+				.on("click", function (event, d) {
+					if (vm.trainSelectedList.includes(d.train.upid)) {
+					// 取消选中
+					vm.trainSelectedList = vm.trainSelectedList.filter(v => v !== d.train.upid)
+					let currentIdSearch = "#id" + d.train.upid;
+					d3.select(currentIdSearch).attr("fill", "white")
+					} else {
+					// 选中
+					vm.trainSelectedList.push(d.train.upid);
+					let currentIdSearch = "#id" + d.train.upid;
+					d3.select(currentIdSearch).attr("fill", "grey")
+					}
+					if (vm.changeColor) {
+					vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(parseInt(d.train.flag))});
+					
+					}else {
+					vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(d.train.productcategory)});
+					}
+					
+					// vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.trainSelectedColor});
+				})
+		});
 
 		// zpj 2019-5-8 19:10:28 延长线
 		// var lineColor = "red";
@@ -371,8 +576,8 @@ export default {
 		merge(json , stations){
 			const categorys = d3.group(json , d => d.productcategory)
 			const mergecategorys = []	// merge categorys
-			const minrange = 10
-			const minconflict = 2
+			const minrange = 20
+			const minconflict = 3
 			const mergedata = {}
 			const mergeIndex = {}	// merge station maxlength
 			const mergeresult = []
@@ -438,24 +643,41 @@ export default {
 
 				// merge selection
 				const mergeselect = []
+				const mergeflag = 0 ;
 				for (let i in steeldisTotal){
 					const outrange = 0
 					for (let j in stations){
 						steeldisTotal[i][j] > meandis[j] ? ((steeldisTotal[i][j] - meandis[j])/meandis[j]>1.1 & meandis[j] !==0 ) ? outrange+=5 : outrange+=1 : undefined
-						steeldisTotal[i][j]<0  ?	outrange+=20 : undefined
+						steeldisTotal[i][j]<0  ?	outrange += 20 : undefined
 					}
-					if(outrange >=15)  mergeselect.push(mergedata[+i+1])
+					if(outrange >= 15)  mergeselect.push(mergedata[+i+1])
+					if(mergeselect.length > minconflict -1 ) {
+						mergeflag = (+i) +1
+						break
+					}
 					// mergeselect.push(mergedata[i+1])
 				}
 				console.log(mergeselect)
 				
 				
 				console.log(steeldisTotal)
-				
+				if(mergeflag !==0){
+					mergeresult.push({
+						"merge" : json.slice(item , item + mergeflag),
+						"select" : mergeselect,
+						"index" : [item , mergeflag ],
+						"data" : [item , item + mergeflag ]
+					})
+					item = item + mergeflag -1
+					continue
+				}
+
+
 				mergeresult.push({
-					'merge' : mergedata,
-					'select' : mergeselect,
-					'index' : [item , index - item]
+					"merge" : mergedata,
+					"select" : mergeselect,
+					"index" : [item , index - item],
+					"data" : [item , index ]
 				})
 				item = index -1
 			}

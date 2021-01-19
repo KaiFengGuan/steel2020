@@ -28,15 +28,15 @@
 									<el-option v-for="option in intervalOptions" :key="option" :label="option" :value="option"></el-option>
 								</el-select>
 							</el-form-item>
-							<el-form-item label="Algorithm:">
+							<!-- <el-form-item label="Algorithm:">
 								<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData">
 									<el-option v-for="option in algorithmOptions" :key="option" :label="option" :value="option"></el-option>
 								</el-select>
-							</el-form-item>
+							</el-form-item> -->
 						</el-form>
 					</el-row>
 
-					<el-row style="margin: 2px 0;background: white">
+					<!-- <el-row style="margin: 2px 0;background: white">
 						<div class="panel-title">Color Scheme</div>
 						<el-form size="mini" label-width="100px" style="padding-right: 10px;">
 							<el-form-item label="Scheme:" >
@@ -44,7 +44,7 @@
 								</el-switch>
 							</el-form-item>
 						</el-form>
-					</el-row>
+					</el-row> -->
 					<!-- <el-row style="margin: 2px 0;background: white">
 						<div class="panel-title" style="margin: 10px 0; font-size: 14px;">Sorting scheme</div>
 						<el-form size="mini" label-width="70px" style="padding-right: 10px;">
@@ -173,30 +173,30 @@
 									</el-col>									
 								</el-row>
 							</div>
-							<el-row :gutter="8" style="margin-top:8px">
-							<el-col :span="8" style="font-size: 13px;">
-								<div style="height: 24px;padding-right:5px;margin:2px 0;float:right">fault CR:</div>
-								<div style="height: 24px;margin:2px 0;float:right;padding-right:5px">norm CR:</div>
-							</el-col>
-							<el-col :span="10" id="imput-line">
-								<mu-slider v-model="symbolvalue" :step="0.01" :min="0" :max="0.25" :display-value="false" style="margin:4px 0;color:#999a9d" @change="forceswtich"></mu-slider>
-								<mu-slider v-model="linesize" :step="0.01" :min="0" :max="1" :display-value="false" style="margin:3px 0;color:#999a9d" @change="forceswtich"></mu-slider>
-							</el-col>
-							<el-col :span="4">
-								<div style="margin:3px">{{symbolvalue}}</div>
-								<div style="margin:3px">{{linesize}}</div>
-							</el-col>
-						</el-row>
+							<!-- <el-row :gutter="8" style="margin-top:8px">
+								<el-col :span="8" style="font-size: 13px;">
+									<div style="height: 24px;padding-right:5px;margin:2px 0;float:right">fault CR:</div>
+									<div style="height: 24px;margin:2px 0;float:right;padding-right:5px">norm CR:</div>
+								</el-col>
+								<el-col :span="10" id="imput-line">
+									<mu-slider v-model="symbolvalue" :step="0.01" :min="0" :max="0.25" :display-value="false" style="margin:4px 0;color:#999a9d" @change="forceswtich"></mu-slider>
+									<mu-slider v-model="linesize" :step="0.01" :min="0" :max="1" :display-value="false" style="margin:3px 0;color:#999a9d" @change="forceswtich"></mu-slider>
+								</el-col>
+								<el-col :span="4">
+									<div style="margin:3px">{{symbolvalue}}</div>
+									<div style="margin:3px">{{linesize}}</div>
+								</el-col>
+							</el-row> -->
 						<!-- <div class="panel-title" style="margin: 8px 0; font-size: 14px;">Correlation View</div> -->
-						<div style="height: 320px; overflow: auto;">
-							<force ref="force" :symboylsize="symbolvalue" :linesize="linesize"></force>
+						<!-- <div style="height: 320px; overflow: auto;">
+							<force ref="force" :symboylsize="symbolvalue" :linesize="linesize"></force> -->
 						<!-- <el-table ref="multipleTable" :data="radarIndicatorOptions" style="overflow: auto" @selection-change="indicatorChange" 
 							:cell-style="cellStyle">
 							<el-table-column width="5" height="30px"></el-table-column>
 							<el-table-column type="index" width="35" height="30px"></el-table-column>
 							<el-table-column prop="indexName" label="index" height="30px"></el-table-column>
 						</el-table> -->
-						</div>
+						<!-- </div> -->
 					</el-row>
 				</div>
 			</el-col>
@@ -229,32 +229,85 @@
 							element-loading-text="拼命计算中"
 							element-loading-spinner="el-icon-loading"
 							element-loading-background="rgba(0, 0, 0, 0.3)">
-						<div class="my-card">
-							<div class="my-card-title">Embedding View</div>
+						<el-card class="myel-card">
+							<div class="my-card-title" slot="header">
+								<span>Embedding View</span>
+								<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData" style="float:right;margin: -3px 40px 5px 5px;width:160px">
+									<el-option v-for="option in algorithmOptions" :key="option" :label="option" :value="option"></el-option>
+								</el-select>
+							</div>
 							<div class="my-card-body">
 								<scatterlog ref="scatterloging" style="height:400px;"></scatterlog>
 							</div>
-						</div>
+						</el-card>
 					</el-col>
 					<el-col :span="16" >
-						<div class="my-card">
-							<div class="my-card-title">Condition View</div>
+						<el-card class="myel-card">
+							<div class="my-card-title" slot="header">
+								<span>Condition View</span>
+								<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" 
+									style="float:right;padding:4px 25px 0px 0px;font-family : DIN"></el-switch>
+							</div>
 							<div class="my-card-body">
 								<marey-chart style="text-align: center; height: 400px;width:100%;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
 							</div>
-						</div>
+						</el-card>
+						<!-- <div class="my-card">
+							<div class="my-card-title">Condition View
+								<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" 
+									style="float:right;padding:4px 25px 0px 0px"></el-switch>
+							</div>
+							<div class="my-card-body">
+								<marey-chart style="text-align: center; height: 400px;width:100%;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
+							</div>
+						</div> -->
 					</el-col>
 				</el-row>
 
 				<el-row style="margin: 1px 0" >
-					<el-col :span="8" >
-						<div class="my-card">
-							<div class="my-card-title">Diagnosis View</div>
-							<div class="my-card-body" >
-								<wheeler ref="wheelering" style="height:500px"></wheeler>
+
+					<!-- <el-card class="myel-card">
+							<div class="my-card-title" slot="header">
+								<span>Condition View</span>
+								<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" 
+									style="float:right;padding:4px 25px 0px 0px;font-family : DIN"></el-switch>
 							</div>
-						</div>	
+							<div class="my-card-body">
+								<marey-chart style="text-align: center; height: 400px;width:100%;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
+							</div>
+						</el-card> -->
+					<el-col :span="15">
+						<div>
+							<el-card class="myel-card">
+								<div class="my-card-title" slot="header">
+									<span>Diagnosis View</span>
+								</div>
+								<div style="padding-right:5px; padding-bottom : 5px">
+									<el-col :span="13">
+										<div class="my-card">
+											<div class="my-card-body" >
+												<wheeler ref="wheelering" style="height:500px"></wheeler>
+											</div>
+										</div>
+									</el-col>
+									<el-col :span="11" style="padding-right:5px">
+										<div class="my-card">
+											<div class="my-card-body" >
+												<swheel ref="wheeler1" style="height:248px"></swheel>
+											</div>
+										</div>
+										<div class="my-card">
+											<div class="my-card-body" >
+												<swheel ref="wheeler2" style="height:248px"></swheel>
+											</div>
+										</div>	
+									</el-col>
+								</div>
+							</el-card>							
+						</div>
 					</el-col>
+					<!-- <el-col :span="9" style="border:solid 1px black"></el-col> -->
+					
 				</el-row>
 				<el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
 					<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
@@ -288,7 +341,8 @@ import scatterlog from './scatterlog.vue';
 import timeBrush from './timeBrush.vue';
 import gauge from './gauge.vue';
 import threeBar from './threeBar.vue';
-import wheeler from './wheeler.vue';;
+import wheeler from './wheeler.vue';
+import swheel from './swheel.vue';
 import force from './force.vue';
 import heat from "./heat.vue";
 import riverLike from "./riverLike.vue";
@@ -297,7 +351,7 @@ import scatterAxis from "./scatterAxis.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 var echarts = require('echarts');
 export default {
-	components: { mareyChart, scatter, polyLineChart, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog,wheeler},
+	components: { mareyChart, scatter, polyLineChart, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel },
 	data() {
 		return {
 			symbolvalue:0.05,
@@ -384,9 +438,9 @@ export default {
 		// this.day()
 	},
 	methods: {
-		forceswtich(){
-			this.$refs.force.sizechange()
-		},
+		// forceswtich(){
+		// 	this.$refs.force.sizechange()
+		// },
 		changeTimeBrush() {
 			this.getTimeBrushData();
 		},
@@ -395,7 +449,7 @@ export default {
 			// this.$message(this.monthToShow.toString())
 			// let timeArr = this.monthToShow.toString().split(' ')
 			this.changeTimeBrush()
-			this.getRadarIndicatorOptions()
+			// this.getRadarIndicatorOptions()
 			this.scattlog()
 		},
 		cellStyle (rowData) {
@@ -852,6 +906,8 @@ export default {
 			}
 			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
 				this.$refs.wheelering.paintChart(diagnosisData,Response.data)
+				this.$refs.wheeler1.paintChart(diagnosisData,Response.data)
+				this.$refs.wheeler2.paintChart(diagnosisData,Response.data)
 			})
 			this.paintDetailPro(this.processTurn)
 		},
@@ -1083,7 +1139,7 @@ export default {
 		// baogangAxios('/baogangapi/v1.0/getFlag/2018-10-15%2000:00:00/2018-10-16%2000:00:00/')
 		// this.getRadarIndicatorOptions();
 		this.getTimeBrushData();
-		this.click()
+		// this.click()
 		// this.paintDetailPro(2)
 		// this.getDetailProcess('18A15070000', 'roll', 0.5, 10, 0.01,['All'])
 		// this.platetype('18B09019000')
@@ -1195,6 +1251,30 @@ export default {
 			display: none;
 	}
 }
+.myel-card{
+	margin: 3px 5px;
+	// padding-top: 2px;
+	// border: solid 0.25px #ededed;
+	border: solid 0.25px #e0e0e0;
+	border-radius: 4px;
+	transform: translate(5px, 0px);
+	box-shadow: rgb(148, 148, 148) 2px 2px 2.5px !important;
+	.el-card__header {
+		// text-indent:20px;
+		font-family: Calibri;
+		background-color: #f7f7f7;
+		font-weight: bold;
+		text-align: left;
+		font-size: 14px;
+		color: #6d7885;
+		height: 30px;
+		padding: 4px 2px 2px 20px;
+		border-bottom: solid 0.25px #e0e0e0;
+	}
+	.el-card__body {
+    padding: 1px;
+}
+}
 .my-card {
 	margin: 3px 5px;
 	// padding-top: 2px;
@@ -1206,16 +1286,22 @@ export default {
 	// .my-card-body{
 	// }
 	.my-card-title {
-		text-indent:20px;
-		font-family: futura;
+		// text-indent:20px;
+		font-family: Calibri;
 		background-color: #f7f7f7;
 		font-weight: bold;
 		text-align: left;
-		font-size: 15px;
+		font-size: 14px;
 		color: #6d7885;
 		height: 30px;
-		padding: 2px;
+		padding: 4px 2px 2px 20px;
 		border-bottom: solid 0.25px #e0e0e0;
+	}
+}
+.el-select-dropdown__item{
+	span{
+		font-family: Calibri;
+		font-weight: bold;
 	}
 }
 .process-choose {

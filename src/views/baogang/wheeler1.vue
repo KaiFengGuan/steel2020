@@ -1,6 +1,8 @@
 <template>
 	<div>
 		<div :id="menuId" style="height: 100%;width:100%;"></div>
+        <!-- <div id="gamediv"></div> -->
+        <!-- <img src='./b_icon__fire.png'/> -->
 	</div>
 </template>
 
@@ -30,8 +32,7 @@ export default {
 	},
 	methods: {
 	paintChart(jsondata,chorddata) {
-        const wheeldata = [] , labels = []
-        const menuId = this.menuId
+        const wheeldata=[],labels=[]
         for(let item in jsondata['PCASPE']['xData']){
             labels.push(jsondata['PCASPE']['xData'][item])
             wheeldata.push({
@@ -515,7 +516,7 @@ export default {
                         SPE[item].order=+item+1+(+T2.findIndex((value, index, arr)=> value.dateStr===query))+1+(+res.findIndex((value, index, arr)=> value.dateStr===query))+1
                     }
                     const sample=d3.sort(SPE,d=>d.order);
-                const vis = this._g.selectAll("#" +menuId + " .vis").data(this._chartData);
+                const vis = this._g.selectAll(".vis").data(this._chartData);
                 for (let key in xpad){
                     const processdata = [], 
                     lck = lc[key],
@@ -594,75 +595,75 @@ export default {
                         .attr("opacity", 0.6)
                         .on("mouseover", (e, d) => {
                             hightlightcss()
-                            d3.selectAll("#" +menuId +" .riline"+key)
+                            d3.selectAll(".riline"+key)
                                 .attr("opacity",1)
-                            d3.selectAll("#" +menuId + " .clead"+key )
+                            d3.selectAll(".clead"+key )
                                 .attr("opacity", 0.4)
-                            d3.selectAll("#" +menuId + " .river1"+key)
+                            d3.selectAll(".river1"+key)
                                 .attr("opacity",0.4)
-                            d3.selectAll("#" +menuId + " .river2"+key)
+                            d3.selectAll(".river2"+key)
                                 .attr("opacity",0.8)
-                            d3.selectAll("#" +menuId + " #process"+key)
+                            d3.selectAll("#process"+key)
                                 .attr("fill",d3.color(lck).darker(0.2))
                                 .attr("opacity" , 0.6)
-                            d3.selectAll("#" +menuId + " #circle"+key)
+                            d3.selectAll("#circle"+key)
                                 .attr("stroke" , "white")
-                            d3.selectAll("#" +menuId + " #icon"+key)
+                            d3.selectAll("#icon"+key)
                                 .attr("href", iconwhite[key])
-                            d3.selectAll("#" +menuId + " .circle_color"+key)
+                            d3.selectAll(".circle_color"+key)
                                 .attr("r",outrate (3.5 , 2))
                                 .attr("opacity", 1);
-                            d3.selectAll("#" +menuId + " .precipitation"+key)
+                            d3.selectAll('.precipitation'+key)
                                 .attr("stroke",d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorlinear1(d.precipitation)+2) :daker)
                                 .attr("opacity", 1)
-                            d3.selectAll("#" +menuId + " .humidity"+key)
+                            d3.selectAll('.humidity'+key)
                                 .attr("stroke",d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorlinear2(d.humidity)+2) :daker)
                                 .attr("opacity", 1)
-                            d3.selectAll("#" +menuId + " .lead"+key )
+                            d3.selectAll(".lead"+key )
                                 .attr("stroke-width", outrate(1.5,0.5))
                                 .attr("opacity", 0.4)
-                            d3.selectAll("#" +menuId + " .linestart")
+                            d3.selectAll(".linestart")
                                 .attr("y1", d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? this._y(d.avg)+3.5 : this._y(d.avg)+2)
-                            d3.selectAll("#" +menuId + " .linecurve")
+                            d3.selectAll(".linecurve")
                                 .attr("y2", d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? this._y(d.avg)-3.5 : this._y(d.avg)-2)
-                            d3.selectAll("#" +menuId + " .textname" + key)
+                            d3.selectAll(".textname" + key)
                                 .attr("font-weight", "bold")
                                 .attr("opacity" , 1)
-                            d3.selectAll("#" +menuId + " .arcpie"+key)
+                            d3.selectAll(`.arcpie`+key)
                                 .attr("opacity", 1)
                                 .style('stroke-width', 0.5)
-                            d3.selectAll("#" +menuId + " .arctext"+key)
+                            d3.selectAll(".arctext"+key)
                                 .attr("opacity", 1)
                                 .attr("fill", d3.color(lck).darker(4))
                         })
                         .on("mouseleave", (e, d) => {
                             initcss()
-                            d3.selectAll("#" +menuId + " #process"+key)
+                            d3.selectAll("#process"+key)
                                 .attr("fill",lck)
-                            d3.selectAll("#" +menuId + " #circle"+key)
+                            d3.selectAll("#circle"+key)
                                 .attr("stroke" , daker)
-                            d3.selectAll("#" +menuId + " #icon"+key)
+                            d3.selectAll("#icon"+key)
                                 .attr("href", icon[key])
-                            d3.selectAll("#" +menuId + " .circle_color"+key)
+                            d3.selectAll(".circle_color"+key)
                                     .attr("r",2);
-                            d3.selectAll("#" +menuId + " .precipitation"+key)
+                            d3.selectAll('.precipitation'+key)
                                 .attr("stroke",daker)
-                            d3.selectAll("#" +menuId + " .humidity"+key)
+                            d3.selectAll('.humidity'+key)
                                 .attr("stroke",daker)
-                            d3.selectAll("#" +menuId + " .lead"+key)
+                            d3.selectAll(".lead"+key)
                                 .attr("stroke-width", outrate(1,0.5))
-                            d3.selectAll("#" +menuId + " .linestart")
+                            d3.selectAll(".linestart")
                                 .attr("y1", d =>  this._y(d.avg)+2)
-                            d3.selectAll("#" +menuId + " .linecurve")
+                            d3.selectAll(".linecurve")
                                 .attr("y2", d =>  this._y(d.avg)-2)
-                            d3.selectAll("#" +menuId + " .textname" + key)
+                            d3.selectAll(".textname" + key)
                                 .attr("font-weight", "normal")
-                            d3.selectAll("#" +menuId + " .arcpie"+key)
+                            d3.selectAll(`.arcpie`+key)
                                 .style('stroke-width', 0.25)
-                            d3.selectAll("#" +menuId + " .arctext"+key)
+                            d3.selectAll(".arctext"+key)
                                 .attr("fill", d3.color(lck).darker(1.5))
                         }))
-                    .call(g => g.selectAll("#" +menuId + " .circle_doct"+key).data(processdata).join("g")      
+                    .call(g => g.selectAll(".circle_doct"+key).data(processdata).join("g")      
                         .attr("class", "circle_doct")
                         .attr("transform", d => `rotate(${(xpad[key](d.date) + v) * 180 / Math.PI - 180 })`)       ////河流图节点
                         .call(g => g.append("circle")
@@ -731,7 +732,7 @@ export default {
                             .attr("y",-r.inner*0.97)
                             .attr("href", icon[key]))
                     if(+key === 2){
-                        d3.select("#" +menuId + " #icon"+key)
+                        d3.select("#icon"+key)
                             .attr("width", "30px")
                             .attr("height","30px")
                             .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 13.8})`)
@@ -750,7 +751,7 @@ export default {
                             // .startAngle(1.5* Math.PI-thisangel/180*Math.PI)
                             // .endAngle(1.5* Math.PI-thisangel/180*Math.PI + 2* Math.PI);
                         let piedata=pie(pindex.property)
-                        let g=this._g.selectAll("#" +menuId + " .pie"+pindex.date)
+                        let g=this._g.selectAll(".pie"+pindex.date)
                             .data(piedata).enter()
                             .append("g")
                             .attr("transform", `rotate(${(xpad[key](pindex.date) + v) * 180 / Math.PI - 180 }) translate(${[0,r.outer+r.bubble*1.30]})`);
@@ -785,7 +786,7 @@ export default {
                         .range([0.25,0]);
                     colorLinear1.push(colorlinear1)
                     colorLinear2.push(colorlinear2)
-                    const vis = this._g.selectAll("#" +menuId + " .vis"+key).data(processdata);
+                    const vis = this._g.selectAll(".vis"+key).data(processdata);
                     vis.join("g")
                         .attr("class", "vis")
                         .attr("transform", d => `rotate(${xpad[key](d.date) * 180 / Math.PI - 180})`)
@@ -808,7 +809,7 @@ export default {
 
                     const t = this._texts;
 
-                    this._g.selectAll("#" +menuId + " .visoverlay"+key)
+                    this._g.selectAll(".visoverlay"+key)
                         .data(processdata)
                         .join("g")
                         .attr("class", "visoverlay"+key)
@@ -866,7 +867,7 @@ export default {
                 const thickness=d3.scaleLinear()
                         .domain([0.001,0.230])
                         .range([initial, r.bubble*2]);
-                const widthScale =  [0 ,0 ,thickness(this._details['steel'][3]) ,width(this._details['steel'][4]) ,length(this._details['steel'][5])]
+                const widthScale =  [0 ,0 ,thickness(this._details['steel'][2]) ,width(this._details['steel'][3]) ,length(this._details['steel'][4])]
                 this._g
                     .call(g => g.append("rect")
                             .attr("transform",`translate(${[r.max-r.bubble*2.2,-r.max-r.bubble+2]})`)
@@ -881,7 +882,7 @@ export default {
                             .attr("height", 82)
                             .attr("filter","url(#filter)")
                         )
-                    .call(g => g.selectAll("#" +menuId + " .steel_text").data(titleinfo).join("g")
+                    .call(g => g.selectAll(".steel_text").data(titleinfo).join("g")
                         .attr("transform", (d , i) => `translate(${[r.max-r.bubble*2.2,-r.max-r.bubble+2]})`)
                         .call(g => g.append("rect")
                             .attr("x" , -4.5)
@@ -936,7 +937,7 @@ export default {
                             .attr("font-size", "8pt")
                             .attr("font-weight", "normal")
                             .style("font-family", "DIN")
-                            .text((d , i) => i>=2 ? (i!==2 ? this._details['steel'][i+1] +' m' : (this._details['steel'][i+1]*1000).toFixed(2) +' mm') : this._details['steel'][i])
+                            .text((d , i) => i>=2 ? (i!==2 ? this._details['steel'][i] +' m' : (this._details['steel'][i]*1000).toFixed(2) +'mm') : this._details['steel'][i])
                             .attr("fill", d3.color("grey").darker(0.5))
                             .attr("stroke", "none")
                         ))
@@ -1029,7 +1030,7 @@ export default {
                     colornone = "#ccc",
                     colorout = "#f00",
                     colorin = "#00f";
-                const svg=d3.select("#" +menuId + " .wheelg").append("g")
+                const svg=d3.select(".wheelg").append("g")
                         .attr("transform",`rotate(${-60})`);
                     const tree = d3.cluster()
                         .size([2 * Math.PI, r.inner*0.8])
@@ -1119,7 +1120,7 @@ export default {
                         const name=d.data.id,key=d.data.group,lck=lc[key],daker=d3.color(lck).darker(0.6);
                         const data=wm._chartData.filter(d => d.dateStr===name)[0];
                         hightlightcss()
-                        d3.selectAll("#" +menuId + " .clead" + key)
+                        d3.selectAll(".clead" + key)
                             .attr("opacity", 0.1)
                         axisenter(name,key,lck,daker,true);
                         let rlines=multiplyaxis(name)
@@ -1166,137 +1167,137 @@ export default {
                     }
                     function axisenter(name,key,lck,daker,flag){
                         // hightlightcss()
-                        d3.selectAll("#" +menuId + " .riline"+key)
+                        d3.selectAll(".riline"+key)
                                 .attr("opacity",1)
-                        d3.selectAll("#" +menuId + " .river1"+key)
+                        d3.selectAll(".river1"+key)
                                 .attr("opacity",0.4)
-                        d3.selectAll("#" +menuId + " .river2"+key)
+                        d3.selectAll(".river2"+key)
                             .attr("opacity",0.8)
-                        d3.selectAll("#" +menuId + " #process" + key)
+                        d3.selectAll("#process" + key)
                                 .attr("opacity" , 0.6)
-                        d3.select("#" +menuId + " #circle"+name)
+                        d3.select('#circle'+name)
                                 .attr("r",3.5)
                                 .attr("opacity", 1);
-                        d3.select("#" +menuId + " #precipitation"+name)
+                        d3.select('#precipitation'+name)
                             .attr("stroke",d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorLinear1[key](d.precipitation)+2) :daker)
                             .attr("opacity", 1)
-                        d3.select("#" +menuId + " #humidity"+name)
+                        d3.select('#humidity'+name)
                             .attr("stroke",d=> d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorLinear2[key](d.humidity)+2) :daker)
                             .attr("opacity", 1)
-                        d3.selectAll("#" +menuId + " .line"+name)
+                        d3.selectAll(".line"+name)
                             .attr("stroke",d3.color(lck).darker(4))
-                        d3.selectAll("#" +menuId + " .line" + name)
+                        d3.selectAll(".line" + name)
                             .attr("stroke-width", 1.5)
                             .attr("opacity", 0.4)
-                        d3.selectAll("#" +menuId + " #textline" + name)
+                        d3.selectAll("#textline" + name)
                             .style("visibility", "visible")
                             .attr("y2", outrate(r.outer+r.bubble*1.20,r.outer+r.bubble*1.50))
-                        d3.selectAll("#" +menuId + " #linestart"+ name)
+                        d3.selectAll("#linestart"+ name)
                             .attr("y1", d => wm._y(d.avg)+3.5 )
-                        d3.selectAll("#" +menuId + " #linecurve" + name)
+                        d3.selectAll("#linecurve" + name)
                             .attr("y2", d =>  wm._y(d.avg)-3.5)
-                        d3.selectAll("#" +menuId + " #name" + name)
+                        d3.selectAll("#name" + name)
                             .attr("font-weight", "bold")
                             .style("visibility", "visible")
                             .attr("opacity" , 1)
-                        d3.selectAll("#" +menuId + " .pie"+ name)
+                        d3.selectAll('.pie'+ name)
                             .style('stroke-width', 0.5)
                             .attr("opacity", 1)
-                        d3.selectAll("#" +menuId + " #arctext"+name)
+                        d3.selectAll("#arctext"+name)
                                 .attr("opacity", 1)
                                 .attr("fill", d3.color(lck).darker(4))
                         if(flag){
-                            d3.selectAll("#" +menuId + " .clinein" + name)
+                            d3.selectAll(".clinein" + name)
                                 .attr("opacity", 0.5)
-                            d3.selectAll("#" +menuId + " .clineout" + name)
+                            d3.selectAll(".clineout" + name)
                                 .attr("opacity", 0.5)
                         }
                     }
                     function axisout(name,key,lck,daker,flag){
                         // initcss()
-                        d3.select("#" +menuId + " #circle"+name)
+                        d3.select('#circle'+name)
                                     .attr("r",2);
-                        d3.select("#" +menuId + " #precipitation"+name)
+                        d3.select('#precipitation'+name)
                             .attr("stroke",daker)
-                        d3.select("#" +menuId + " #humidity"+name)
+                        d3.select('#humidity'+name)
                             .attr("stroke",daker)
-                        d3.selectAll("#" +menuId + " .line"+name)
+                        d3.selectAll(".line"+name)
                             .attr("stroke",daker)        
-                        d3.selectAll("#" +menuId + " .line" + name)
+                        d3.selectAll(".line" + name)
                             .attr("stroke-width", outrate(1,0.5))
-                        d3.selectAll("#" +menuId + " #textline" + name)
+                        d3.selectAll("#textline" + name)
                             .style("visibility", outrate("visible" , "hidden" ))
                             .attr("y2", r.outer+r.bubble*1.20)
-                        d3.selectAll("#" +menuId + " #linestart"+ name)
+                        d3.selectAll("#linestart"+ name)
                             .attr("y1", d =>  wm._y(d.avg)+2)
-                        d3.selectAll("#" +menuId + " #linecurve" + name)
+                        d3.selectAll("#linecurve" + name)
                             .attr("y2", d =>  wm._y(d.avg)-3.5)
-                        d3.selectAll("#" +menuId + " #name" + name)
+                        d3.selectAll("#name" + name)
                             .attr("font-weight", "normal")
                             .style("visibility", d => d.humidity>1.5|d.precipitation>1.5 ? "visible" : "hidden")
-                        d3.selectAll("#" +menuId + " .pie"+ name)
+                        d3.selectAll('.pie'+ name)
                             .style('stroke-width', 0.25)
-                        d3.selectAll("#" +menuId + " #arctext"+name)
+                        d3.selectAll('#arctext'+name)
                             .attr("fill", d3.color(lck).darker(1.5))
-                        d3.selectAll("#" +menuId + " .dailyInfo").remove()
+                        d3.selectAll(".dailyInfo").remove()
                         if(flag){
-                            d3.selectAll("#" +menuId + " .clineout" + name)
+                            d3.selectAll(".clineout" + name)
                                 .attr("opacity",0.4)
                                 .attr("stroke", labelcolor).raise()
-                            d3.selectAll("#" +menuId + " .clinein" + name)
+                            d3.selectAll(".clinein" + name)
                                     .attr("opacity",0.4)
                         }
                     }
                     function initcss(){
                         for (let i in [0,1,2]){
-                            d3.selectAll("#" +menuId + " .lead"+i )
+                            d3.selectAll(".lead"+i )
                                 .attr("opacity", 0.4)
-                            d3.selectAll("#" +menuId + " .clead"+i )
+                            d3.selectAll(".clead"+i )
                                 .attr("opacity", 0.4)
-                            d3.selectAll("#" +menuId + " .humidity"+i)
+                            d3.selectAll(".humidity"+i)
                                 .attr("opacity", 1)
-                            d3.selectAll("#" +menuId + " .precipitation"+i)
+                            d3.selectAll(".precipitation"+i)
                                 .attr("opacity", 1)
-                            d3.selectAll("#" +menuId + " .circle_color"+i)
+                            d3.selectAll(".circle_color"+i)
                                 .attr("opacity", 1)
-                            d3.selectAll("#" +menuId + " .arcpie"+i)
+                            d3.selectAll(".arcpie"+i)
                                 .attr("opacity", 1)
-                            d3.selectAll("#" +menuId + " .arctext"+i)
+                            d3.selectAll(".arctext"+i)
                                 .attr("opacity", 0.5)
-                            d3.selectAll("#" +menuId + " .textname" + i)
+                            d3.selectAll(".textname" + i)
                                 .attr("opacity" , 1)
-                            d3.selectAll("#" +menuId + " #process"+i)
+                            d3.selectAll("#process"+i)
                                 .attr("opacity" , 0.6)
-                            d3.selectAll("#" +menuId + " .river1"+i)
+                            d3.selectAll(".river1"+i)
                                 .attr("opacity",0.4)
-                            d3.selectAll("#" +menuId + " .river2"+i)
+                            d3.selectAll(".river2"+i)
                                 .attr("opacity",0.8)
 
                         }
                     }
                     function hightlightcss(){
                         for (let i in [0,1,2]){
-                            d3.selectAll("#" +menuId + " .lead"+i )
+                            d3.selectAll(".lead"+i )
                                 .attr("opacity", 0.1)
-                            d3.selectAll("#" +menuId + " .clead"+i )
+                            d3.selectAll(".clead"+i )
                                 .attr("opacity", 0.1)
-                            d3.selectAll("#" +menuId + " .humidity"+i)
+                            d3.selectAll(".humidity"+i)
                                 .attr("opacity", 0.5)
-                            d3.selectAll("#" +menuId + " .precipitation"+i)
+                            d3.selectAll(".precipitation"+i)
                                 .attr("opacity", 0.5)
-                            d3.selectAll("#" +menuId + " .circle_color"+i)
+                            d3.selectAll(".circle_color"+i)
                                 .attr("opacity", 0.5)
-                            d3.selectAll("#" +menuId + " .arcpie"+i)
+                            d3.selectAll(".arcpie"+i)
                                 .attr("opacity", 0.5)
-                            d3.selectAll("#" +menuId + " .arctext"+i)
+                            d3.selectAll(".arctext"+i)
                                 .attr("opacity", 0.5)
-                            d3.selectAll("#" +menuId + " .textname" + i)
+                            d3.selectAll(".textname" + i)
                                 .attr("opacity" , 0.5)
-                            d3.selectAll("#" +menuId + " #process"+i)
+                            d3.selectAll("#process"+i)
                                 .attr("opacity" , 0.3)
-                            d3.selectAll("#" +menuId + " .river1"+i)
+                            d3.selectAll(".river1"+i)
                                 .attr("opacity",0.1)
-                            d3.selectAll("#" +menuId + " .river2"+i)
+                            d3.selectAll(".river2"+i)
                                 .attr("opacity",0.4)
                         }
                     }

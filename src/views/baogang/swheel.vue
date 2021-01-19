@@ -18,6 +18,7 @@ import thickicon from "../../assets/images/wheel/thick.svg";
 import widthicon from "../../assets/images/wheel/width.svg";
 import lengthicon from "../../assets/images/wheel/length.svg";
 import upidicon from "../../assets/images/wheel/upid.svg";
+import timesvg from "../../assets/images/wheel/timesvg.svg";
 import categoryicon from "../../assets/images/wheel/category.svg";
 import util from './util.js';
 export default {
@@ -47,14 +48,15 @@ export default {
         }
         const details=jsondata['Steel']
         // this.menuId = this.menuId 
-		const vm=this		
-        const diameter=500
+        const vm=this
+        const diameter = document.getElementById(this.menuId).offsetHeight;	
+        const width = document.getElementById(this.menuId).offsetWidth;	
         this.svg !== undefined && this.svg.remove()
         console.log(this.menuId)
 		this.svg=d3.select("#"+vm.menuId)
 			.append("svg")
-			.attr("viewBox", `${-diameter / 2} ${-diameter / 2} ${diameter} ${diameter}`)
-            .style("width", diameter)
+			.attr("viewBox", `${-diameter / 2} ${-diameter / 2} ${width} ${diameter}`)
+            .style("width", width)
             .style("height", diameter);
         class wheelRound{
             constructor(container) {
@@ -244,7 +246,9 @@ export default {
                 this._init();
                 this._process();
 
-                this._g = this._container.append("g");
+                this._g = this._container
+                    .append("g")
+                    // .attr("transform", "translate(8,0)");
                 // this._initGradients();
 
                 this._renderMainWheel();
@@ -256,7 +260,7 @@ export default {
             _init() {
                 const r = this._radius;
                 
-                r.max = Math.min(this._width, this._height) / 2.5;
+                r.max = Math.min(this._width, this._height) / 2;
                 r.inner = r.max * 0.40;
                 r.bubble = r.max * 0.2;
                 r.outer = r.max - r.bubble *1.1 - r.label;
@@ -499,8 +503,8 @@ export default {
                     outrate = (item1 , item2) => {
                         return d => (d.humidity>1.5|d.precipitation>1.5) ? item1 : item2
                     },
-                    titleinfo = ["upid", "cate", "thick", "wid", "len"],
-                    titleicon=[upidicon,categoryicon,thickicon,widthicon,lengthicon],
+                    titleinfo = ["upid" , "toc" , "cate", "p_thick", "p_wid", "p_len", "s_thick", "s_wid", "s_len"],
+                    titleicon=[upidicon,timesvg,categoryicon,thickicon,widthicon,lengthicon,thickicon,widthicon,lengthicon],
                     graph={nodes:[],links:[]},
                     wm=this,
                     colorLinear1=[],
@@ -708,20 +712,21 @@ export default {
                             .attr("stroke", line_stroke)
                             .attr("stroke-width", outrate(1,0.5))
                             .attr("opacity", 0.4))
-                        .call(g => g.append("text")
-                            .attr("class",d => "textname" + key)
-                            .attr("id",d => "name" + d.dateStr)
-                            .attr("transform", d => xpad[key](d.date)>0 & xpad[key](d.date)<Math.PI ? `rotate(${90.5})` : `rotate(${-90.5})`)
-                            .style("visibility", outrate("visible" , "hidden" ))
-                            .attr("x", d => xpad[key](d.date)>0 & xpad[key](d.date)<Math.PI ? r.outer+r.bubble*1.50 : -(r.outer+r.bubble*1.50))
-                            .style("font-family", "Optima")
-                            .style("padding", "1px")
-                            .attr("font-size", "6pt")
-                            .attr("font-weight", "normal")
-                            .style("text-anchor", d => xpad[key](d.date)>0 & xpad[key](d.date)< Math.PI ? "start" : "end")
-                            .text(d=>d.dateStr)
-                            .attr("fill", daker)
-                            .attr("stroke", "none")))
+                        // .call(g => g.append("text")
+                        //     .attr("class",d => "textname" + key)
+                        //     .attr("id",d => "name" + d.dateStr)
+                        //     .attr("transform", d => xpad[key](d.date)>0 & xpad[key](d.date)<Math.PI ? `rotate(${90.5})` : `rotate(${-90.5})`)
+                        //     .style("visibility", outrate("visible" , "hidden" ))
+                        //     .attr("x", d => xpad[key](d.date)>0 & xpad[key](d.date)<Math.PI ? r.outer+r.bubble*1.50 : -(r.outer+r.bubble*1.50))
+                        //     .style("font-family", "Optima")
+                        //     .style("padding", "1px")
+                        //     .attr("font-size", "6pt")
+                        //     .attr("font-weight", "normal")
+                        //     .style("text-anchor", d => xpad[key](d.date)>0 & xpad[key](d.date)< Math.PI ? "start" : "end")
+                        //     .text(d=>d.dateStr)
+                        //     .attr("fill", daker)
+                        //     .attr("stroke", "none"))
+                            )
                     .call(g => g.append("image")    //icon
                             .attr("class", "icon")
                             .attr("id", "icon"+key)
@@ -857,56 +862,81 @@ export default {
                 // d3.selectAll(".circle_color").raise()
                 // d3.selectAll(".steelcircle").lower()
                 const initial=10;
+                const barrect = [initial, 80];
                 const length=d3.scaleLinear()
                         .domain([0,51.5])
-                        .range([initial, r.bubble*2]);
+                        .range(barrect);
                 const width=d3.scaleLinear()
                         .domain([1.32,4.82])
-                        .range([initial, r.bubble*2]);
+                        .range(barrect);
                 const thickness=d3.scaleLinear()
                         .domain([0.001,0.230])
-                        .range([initial, r.bubble*2]);
-                const widthScale =  [0 ,0 ,thickness(this._details['steel'][3]) ,width(this._details['steel'][4]) ,length(this._details['steel'][5])]
+                        .range(barrect)
+                const sthickness=d3.scaleLinear()
+                        .domain([100 , 600])
+                        .range(barrect);
+                const swidth=d3.scaleLinear()
+                        .domain([1300 , 2300])
+                        .range(barrect)
+                const slength=d3.scaleLinear()
+                        .domain([1520 , 5800])
+                        .range(barrect);
+                const widthScale =  [0 ,0 ,0 ,thickness(this._details['steel'][3]) ,width(this._details['steel'][4]) ,length(this._details['steel'][5])  ,
+                    sthickness(this._details['steel'][6]) , swidth(this._details['steel'][7]) , slength(this._details['steel'][8])]
+                const position =[r.max+r.bubble*2.2 - 40 , -r.max/2 - 20];
+                if(this._details['steel'][2].length > 5)[this._details['steel'][1] , this._details['steel'][2]] = [this._details['steel'][2].slice(10) , this._details['steel'][1]];
                 this._g
                     .call(g => g.append("rect")
-                            .attr("transform",`translate(${[r.max-r.bubble*2.2,-r.max-r.bubble+2]})`)
-                            .attr("x" , -4.5)
-                            .attr("y", -12)
+                            .attr("transform",`translate(${position})`)
+                            .attr("x" , -18)
+                            .attr("y", -20)
                             .attr("rx" , 2)
                             .attr("ry", 2)
                             .style("fill","white")
                             .attr("stroke", "grey")
                             .attr("stroke-width",1)
-                            .attr("width", r.bubble*3.2+2.5+2)
-                            .attr("height", 82)
+                            .attr("width", r.bubble*3.2 + 85)
+                            .attr("height", 200)
                             .attr("filter","url(#filter)")
+                            .attr("box-shadow" , "rgb(148, 148, 148) 2px 2px 2.5px")
                         )
+                    // .call(g => g.append("line")
+                    //         .attr("transform",`translate(${[position[0] - 28 , 0]})`)
+                    //         .attr("x1" , 0)
+                    //         .attr("y1", -100)
+                    //         .attr("y2", 100)
+                    //         .style("fill","white")
+                    //         .attr("stroke", "#ededed")
+                    //         .attr("stroke-width" , 1.5))
                     .call(g => g.selectAll("#" +menuId + " .steel_text").data(titleinfo).join("g")
-                        .attr("transform", (d , i) => `translate(${[r.max-r.bubble*2.2,-r.max-r.bubble+2]})`)
+                        .attr("transform", (d , i) => `translate(${position})`)
                         .call(g => g.append("rect")
-                            .attr("x" , -4.5)
+                            .attr("x" , -8.5)
                             .attr("y", (d,i)=> i*16.5-12)
                             .style("fill","none")
-                            .attr("stroke", "grey")
+                            .attr("stroke", "none")
+                            // .attr("stroke", "grey")
                             .attr("stroke-width",0.5)
                             .attr("width", r.bubble*1.2+4.5)
                             .attr("height", 16)
                         )
                         .call(g => g.append("image")    //titleicon
-                            .attr("width", 15.5)
-                            .attr("height","15.5px")
-                            .attr("x" , 0)
-                            .attr("y",(d,i)=> i*16.5-12)
+                            .attr("width", 17.5)
+                            .attr("height", 17.5)
+                            .attr("x" , -15)
+                            .attr("y",(d,i)=> i* 20.5 -12)
                             .attr("href",(d,i) => titleicon[i]))
                         .call(g => g.append("text")
-                            .attr("y", (d,i)=> i*16.5)
-                            .attr("font-size", "8pt")
+                            .attr("y", (d,i)=> i * 20.5)
+                            .attr("font-size", "10pt")
                             .attr("font-weight", "normal")
                             .style("font-family", "DIN")
-                            .attr("x" , r.bubble*0.5)
-                            .text((d , i)=>d)
+                            // .attr("x" , r.bubble*0.5 + 26)
+                            .attr("x" , r.bubble*0.5 - 6)
+                            .text((d , i)=> d.toUpperCase())
                             .attr("fill", d3.color("grey").darker(0.9))
                             .attr("stroke", "none")
+                            // .attr("text-anchor", "middle")
                         )
                         .call(g => g.append("rect")
                             .attr("x" , r.bubble*1.2)
@@ -914,117 +944,43 @@ export default {
                             .style("fill","none")
                             // .attr("rx" , 2)
                             // .attr("ry" , 2)
-                            .attr("stroke", "grey")
+                            // .attr("stroke", "grey")
+                            .attr("stroke", "none")
                             .attr("stroke-width",0.5)
                             .attr("width", r.bubble*2)
                             .attr("height", 16)
                         )
                         .call(g => g.append("rect")
-                            .attr("x" , r.bubble*1.2+5)
-                            .attr("y", (d,i)=> i*17-12)
+                            .attr("x" , 61)
+                            .attr("y", (d,i)=> i * 20.5 - 12)
                             .attr("rx" , 2)
                             .attr("ry" , 2)
                             .style("fill","pink")
                             .attr("stroke", "none")
                             .attr("stroke-width",0.25)
                             .attr("width", (d , i) => widthScale[i])
-                            .attr("height", 12)
+                            .attr("height", 16)
                         )
+                        .call(g => g.append("line")
+                            .attr("transform", (d,i) => `translate(${[0 , i * 20.5 + 7.5]})`)
+                            .attr("x1" , -15)
+                            .attr("x2" , 130)
+                            .attr("y1", 0)
+                            .style("fill","white")
+                            .attr("stroke", "#ededed")
+                            // .attr("stroke", "black")
+                            .attr("stroke-width" , 1.5))
                         .call(g => g.append("text")
-                            .attr("x", r.bubble*1.2+6)
-                            .attr("y", (d,i)=> i*16.5)
-                            .attr("font-size", "8pt")
+                            .attr("x", 61)
+                            .attr("y", (d,i)=> i*20.5)
+                            .attr("font-size", "10pt")
                             .attr("font-weight", "normal")
                             .style("font-family", "DIN")
-                            .text((d , i) => i>=2 ? (i!==2 ? this._details['steel'][i+1] +' m' : (this._details['steel'][i+1]*1000).toFixed(2) +' mm') : this._details['steel'][i])
+                            .text((d , i) => i>=3 ? (this._details['steel'][i]<1 ? this._details['steel'][i].toFixed(3) +' m' : this._details['steel'][i].toFixed(1) +' m' ): this._details['steel'][i])
                             .attr("fill", d3.color("grey").darker(0.5))
                             .attr("stroke", "none")
                         ))
 
-
-                    
-                    // .call(g => g.append("rect")
-                    //     .attr("transform", (d , i) => `translate(${[-this._width/2,-this._height/2]})`)
-                    //     .attr("width", 0.35*r.bubble)
-                    //     .attr("height", 14)
-                    //     .style("fill","grey")
-                    //     .attr("opacity",0.2))
-                    // .call(g => g.append("image")
-                    //         .attr("class", "icon")
-                    //         .attr("width", "13px")
-                    //         .attr("height","13px")
-                    //         // .attr("x", -10)
-                    //         // .attr("y",  -10)
-                    //         // .attr("transform", (d , i) => `translate(${[-r.max-r.bubble,-r.max-r.bubble]})`)
-                    //         .attr("transform", (d , i) => `translate(${[-this._width/2,-this._height/2]})`)
-                    //         .attr("href", steelicon))
-                    // .call(g => g.append("text")
-                    //     .attr("x", 4)
-                    //     // .attr("y",  -r.max-r.bubble)
-                    //     .attr("transform", (d , i) => `translate(${[-r.max-r.bubble,-r.max-r.bubble]})`)
-                    //     .attr("font-size", "8pt")
-                    //     .attr("font-weight", "bolder")
-                    //     .style("font-family", "Optima")
-                    //     .text("View")
-                    //     .attr("fill", "black")
-                    //     .attr("stroke", "none")
-                    // )
-                // vis.join("g")
-                //     .attr("class", "vis")
-                //     .attr("transform", d => `rotate(${this._x(d.date) * 180 / Math.PI - 180})`)
-                // //     // condition
-                // //     // .call(g => g.append("path")
-                // //     //     .attr("fill", d => `url(#grad_${this._uniqueId})`)
-                // //     //     .attr("stroke", "none")
-                // //     //     .attr("d", d => this._line(r.inner, r.outer)))
-                // //     // temperature
-                // //     .call(g => g.append("path")
-                // //         .attr("fill", `url(#line_${this._uniqueId})`)
-                // //         // .attr("fill",`linear-gradient(#e66465, #9198e5)`)
-                // //         .attr("stroke", "none")
-                // //         .attr("d", d => this._line(this._y(d.low), this._y(d.high))))
-                // //     // humidity
-                //     .call(g => g.append("path")
-                //         // .attr("fill", d => this._hc(d.humidity))
-                //         .attr("fill", lc.steelline)
-                //         .attr("opacity", 0.7)
-                //         .attr("d", d => this._line(r.outer, this._h(d.humidity))))
-                //     // precipitation
-                //     .call(g => g.append("path")
-                //         .attr("fill", lc.steelline)
-                //         .attr("opacity", 0.7)
-                //         .attr("d", d => this._line(r.outer+r.bubble-this._hb(d.precipitation) , r.outer+r.bubble)))
-                //     .call(g => g.append("path")
-                //         .attr("fill", d => this._hc(d.humidity))
-                //         .attr("opacity", 0.9)
-                //         .attr("d", d => this._linepad(r.outer+r.bubble*1.25, r.outer+r.bubble*1.45)))
-                //     .call(g => g.append("path")
-                //         .attr("fill", "lightgrey")
-                //         .attr("opacity", 0.9)
-                //         .attr("d", d => this._line(r.outer+r.bubble*1.45, r.outer+r.bubble*1.45+2)));
-
-                // precipitation bubble
-                // vis.join("circle")
-                //     .attr("fill", c.precipitation)
-                //     .attr("stroke", c.precline)
-                //     .attr("opacity", 0.4)
-                //     .attr("stroke-opacity", 0.7)
-                //     .attr("cy", r.outer + r.bubble)
-                //     .attr("r", d => this._b(d.precipitation))
-                //     .attr("transform", d => `rotate(${this._x(d.date) * 180 / Math.PI - 180})`);
-
-                // average line
-                // const lineWidth = (r.outer - r.inner) * 1.5 * Math.PI / this._chartData.length;
-                // this._g.append("path")
-                //     .attr("fill", "none")
-                //     .attr("stroke", "#006d77")
-                //     .attr("stroke-width", 2)
-                //     // .attr("stroke-width", lineWidth)
-                //     .attr("stroke-opacity", 0.35)
-                //     .attr("d", d3.lineRadial()
-                //         .curve(d3.curveLinearClosed)
-                //         .angle(d => this._x(d.date))
-                //         .radius(d => this._y(d.avg))(this._chartData));
                 const radius = r.outer*1.115,
                     colornone = "#ccc",
                     colorout = "#f00",
@@ -1449,7 +1405,7 @@ export default {
             }
         }
         const wheel = new wheelRound(this.svg)
-                        .size([diameter, diameter])
+                        .size([width, diameter])
                         .data(wheeldata)
                         .labels(labels)
                         .details(details)

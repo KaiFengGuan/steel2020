@@ -119,7 +119,6 @@ export default {
 		// 		))
 
 		var mergeresult = this.merge(data , stations)
-		console.log(mergeresult)
 		var filterdata = this.deepCopy(data)
 		for (let item in mergeresult){
 			filterdata.splice(...mergeresult[mergeresult.length-item-1]["index"])
@@ -129,7 +128,7 @@ export default {
 		var select = d3.map(d3.merge(d3.map(mergeresult , d => d.select)) , d =>d.upid)
 		var filter = d3.filter(merge , d => select.indexOf(d) === -1 )
 		var indexname = ["fuTotalTimeAfter" , "ccTotalTime" , "mtotalTime"]
-
+		var filtersteel = []
 		// private Object fuTotalTimeBefore;
 		// private Object fuTotalTimeAfter;
 		// private Object mTotalTime;
@@ -147,19 +146,22 @@ export default {
 				.attr("stroke", "currentColor")
 				.attr("d", d => line(d.stops)))
 		
+		var maxlength = d3.max(mergeresult, d => d["merge"].length)
+		var axislength = 6 ;
+		var lmaxlength = 40 ;
+		var circleline = d3.scaleLinear()
+				.domain([20 , maxlength ]).nice()
+				.range([ 37.5 , lmaxlength])
 		for (let item in mergeresult){
+			var xaxlength = circleline(mergeresult[item]["merge"].length)
 			var index = mergeresult[item]["data"]
 			var sDate = data[index[0]].stops[0].time;
 			var eDate = data[index[1]].stops[0].time
-			// var eDate = data.slice(index[1])[0].stops.slice(-1)[0].time
 			var lineheight = (y((new Date(eDate))) - y(new Date(sDate)))
-			// console.log(d3.mean(index))
 			var midindex=Math.floor(d3.mean(index))
-			// console.log(midindex)
-			// console.log(data.slice(midindex , midindex+1))
 
 			var linetransfrom = (y((new Date(data[midindex+1].stops[0].time))) - y(new Date(data[midindex].stops[0].time)))
-
+			filtersteel.push(data[midindex].upid)
 			this.svg.append("g")
 				.attr("fill", "white")
 				.selectAll(`g`+item)
@@ -168,7 +170,7 @@ export default {
 				.style("color", this.trainGroupStyle)
 				// .attr("opacity" , 0.4)
 				.attr("stroke-width", lineheight )
-				.attr("id", d => ("id" + d.upid))
+				// .attr("id", d => ("id" + d.upid))
 				.attr("transform", `translate( 0 ,${ linetransfrom })`)
 				.call(g => g.append("path")
 					.attr("fill", "none")
@@ -192,46 +194,47 @@ export default {
 
 			
 			// const vis = this._g.selectAll(".vis").data(this._chartData);
+			const categorysdata = d3.group(data , d => d.productcategory).get(mergeresult[item]["merge"][0].productcategory)
+			const lineposition = []
+			const lineScale = []
+			const heat = ["FuCharging" , "FuPre" , "FuHeating1" , "FuHeating2" , "FuSoak" , "FuDischarging"]
+			const pass=/MPass/
+			const cool = ["CcStart" , "CcDQEnd" ]
 			for (let i in indexname){
-				// if((+i)!==0) continue
 				// const categorys = d3.group(data , d => d.productcategory)[]
-				let linedata = d3.map(mergeresult[item]["merge"] , d => d[indexname[i]]).sort()
+				let linedata = d3.map(categorysdata , d => d[indexname[i]]).sort()
+				let meandata = d3.mean(d3.map(mergeresult[item]["merge"] , d => d[indexname[i]]).sort())
 				
-				if(d3.mean(linedata) === 0) continue
+				// if(d3.mean(linedata) === 0) continue
 				
 				var sortdata = [] , maxmin = d3.extent(linedata);
 				var linelength = (maxmin[1]*1.01 - maxmin[0]) / 3;
-				if(linelength === 0) continue
+				// if(linelength === 0) continue
 				for (let j = 0 ; j < 3 ; j++ ){
 					sortdata.push([maxmin[0] + (j+0.5) * linelength , 0 ])
 				}
 				for (let j in linedata){
-					// console.log(linedata[j] - maxmin[0])
-					// console.log(Math.floor((linedata[j] - maxmin[0])/linelength))
 					sortdata[Math.floor((linedata[j] - maxmin[0])/linelength)][1] += 1
-					// console.log(Math.floor((linedata[j] - maxmin[0])/linedata))
 				}
-				if((+i)!==1) console.log(sortdata)
-				sortdata.push([maxmin[1] + 2 * linelength , 0])
-				sortdata.unshift([maxmin[0] - 2 * linelength , 0])
+				// if((+i)!==1) console.log(sortdata)
+				sortdata.push([maxmin[1] + 1 * linelength , 0])
+				sortdata.unshift([maxmin[0] - 1 * linelength , 0])
 
-				var axislength = 6 ;
+				
 				let xline = d3.scaleLinear()
-					.domain([maxmin[0] - 2*linelength , maxmin[1] + 2*linelength ]).nice()
-					.range([0, 40])
+					.domain([maxmin[0] - 0.5*linelength , maxmin[1] + 0.5*linelength ]).nice()
+					.range([0, xaxlength])
 
 				let yline = d3.scaleLinear()
 					.domain([0, d3.max(sortdata, d => d[1])])
 					.range([axislength , 0])
 				let liner = d3.line()
-					// .curve(d3.curveBasis)
+					.curve(d3.curveBasis)
 				let position = [ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))-axislength]
 				
-				// .append("g").attr("class" , "scatter")
-				// .selectAll("circle.dot")
-				// .data(scatterdata)
-				// .join("circle").attr("class", "dot")
-				// .attr("r", 1.5)
+				lineposition.push(meandata)
+				lineScale.push(xline)
+
 				this.svg.append("path")
 					.datum(sortdata)
 					.attr("fill", "lightblue")
@@ -258,81 +261,110 @@ export default {
 					.attr("d", 
 							liner.x(d => xline(d[0]))
 								.y(d => -yline(d[1])))
-				// this.svg.append("path")
-				// 	.datum(sortdata)
-				// 	.attr("fill", "none")
-				// 	.attr("class", "linedist")
-				// 	.attr("stroke", "lightblue")
-				// 	.attr("transform", `rotate(${(+i)*120 +30} ,${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))]}) translate( ${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))+40]})  `)
-				// 	// rotate(${ 120 *(1+(+i)) -60} ,${[ 0 , 0 ]})
-				// 	.attr("stroke-width", 1.5)
-				// 	.attr("stroke-linejoin", "round")
-				// 	.attr("d", liner.x(d => {
-				// 		console.log(xline(d[0]))
-				// 		return xline(d[0])
-				// 		})
-				// 	.y(d => -yline(d[1])));
-				// let xline = d3.scaleLinear()
-				// 	.domain(d3.extent(linedata)).nice()
-				// 	.range([0, 40])
-
-				// let bins = d3.histogram()
-				// 	.domain(xline.domain())
-				// 	.thresholds(xline.ticks(5))(linedata)
-				// function kde(kernel, thresholds, data) {
-				// 	return thresholds.map(t => [t, d3.mean(data, d => kernel(t - d))]);
-				// }
-
-				// function epanechnikov(bandwidth) {
-				// 	return x => Math.abs(x /= bandwidth) <= 1 ? 0.75 * (1 - x * x) / bandwidth : 0;
-				// }
-				
-				// let yline = d3.scaleLinear()
-				// 	.domain([0, d3.max(bins, d => d.length) / linedata.length])
-				// 	.range([40 , 0])
-				// let liner = d3.line()
-				// 	.curve(d3.curveCardinal)
-					
-				// let density = kde(epanechnikov(1), xline.ticks(5), linedata)
-
-				// this.svg.append("path")
-				// 	.datum(density)
-				// 	.attr("fill", "lightblue")
-				// 	.attr("class", "linedist")
-				// 	.attr("stroke", "none")
-				// 	.attr("transform", `rotate(${(+i)*120 +30} ,${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))]}) translate( ${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))-40]})  `)
-				// 	// rotate(${ 120 *(1+(+i)) -60} ,${[ 0 , 0 ]})
-				// 	.attr("stroke-width", 1.5)
-				// 	.attr("stroke-linejoin", "round")
-				// 	.attr("d", liner.x(d => xline(d[0]))
-				// 	.y(d => yline(d[1])));
-				// this.svg.append("path")
-				// 	.datum(density)
-				// 	.attr("fill", "lightblue")
-				// 	.attr("class", "linedist")
-				// 	.attr("stroke", "none")
-				// 	.attr("transform", `rotate(${(+i)*120 +30} ,${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))]}) translate( ${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time)))+40]})  `)
-				// 	// rotate(${ 120 *(1+(+i)) -60} ,${[ 0 , 0 ]})
-				// 	.attr("stroke-width", 1.5)
-				// 	.attr("stroke-linejoin", "round")
-				// 	.attr("d", liner.x(d => xline(d[0]))
-				// 	.y(d => -yline(d[1])));
-
-				// console.log(linedata)
 			}
-			this.svg.call(g => g.selectAll(".radar_line").data([0 , 1 , 2]).join("g")
-				.attr("transform", ` translate( ${[ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time))) ]})`)
+			const meanLine = d3.lineRadial()
+				.curve(d3.curveLinearClosed)
+				.angle((d , i) => i*120/180*Math.PI);
+			const area = d3.areaRadial()
+				.curve(d3.curveBasisOpen)
+				.angle((d , i) => i*360/mergeresult[item]["wave"].length/180*Math.PI);
+			const wheeldata = []
+			const cposition = [ width - margin.right/2 , y((new Date(data[midindex+1].stops[0].time))) ]
+			for (let i in mergeresult[item]["wave"][0]){
+				let mdata = d3.mean(mergeresult[item]["wave"] , d => d[i])
+				let highdata = d3.quantile(mergeresult[item]["wave"] , 0.55, d => d[i])
+				let lowdata = d3.quantile(mergeresult[item]["wave"] , 0.45, d => d[i])
+				if(mdata !==0){
+					wheeldata.push(highdata > mdata & mdata > lowdata ? 0 : (lowdata >= mdata ? (mdata - lowdata)/mdata : (mdata - highdata)/mdata)
+					// 	{
+					// 	"value" : 0 ,
+					// 	"range" :  highdata > mdata & mdata > lowdata ? 0 : (lowdata >= mdata ? (mdata - lowdata)/mdata : (mdata - highdata)/mdata)
+					// }
+					)
+				}else{
+					wheeldata.push(highdata > mdata & mdata > lowdata ? 0 : (lowdata >= mdata ? (mdata - lowdata) : (mdata - highdata))
+					// 	{
+					// 	"value" : 0 ,
+					// 	"range" :  highdata > mdata & mdata > lowdata ? 0 : (lowdata >= mdata ? (mdata - lowdata) : (mdata - highdata))
+					// }
+					)
+				}
+			}
+			console.log(wheeldata)
+			const cRadius = d3.scaleLinear()
+				.domain( d3.extent(wheeldata))
+				.range([-5 , 5])
+
+			this.svg
+			.call(g => g.selectAll(".radar_line")
+				.data([0 , 1 , 2])
+				.join("g")
+				.attr("transform", ` translate( ${cposition})`)
 				.call(g => g.append("line")
 					.attr("x1",0)
 					.attr("y1", 0)
-					.style("stroke", "black")
+					.style("stroke", this.categoryColors(mergeresult[item]["merge"][0].productcategory))
+					.attr("stroke-dasharray", "5,5,5,5")
 					.attr("transform", (d , i) => ` rotate( ${ d * 120} ) `)
 					.attr("x2", 0)
-					.attr("y2", -40)
+					.attr("y2", -xaxlength)
 					.style("stroke-width", 0.5))
-			)
+				.call(g => g.append("line")
+					.attr("x1",0)
+					.attr("y1", 0)
+					.style("stroke", this.categoryColors(mergeresult[item]["merge"][0].productcategory))
+					.attr("transform", (d , i) => ` rotate( ${ d * 120 - 60} ) `)
+					.attr("x2", 0)
+					.attr("y2", -xaxlength)
+					.style("stroke-width", 0.5))
+				.call(g => g.append("circle")
+					.style("stroke", "none")
+					.attr("transform", (d , i) => ` rotate( ${ d * 120 - 90} ) `)
+					.style("stroke-width", 0.5)
+					.attr("fill", this.categoryColors(mergeresult[item]["merge"][0].productcategory))
+					.attr("opacity", 1)
+					.attr("stroke-width", 0.5)
+					.attr("stroke-opacity", 1)
+					.attr("cx", d => lineScale[d](lineposition[d]))
+					.attr("cy", 0)
+					.attr("r",2)))
+			.call(g => g.append("path")      // radar 
+				.attr("fill", "none")
+				.attr("transform", ` translate( ${cposition})`)
+				.attr("stroke", "black")
+				.attr("stroke-width", 1)
+				.attr("d", meanLine
+					.radius((d , i)=> lineScale[i](d))
+					(lineposition)))
+			// .call(g => g.append("circle")      // radar 
+			// 	.attr("fill", "none")
+			// 	.attr("transform", ` translate( ${cposition})`)
+			// 	.attr("stroke", "black")
+			// 	.attr("stroke-width", 0.5)
+			// 	.attr("cx", 0)
+			// 	.attr("cy", 0)
+			// 	.attr("r", xaxlength))
+			// .call(g => g.append("circle")      // radar 
+			// 	.attr("fill", "none")
+			// 	.attr("transform", ` translate( ${cposition})`)
+			// 	.attr("stroke", "black")
+			// 	.attr("stroke-width", 1)
+			// 	.attr("cx", 0)
+			// 	.attr("cy", 0)
+			// 	.attr("r", xaxlength + 20))
 			
+			.call(g => g.append("path")
+				.attr("class" , "dguerug")
+				.attr("fill", this.categoryColors(mergeresult[item]["merge"][0].productcategory))
+				.attr("transform", ` translate( ${cposition})`)
+				.attr("d", area
+					.innerRadius(d => d===0 ? xaxlength - 5 : xaxlength - 5 - cRadius(d))
+					.outerRadius(xaxlength)
+				(wheeldata)))
 			
+			// const heat = ["FuCharging" , "FuPre" , "FuHeating1" , "FuHeating2" , "FuSoak" , "FuDischarging"]
+			// const pass=/MPass/
+			// const cool = ["CcStart" , "CcDQEnd" ]
 		}
 		this.svg.append("g")
 			.call(g => {
@@ -371,11 +403,13 @@ export default {
 					vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(d.train.productcategory), mouse: 1});
 					}
 					let currentIdSearch = "#id" + d.train.upid;
+					tooltip.style("display", "none");
+					if( filtersteel.indexOf(d.train.upid) !==-1 ) return
 					d3.select(currentIdSearch)
 					.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
 					.selectAll("rect")
 					.attr("stroke", "none");
-					tooltip.style("display", "none");
+					
 				})
 
 				.on("mouseover", (event, d) => {
@@ -392,10 +426,7 @@ export default {
 						else{toopcolor=tooltiplabelColors(d.train.flag)}
 					let currentIdSearch = "#id" + d.train.upid;
 					// console.log(toopcolor)
-					d3.select(currentIdSearch)
-					.attr("stroke-width", highLightStrokeWidth)
-					.selectAll("rect")
-					.attr("stroke", "black");
+					
 
 					tooltip
 					.style("display", null)
@@ -421,6 +452,11 @@ export default {
 					x(d.stop.station.distance) - box.width / 2},${
 					y(new Date(d.stop.time)) + 37
 					})`);
+					if( filtersteel.indexOf(d.train.upid) !==-1 ) return
+					d3.select(currentIdSearch)
+					.attr("stroke-width", highLightStrokeWidth)
+					.selectAll("rect")
+					.attr("stroke", "black");
 				})
 
 				.on("click", function (event, d) {
@@ -577,10 +613,11 @@ export default {
 			const categorys = d3.group(json , d => d.productcategory)
 			const mergecategorys = []	// merge categorys
 			const minrange = 20
-			const minconflict = 3
+			const minconflict = 5
 			const mergedata = {}
 			const mergeIndex = {}	// merge station maxlength
-			const mergeresult = []
+			const mergeresult = [] , mpass=/MPass/ ;
+			const mpassnumber = (+stations.slice(-4)[0].name.replace(mpass,''))
 			for (let item of [...categorys]){
 				item[1].length>minrange ? mergecategorys.push(item[0]) : undefined
 			}
@@ -607,16 +644,48 @@ export default {
 				// merge length
 				const mergelength = mergeIndex[json[item].productcategory]
 				const mergedata = json.slice(item,index)
-				console.log(mergedata)
+				// console.log(mergedata)
 
-				// merge adaption
-				// var minDate = data[0].stops[0].time;
-				// var maxDate = data.slice(-1)[0].stops.slice(-1)[0].time
-
-				const _mergedistance = []
+				//mPass expand
 				for (var key = 0 ; key < mergedata.length-1 ; key++){
-					
+					if(mergedata[key].stops.slice(-1)[0].station.zone === '3'){
+						let mpassindex = (+mergedata[key].stops.slice(-4)[0].station.name.replace(mpass,''))
+						if(mpassindex === mpassnumber) continue
+						const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber , -3)
+						for (let stopkey in stationsstops3){
+							mergedata[key].stops.splice( -3 , 0 , {
+								"time" : mergedata[key].stops.slice(-4)[0].time,
+								"realTime" : mergedata[key].stops.slice(-4)[0].realTime,
+								"station" : stationsstops3[stopkey]
+							})
+						}
+						continue
+					}
+					let mpassindex = (+mergedata[key].stops.slice(-1)[0].station.name.replace(mpass,''))
+					const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber)
+					for (let stopkey in stationsstops3){
+						mergedata[key].stops.push({
+							"time" : mergedata[key].stops.slice(-1)[0].time,
+							"realTime" : mergedata[key].stops.slice(-1)[0].realTime,
+							"station" : stationsstops3[stopkey]
+						})
+					}
 				}
+				
+				const indexarray=[]
+				for (var key = 0 ; key < mergedata.length-1 ; key++){
+					// let singlearray=d3.pairs(mergedata[key].stops , (a,b) => {
+					const steeltime = []
+					for (var i = 0 ; i < mergedata[key].stops.length - 1 ; i++){
+						// let sample = {}
+						let stoptime = new Date(mergedata[key].stops[(+i)+1].time) - new Date(mergedata[key].stops[(+i)].time)
+						// sample[mergedata[key].stops[(+i)].station.name] = stoptime < 0 ? 0 : stoptime 
+						steeltime.push(stoptime < 0 ? 0 : stoptime )
+					}
+					indexarray.push(steeltime)
+				}
+				// console.log(indexarray)
+
 				const steeldisTotal=d3.pairs(mergedata , (a,b) => {
 					const steeldistance=[]
 					for (let key in stations){
@@ -635,11 +704,14 @@ export default {
 					}
 					return steeldistance
 				})
-				const meandis = []
+				// console.log(steeldisTotal)
+
+				//data mean distance
+				const meandis = []	
 				for (let key in stations){
 					meandis.push(d3.quantile(steeldisTotal, 0.75 , d => d[key]))
 				}
-				console.log(meandis)
+				// console.log(meandis)
 
 				// merge selection
 				const mergeselect = []
@@ -657,27 +729,26 @@ export default {
 					}
 					// mergeselect.push(mergedata[i+1])
 				}
-				console.log(mergeselect)
-				
-				
-				console.log(steeldisTotal)
-				if(mergeflag !==0){
+				// console.log(mergeselect)
+
+				if(mergeflag !== 0){
 					mergeresult.push({
-						"merge" : json.slice(item , item + mergeflag),
+						"merge" : mergedata.slice(0 , 0 + mergeflag),
 						"select" : mergeselect,
 						"index" : [item , mergeflag ],
-						"data" : [item , item + mergeflag ]
+						"data" : [item , item + mergeflag ],
+						"wave" : indexarray.slice(0 , 0 + mergeflag)
 					})
-					item = item + mergeflag -1
+					item = item + mergeflag
 					continue
 				}
-
 
 				mergeresult.push({
 					"merge" : mergedata,
 					"select" : mergeselect,
 					"index" : [item , index - item],
-					"data" : [item , index ]
+					"data" : [item , index ],
+					"wave" : indexarray
 				})
 				item = index -1
 			}

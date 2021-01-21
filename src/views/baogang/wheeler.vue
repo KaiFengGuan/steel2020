@@ -48,13 +48,15 @@ export default {
         const details=jsondata['Steel']
         // this.menuId = this.menuId 
 		const vm=this		
-        const diameter=500
+        // const diameter=500
+        const diameter = document.getElementById(this.menuId).offsetHeight;	
+        const width = document.getElementById(this.menuId).offsetWidth;	
         this.svg !== undefined && this.svg.remove()
         console.log(this.menuId)
 		this.svg=d3.select("#"+vm.menuId)
 			.append("svg")
-			.attr("viewBox", `${-diameter / 2} ${-diameter / 2} ${diameter} ${diameter}`)
-            .style("width", diameter)
+			.attr("viewBox", `${-diameter / 2} ${-diameter / 2} ${width} ${diameter}`)
+            .style("width", width)
             .style("height", diameter);
         class wheelRound{
             constructor(container) {
@@ -499,7 +501,7 @@ export default {
                     outrate = (item1 , item2) => {
                         return d => (d.humidity>1.5|d.precipitation>1.5) ? item1 : item2
                     },
-                    titleinfo = ["upid", "cate", "thick", "wid", "len"],
+                    titleinfo = ["upid", "cate", "p_thick", "p_wid", "p_len"],
                     titleicon=[upidicon,categoryicon,thickicon,widthicon,lengthicon],
                     graph={nodes:[],links:[]},
                     wm=this,
@@ -870,24 +872,30 @@ export default {
                 this._g
                     .call(g => g.append("rect")
                             .attr("transform",`translate(${[r.max-r.bubble*2.2,-r.max-r.bubble+2]})`)
-                            .attr("x" , -4.5)
+                            .attr("x" , -26)
                             .attr("y", -12)
                             .attr("rx" , 2)
                             .attr("ry", 2)
                             .style("fill","white")
-                            .attr("stroke", "grey")
+                            .attr("stroke", "#ababab")
                             .attr("stroke-width",1)
-                            .attr("width", r.bubble*3.2+2.5+2)
+                            .attr("width", r.bubble*3.2+ 30)
                             .attr("height", 82)
-                            .attr("filter","url(#filter)")
-                        )
+                            .attr("box-shadow" , "0 0 20px rgba(0, 0, 0, 0.1)"))
+                    .call(g => g.append("line")
+                            .attr("transform",`translate(${[r.max-r.bubble*1 , -r.max-0.3 * r.bubble]})`)
+                            .attr("x1" , 0)
+                            .attr("y1", -42)
+                            .attr("y2", 42)
+                            .attr("stroke", "#e3e3e3")
+                            .attr("stroke-width" , 1.5))
                     .call(g => g.selectAll("#" +menuId + " .steel_text").data(titleinfo).join("g")
                         .attr("transform", (d , i) => `translate(${[r.max-r.bubble*2.2,-r.max-r.bubble+2]})`)
                         .call(g => g.append("rect")
                             .attr("x" , -4.5)
                             .attr("y", (d,i)=> i*16.5-12)
                             .style("fill","none")
-                            .attr("stroke", "grey")
+                            .attr("stroke", "none")
                             .attr("stroke-width",0.5)
                             .attr("width", r.bubble*1.2+4.5)
                             .attr("height", 16)
@@ -895,7 +903,7 @@ export default {
                         .call(g => g.append("image")    //titleicon
                             .attr("width", 15.5)
                             .attr("height","15.5px")
-                            .attr("x" , 0)
+                            .attr("x" , -18)
                             .attr("y",(d,i)=> i*16.5-12)
                             .attr("href",(d,i) => titleicon[i]))
                         .call(g => g.append("text")
@@ -903,8 +911,8 @@ export default {
                             .attr("font-size", "8pt")
                             .attr("font-weight", "normal")
                             .style("font-family", "DIN")
-                            .attr("x" , r.bubble*0.5)
-                            .text((d , i)=>d)
+                            .attr("x" , r.bubble*0.5 - 20)
+                            .text((d , i)=> d.toUpperCase())
                             .attr("fill", d3.color("grey").darker(0.9))
                             .attr("stroke", "none")
                         )
@@ -914,7 +922,7 @@ export default {
                             .style("fill","none")
                             // .attr("rx" , 2)
                             // .attr("ry" , 2)
-                            .attr("stroke", "grey")
+                            .attr("stroke", "none")
                             .attr("stroke-width",0.5)
                             .attr("width", r.bubble*2)
                             .attr("height", 16)
@@ -928,10 +936,18 @@ export default {
                             .attr("stroke", "none")
                             .attr("stroke-width",0.25)
                             .attr("width", (d , i) => widthScale[i])
-                            .attr("height", 12)
-                        )
+                            .attr("height", 12))
+                        .call(g => g.append("line")
+                            .attr("transform", (d,i) => `translate(${[0 , i * 16.5 + 4.5]})`)
+                            .attr("x1" , 5)
+                            .attr("x2" , 120)
+                            .attr("y1", 0)
+                            .style("fill","white")
+                            .attr("stroke", "#e3e3e3")
+                            // .attr("stroke", "black")
+                            .attr("stroke-width" , 0.75))
                         .call(g => g.append("text")
-                            .attr("x", r.bubble*1.2+6)
+                            .attr("x", r.bubble*1.2+10)
                             .attr("y", (d,i)=> i*16.5)
                             .attr("font-size", "8pt")
                             .attr("font-weight", "normal")

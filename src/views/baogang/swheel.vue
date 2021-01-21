@@ -248,7 +248,7 @@ export default {
 
                 this._g = this._container
                     .append("g")
-                    // .attr("transform", "translate(8,0)");
+                    .attr("transform", "translate(18 , 0)");
                 // this._initGradients();
 
                 this._renderMainWheel();
@@ -730,17 +730,17 @@ export default {
                     .call(g => g.append("image")    //icon
                             .attr("class", "icon")
                             .attr("id", "icon"+key)
-                            .attr("width", "13px")
-                            .attr("height","13px")
+                            .attr("width", "12px")
+                            .attr("height","12px")
                             .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 5.8})`)
-                            .attr("y",-r.inner*0.97)
+                            .attr("y",-r.inner*1)
                             .attr("href", icon[key]))
                     if(+key === 2){
                         d3.select("#" +menuId + " #icon"+key)
                             .attr("width", "30px")
                             .attr("height","30px")
                             .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 13.8})`)
-                            .attr("y", "-6.1em")
+                            .attr("y", "-4.1em")
                     }                        
 
                     for (let item in processdata){
@@ -861,8 +861,8 @@ export default {
                 
                 // d3.selectAll(".circle_color").raise()
                 // d3.selectAll(".steelcircle").lower()
-                const initial=10;
-                const barrect = [initial, 80];
+                const initial = 40;
+                const barrect = [initial, 125];
                 const length=d3.scaleLinear()
                         .domain([0,51.5])
                         .range(barrect);
@@ -883,8 +883,8 @@ export default {
                         .range(barrect);
                 const widthScale =  [0 ,0 ,0 ,thickness(this._details['steel'][3]) ,width(this._details['steel'][4]) ,length(this._details['steel'][5])  ,
                     sthickness(this._details['steel'][6]) , swidth(this._details['steel'][7]) , slength(this._details['steel'][8])]
-                const position =[r.max+r.bubble*2.2 - 40 , -r.max/2 - 20];
-                if(this._details['steel'][2].length > 5)[this._details['steel'][1] , this._details['steel'][2]] = [this._details['steel'][2].slice(10) , this._details['steel'][1]];
+                const position =[r.max+r.bubble*2.2 + 20 , -80];
+                if(this._details['steel'][2].length > 5)[this._details['steel'][1] , this._details['steel'][2]] = [this._details['steel'][2].slice(2) , this._details['steel'][1]];
                 this._g
                     .call(g => g.append("rect")
                             .attr("transform",`translate(${position})`)
@@ -893,21 +893,26 @@ export default {
                             .attr("rx" , 2)
                             .attr("ry", 2)
                             .style("fill","white")
-                            .attr("stroke", "grey")
+                            .attr("stroke", "#ababab")
                             .attr("stroke-width",1)
-                            .attr("width", r.bubble*3.2 + 85)
+                            .attr("width", r.bubble*3.2 + 158)
                             .attr("height", 200)
-                            .attr("filter","url(#filter)")
-                            .attr("box-shadow" , "rgb(148, 148, 148) 2px 2px 2.5px")
+                            .attr("box-shadow" , "0 0 20px rgba(0, 0, 0, 0.1)")
                         )
-                    // .call(g => g.append("line")
-                    //         .attr("transform",`translate(${[position[0] - 28 , 0]})`)
-                    //         .attr("x1" , 0)
-                    //         .attr("y1", -100)
-                    //         .attr("y2", 100)
-                    //         .style("fill","white")
-                    //         .attr("stroke", "#ededed")
-                    //         .attr("stroke-width" , 1.5))
+                    .call(g => g.append("line")
+                            .attr("transform",`translate(${[position[0] - 53 , 0]})`)
+                            .attr("x1" , 0)
+                            .attr("y1", -110)
+                            .attr("y2", 110)
+                            .attr("stroke", "#ababab")
+                            .attr("stroke-width" , 1.25))
+                    .call(g => g.append("line")
+                            .attr("transform",`translate(${[position[0] + 75 , 0]})`)
+                            .attr("x1" , 0)
+                            .attr("y1", -94)
+                            .attr("y2", 90)
+                            .attr("stroke", "#e3e3e3")
+                            .attr("stroke-width" , 1.5))
                     .call(g => g.selectAll("#" +menuId + " .steel_text").data(titleinfo).join("g")
                         .attr("transform", (d , i) => `translate(${position})`)
                         .call(g => g.append("rect")
@@ -923,7 +928,7 @@ export default {
                         .call(g => g.append("image")    //titleicon
                             .attr("width", 17.5)
                             .attr("height", 17.5)
-                            .attr("x" , -15)
+                            .attr("x" , - 6)
                             .attr("y",(d,i)=> i* 20.5 -12)
                             .attr("href",(d,i) => titleicon[i]))
                         .call(g => g.append("text")
@@ -932,7 +937,7 @@ export default {
                             .attr("font-weight", "normal")
                             .style("font-family", "DIN")
                             // .attr("x" , r.bubble*0.5 + 26)
-                            .attr("x" , r.bubble*0.5 - 6)
+                            .attr("x" , r.bubble*0.5 + 4 )
                             .text((d , i)=> d.toUpperCase())
                             .attr("fill", d3.color("grey").darker(0.9))
                             .attr("stroke", "none")
@@ -951,7 +956,7 @@ export default {
                             .attr("height", 16)
                         )
                         .call(g => g.append("rect")
-                            .attr("x" , 61)
+                            .attr("x" , 83)
                             .attr("y", (d,i)=> i * 20.5 - 12)
                             .attr("rx" , 2)
                             .attr("ry" , 2)
@@ -962,16 +967,14 @@ export default {
                             .attr("height", 16)
                         )
                         .call(g => g.append("line")
-                            .attr("transform", (d,i) => `translate(${[0 , i * 20.5 + 7.5]})`)
+                            .attr("transform", (d,i) => `translate(${[0 , i * 20.5 + 6]})`)
                             .attr("x1" , -15)
-                            .attr("x2" , 130)
+                            .attr("x2" , 200)
                             .attr("y1", 0)
-                            .style("fill","white")
-                            .attr("stroke", "#ededed")
-                            // .attr("stroke", "black")
-                            .attr("stroke-width" , 1.5))
+                            .attr("stroke", (d,i) => i !== titleinfo.length-1 ? "#e3e3e3" :"none")
+                            .attr("stroke-width" , 0.75))
                         .call(g => g.append("text")
-                            .attr("x", 61)
+                            .attr("x", 90)
                             .attr("y", (d,i)=> i*20.5)
                             .attr("font-size", "10pt")
                             .attr("font-weight", "normal")

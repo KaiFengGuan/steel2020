@@ -149,12 +149,12 @@ export default {
         paintData.bad_flag.push(0)
         paintData.good_flag.push(0)
       }
-      while(paintData.good_flag.length<90){
+      while(paintData.good_flag.length<30){
           let entry=paintData.endTimeOutput[0]
           entry = entry.replace(/-/g,"/");          
           var datestart = new Date(entry );
           var startTime = new Date(datestart).getTime();
-          var diff = 45*86400*1000;
+          var diff = 15*86400*1000;
           var endTime = startTime + diff;
           var d = new Date(endTime);
           let datelist=util.getDateList(datestart,d)

@@ -4,6 +4,7 @@ import controlView from 'views/baogang/control.vue'
 import visualView from 'views/baogang/marey.vue'
 import scatterloger from 'views/baogang/scatterloger.vue'
 import layout from 'components/layout/index.vue'
+import routerView from './routerView.vue'
 
 Vue.use(Router)
 const routerMap =  [
@@ -31,10 +32,10 @@ export default new Router({
     routes: [{
         path: '/',
         name: 'home',
-        component: layout,
+        component: routerView,
         hidden: true,
         children: routerMap,
-        redirect: routerMap[0].path
+        redirect: routerMap[1].path
     }]
     
 })

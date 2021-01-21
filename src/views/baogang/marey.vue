@@ -1,40 +1,33 @@
 <template>
-	<div class="custom-marey">
-		<el-row :gutter="10">
-			<el-col :span="4">
-				<div class="my-card-body">
+	<div class="custom-marey" style="margin-top : -2px">
+		<el-row >
+			<el-col :span="5" style="margin-top : 1px">
+				<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
 					<!-- <div class="control-logo" style="font-size: 16px;"><span>Controls</span></div> -->
-					<el-row style="margin: 2px 0;background: white">
-						<div class="panel-title">DatePicker</div>
-						<el-form size="mini" label-width="100px" style="padding-right: 10px;">
+						<el-card class="myel-card">
+						<!-- <div class="panel-title"></div> -->
+						<el-form size="mini" label-width="100px" style="padding-right: 10px;margin:5px">
 							<el-form-item label="Date:">
-									<!-- <el-date-picker @change="changeTime"
-										v-model="monthToShow"
-										type="month"
-										placeholder="选择月" id="dataPicker" size="mini">
-									</el-date-picker> -->
-								<el-date-picker v-model="dateselect" type="datetimerange" range-separator=" " @change="changeTime" start-placeholder="开始日期" end-placeholder="结束日期" style="width:185px;" size="mini">                 
+								<el-date-picker v-model="dateselect" type="datetimerange" range-separator=" " @change="changeTime" start-placeholder="开始日期" end-placeholder="结束日期" style="width:200px;" size="mini">                 
 								</el-date-picker> 
-									<!-- </el-date-picker>  -->
-								<!-- </el-date-picker>  -->
 							</el-form-item>
 						</el-form>
-					</el-row>
-					<el-row style="margin: 2px 0;background: white">
+						</el-card>
+					<!-- <el-row style="margin: 2px 0;background: white">
 						<div class="panel-title">Global Parameters</div>
 						<el-form size="mini" label-width="100px" style="padding-right: 10px;">
 							<el-form-item label="Interval:" >
 								<el-select size="mini" v-model="interval" @change="changeTimeBrush">
 									<el-option v-for="option in intervalOptions" :key="option" :label="option" :value="option"></el-option>
 								</el-select>
-							</el-form-item>
+							</el-form-item> -->
 							<!-- <el-form-item label="Algorithm:">
 								<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData">
 									<el-option v-for="option in algorithmOptions" :key="option" :label="option" :value="option"></el-option>
 								</el-select>
 							</el-form-item> -->
-						</el-form>
-					</el-row>
+						<!-- </el-form>
+					</el-row> -->
 
 					<!-- <el-row style="margin: 2px 0;background: white">
 						<div class="panel-title">Color Scheme</div>
@@ -55,8 +48,41 @@
 						</el-form>
 					</el-row> -->
 
-					<el-row style="margin: 3px 0;background: white">
-						<div class="panel-title">Tabular Parameters</div>
+
+					<el-row>
+						<el-card class="myel-card" style="margin:1px 5px">
+							<div class="my-card-body" style="height:48px; width:100%; display:flex;">
+								<time-brush ref="timeBrush" style="flex: 1 0 210px;" 
+									@timeBrushed="setStartEndDate"
+									:custom-height="'50px'">
+								</time-brush>
+								<el-button style="height: 48px; flex: 0 0 auto; " type="danger" size="small" @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
+							</div>	
+						</el-card>
+					</el-row>
+					<el-row>
+						<el-col :span="24" 
+							v-loading="scatterLoading"
+							element-loading-text="拼命计算中"
+							element-loading-spinner="el-icon-loading"
+							element-loading-background="rgba(0, 0, 0, 0.3)">
+						<el-card class="myel-card">
+							<div class="my-card-title" slot="header">
+								<span>Embedding View</span>
+								<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData" class="card-select">
+									<el-option v-for="option in algorithmOptions" :key="option" :label="option" :value="option"></el-option>
+								</el-select>
+							</div>
+							<div class="my-card-body">
+								<scatterlog ref="scatterloging" style="height:390px;"></scatterlog>
+							</div>
+						</el-card>
+					</el-col>
+					</el-row>
+					<el-row>
+						<el-card class="myel-card">
+						<el-row style=";background: white">
+						<!-- <div class="panel-title">Tabular Parameters</div> -->
 						<el-row :gutter="8">
 							<el-col :span="8" style="font-size: 13px;">
 								<div style="height: 24px;padding-right:5px;margin:2px 0">ThicknessGap: </div>
@@ -74,23 +100,21 @@
 								<div style="margin:6px 0px"> {{plateTempProp.length}}m</div>
 							</el-col>
 						</el-row>
-							<el-form size="mini" label-width="100px" >
+						<el-form size="mini" label-width="100px" >
 							<el-form-item label="Category:" style="padding-right: 10px;margin-bottom:4px;font-size:13px;padding-left:2px" class="abel">
-									<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px" 
-									
-									>
+									<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
 									<!-- @blur="paintPlate" -->
 									<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
 								</el-select>
 							</el-form-item>
-							<el-form-item label="Order:" style="border-top: solid lightgrey 0.15rem;padding-right: 10px;padding-top:8px;margin:4px;margin-bottom:0px;" class="abel">
+							<!-- <el-form-item label="Order:" style="border-top: solid lightgrey 0.15rem;padding-right: 10px;padding-top:8px;margin:4px;margin-bottom:0px;" class="abel">
 									<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini" style="margin-top:4px" @change="orderchange">
 									<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
 								</el-select>
-							</el-form-item>
+							</el-form-item> -->
 						</el-form>
 
-						<el-row :gutter="8" style="margin-bottom:5px">
+						<el-row :gutter="8">
 							<el-col :span="8" style="font-size: 13px;">
 								<div style="height: 24px;padding-left:40px">Range: </div>                
 							</el-col>
@@ -101,215 +125,121 @@
 								<div style="margin:2px">{{plateTempProp.deviation}}%</div>
 							</el-col>
 						</el-row>
-							<!-- <el-col :span="8" style="font-size: 12px;">
-								<div style="height: 24px;margin:8px">ProductCategory: </div>
-							</el-col>
-							<el-col :span="16">
-									<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple clearable style="margin:6px" filterable @blur="paintPlate">
-									<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value">
-									</el-option>
-								</el-select>
-							</el-col> -->
-							<!-- <el-row style="margin-bottom:5px">
-							<el-col :span="8" style="font-size: 12px;">
-								<div style="height: 24px;margin:8px">Order: </div>
-							</el-col>
-							<el-col :span="16">
-									<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini" style="margin:4px" @change="orderchange">
-									<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-								</el-select>
-							</el-col>
-							</el-row> -->
-					</el-row>
-					<el-row style="margin: 2px 0;background: white">
-						<!-- <div class="panel-title" style="margin: 8px 0; font-size: 14px">Crucial Process </div> -->
-						<!-- <el-radio-group v-model="radio" @change="paintProcess" style=" width: 100%">
-							
-							<div class="process-choose pic1" style="margin-left:40px;width: 220px">
-								<img src="../../assets/baogang/加热1.png" style="width: 20px; height: 20px;float: left"/>
-								<el-radio :label="0" icon="el-icon-search" ><el-button icon="el-icon-search" circle></el-button></el-radio>							
-								<el-radio :label="0" icon="el-icon-search" >Heating Process</el-radio>
-							</div>
-							<div class="process-choose pic2" style="margin-left:40px;width: 220px">
-								<img src="../../assets/baogang/轧制.png" style="width: 20px; height: 20px;float: left"/>
-								<el-radio :label="1">Rolling Process</el-radio>
-							</div>
-							<div class="process-choose pic3" style="margin-left:40px;width: 220px;margin-bottom:5px">
-								<img src="../../assets/baogang/冷却.png" style="width: 20px; height: 20px;float: left"/>
-								<el-radio :label="2">Cooling Process</el-radio>
-							</div>
-						</el-radio-group> -->
-							
-								<!-- <img src="../../assets/baogang/加热1.png" style="width: 20px; height: 20px;float: left"/> -->							
-								<!-- <el-radio :label="0" icon="el-icon-search" >Heating Process</el-radio> -->
-					</el-row>				 
-					<el-row style="margin: 2px 0;background: white">
-							<div style="margin: 10px 0px 5px 0px;">
-								<el-row>
-									<el-col :span="8" style="font-size: 12px;">
-										<div style="height: 24px;padding-left:1px;margin-top:10px">Crucial Process: </div>
-									</el-col>
-									<el-col :span="5">
-										<el-button  circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass heat" @mouseover.native="heatindex=true" 
-											@mouseout.native="heatindex=false" @click="processclick(0)">
-											<img src="../../assets/images/heatwhite.svg" style="height:20px;width:20px;" v-if="heatindex"/>
-											<img src="../../assets/images/heat.svg" style="height:20px;width:20px"  v-if="!heatindex"/>
-										</el-button>
-									</el-col>
-									<el-col :span="5">
-										<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass roll" @mouseover.native="rollindex=true" 
-											@mouseout.native="rollindex=false" @click="processclick(1)">
-											<img src="../../assets/images/rollwhite.svg" style="height:20px;width:20px;" v-if="rollindex"/>
-											<img src="../../assets/images/roll.svg" style="height:20px;width:20px"  v-if="!rollindex"/></el-button>
-									</el-col>
-									<el-col :span="5">
-										<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass cool" @mouseover.native="coolindex=true" 
-											@mouseout.native="coolindex=false" @click="processclick(2)">
-											<!-- <img src="../../assets/images/coolwhite1.svg" style="height:50px;width:50px;" v-if="coolindex"/> -->
-											<svg v-if="!coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#28b2f7"></path></svg>
-											<svg v-if="coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#ffffff"></path></svg>
-											<!-- <img src="../../assets/images/cool1.svg" style="height:50px;width:50px"  v-if="!coolindex"/> -->
+						</el-row>			 
+						<el-row style="background: white">
+								<div style="margin: 5px 0px 2px 0px;">
+									<el-row>
+										<el-col :span="8" style="font-size: 12px;">
+											<div style="height: 24px;padding-left:1px;margin-top:10px">Crucial Process: </div>
+										</el-col>
+										<el-col :span="5">
+											<el-button  circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass heat" @mouseover.native="heatindex=true" 
+												@mouseout.native="heatindex=false" @click="processclick(0)">
+												<img src="../../assets/images/heatwhite.svg" style="height:20px;width:20px;" v-if="heatindex"/>
+												<img src="../../assets/images/heat.svg" style="height:20px;width:20px"  v-if="!heatindex"/>
 											</el-button>
-									</el-col>									
-								</el-row>
-							</div>
-							<!-- <el-row :gutter="8" style="margin-top:8px">
-								<el-col :span="8" style="font-size: 13px;">
-									<div style="height: 24px;padding-right:5px;margin:2px 0;float:right">fault CR:</div>
-									<div style="height: 24px;margin:2px 0;float:right;padding-right:5px">norm CR:</div>
-								</el-col>
-								<el-col :span="10" id="imput-line">
-									<mu-slider v-model="symbolvalue" :step="0.01" :min="0" :max="0.25" :display-value="false" style="margin:4px 0;color:#999a9d" @change="forceswtich"></mu-slider>
-									<mu-slider v-model="linesize" :step="0.01" :min="0" :max="1" :display-value="false" style="margin:3px 0;color:#999a9d" @change="forceswtich"></mu-slider>
-								</el-col>
-								<el-col :span="4">
-									<div style="margin:3px">{{symbolvalue}}</div>
-									<div style="margin:3px">{{linesize}}</div>
-								</el-col>
-							</el-row> -->
-						<!-- <div class="panel-title" style="margin: 8px 0; font-size: 14px;">Correlation View</div> -->
-						<!-- <div style="height: 320px; overflow: auto;">
-							<force ref="force" :symboylsize="symbolvalue" :linesize="linesize"></force> -->
-						<!-- <el-table ref="multipleTable" :data="radarIndicatorOptions" style="overflow: auto" @selection-change="indicatorChange" 
-							:cell-style="cellStyle">
-							<el-table-column width="5" height="30px"></el-table-column>
-							<el-table-column type="index" width="35" height="30px"></el-table-column>
-							<el-table-column prop="indexName" label="index" height="30px"></el-table-column>
-						</el-table> -->
-						<!-- </div> -->
+										</el-col>
+										<el-col :span="5">
+											<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass roll" @mouseover.native="rollindex=true" 
+												@mouseout.native="rollindex=false" @click="processclick(1)">
+												<img src="../../assets/images/rollwhite.svg" style="height:20px;width:20px;" v-if="rollindex"/>
+												<img src="../../assets/images/roll.svg" style="height:20px;width:20px"  v-if="!rollindex"/></el-button>
+										</el-col>
+										<el-col :span="5">
+											<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass cool" @mouseover.native="coolindex=true" 
+												@mouseout.native="coolindex=false" @click="processclick(2)">
+												<!-- <img src="../../assets/images/coolwhite1.svg" style="height:50px;width:50px;" v-if="coolindex"/> -->
+												<svg v-if="!coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#28b2f7"></path></svg>
+												<svg v-if="coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#ffffff"></path></svg>
+												<!-- <img src="../../assets/images/cool1.svg" style="height:50px;width:50px"  v-if="!coolindex"/> -->
+												</el-button>
+										</el-col>									
+									</el-row>
+								</div>
+						</el-row>
+					</el-card>
 					</el-row>
-				</div>
 			</el-col>
 
-			<el-col :span="20"
+			<el-col :span="19"
 				v-loading="loadingDataLoading"
 				element-loading-text="loading..."
 				element-loading-spinner="el-icon-loading"
-				element-loading-background="rgba(0, 0, 0, 0.3)"
-				style="background: white">
+				element-loading-background="rgba(0, 0, 0, 0.3)">
 
-				<el-row class="my-card">
-					<div class="my-card-body" style="height:48px; width:100%; display:flex;">
-						<time-brush ref="timeBrush" style="flex: 1 0 800px;" 
-							@timeBrushed="setStartEndDate"
-							:custom-height="'50px'">
-						</time-brush>
-						<el-button style="height: 48px; flex: 0 0 auto; " type="danger" size="medium" @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
-					</div>
-				</el-row>
-				<el-row>
-					<div>
-						
-					</div>
-				</el-row>
+
 
 				<el-row style="margin-top: 3px;">
-					<el-col :span="8" 
-							v-loading="scatterLoading"
-							element-loading-text="拼命计算中"
-							element-loading-spinner="el-icon-loading"
-							element-loading-background="rgba(0, 0, 0, 0.3)">
-						<el-card class="myel-card">
-							<div class="my-card-title" slot="header">
-								<span>Embedding View</span>
-								<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData" style="float:right;margin: -3px 40px 5px 5px;width:160px">
-									<el-option v-for="option in algorithmOptions" :key="option" :label="option" :value="option"></el-option>
-								</el-select>
-							</div>
-							<div class="my-card-body">
-								<scatterlog ref="scatterloging" style="height:400px;"></scatterlog>
-							</div>
-						</el-card>
-					</el-col>
-					<el-col :span="16" >
-						<el-card class="myel-card">
-							<div class="my-card-title" slot="header">
-								<span>Condition View</span>
-								<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" 
-									style="float:right;padding:4px 25px 0px 0px;font-family : DIN"></el-switch>
-							</div>
-							<div class="my-card-body">
-								<marey-chart style="text-align: center; height: 400px;width:100%;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
-							</div>
-						</el-card>
-						<!-- <div class="my-card">
-							<div class="my-card-title">Condition View
-								<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" 
-									style="float:right;padding:4px 25px 0px 0px"></el-switch>
-							</div>
-							<div class="my-card-body">
-								<marey-chart style="text-align: center; height: 400px;width:100%;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
-							</div>
-						</div> -->
-					</el-col>
-				</el-row>
-
-				<el-row style="margin: 1px 0" >
-
-					<!-- <el-card class="myel-card">
-							<div class="my-card-title" slot="header">
-								<span>Condition View</span>
-								<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" 
-									style="float:right;padding:4px 25px 0px 0px;font-family : DIN"></el-switch>
-							</div>
-							<div class="my-card-body">
-								<marey-chart style="text-align: center; height: 400px;width:100%;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
-							</div>
-						</el-card> -->
-					<el-col :span="15">
-						<div>
+					<el-col :span="18" >
+						<el-row>
 							<el-card class="myel-card">
 								<div class="my-card-title" slot="header">
-									<span>Diagnosis View</span>
+									<span>Condition View</span>
+									<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" class="myel-swtich"></el-switch>
 								</div>
-								<div style="padding-right:5px; padding-bottom : 5px">
-									<el-col :span="13">
-										<div class="my-card">
-											<div class="my-card-body" >
-												<wheeler ref="wheelering" style="height:500px"></wheeler>
-											</div>
-										</div>
-									</el-col>
-									<el-col :span="11" style="padding-right:5px">
-										<div class="my-card">
-											<div class="my-card-body" >
-												<swheel ref="wheeler1" style="height:248px"></swheel>
-											</div>
-										</div>
-										<div class="my-card">
-											<div class="my-card-body" >
-												<swheel ref="wheeler2" style="height:248px"></swheel>
-											</div>
-										</div>	
-									</el-col>
+								<div class="my-card-body">
+									<marey-chart style="text-align: center; height: 480px;width:100%;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
 								</div>
-							</el-card>							
-						</div>
+							</el-card>
+						</el-row>
+						<el-row>
+							<div>
+								<el-card class="myel-card">
+									<div class="my-card-title" slot="header">
+										<span>Diagnosis View</span>
+									</div>
+									<div style="padding-right:5px; padding-bottom : 5px">
+										<el-col :span="11">
+											<el-card class="myel-card">
+												<div class="my-card-body" >
+													<wheeler ref="wheelering" style="height:500px"></wheeler>
+												</div>
+											</el-card>
+										</el-col>
+										<el-col :span="13" style="padding-right:5px">
+											<el-card class="myel-card">
+												<div class="my-card-body" >
+													<swheel ref="wheeler1" style="height:248px"></swheel>
+												</div>
+											</el-card>
+											<el-card class="myel-card">
+												<div class="my-card-body" >
+													<swheel ref="wheeler2" style="height:248px"></swheel>
+												</div>
+											</el-card>	
+										</el-col>
+									</div>
+								</el-card>							
+							</div>
+						</el-row>
 					</el-col>
-					<!-- <el-col :span="9" style="border:solid 1px black"></el-col> -->
-					
+					<el-col :span="6">
+						<el-card class="myel-card">
+							<div class="my-card-title" slot="header">
+									<span>Key-Stage View</span>
+									<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini"  @change="orderchange" class="card-select">
+										<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+									</el-select>
+								</div>
+							<el-row>
+								
+							</el-row>
+							<el-row style="margin: 2px 0">
+									<el-col :span="24">
+									<div  v-for="item of processInTurn" :key = item class="myel-card" style="width:100%">
+										<div class="my-card-title" style="height: 3px;font-size:10px;font-weight:150">{{item}}</div>
+											<div class="my-card-body">
+											<three-bar :ref="item" style="height: 190px;" ></three-bar>
+											</div>
+									</div>	
+									</el-col>
+									
+							</el-row>
+						</el-card>
+					</el-col>
 				</el-row>
-				<el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
+
+				<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
 					<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
 						<el-card class="my-card-body-detail">
 							<div class="my-card-title" style="height: 3px;font-size:10px;font-weight:150">{{item}}</div>
@@ -318,10 +248,9 @@
 							</div>
 						</el-card>
 					</el-col>
-				</el-row>
+				</el-row> -->
 			</el-col>
 		</el-row>
-		
 	</div>
 </template>
 
@@ -337,7 +266,6 @@ import mareyChart from './mareyChart.vue';
 import polyLineChart from './polyLine.vue';
 import plateTemperature from './plateTemperature.vue';
 import scatterlog from './scatterlog.vue';
-// import radar from './radar.vue';
 import timeBrush from './timeBrush.vue';
 import gauge from './gauge.vue';
 import threeBar from './threeBar.vue';
@@ -385,7 +313,7 @@ export default {
 			isSwitch: false,
 			startDate: new Date('2018-10-16 00:00:00'),
 			endDate: new Date('2018-10-19 04:00:00'),
-			dateselect:[new Date(2018, 10, 1, 0, 0), new Date(2018, 11, 1, 0, 0)],
+			dateselect:[new Date(2018, 10, 1, 0, 0), new Date(2018, 10, 15, 0, 0)],
 			display: false,
 			time: undefined,
 			radarIndicatorOptions: [],
@@ -1007,7 +935,7 @@ export default {
 			var s1 = this.dateselect[0].getTime(),s2 = this.dateselect[1].getTime();
 			var total = (s2 - s1)/1000;
 			var day = parseInt(total / (24*60*60));//计算整数天数
-			if(day>=62){
+			if(day>=30){
 				this.$alert('选择超过期限，请重新选择', '警告', {
 					confirmButtonText: '确定',
 					callback: action => {
@@ -1151,41 +1079,17 @@ export default {
 </script>
 
 <style>
-.panel-title {
-	margin: 14px;
-	font-size: 14px;
-	font-weight: bold;
-}
+
 </style>
 <style lang="scss">
-#dataPicker {
-	width: 120px;
-}
-.el-table .cell {
-	// border: solid red;
-	line-height: 10px !important ; 
+.panel-title {
+	margin: 6px;
+	font-size: 18px;
+	// font-weight: normal !important;
+	font-family: Arial !important;
+	color: #6d7885;
 }
 
-.el-table .row5 {
-	background: #a0cfff;
-	color: #2c3050;
-}
-.el-table .row4 {
-	background: #b3d8ff;
-	color: #2c3050;
-}
-.el-table .row3 {
-	background: #c6e2ff;
-	color: #2c3050;
-}
-.el-table .row2 {
-	background: #d9ecff;
-	color: #2c3050;
-}
-.el-table .row1 {
-	background: #ecf5ff;
-	color: #2c3050;
-}
 .control-logo {
 	height: 36px;
 	background: white no-repeat;
@@ -1200,7 +1104,7 @@ export default {
 	}
 }
 .custom-marey {
-	background: #f3f3f3;
+	background: #ecf0f1;
 	margin: -18px;
 	padding: 8px;
 	.el-button--danger {
@@ -1250,30 +1154,48 @@ export default {
 	.el-table thead {
 			display: none;
 	}
-}
-.myel-card{
-	margin: 3px 5px;
-	// padding-top: 2px;
-	// border: solid 0.25px #ededed;
-	border: solid 0.25px #e0e0e0;
-	border-radius: 4px;
-	transform: translate(5px, 0px);
-	box-shadow: rgb(148, 148, 148) 2px 2px 2.5px !important;
-	.el-card__header {
-		// text-indent:20px;
-		font-family: Calibri;
-		background-color: #f7f7f7;
-		font-weight: bold;
-		text-align: left;
-		font-size: 14px;
-		color: #6d7885;
-		height: 30px;
-		padding: 4px 2px 2px 20px;
-		border-bottom: solid 0.25px #e0e0e0;
+	.myel-card{
+		margin: 2px 5px;
+		// padding-top: 2px;
+		// border: solid 0.25px #ededed;
+		border: solid 0.25px #e0e0e0;
+		border-radius: 4px;
+		transform: translate(5px, 0px);
+		// box-shadow: rgb(148, 148, 148) 2px 2px 2.5px !important;
+		box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
+		.el-card__header {
+			font-family: Arial;
+			// font-family: Calibri;
+			background-color: #f7f7f7;
+			font-weight: normal;
+			text-align: left;
+			font-size: 14px;
+			color: #6d7885;
+			height: 30px;
+			padding: 4px 2px 2px 20px;
+			border-bottom: solid 0.25px #e0e0e0;
+		}
+		.el-card__body {
+			padding: 1px;
+		}
 	}
-	.el-card__body {
-    padding: 1px;
+	.myel-swtich{
+		float:right;
+		padding:4px 25px 0px 0px;
+		font-family : DIN;
+		.el-switch__label{
+			span{
+				color: #6d7885;
+			}
+		}
+	}
 }
+
+.card-select{
+	float: right;
+	width: 100px;
+	margin: -3.5px;
+	margin-right: 5%;
 }
 .my-card {
 	margin: 3px 5px;
@@ -1462,6 +1384,21 @@ export default {
 }
 .el-select .el-input__inner:focus {
     border-color:  #000000!important;
+}
+.title-background{
+	height: 30px;
+	// color: #f3f3f3;
+	background-color: #f3f3f3;
+	box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
+	#title-first{
+		margin: 6px;
+		text-align: center;
+		display: block;
+		font-size: 19px;
+		font-weight: bolder;
+		font-family: Arial !important;
+		color: #2c3e50;
+	}
 }
 </style>
 

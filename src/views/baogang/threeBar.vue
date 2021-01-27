@@ -3,7 +3,7 @@
 </template>
 
 <script>
-    import echarts from 'echarts'
+    import * as echarts from 'echarts';
     import * as d3 from 'd3'
     import ecStat from 'echarts-stat'
     import { cloneObject } from 'utils/index.js'

@@ -128,10 +128,96 @@ export default {
 		var filter = d3.filter(merge , d => select.indexOf(d) === -1 )
 		var indexname = ["fuTotalTimeAfter" , "mtotalTime" , "ccTotalTime"]
 
-		// private Object fuTotalTimeBefore;
-		// private Object fuTotalTimeAfter;
-		// private Object mTotalTime;
-		// private Object ccTotalTime;
+		//add Axis
+		var xAxis = g => g
+			.style("font", "12px sans-serif")
+			.selectAll("g")
+			.data(stations)
+			.join("g")
+			.attr("transform", d => `translate(${x(d.distance)},0)`)
+			// .call(g => g.append("line")
+			// 	.attr("y1", margin.top - 0)
+			// 	.attr("y2", margin.top)
+			// 	.attr("stroke", "currentColor"))
+			// .call(g => g.append("line")
+			// 	.attr("y1", height - margin.bottom + 0)
+			// 	.attr("y2", height - margin.bottom)
+			// 	.attr("stroke", "currentColor"))
+			.call(g => g.append("line")
+				.attr("y1", margin.top - 3)
+				.attr("y2", height - margin.bottom + 3)
+				// .attr("stroke-dasharray", "1.5,2")
+				.attr("opacity" , 0.4)
+				.attr("stroke" , (d , i) => d3.color(i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(1))
+				// .attr("stroke", "currentColor")
+				// .attr("stroke-opacity", d => {
+				// 	return (d.name === "FuDischarging" || d.name === "MPass24") ? 0.8 : 0.4
+				// })
+				// .attr("stroke-opacity", 1)
+				)
+			.call(g => g.append("polygon")
+				.attr("transform", `translate(-17.5 , ${margin.top + 1.5}) rotate(-45)`)
+				.attr("points", "0, 0  18, 18  110 , 18  92, 0")
+				.attr("fill" , (d , i) => i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1]))
+				// .attr("opacity" , 0.2)
+				.attr("stroke" , "none"))
+			// .call(g => g.append("text")
+			// 	.attr("transform", `translate(-4 ,${margin.top + 0}) rotate(-45)`)
+			// 	.attr("x", 8)
+			// 	.attr("dy", "0.35em")
+			// 	.attr("font-family" , "DIN")
+			// 	.attr("fill", "white")
+			// 	.text(d => d.name))
+
+		var xGroup = this.svg.append("g")
+			.call(xAxis);
+
+		this.svg.append("g")
+			.call(g => g.append("rect")
+				.attr("x" , margin.left - 5)
+				.attr("y", margin.top)
+				.style("fill","white")
+				.attr("stroke", "#aaa")
+				.attr("stroke-width",0.25)
+				.attr("width", width - margin.left - 1.5*margin.right +15)
+				.attr("height", height - margin.top - margin.bottom))
+			.call(g => g
+				.style("font", "12px sans-serif")
+				.selectAll("g")
+				.data(stations)
+				.join("g")
+				.attr("transform", d => `translate(${x(d.distance)},0)`)
+				.call(g => g.append("line")
+					.attr("y1", margin.top - 3)
+					.attr("y2", height - margin.bottom + 3)
+					// .attr("stroke-dasharray", "1.5,2")
+					.attr("opacity" , 0.4)
+					.attr("stroke" , (d , i) => d3.color(i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(1)))
+				.call(g => g.append("text")
+					.attr("transform", `translate(-4 ,${margin.top + 0}) rotate(-45)`)
+					.attr("x", 8)
+					.attr("dy", "0.35em")
+					.attr("font-family" , "DIN")
+					.attr("fill", "white")
+					.text(d => d.name))
+			)
+		var _yAxis = d3.axisLeft(y)
+			.ticks(d3.formatMinute)
+			.tickSize(0)
+		var yAxis = g => g
+			.attr("transform", `translate(${margin.left + 5},0)`)
+			.style("font", "12px sans-serif")
+			.call(_yAxis
+			// .tickFormat(date => date.toLocaleString(undefined, { hour: "numeric" }))
+			)
+			.call(g => g.select(".domain").remove())
+			.call(g => g.selectAll(".tick line").clone().lower()
+			.attr("stroke-opacity", 0.2)
+			.attr("x2", width - 80))
+				
+		var yGroup = this.svg.append("g")
+			.call(yAxis);
+
 		var train = this.svg.append("g")
 			.attr("fill", "white")
 			.selectAll("g")
@@ -148,6 +234,7 @@ export default {
 		var maxlength = d3.max(mergeresult, d => d["merge"].length)
 		var axislength = 6 ;
 		var lmaxlength = 50 ;
+		const circledot = width - margin.right * 0.75;
 		var circleline = d3.scaleLinear()
 				.domain([20 , maxlength ]).nice()
 				.range([ 40 , lmaxlength])
@@ -191,15 +278,13 @@ export default {
 					.attr("stroke", "currentColor")
 					.attr("d", d => line(d.stops)))
 			
-
-			
-			// const vis = this._g.selectAll(".vis").data(this._chartData);
 			const categorysdata = d3.group(data , d => d.productcategory).get(mergeresult[item]["merge"][0].productcategory)
 			const lineposition = []
-			const lineScale = []
-			const heat = ["FuCharging" , "FuPre" , "FuHeating1" , "FuHeating2" , "FuSoak" , "FuDischarging"]
-			const pass=/MPass/
-			const cool = ["CcStart" , "CcDQEnd" ]
+			const lineScale = [];
+			var sDate = mergeresult[item]["merge"].slice(0)[0].stops[stations.length-1].time;
+			var eDate = mergeresult[item]["merge"].slice(-1)[0].stops[stations.length-1].time;
+			// const position = [ circledot , (y((new Date(eDate))) + y(new Date(sDate)))/2];
+			const position = [ circledot , (y((new Date(data[midindex+1].stops[stations.length-1].time))) )];
 			for (let i in indexname){
 				// const categorys = d3.group(data , d => d.productcategory)[]
 				let linedata = d3.map(categorysdata , d => d[indexname[i]]).sort()
@@ -220,7 +305,6 @@ export default {
 				sortdata.push([maxmin[1] + 1 * linelength , 0])
 				sortdata.unshift([maxmin[0] - 1 * linelength , 0])
 
-				
 				let xline = d3.scaleLinear()
 					.domain([maxmin[0] - 0.5*linelength , maxmin[1] + 0.5*linelength ]).nice()
 					.range([0, xaxlength])
@@ -230,8 +314,7 @@ export default {
 					.range([axislength , 0])
 				let liner = d3.line()
 					.curve(d3.curveBasis)
-				let position = [ width - margin.right*0.75 , y((new Date(data[midindex+1].stops[0].time)))-axislength]
-				
+
 				lineposition.push(meandata)
 				lineScale.push(xline)
 
@@ -240,7 +323,7 @@ export default {
 					.attr("fill", stationcolor[i])
 					.attr("class", "linedist")
 					.attr("stroke", "none")
-					.attr("transform", `rotate(${(+i)*120 - 90} ,${[ position[0] , position[1]+axislength ]}) translate( ${position})  `)
+					.attr("transform", `rotate(${(+i)*120 - 90} ,${position}) translate( ${[ position[0] , position[1]-axislength ]})  `)
 					// rotate(${ 120 *(1+(+i)) -60} ,${[ 0 , 0 ]})
 					.attr("stroke-width", 1.5)
 					.attr("opacity" , 0.8)
@@ -253,7 +336,7 @@ export default {
 					.attr("fill", stationcolor[i])
 					.attr("class", "linedist")
 					.attr("stroke", "none")
-					.attr("transform", `rotate(${(+i)*120 - 90} ,${[ position[0] , position[1]+axislength ]}) translate( ${[ position[0] , position[1]+ 2* axislength ]})  `)
+					.attr("transform", `rotate(${(+i)*120 - 90} ,${position}) translate( ${[ position[0] , position[1]+ axislength ]})  `)
 					.attr("stroke-width", 1.5)
 					.attr("opacity" , 0.8)
 					.attr("stroke-linejoin", "round")
@@ -268,7 +351,6 @@ export default {
 				.curve(d3.curveBasisOpen)
 				.angle((d , i) => i*360/mergeresult[item]["wave"].length/180*Math.PI);
 			const wheeldata = []
-			const cposition = [ width - margin.right*0.75 , y((new Date(data[midindex+1].stops[0].time))) ]
 			for (let i in mergeresult[item]["wave"][0]){
 				let mdata = d3.mean(mergeresult[item]["wave"] , d => d[i])
 				let highdata = d3.quantile(mergeresult[item]["wave"] , 0.55, d => d[i])
@@ -292,31 +374,24 @@ export default {
 				piedata[item].unshift(0);
 				piedata[item].push(0);
 			}
-			// const piearea = []
-			// for (let item in piedata){
-			// 	piearea.push(d3.areaRadial()
-			// 	.curve(d3.curveBasisOpen)
-			// 	.startAngle((d, i) => (item * 2 /3 -1/6 +(i - 1)/(piedata[item].length - 1)/3) * 2 * Math.PI)
-			// 	.endAngle((d, i) => ((item) * 2 /3 -1/6 +( i - 1)/(piedata[item].length - 1)/3) * 2 * Math.PI))
-			// // 	.angle((d , i) => i === 0 ? ((item * 2 /3 -1/6+ (i - 1)/(piedata[item].length - 1)/3) * 2 * Math.PI) : ((item * 2 /3 -1/6+ (i + 1)/(piedata[item].length - 1)/3) * 2 * Math.PI)))
-			// }
 			const piearea = d3.map(piedata , (e,f) =>  d3.areaRadial()
 				.curve(d3.curveCardinal)
 				.angle((d , i) => {
-					console.log("fgsuf")
-					console.log((f * 1 /3 -1/6+ ( - 1 )/(piedata[f].length - 1)/3 ) * 360)
-					console.log((f * 1 /3 -1/6+ ( piedata[f].length )/(piedata[f].length - 1)/3 ) * 360)
-					console.log((f * 1 /3 -1/6+ (piedata[f].length - 1 )/(piedata[f].length - 1)/3 ) * 360)
-					console.log("fgsuf")
+					// console.log("fgsuf")
+					// console.log((f * 1 /3 -1/6+ ( - 1 )/(piedata[f].length - 1)/3 ) * 360)
+					// console.log((f * 1 /3 -1/6+ ( piedata[f].length )/(piedata[f].length - 1)/3 ) * 360)
+					// console.log((f * 1 /3 -1/6+ (piedata[f].length - 1 )/(piedata[f].length - 1)/3 ) * 360)
+					// console.log("fgsuf")
 					// console.log((f * 1 /3 -1/6+ ( i- 1 + 2*i /(piedata[f].length - 1))/(piedata[f].length - 1)/3 ) * 180)
 					// return (f * 1 /3 +1/6+ ( i- 2 + 4*i /(piedata[f].length - 1))/(piedata[f].length - 1)/3 ) * 2 * Math.PI}))
 					return (f * 1 /3 -1/6+ ( i)/(piedata[f].length - 1)/3 ) * 2 * Math.PI}))
 				//i*360/mergeresult[item]["wave"].length/180
 			console.log(piedata)
 			this.svg
+			.append("g")
+			.attr("transform", ` translate( ${position})`)
 			.call(g => g.append("path")      // radar 
 				.attr("fill", "none")
-				.attr("transform", ` translate( ${cposition})`)
 				.attr("stroke", "#c4c4c4")
 				.attr("stroke-width", 1.5)
 				.attr("d", meanLine
@@ -325,7 +400,6 @@ export default {
 			.call(g => g.selectAll(".radar_line")
 				.data([0 , 1 , 2])
 				.join("g")
-				.attr("transform", ` translate( ${cposition})`)
 				.call(g => g.append("line")
 					.attr("x1",0)
 					.attr("y1", 0)
@@ -351,7 +425,7 @@ export default {
 					.attr("r" , 3))
 				.call(g => g.append("path")
 					.attr("fill", (d , i) => stationcolor [i] )
-					// .attr("transform", ` translate( ${cposition})`)
+					// .attr("transform", ` translate( ${position})`)
 					.attr("d",  (e , f) => piearea[f]
 						// .innerRadius( xaxlength)
 						// .outerRadius( xaxlength + 25)
@@ -366,14 +440,12 @@ export default {
 				// 	(piedata[f])))
 					)
 			.call(g => g.append("circle")      // radar 1
-				.attr("fill", "none")
-				.attr("transform", ` translate( ${cposition})`)
+				.attr("fill", "none")	
 				.attr("stroke", "#c9cbcc")
 				.attr("stroke-width", 2)
 				.attr("r", xaxlength))
 			.call(g => g.append("circle")      // radar 2
 				.attr("fill", "none")
-				.attr("transform", ` translate( ${cposition})`)
 				.attr("stroke", "#c9cbcc")
 				.attr("stroke-width", 1)
 				.attr("cx", 0)
@@ -383,15 +455,10 @@ export default {
 			// .call(g => g.append("path")
 			// 	.attr("class" , "dguerug")
 			// 	.attr("fill", this.categoryColors(mergeresult[item]["merge"][0].productcategory))
-			// 	.attr("transform", ` translate( ${cposition})`)
 			// 	.attr("d", area
 			// 		.innerRadius(d => d===0 ? xaxlength - 5 : xaxlength - 5 - cRadius(d))
 			// 		.outerRadius(xaxlength)
 			// 	(wheeldata)))
-			
-			// const heat = ["FuCharging" , "FuPre" , "FuHeating1" , "FuHeating2" , "FuSoak" , "FuDischarging"]
-			// const pass=/MPass/
-			// const cool = ["CcStart" , "CcDQEnd" ]
 		}
 		this.svg.append("g")
 			.call(g => {
@@ -516,64 +583,7 @@ export default {
 		//   .attr("y1", 0)
 		//   .attr("y2", 0);
 		
-		//add Axis
-		var xAxis = g => g
-			.style("font", "12px sans-serif")
-			.selectAll("g")
-			.data(stations)
-			.join("g")
-			.attr("transform", d => `translate(${x(d.distance)},0)`)
-			// .call(g => g.append("line")
-			// 	.attr("y1", margin.top - 0)
-			// 	.attr("y2", margin.top)
-			// 	.attr("stroke", "currentColor"))
-			// .call(g => g.append("line")
-			// 	.attr("y1", height - margin.bottom + 0)
-			// 	.attr("y2", height - margin.bottom)
-			// 	.attr("stroke", "currentColor"))
-			.call(g => g.append("line")
-				.attr("y1", margin.top - 3)
-				.attr("y2", height - margin.bottom + 3)
-				.attr("stroke-dasharray", "1.5,2")
-				.attr("stroke" , (d , i) => d3.color(i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(2))
-				// .attr("stroke", "currentColor")
-				// .attr("stroke-opacity", d => {
-				// 	return (d.name === "FuDischarging" || d.name === "MPass24") ? 0.8 : 0.4
-				// })
-				// .attr("stroke-opacity", 1)
-				)
-			.call(g => g.append("polygon")
-				.attr("transform", `translate(-16 , ${margin.top + 0}) rotate(-45)`)
-				.attr("points", "0, 0  18, 18  110 , 18  92, 0")
-				.attr("fill" , (d , i) => i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1]))
-				// .attr("opacity" , 0.2)
-				.attr("stroke" , "none"))
-			.call(g => g.append("text")
-				.attr("transform", `translate(-4 ,${margin.top + 0}) rotate(-45)`)
-				.attr("x", 8)
-				.attr("dy", "0.35em")
-				.attr("font-family" , "DIN")
-				.attr("fill", "white")
-				.text(d => d.name))
 
-		var _yAxis = d3.axisLeft(y)
-			.ticks(d3.formatMinute)
-			.tickSize(0)
-		var yAxis = g => g
-			.attr("transform", `translate(${margin.left + 5},0)`)
-			.style("font", "12px sans-serif")
-			.call(_yAxis
-			// .tickFormat(date => date.toLocaleString(undefined, { hour: "numeric" }))
-			)
-			.call(g => g.select(".domain").remove())
-			.call(g => g.selectAll(".tick line").clone().lower()
-			.attr("stroke-opacity", 0.2)
-			.attr("x2", width - 80))
-
-		var xGroup = this.svg.append("g")
-			.call(xAxis);
-		var yGroup = this.svg.append("g")
-			.call(yAxis);
 
 		//add zoom
 		// var zoom = d3.zoom()

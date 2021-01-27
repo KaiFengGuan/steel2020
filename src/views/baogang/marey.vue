@@ -4,15 +4,7 @@
 			<el-col :span="5" style="margin-top : 1px">
 				<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
 					<!-- <div class="control-logo" style="font-size: 16px;"><span>Controls</span></div> -->
-						<el-card class="myel-card">
-						<!-- <div class="panel-title"></div> -->
-						<el-form size="mini" label-width="100px" style="padding-right: 10px;margin:5px">
-							<el-form-item label="Date:">
-								<el-date-picker v-model="dateselect" type="datetimerange" range-separator=" " @change="changeTime" start-placeholder="开始日期" end-placeholder="结束日期" style="width:200px;" size="mini">                 
-								</el-date-picker> 
-							</el-form-item>
-						</el-form>
-						</el-card>
+
 					<!-- <el-row style="margin: 2px 0;background: white">
 						<div class="panel-title">Global Parameters</div>
 						<el-form size="mini" label-width="100px" style="padding-right: 10px;">
@@ -84,10 +76,19 @@
 						<el-row style=";background: white">
 						<!-- <div class="panel-title">Tabular Parameters</div> -->
 						<el-row :gutter="8">
+						<!-- <div class="panel-title"></div> -->
+						<el-form size="mini" label-width="100px" style="padding-right: 10px;margin:5px">
+							<el-form-item label="Date">
+								<el-date-picker v-model="dateselect" type="datetimerange" range-separator=" " @change="changeTime" start-placeholder="开始日期" end-placeholder="结束日期" style="width:200px;" size="mini">                 
+								</el-date-picker> 
+							</el-form-item>
+						</el-form>
+						</el-row>
+						<!-- <el-row :gutter="8">
 							<el-col :span="8" style="font-size: 13px;">
-								<div style="height: 24px;padding-right:5px;margin:2px 0">ThicknessGap: </div>
-								<div style="height: 24px;padding-left:16px;margin:2px 0">WidthGap: </div>
-								<div style="height: 24px;padding-left:12px;margin:2px 0">LengthGap: </div>
+								<div style="height: 24px;padding-right:5px;margin:2px 0" class="fontcolor">ThicknessGap </div>
+								<div style="height: 24px;padding-left:16px;margin:2px 0" class="fontcolor">WidthGap </div>
+								<div style="height: 24px;padding-left:12px;margin:2px 0" class="fontcolor">LengthGap </div>
 							</el-col>
 							<el-col :span="10" id="imput-line">
 								<mu-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
@@ -95,28 +96,27 @@
 								<mu-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
 							</el-col>
 							<el-col :span="4">
-								<div style="margin-bootom:2px">{{plateTempProp.thickness}}mm</div>
-								<div style="margin:4px 0px">{{plateTempProp.width}}mm</div>
-								<div style="margin:6px 0px"> {{plateTempProp.length}}m</div>
+								<div style="margin-bootom:2px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
+								<div style="margin:4px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
+								<div style="margin:6px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
 							</el-col>
-						</el-row>
-						<el-form size="mini" label-width="100px" >
-							<el-form-item label="Category:" style="padding-right: 10px;margin-bottom:4px;font-size:13px;padding-left:2px" class="abel">
+						</el-row> -->
+						<!-- <el-form size="mini" label-width="100px" >
+							<el-form-item label="Category" style="padding-right: 10px;margin-bottom:4px;font-size:13px;padding-left:2px" class="abel">
 									<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
-									<!-- @blur="paintPlate" -->
 									<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
 								</el-select>
-							</el-form-item>
+							</el-form-item> -->
 							<!-- <el-form-item label="Order:" style="border-top: solid lightgrey 0.15rem;padding-right: 10px;padding-top:8px;margin:4px;margin-bottom:0px;" class="abel">
 									<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini" style="margin-top:4px" @change="orderchange">
 									<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
 								</el-select>
 							</el-form-item> -->
-						</el-form>
+						<!-- </el-form> -->
 
-						<el-row :gutter="8">
+						<!-- <el-row :gutter="8">
 							<el-col :span="8" style="font-size: 13px;">
-								<div style="height: 24px;padding-left:40px">Range: </div>                
+								<div style="height: 24px;padding-left:40px" class="fontcolor">Range </div>                
 							</el-col>
 							<el-col :span="10" id="imput-line">
 								<mu-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" range :display-value="false" style="margin:2.5px;color:#999a9d"></mu-slider>
@@ -124,38 +124,11 @@
 							<el-col :span="4">
 								<div style="margin:2px">{{plateTempProp.deviation}}%</div>
 							</el-col>
-						</el-row>
+						</el-row> -->
 						</el-row>			 
+
 						<el-row style="background: white">
-								<div style="margin: 5px 0px 2px 0px;">
-									<el-row>
-										<el-col :span="8" style="font-size: 12px;">
-											<div style="height: 24px;padding-left:1px;margin-top:10px">Crucial Process: </div>
-										</el-col>
-										<el-col :span="5">
-											<el-button  circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass heat" @mouseover.native="heatindex=true" 
-												@mouseout.native="heatindex=false" @click="processclick(0)">
-												<img src="../../assets/images/heatwhite.svg" style="height:20px;width:20px;" v-if="heatindex"/>
-												<img src="../../assets/images/heat.svg" style="height:20px;width:20px"  v-if="!heatindex"/>
-											</el-button>
-										</el-col>
-										<el-col :span="5">
-											<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass roll" @mouseover.native="rollindex=true" 
-												@mouseout.native="rollindex=false" @click="processclick(1)">
-												<img src="../../assets/images/rollwhite.svg" style="height:20px;width:20px;" v-if="rollindex"/>
-												<img src="../../assets/images/roll.svg" style="height:20px;width:20px"  v-if="!rollindex"/></el-button>
-										</el-col>
-										<el-col :span="5">
-											<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass cool" @mouseover.native="coolindex=true" 
-												@mouseout.native="coolindex=false" @click="processclick(2)">
-												<!-- <img src="../../assets/images/coolwhite1.svg" style="height:50px;width:50px;" v-if="coolindex"/> -->
-												<svg v-if="!coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#28b2f7"></path></svg>
-												<svg v-if="coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#ffffff"></path></svg>
-												<!-- <img src="../../assets/images/cool1.svg" style="height:50px;width:50px"  v-if="!coolindex"/> -->
-												</el-button>
-										</el-col>									
-									</el-row>
-								</div>
+							<svgTable ref="jsontable" style="height:500px;width:100%"></svgTable>
 						</el-row>
 					</el-card>
 					</el-row>
@@ -216,10 +189,86 @@
 					<el-col :span="6">
 						<el-card class="myel-card">
 							<div class="my-card-title" slot="header">
-									<span>Key-Stage View</span>
-									<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini"  @change="orderchange" class="card-select">
-										<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-									</el-select>
+								<span>Key-Stage View</span>
+								<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini"  @change="orderchange" class="card-select">
+									<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+								</el-select>
+								<el-popover placement="top" width="350" trigger="hover" style="float:right;margin-right:11px">
+								<el-row :gutter="8">
+									<el-col :span="8" style="font-size: 13px;">
+										<div style="height: 24px;padding-right:5px;margin:2px 0" class="fontcolor">ThicknessGap </div>
+										<div style="height: 24px;padding-left:16px;margin:2px 0" class="fontcolor">WidthGap </div>
+										<div style="height: 24px;padding-left:12px;margin:2px 0" class="fontcolor">LengthGap </div>
+									</el-col>
+									<el-col :span="10" id="imput-line">
+										<mu-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
+										<mu-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
+										<mu-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
+									</el-col>
+									<el-col :span="4">
+										<div style="margin-bootom:2px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
+										<div style="margin:4px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
+										<div style="margin:6px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
+									</el-col>
+								</el-row>
+								<el-form size="mini" label-width="100px" >
+									<el-form-item label="Category" style="padding-right: 10px;margin-bottom:4px;font-size:13px;padding-left:2px" class="abel">
+											<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
+											<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+										</el-select>
+									</el-form-item>
+									<!-- <el-form-item label="Order:" style="border-top: solid lightgrey 0.15rem;padding-right: 10px;padding-top:8px;margin:4px;margin-bottom:0px;" class="abel">
+											<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini" style="margin-top:4px" @change="orderchange">
+											<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+										</el-select>
+									</el-form-item> -->
+								</el-form>
+
+								<el-row :gutter="8">
+									<el-col :span="8" style="font-size: 13px;">
+										<div style="height: 24px;padding-left:40px" class="fontcolor">Range </div>                
+									</el-col>
+									<el-col :span="10" id="imput-line">
+										<mu-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" range :display-value="false" style="margin:2.5px;color:#999a9d"></mu-slider>
+									</el-col>
+									<el-col :span="4">
+										<div style="margin:2px">{{plateTempProp.deviation}}%</div>
+									</el-col>
+								</el-row>
+								<el-row style="background: white">
+									<div style="margin: 5px 0px 2px 0px;">
+										<el-row>
+											<el-col :span="8" style="font-size: 12px;">
+												<div style="height: 24px;padding-left:1px;margin-top:10px" class="fontcolor">Crucial Process </div>
+											</el-col>
+											<el-col :span="5">
+												<el-button  circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass heat" @mouseover.native="heatindex=true" 
+													@mouseout.native="heatindex=false" @click="processclick(0)">
+													<img src="../../assets/images/heatwhite.svg" style="height:20px;width:20px;" v-if="heatindex"/>
+													<img src="../../assets/images/heat.svg" style="height:20px;width:20px"  v-if="!heatindex"/>
+												</el-button>
+											</el-col>
+											<el-col :span="5">
+												<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass roll" @mouseover.native="rollindex=true" 
+													@mouseout.native="rollindex=false" @click="processclick(1)">
+													<img src="../../assets/images/rollwhite.svg" style="height:20px;width:20px;" v-if="rollindex"/>
+													<img src="../../assets/images/roll.svg" style="height:20px;width:20px"  v-if="!rollindex"/></el-button>
+											</el-col>
+											<el-col :span="5">
+												<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass cool" @mouseover.native="coolindex=true" 
+													@mouseout.native="coolindex=false" @click="processclick(2)">
+													<!-- <img src="../../assets/images/coolwhite1.svg" style="height:50px;width:50px;" v-if="coolindex"/> -->
+													<svg v-if="!coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#28b2f7"></path></svg>
+													<svg v-if="coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#ffffff"></path></svg>
+													<!-- <img src="../../assets/images/cool.svg" style="height:50px;width:50px"  v-if="coolindex"/> -->
+													</el-button>
+											</el-col>									
+										</el-row>
+									</div>
+								</el-row>
+								<i class="el-icon-s-data" slot="reference" style="vertical-align: middle;line-height:1.5"></i>
+								</el-popover>
+								
 								</div>
 							<el-row>
 								
@@ -274,12 +323,13 @@ import swheel from './swheel.vue';
 import force from './force.vue';
 import heat from "./heat.vue";
 import riverLike from "./riverLike.vue";
+import svgTable from "./svgTable.vue";
 import bar from "./Bar.vue";
 import scatterAxis from "./scatterAxis.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 var echarts = require('echarts');
 export default {
-	components: { mareyChart, scatter, polyLineChart, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel },
+	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel },
 	data() {
 		return {
 			symbolvalue:0.05,
@@ -342,7 +392,7 @@ export default {
 			},
 			test: 15,
 			detailProcess: [],
-			processInTurn: [null, null],
+			processInTurn: [null, null ,null, null ,null, null],
 			processData: {},
 			scatterlogdata:[],
 			processArray: ['heat', 'roll', 'cool'],
@@ -406,6 +456,7 @@ export default {
 		},
 		async getHttpData() {
 			this.$refs.mareyChart.paintMareyChart()
+			this.$refs.jsontable.paintChart()
 			return
 			// this.clearAllChart()
 			this.plateTempPropvalue=['All']
@@ -1086,7 +1137,7 @@ export default {
 	margin: 6px;
 	font-size: 18px;
 	// font-weight: normal !important;
-	font-family: Arial !important;
+	font-family: DIN !important;
 	color: #6d7885;
 }
 
@@ -1164,7 +1215,7 @@ export default {
 		// box-shadow: rgb(148, 148, 148) 2px 2px 2.5px !important;
 		box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
 		.el-card__header {
-			font-family: Arial;
+			font-family: futura !important;
 			// font-family: Calibri;
 			background-color: #f7f7f7;
 			font-weight: normal;
@@ -1189,13 +1240,30 @@ export default {
 			}
 		}
 	}
+	.card-select{
+		float: right;
+		width: 100px;
+		margin: -3.5px;
+		margin-right: 5%;
+		.el-input .el-input__inner{
+			font-family : DIN;
+			color: #6d7885;
+		}
+	}
+
+	.el-form-item__label{
+		font-family : DIN !important;
+		color: #6d7885;
+	}
+	.fontcolor{
+		font-family : DIN !important;
+		color: #6d7885;
+	}
 }
 
-.card-select{
-	float: right;
-	width: 100px;
-	margin: -3.5px;
-	margin-right: 5%;
+.el-select-dropdown__item span{
+		font-family : DIN !important;
+		color: #6d7885;
 }
 .my-card {
 	margin: 3px 5px;
@@ -1220,129 +1288,7 @@ export default {
 		border-bottom: solid 0.25px #e0e0e0;
 	}
 }
-.el-select-dropdown__item{
-	span{
-		font-family: Calibri;
-		font-weight: bold;
-	}
-}
-.process-choose {
-	// border: solid red;
-	// height: 50px;
-	width: 100%;
-	float: left;
-	padding: 4px;
-	padding-top: 10px;
-	margin: 2px;
-	border-radius:10px;
-	.el-radio {
-		position: relative;
-		left: -4px;
-		.el-radio__label{
-		color: #040f1a;
-		font-size: 13px;
-	}
-		.el-radio__input.is-checked+.el-radio__label{
-		color: #040f1a;
-		font-size: 13px;
-	}
-	}
-}
-.process-choose.pic1 {
-	border:  1px solid #e5e7eb;
-	// margin: 2px;
-	background-color: #fffefe;
-	// background-color:#eeeef0;
-	// background-color: #fb8b53;
-	// background-color: #d7ccc8;
-	&:hover{
-		background-color: #fcbd9e;
-		// transform: scale(2);
-		transition: all 0.1s linear;
-	}
-	.el-radio {
-		position: relative;
-		left: -4px;
-		.el-radio__input.is-checked .el-radio__inner{
-			border-color: #040f1a;
-			background: #fcbd9e;
-			opacity: 0.3;
-		}
-		.el-radio__label{
-		color: #040f1a;
-		font-size: 13px;
-		}
-		.el-radio__input.is-checked+.el-radio__label{
-		color: #040f1a;
-		font-size: 13px;
-		}
-	}
-}
-.process-choose.pic2 {
-	border:  3px solid #f3f3f3;
-	margin: 2px;
-	background-color: #fffefe;
-	// background-color: #e0e0e0;
-	// background-color: #b4b4b4;
-	// background-color: #ffe0b2;
-	&:hover{
-		background-color: #28b2f7;
-		transition: all 0.1s linear;
-	}
-	.el-radio {
-		position: relative;
-		left: -4px;
-		.el-radio__input.is-checked .el-radio__inner{
-			border-color: #040f1a;
-			background: #5fc4f7;
-			opacity: 0.3;
-		}
-		.el-radio__label{
-		color: #040f1a;
-		font-size: 13px;
-		}
-		.el-radio__input.is-checked+.el-radio__label{
-		color: #040f1a;
-		font-size: 13px;
-		}
-	}
-}
-.process-choose.pic3 {
-	padding-top: 10px;
-	border:  1px solid #f3f3f3;
-	margin: 2px;
-	background-color: #fffefe;
-	// background-color: #84cdf1;
-	// background-color: #28b2f7;
-	// background-color: #bbdefb;
-	// &:hover{
-	// 	background-color: #84cdf1;
-	// }
-	&:hover{
-		background-color:#b4b4b4;
-		transition: all 0.1s linear;
-	}
-	.el-radio {
-		position: relative;
-		left: -4px;
-		.el-radio__input.is-checked .el-radio__inner{
-			border-color: #040f1a;
-			background: #4d4c4c;
-			opacity: 0.3;
-		}
-		.el-radio__label{
-		color: #040f1a;
-		font-size: 13px;
-		}
-		.el-radio__input.is-checked+.el-radio__label{
-		color: #040f1a;
-		font-size: 13px;
-		}
-	}
-}
-.process-choose.pic4 {
-	background-color: #13f31e;
-}
+
 // .el-card.my-card-body-detail{
 //   border: solid #f13615
 // }
@@ -1396,7 +1342,7 @@ export default {
 		display: block;
 		font-size: 19px;
 		font-weight: bolder;
-		font-family: Arial !important;
+		font-family: futura !important;
 		color: #2c3e50;
 	}
 }

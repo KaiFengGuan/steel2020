@@ -34,7 +34,8 @@ var categoryslabel = {
 }
 // var labelColor = [ '#ff005a', '#3888fa']    //颜色控制
 // var labelColor = [ '#fa558f', '#7f8df5']    //颜色控制
-var labelColor = [ "#e0978f" , "#8fa4ae"]
+// var labelColor = [ "#e0978f" , "#8fa4ae"]   //blue red original
+var labelColor = [ "#c65b24", "#94a7b7"] // red grey
 var labelColor2 = [ '#e34649', '#5164f5'] 
 // var labelColor = ['#ff005a', '#3888fa', '#88fa38', '#fa3888', '#38faaa']   //多个颜色
 export default {

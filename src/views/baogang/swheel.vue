@@ -467,36 +467,45 @@ export default {
             }
             _renderPre(){
                 const defs =this._g.append("defs");
-                const filter=defs.append("filter")
-                    .attr("id","shadow-filter")
-                    .attr("x", "-5%")
-                    .attr("y", "-5%")  
-                    .attr("width", "110%")
-                    .attr("height", "110%")
-                    .attr("filterUnits", "objectBoundingBox");
-                filter
-                .call(g =>g.append("feOffset")
-                    .attr("result", "shadowOffsetOuter1")
-                    .attr("in", "SourceAlpha")
+                const filter=defs.append("filter").attr("id", "shadow-filter")
+                filter.append("feDropShadow")
                     .attr("dx","0")
-                    .attr("dy", "0.5")
-                    .attr("flood-color", "#bebebe"))
-                .call(g =>g.append("feGaussianBlur")
-                    .attr("result", "shadowBlurOuter1")
-                    .attr("in", "shadowOffsetOuter1")
-                    .attr("stdDeviation","0.5"))
-                .call(g =>g.append("feBlend")
-                    .attr("values", "0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.2 0")
-                    .attr("in", "shadowBlurOuter1")
-                    .attr("mode","normal")
-                    .attr("type", "matrix")
-                    .attr("result", "shadowMatrixOuter1"))
-                const feMerge = filter.append("feMerge");
-                feMerge
-                    .call(g => g.append("feMergeNode")
-                        .attr("in", "shadowMatrixOuter1"))
-                    .call(g => g.append("feMergeNode")
-                        .attr("in", "SourceGraphic"))
+                    .attr("dy", "0")
+                    .attr("stdDeviation", 5)
+                    .attr("flood-color", "#bfbdbd")
+                // const filter=defs.append("filter")
+                //     .attr("id","shadow-filter")
+                //     .attr("x", "-5%")
+                //     .attr("y", "-5%")  
+                //     .attr("width", "110%")
+                //     .attr("height", "110%")
+                //     .attr("filterUnits", "objectBoundingBox");
+                // filter
+                // .call(g =>g.append("feOffset")
+                //     .attr("result", "shadowOffsetOuter1")
+                //     .attr("in", "SourceAlpha")
+                //     .attr("dx","0")
+                //     .attr("dy", "0.5")
+                //     .attr("flood-color", "#bebebe"))
+                // .call(g =>g.append("feGaussianBlur")
+                //     .attr("result", "shadowBlurOuter1")
+                //     .attr("in", "shadowOffsetOuter1")
+                //     .attr("stdDeviation","0.5"))
+                // .call(g =>g.append("feBlend")
+                //     .attr("values", "0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.2 0")
+                //     .attr("in", "shadowBlurOuter1")
+                //     .attr("mode","normal")
+                //     .attr("type", "matrix")
+                //     .attr("result", "shadowMatrixOuter1"))
+                // const feMerge = filter.append("feMerge");
+                // feMerge
+                //     .call(g => g.append("feMergeNode")
+                //         .attr("in", "shadowMatrixOuter1"))
+                //     .call(g => g.append("feMergeNode")
+                //         .attr("in", "SourceGraphic"))
+
+
+
                 // const filter=defs.append("filter")
                 //                 .attr("id","filter")
                 //                 .attr("x", "0")

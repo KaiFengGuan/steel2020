@@ -327,6 +327,8 @@ import svgTable from "./svgTable.vue";
 import bar from "./Bar.vue";
 import scatterAxis from "./scatterAxis.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
+import myJsonData from "./jsondata.js"
+import myStationData from "./stationdata.js"
 var echarts = require('echarts');
 export default {
 	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel },
@@ -455,7 +457,9 @@ export default {
 			if(end)this.endDate = new Date(end)
 		},
 		async getHttpData() {
-			this.$refs.mareyChart.paintMareyChart()
+			this.jsonData = myJsonData
+			this.mergeflag()
+			this.$refs.mareyChart.paintMareyChart(this.jsonData,myStationData)
 			this.$refs.jsontable.paintChart()
 			return
 			// this.clearAllChart()
@@ -661,7 +665,8 @@ export default {
 				});
 		},
 		switchChange(bool) {
-			let selectcolor=this.$refs.mareyChart.setTrainColor(bool) 
+			let selectcolor=this.$refs.mareyChart.setTrainColor(bool)
+			console.log(selectcolor)
 			if(selectcolor)(this.selectedTrainColor=selectcolor)
 			// this.changeScatterColor();
 			this.$refs.scatterloging.setTrainColor();

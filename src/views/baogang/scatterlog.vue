@@ -67,7 +67,7 @@ export default {
 				.selectAll("circle.dot")
 				.data(scatterdata)
 				.join("circle").attr("class", "dot")
-				.attr("r", 1.5)
+				.attr("r", 1)
 				.attr("id",(d,i)=>"scatter"+d.upid)
 				.attr("cx", d => scaleX(d.x))
 				.attr("cy", d => scaleY(d.y))
@@ -98,7 +98,7 @@ export default {
 						.attr("y", "2.2em");
 					const label=d;
 					d3.selectAll("circle.dot").style("opacity", 0.4);
-					d3.select("#scatter"+label.upid).attr("r",3).style("opacity", 1);				
+					d3.select("#scatter"+label.upid).attr("r",2).style("opacity", 1);				
 					tooltip
 						.style("display", null)
 						.attr("fill", "white");
@@ -139,7 +139,7 @@ export default {
 					d3.select("#scatter"+d.upid).style("opacity", 1)
 					let toc=new Date(d.toc)
 					if(toc<this.GaleArray[1]&&toc>this.GaleArray[0]){}else{
-						d3.select("#scatter"+d.upid).attr("r",1.5)
+						d3.select("#scatter"+d.upid).attr("r",1)
 					}					
 					d3.selectAll(".scattertooltip").remove();
 				}))
@@ -163,12 +163,12 @@ export default {
 			return toc<dateEnd&&toc>dateStart
 		})
 		d3.selectAll(".dot")
-			.attr("r",1.5)
+			.attr("r",1)
 			.style("opacity",0.4)
 			.attr("fill" , vm.tooltipColor);
 		for (let item in data){
 				d3.select("#scatter"+data[item].upid)
-				.attr("r",3)
+				.attr("r",2)
 				.style("opacity",1);
 		}
 		console.log('select completed')
@@ -222,10 +222,10 @@ export default {
 		// 			.outerRadius((d,i)=>pieScale[d.index](d.data.value))
 		// 			.padAngle(0.5)
 		// 			.padRadius(1);
-		// 	d3.selectAll(".dot").attr("r",1.5);
+		// 	d3.selectAll(".dot").attr("r",1);
 		// 	d3.selectAll('.pathdate').remove();
 		// 	for (let item in data){
-		// 		d3.select("#scatter"+data[item].upid).attr("r",3);
+		// 		d3.select("#scatter"+data[item].upid).attr("r",2);
 		// 		let piedata=pie(data[item].property)
 		// 		for (let label in piedata){
 		// 			piedata[label].source=data[item]

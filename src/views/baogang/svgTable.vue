@@ -35,8 +35,8 @@ export default {
                 "category" : d.productcategory,
                 "thickness" : d.tgtplatethickness2*1000,
                 "s_width" : d.slab_width,
-                "s_length" : d.slab_length,
-                "s_thickness" : d.slab_thickness,
+                // "s_length" : d.slab_length,
+                // "s_thickness" : d.slab_thickness,
                 "fault" : d.flag
             }
         })
@@ -1647,7 +1647,7 @@ export default {
             // .fixedRows(1)                
             .defaultNumberFormat(",.0d")
             .data(jsondata)
-            .defaultColumnWidth(25)
+            .defaultColumnWidth(10)
             // .style(style)
             .render();
 	},

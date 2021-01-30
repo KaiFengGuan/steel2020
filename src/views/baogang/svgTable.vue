@@ -25,8 +25,8 @@ export default {
         this.svg !== undefined && this.svg.remove()
 		this.svg=d3.select("#"+vm.menuId)
 			.append("svg")
-            .style("width", width)
-            .style("height", height);
+            .attr("width", width)
+            .attr("height", height);
         
         console.log(jsondata)
         var jsondata = d3.map(myJsonData , d =>{
@@ -427,10 +427,10 @@ export default {
                 this._charBox = { x: 0, y: 0, width: 0, height: 0 };
 
                 this._autoSizeCell = true;
-                this._defaultColumnWidth = 100;
+                this._defaultColumnWidth = 50;
                 this._cellHeight = 24; // user setting
                 this._cellHeightA = 24; // actual cell height = cellHeight + cellPaddingV * 2
-                this._cellPaddingH = 10;
+                this._cellPaddingH = 5;
                 this._cellPaddingV = 3;
                 this._fixedColumns = 0;
                 this._fixedRows = 0;
@@ -438,7 +438,7 @@ export default {
                 this._left = 0;
                 this._top = 0;
                 this._width = 400;
-                this._height = 300;
+                this._height = 500;
                 this._widthA = 0;
                 this._heightA = 0;
                 this._sliderWidth = 13;
@@ -480,8 +480,8 @@ export default {
                     borderColor: "#aaa",
                     textColor: "black",
                     background: "white",
-                    headerBackground: "#ddd",
-                    fixedBackground: "#eee",
+                    headerBackground: "#b1c0c6",
+                    fixedBackground: "#ffffff",
                     highlight: "cross", // none, cell, cross
                     highlightBackground: "#fff3b0"
                 };
@@ -863,7 +863,7 @@ export default {
                     for (let i = 0; i < longest.length; i++) {
                         const column = this._columns[i];
                         column.x = column.tx = x;
-                        column.width = this._getBBox(longest[i]).width + this._cellPaddingH * 2 + 20;
+                        column.width = this._getBBox(longest[i]).width + this._cellPaddingH * 2 + 10;
                         x += column.width;
                     }
                 }
@@ -1642,12 +1642,12 @@ export default {
             }
         }
         const table = new SVGTable(this.svg)
-            .extent([[0, 0], [width, height]])
+            // .extent([[0, 0], [width, height]])
             .fixedColumns(1)
-            // .fixedRows(1)                
+            .fixedRows(1)                
             .defaultNumberFormat(",.0d")
             .data(jsondata)
-            .defaultColumnWidth(10)
+            .defaultColumnWidth(5)
             // .style(style)
             .render();
 	},

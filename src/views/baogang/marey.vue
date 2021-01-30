@@ -66,7 +66,7 @@
 								</el-select>
 							</div>
 							<div class="my-card-body">
-								<scatterlog ref="scatterloging" style="height:390px;"></scatterlog>
+								<scatterlog ref="scatterloging" style="height:360px;"></scatterlog>
 							</div>
 						</el-card>
 					</el-col>
@@ -1337,19 +1337,24 @@ export default {
     border-color:  #000000!important;
 }
 .title-background{
-	height: 30px;
+	height: 60px;
 	// color: #f3f3f3;
 	background-color: #f3f3f3;
 	box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
-	#title-first{
-		margin: 6px;
-		text-align: center;
-		display: block;
-		font-size: 19px;
-		font-weight: bolder;
-		font-family: futura !important;
-		color: #2c3e50;
-	}
+	position: relative;
+}
+#title-first{
+	// margin: 6px;
+	// text-align: center;
+	// display: block;
+	font-size: 19px;
+	font-weight: bolder;
+	font-family: futura !important;
+	color: #2c3e50;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translateX(-50%) translateY(-50%);
 }
 </style>
 

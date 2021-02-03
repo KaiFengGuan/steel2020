@@ -21,15 +21,15 @@ export default {
         paintChart() {
             console.log(sliderdata)
             console.log(this.menuId)
-            var width = 700;
-            var height = 160;
+            var width = 600;
+            var height = 35;
             const miniMargin =  {top: 10, right: 0, bottom: 10, left: 0}
             const miniWidth = width - miniMargin.left - miniMargin.right;
             const miniHeight = height - miniMargin.bottom - miniMargin.top ,
                 barColor = "#766FAE" ,
                 inactiveColor = "#E6E5F0" ,
                 activeColor = "#534e7a" ,
-                initialBrushXSelection = [0, 50];
+                initialBrushXSelection = [0, 20];
             const miniXScale = d3.scaleBand()
                 .domain(sliderdata.map(d => d.x))
                 .range([0, miniWidth])
@@ -139,9 +139,9 @@ export default {
                 .join("rect")
                     .attr("class", "bar")
                     .attr("x", d => miniXScale(d.x))
-                    .attr("y", d => miniHeight - miniMargin.bottom - miniYScale(d.y))
+                    .attr("y", d => miniHeight + miniMargin)
                     .attr("width", miniXScale.bandwidth())
-                    .attr("height", d => miniYScale(d.y))
+                    .attr("height", d => miniHeight)
                     .attr("stroke", "black")
                     .style("fill", barColor);
             brushGroup.call(brush.move, initialBrushXSelection);

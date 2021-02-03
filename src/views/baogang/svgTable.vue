@@ -6,6 +6,7 @@
 
 <script>
 import * as d3 from 'd3';
+import * as d3boxplot from 'd3-boxplot';
 // import util from './util.js';
 import jsondata from './table.js';
 import myJsonData from "./jsondata.js"
@@ -18,7 +19,7 @@ export default {
 		}
 	},
 	methods: {
-	async paintChart() {
+	async paintChart(tabledata) {
         const vm=this
         const height = document.getElementById(this.menuId).offsetHeight;	
         const width = document.getElementById(this.menuId).offsetWidth;
@@ -27,21 +28,23 @@ export default {
 			.append("svg")
             .attr("width", width)
             .attr("height", height);
-        
+        console.log(tabledata)
         console.log(jsondata)
-        var jsondata = d3.map(myJsonData , d =>{
+        // var jsondata = d3.map(myJsonData , d =>{
+        var jsondata = d3.map(tabledata , d =>{
             return {
-                "upid" : d.upid,
-                "category" : d.productcategory,
-                "thickness" : d.tgtplatethickness2*1000,
-                "s_width" : d.slab_width,
+                "UPID" : d.upid,
+                "CATE" : d.productcategory,
+                "THCIK" : d.tgtplatethickness2*1000,
+                "WID" : d.tgtwidth,
+                // "THCIK" : d.tgtplatethickness2*1000,
+                // "S_WID" : d.slab_width,
                 // "s_length" : d.slab_length,
                 // "s_thickness" : d.slab_thickness,
-                "fault" : d.flag
+                "FAULT" : +d.label
             }
         })
-        console.log(myJsonData)
-        console.log(d3.map(jsondata , d =>d.thickness))
+        // console.log(myJsonData)
         class Paginator {
             constructor(table) {
                 this._table = table;
@@ -454,7 +457,8 @@ export default {
                 this._fullData = null;
                 this._dataIsArray = false;
                 this._columns = null;
-                this._defaultNumberFormat = "$,.2f";
+                // this._defaultNumberFormat = "$,.2f";
+                this._defaultNumberFormat = "$,.4f";
 
                 this._heatmap = false;
                 this._heatmapPalette = null; // interpolator or array of colors
@@ -478,7 +482,8 @@ export default {
                 this._style = {
                     border: true,
                     borderColor: "#aaa",
-                    textColor: "black",
+                    textColor: "#b8bfc5",
+                    headerColor: "white",
                     background: "white",
                     headerBackground: "#b1c0c6",
                     fixedBackground: "#ffffff",
@@ -628,7 +633,7 @@ export default {
                     this._calcConstrains();
                     this._createClipPaths();
 
-                    this._processHeatmap();
+                    // this._processHeatmap();
                     this._createTable();
                     this._renderBody(this._table);
                     this._renderHeader(this._table);
@@ -669,7 +674,8 @@ export default {
                     this._calcPageRange(1, 0);
 
                     const pr = new Paginator(this);
-                    const ptop = this._top, ph = this._charBox.height + pr.buttonPadding() / 2 + 3; //3: margin
+                    // const ptop = this._top, ph = this._charBox.height + pr.buttonPadding() / 2 + 3; //3: margin
+                    const ptop = this._top, ph = 0;
                     this._top += ph;
                     this._height -= ph;
                     // bottom
@@ -863,7 +869,7 @@ export default {
                     for (let i = 0; i < longest.length; i++) {
                         const column = this._columns[i];
                         column.x = column.tx = x;
-                        column.width = this._getBBox(longest[i]).width + this._cellPaddingH * 2 + 10;
+                        column.width = column.isNumber ? this._getBBox(longest[i]).width * 1.25 + this._cellPaddingH * 2 + 12 : this._getBBox(longest[i]).width  * 1.08 + this._cellPaddingH * 2 + 10;
                         x += column.width;
                     }
                 }
@@ -992,7 +998,7 @@ export default {
                             value: this._dataIsArray ? d[c.index] : d[c.name]
                         }
                     }),
-                    (d, i) => `translate(0,${i * this._cellHeightA})`,
+                    (d, i) => `translate(0,${(i+1.5) * this._cellHeightA})`,
                     d => `translate(${d.column.tx},0)`,
                     g => this._addCell(g, style.background, this._fixedColumns))
                     .on("click", click)
@@ -1013,7 +1019,7 @@ export default {
                             value: this._dataIsArray ? r[c.index] : r[c.name]
                         }))),
                         d => d,
-                        (d, i) => `translate(0,${i * this._cellHeightA})`,
+                        (d, i) => `translate(0,${(i+1.5) * this._cellHeightA})`,
                         d => `translate(${d.column.tx},0)`,
                         g => this._addCell(g, style.fixedBackground, 0, false, true));
                 }
@@ -1119,23 +1125,141 @@ export default {
                     .attr("transform", d => `translate(${d.column.tx},0)`)
                     .call(g => this._addCell(g, style.headerBackground, 0, true, true))
                     .on("click", (e, d) => this._sort(d));
+                console.log(this._columns)
+                header.selectAll(".totalcolumn")
+                    // Unify the the data structure make it compatible with addCell
+                    .data(this._columns.slice(0, this._fixedColumns).map((d, i) => ({
+                        column: d
+                    })))
+                    .join("g")
+                    .attr("class", "totalcolumn")
+                    .attr("transform", d => `translate(${d.column.tx},${this._cellHeightA})`)
+                    .call(g => {
+                        const style = this._style;
+                        const fill = style.background;
+                        const isHeader = true,isFixed = false;
+                        const rect = g.append("rect")
+                            .attr("width", d => d.column.width)
+                            .attr("height", this._cellHeightA*1.5)
+                            .attr("fill", d => this._cellColor(d, fill, isHeader, isFixed))
+                            .attr("stroke-width", 0.1)
+                            .attr("stroke", style.border ? style.borderColor : fill);
+                        const t = g.append("text").attr("y", this._cellHeightA+this._cellPaddingV).attr("dy", this._cellPaddingV).attr("fill", style.textColor);
+                        if (!style.border)
+                            g.append("line")
+                                .attr("x1", d => d.column.width - 1).attr("y1", 5)
+                                .attr("x2", d => d.column.width - 1).attr("y2", this._cellHeightA - 5)
+                                .attr("stroke", style.borderColor);
+                        t.attr("dx", d  => d.column.width/2-this._cellPaddingH*2)
+                            // .attr("clip-path", d => this._clipPath(`headerClip${d.column.index}`))
+                            // .text("All");
+                    });
+                    // this._addCell(g, style.background, 0, true, false)
+                const boxdata = this._columns.slice(this._fixedColumns).map((d, i) => ({
+                            column: d
+                        }))
+                const Boxplot = header.append("g")
+                        // .attr("clip-path", this._clipPath("headerRowClip"))
+                        .attr("transform", `translate(${this._fixedWidth},${this._cellHeightA})`);
 
-                // fixed data cells in the fixed columns section
-                if (this._fixedColumns) {
-                    this._addRows(
-                        header,
-                        "fixedRow",
-                        () => rows.map((r, i) => this._columns.slice(0, this._fixedColumns).map((c, j) => ({
-                            rowIndex: i,
-                            column: c,
-                            value: this._dataIsArray ? r[c.index] : r[c.name]
-                        }))),
-                        d => d,
-                        (d, i) => `translate(0,${(i + 1) * this._cellHeightA})`,
-                        d => `translate(${d.column.tx},0)`,
-                        g => this._addCell(g, style.fixedBackground, 0, false, true));
-                }
+                    // horizontally moveable part of the header, x is controlled by and synchronized with horizontal scrollbar
+                    const databoxplot = Boxplot.append("g");
+                    databoxplot.selectAll(".boxcolumn")
+                        // Unify the the data structure make it compatible with addCell
+                        .data(this._columns.slice(this._fixedColumns).map((d, i) => ({
+                            column: d
+                        })))
+                        .join("g")
+                        .attr("class", "boxcolumn")
+                        .attr("transform", d => `translate(${d.column.tx},0)`)
+                        .call(g => {
+                            const style = this._style;
+                            const fill = style.background;
+                            const isHeader = true,isFixed = false;
+                            const rect = g.append("rect")
+                                .attr("width", d => d.column.width)
+                                .attr("height", this._cellHeightA*1.5)
+                                .attr("fill", d => this._cellColor(d, fill, isHeader, isFixed))
+                                .attr("stroke-width", 0.1)
+                                .attr("stroke", style.border ? style.borderColor : fill);
+                            // const t = g.append("text").attr("y", this._cellHeightA+this._cellPaddingV).attr("dy", this._cellPaddingV).attr("fill", style.textColor);
+                            if (!style.border)
+                                g.append("line")
+                                    .attr("x1", d => d.column.width - 1).attr("y1", 5)
+                                    .attr("x2", d => d.column.width - 1).attr("y2", this._cellHeightA - 5)
+                                    .attr("stroke", style.borderColor);
+                            // var data1 = [0, 3, 4.4, 4.5, 4.6, 5, 7],W = rect.attr("width"),H = 5
+                            //     const stats = d3boxplot.boxplotStats(data1)
+                            //     const x = d3.scaleLinear()
+                            //         .domain(d3.extent(data1))
+                            //         .range([2, W - 2])
+                            //     const boxplot = d3boxplot.boxplot()
+                            //         .scale(x)
+                            //         .showInnerDots(false)
+                            //         .jitter(1.0)
+                            //         .opacity(1.0)
+                            //         .boxwidth(8)
+                            //         .bandwidth(5)
+                            //     g.append("g").datum(stats)
+                            //     .attr("transform", `translate(${[0,  this._cellHeightA]})`)
+                            //         .attr("class", "boxplotgfeqge")
+                            //         .attr('color', 'grey')
+                            //         .call(boxplot)
+                            //     g.append('g')
+                            //         .attr('color', '#000')
+                            //         .attr("class", "boxAxis")
+                            //         .attr('transform', 'translate(0, 5)')
+                            //         .call(d3.axisBottom()
+                            //             .scale(x)
+                            //             .ticks(4)
+                            //             .tickSize(4)
+                            //             .tickSizeInner(0)
+                            //             .tickSizeOuter(2))
 
+                            // t.attr("dx", d  => d.column.width/2-this._cellPaddingH*2)
+                            //     // .attr("clip-path", d => this._clipPath(`headerClip${d.column.index}`))
+                            //     .text(d => d.column.name);
+                        })
+                        // this._addCell(g, style.background, this._fixedColumns, true, true))
+                        for (let i in boxdata){
+                            if(i == 0 || i == boxdata.length-1) continue
+                            const boxFix =  databoxplot.append("g")
+                                .attr("class", "boxplotgrey")
+                                .attr("transform", `translate(${boxdata[i].column.tx},0)`);
+                                const indexdata = boxdata[+i]
+                                const plotdata = jsondata.map((d, i) => d[indexdata.column.name])
+                                const W = +indexdata.column.width
+                                const stats = d3boxplot.boxplotStats(plotdata)
+                                const x = d3.scaleLinear()
+                                    .domain([d3.extent(plotdata)[0]*0.95, d3.extent(plotdata)[1]*1.05])
+                                    .range([0, W - 5])
+                                const boxplot = d3boxplot.boxplot()
+                                    .scale(x)
+                                    .showInnerDots(false)
+                                    .jitter(1.0)
+                                    .opacity(1.0)
+                                    .boxwidth(8)
+                                    .bandwidth(5)
+                                const xScale = g =>  g.append('g')
+                                    .attr('color', '#000')
+                                    .attr("class", "boxAxis")
+                                    .attr('transform', 'translate(0, 0)')
+                                    .call(d3.axisBottom()
+                                        .scale(x)
+                                        .ticks(2)
+                                        .tickSize(5)
+                                        .tickSizeInner(0)
+                                        .tickSizeOuter(4))
+                                const boxplotScale = g =>  g.append("g").datum(stats)
+                                    .attr("transform", `translate(${[0,  this._cellHeightA]})`)
+                                    .attr("class", "boxplotgfeqge")
+                                    .attr('color', "#a8b8bf")
+                                    .call(boxplot)
+                                boxFix.call(boxplotScale).call(xScale)
+                        }
+                        d3.selectAll(".point .outlier .farout").remove()
+                        d3.selectAll(".point .outlier").remove()
+                        d3.selectAll(".boxAxis>.domain").attr("stroke", "#aaa")
                 // the container of the rest of the header cells, its content is clipped by headerClip
                 const headerBox = header.append("g")
                     .attr("clip-path", this._clipPath("headerRowClip"))
@@ -1288,7 +1412,7 @@ export default {
 
                 if (this._heatmap && !(isHeader || isFixed)) rect.attr("opacity", 0.5);
 
-                const t = g.append("text").attr("y", "1em").attr("dy", this._cellPaddingV).attr("fill", style.textColor);
+                const t = g.append("text").attr("y", "1em").attr("dy", this._cellPaddingV).attr("fill", style.textColor).attr("dx", d => d.column.width/2).attr("text-anchor", "middle");
 
                 if (isHeader) {
                     if (!style.border)
@@ -1301,16 +1425,18 @@ export default {
                     this._arrow(g, base, "desc", "M 0 11 L 3 15 L 6 11");
 
                     // Header cell
-                    t.attr("dx", this._cellPaddingH)
+                    t
+                    // .attr("dx", this._cellPaddingH)
                         .attr("clip-path", d => this._clipPath(`headerClip${d.column.index}`))
+                        .attr("fill", style.headerColor)
                         .text(d => d.column.name);
                 }
                 else {
                     t.attr("class", "value")
-                        .attr("dx", d => d.column.isNumber ? -this._cellPaddingH : this._cellPaddingH)
-                        .attr("clip-path", d => this._clipPath(`cellClip${d.column.index}`))
-                        .attr("transform", d => `translate(${d.column.isNumber ? d.column.width : 0},0)`)
-                        .attr("text-anchor", d => d.column.isNumber ? "end" : "start")
+                        .attr("dx", d => d.column.isNumber ? -this._cellPaddingH : 0)
+                        // .attr("clip-path", d => this._clipPath(`cellClip${d.column.index}`))
+                        .attr("transform", d => `translate(${d.column.isNumber ? d.column.width/2 + this._cellPaddingH  : d.column.width/2},0)`)
+                        .attr("text-anchor", d => d.column.isNumber ? "middle" : "middle")
                         .text(d => {
                             if (d.column.isNumber && d.column.format)
                                 return d3.format(d.column.format)(d.value);
@@ -1644,12 +1770,13 @@ export default {
         const table = new SVGTable(this.svg)
             // .extent([[0, 0], [width, height]])
             .fixedColumns(1)
-            .fixedRows(1)                
+            // .fixedRows(1)          
             .defaultNumberFormat(",.0d")
             .data(jsondata)
             .defaultColumnWidth(5)
             // .style(style)
             .render();
+        this.svg.selectAll("text").attr("font-family", "DIN")
 	},
 	},
 	mounted() {

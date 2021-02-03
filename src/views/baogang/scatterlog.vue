@@ -72,9 +72,10 @@ export default {
 				.attr("cx", d => scaleX(d.x))
 				.attr("cy", d => scaleY(d.y))
 				.attr("fill",vm.tooltipColor)
+				.attr("stroke", vm.tooltipColor)
+				.attr("stroke-width", 0.25)
 				.style("opacity", 1)
 				.on("mouseover", (event, d)=> {
-					console.log(d)
 					const tooltip = vm.svg.append("g")
 						.attr("class", "scattertooltip")
 						.style("font", "12px sans-serif");
@@ -102,15 +103,17 @@ export default {
 					tooltip
 						.style("display", null)
 						.attr("fill", "white");
-					line1.text(`upid:`+d.upid);
+					line1.text(`upid:`+ d.upid);
 					line2.text(`category: `+d.productcategory);
 					line3.text(`time:`+d.toc);
 					path
 						.attr("stroke", "none")
 						.attr("fill", vm.tooltipColor(label));
 					const box = text.node().getBBox();
-					const x=vm.scaleX(d.x)-75
-					let y=vm.scaleY(d.y)+12
+					let x = event.x - 78,
+						y = event.y - 150;
+					// const x=vm.scaleX(d.x)-75
+					// let y=vm.scaleY(d.y)+12
 					if(y+box.height + 30>h-8*marginH){					
 					path.attr("d", `
 						M${box.x - 10},${box.y - 10}
@@ -134,6 +137,7 @@ export default {
 					text.attr("transform", `translate(${[box.x+5,box.y+10]})`);
 					}
 					tooltip.attr("transform", `translate(${[x,y]})`);
+					vm.$emit("scatterMouse", {upid: d.upid,  mouse: 0});
 				})
 				.on("mouseout", (event, d)=> {
 					d3.select("#scatter"+d.upid).style("opacity", 1)
@@ -142,6 +146,7 @@ export default {
 						d3.select("#scatter"+d.upid).attr("r",1)
 					}					
 					d3.selectAll(".scattertooltip").remove();
+					vm.$emit("scatterMouse", {upid: d.upid,  mouse: 1});
 				}))
 		}
 		this.svg.append("g")
@@ -257,11 +262,20 @@ export default {
 	mouse(value){
 		const vm=this
 		if(value.mouse===0){
-			d3.selectAll(`.sliceselect${value.upid}`)
-				.attr('fill',value.color)
+			for(let item in value.upid){
+				d3.selectAll(`#scatter${value.upid[item]}`)
+					// .attr('fill',value.color)
+					.attr("stroke", "black")
+					.attr("stroke-width", 0.75)
+			}
+
 		}else{
-			d3.selectAll(`.sliceselect${value.upid}`)
-						.attr("fill", (d,i) => vm.colorScale(i))
+			for(let item in value.upid){
+				d3.selectAll(`#scatter${value.upid[item]}`)
+				.attr("stroke", vm.tooltipColor)
+				.attr("stroke-width", 0.25)
+						// .attr("fill", (d,i) => vm.colorScale(i))
+			}
 		}
 		
 	},

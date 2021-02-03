@@ -1,7 +1,7 @@
 <template>
-	<div class="custom-marey" style="margin-top : -2px">
+	<div class="custom-marey" style="margin-top : -8px">
 		<el-row >
-			<el-col :span="5" style="margin-top : 1px">
+			<el-col :span="5" style="margin-top : 7px">
 				<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
 					<!-- <div class="control-logo" style="font-size: 16px;"><span>Controls</span></div> -->
 
@@ -66,18 +66,18 @@
 								</el-select>
 							</div>
 							<div class="my-card-body">
-								<scatterlog ref="scatterloging" style="height:360px;"></scatterlog>
+								<scatterlog ref="scatterloging" style="height:360px;" @scatterMouse="scatterMouse"></scatterlog>
 							</div>
 						</el-card>
 					</el-col>
 					</el-row>
 					<el-row>
 						<el-card class="myel-card">
-						<el-row style=";background: white">
+						<el-row style="background: white">
 						<!-- <div class="panel-title">Tabular Parameters</div> -->
 						<el-row :gutter="8">
 						<!-- <div class="panel-title"></div> -->
-						<el-form size="mini" label-width="100px" style="padding-right: 10px;margin:5px">
+						<el-form size="mini" label-width="100px" style="padding-right: 10px;margin-top:5px">
 							<el-form-item label="Date">
 								<el-date-picker v-model="dateselect" type="datetimerange" range-separator=" " @change="changeTime" start-placeholder="开始日期" end-placeholder="结束日期" style="width:200px;" size="mini">                 
 								</el-date-picker> 
@@ -158,14 +158,18 @@
 						<el-row>
 							<div>
 								<el-card class="myel-card">
+									
 									<div class="my-card-title" slot="header">
-										<span>Diagnosis View</span>
+										<el-col :span="12"><span>Diagnosis View</span></el-col>
+										<!-- <el-col :span="8"></el-col> -->
+										<el-col :span="8" style="float:right"><simder style="height:700px,width:400px" ref="simpleSlider"></simder></el-col>
+										
 									</div>
 									<div style="padding-right:5px; padding-bottom : 5px">
 										<el-col :span="11">
 											<el-card class="myel-card">
 												<div class="my-card-body" >
-													<wheeler ref="wheelering" style="height:500px"></wheeler>
+													<wheeler ref="wheelering" style="height:500px" @indexSort="indexSort"></wheeler>
 												</div>
 											</el-card>
 										</el-col>
@@ -193,43 +197,42 @@
 								<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini"  @change="orderchange" class="card-select">
 									<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
 								</el-select>
-								<el-popover placement="top" width="350" trigger="hover" style="float:right;margin-right:11px">
+								<el-popover placement="top" width="350" trigger="click" style="float:right;margin-right:11px">
+							<el-row class="toltip">
 								<el-row :gutter="8">
 									<el-col :span="8" style="font-size: 13px;">
-										<div style="height: 24px;padding-right:5px;margin:2px 0" class="fontcolor">ThicknessGap </div>
-										<div style="height: 24px;padding-left:16px;margin:2px 0" class="fontcolor">WidthGap </div>
-										<div style="height: 24px;padding-left:12px;margin:2px 0" class="fontcolor">LengthGap </div>
+										<div style="height: 24px;padding-right:5px;margin:9px 0px 15px 0px" class="fontcolor">ThicknessGap </div>
+										<div style="height: 24px;padding-left:16px;margin:15px 0" class="fontcolor">WidthGap </div>
+										<div style="height: 24px;padding-left:12px;margin:15px 0" class="fontcolor">LengthGap </div>
 									</el-col>
 									<el-col :span="10" id="imput-line">
-										<mu-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
-										<mu-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
-										<mu-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
+										<el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" class="slider_self"></el-slider>
+										<el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" class="slider_self"></el-slider>
+										<el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" class="slider_self"></el-slider>
+										<!-- <mu-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider> -->
+										<!-- <mu-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
+										<mu-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider> -->
 									</el-col>
 									<el-col :span="4">
-										<div style="margin-bootom:2px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
-										<div style="margin:4px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
-										<div style="margin:6px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
+										<div style="margin:5px 0px 21.5px 0px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
+										<div style="margin:21.5px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
+										<div style="margin:21.5px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
 									</el-col>
 								</el-row>
 								<el-form size="mini" label-width="100px" >
-									<el-form-item label="Category" style="padding-right: 10px;margin-bottom:4px;font-size:13px;padding-left:2px" class="abel">
+									<el-form-item label="Category" style="padding-right: 10px;font-size:13px;padding-left:2px" class="abel">
 											<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
 											<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
 										</el-select>
 									</el-form-item>
-									<!-- <el-form-item label="Order:" style="border-top: solid lightgrey 0.15rem;padding-right: 10px;padding-top:8px;margin:4px;margin-bottom:0px;" class="abel">
-											<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini" style="margin-top:4px" @change="orderchange">
-											<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-										</el-select>
-									</el-form-item> -->
 								</el-form>
 
 								<el-row :gutter="8">
 									<el-col :span="8" style="font-size: 13px;">
-										<div style="height: 24px;padding-left:40px" class="fontcolor">Range </div>                
+										<div style="height: 24px;padding-left:40px;margin:8px 0px" class="fontcolor">Range </div>                
 									</el-col>
 									<el-col :span="10" id="imput-line">
-										<mu-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" range :display-value="false" style="margin:2.5px;color:#999a9d"></mu-slider>
+										<el-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" style="margin:2.5px;color:#999a9d" class="slider_self"></el-slider>
 									</el-col>
 									<el-col :span="4">
 										<div style="margin:2px">{{plateTempProp.deviation}}%</div>
@@ -266,7 +269,9 @@
 										</el-row>
 									</div>
 								</el-row>
+							</el-row>
 								<i class="el-icon-s-data" slot="reference" style="vertical-align: middle;line-height:1.5"></i>
+							
 								</el-popover>
 								
 								</div>
@@ -319,6 +324,7 @@ import timeBrush from './timeBrush.vue';
 import gauge from './gauge.vue';
 import threeBar from './threeBar.vue';
 import wheeler from './wheeler.vue';
+import simder from './simder.vue'
 import swheel from './swheel.vue';
 import force from './force.vue';
 import heat from "./heat.vue";
@@ -331,7 +337,7 @@ import myJsonData from "./jsondata.js"
 import myStationData from "./stationdata.js"
 var echarts = require('echarts');
 export default {
-	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel },
+	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel , simder},
 	data() {
 		return {
 			symbolvalue:0.05,
@@ -377,12 +383,12 @@ export default {
 			interval: 12,
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
-				"T-SNE", "MDS", "PCA"
+				"T-SNE", "ISOMAP", "UMAP"
 			],
 			algorithmUrls: {
 				"T-SNE": "/baogangapi/v1.0/model/VisualizationTsne/",
-				"MDS": "/baogangapi/v1.0/model/VisualizationMDS/",
-				"PCA": "/baogangapi/v1.0/model/VisualizationPCA/"
+				"ISOMAP": "/baogangapi/v1.0/model/VisualizationMDS/",
+				"UMAP": "/baogangapi/v1.0/model/VisualizationPCA/"
 			},
 			algorithmSelected: "T-SNE",
 			plateTempProp: {
@@ -459,8 +465,12 @@ export default {
 		async getHttpData() {
 			this.jsonData = myJsonData
 			this.mergeflag()
-			this.$refs.mareyChart.paintMareyChart(this.jsonData,myStationData)
-			this.$refs.jsontable.paintChart()
+			this.$refs.mareyChart.paintMareyChart(this.jsonData,myStationData, this.isSwitch)
+			var jsonupid = d3.map(this.jsonData, d => d.upid)
+			var scatterlogdata = Object.values(this.scatterlogdata)
+			// var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
+			this.$refs.jsontable.paintChart(scatterlogdata)
+			// this.$refs.jsontable.paintChart(tabledata)
 			return
 			// this.clearAllChart()
 			this.plateTempPropvalue=['All']
@@ -517,7 +527,7 @@ export default {
 			console.log(d3.groups(this.jsonData , d => d.flag))
 			if(this.scatterlogdata.length!==0)	this.mergeflag()
 			console.log(d3.groups(this.jsonData , d => d.flag))
-			// this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData);
+			// this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData, this.isSwitch);
 			this.$refs.mareyChart.paintMareyChart()
 
 			// clear
@@ -847,8 +857,14 @@ export default {
 
 			
 		},
+		indexSort(sliderdata){
+			this.$refs.simpleSlider.paintChart(sliderdata)
+		},
 		trainMouse(value){
 			this.$refs.scatterloging.mouse(value)
+		},
+		scatterMouse(value){
+			this.$refs.mareyChart.mouse(value)
 		},
 		paintUnderCharts(upid) {
 			// diagnosisData
@@ -1203,6 +1219,7 @@ export default {
 			display: inline-block;
 		}
 	}
+
 	.el-switch__label * {
 		font-size: 12px;
 		color:#303133;
@@ -1269,6 +1286,13 @@ export default {
 .el-select-dropdown__item span{
 		font-family : DIN !important;
 		color: #6d7885;
+}
+
+.el-slider__button{
+	border: 2px solid 	#999a9d!important
+}
+.el-slider__bar{
+	background-color :#999a9d !important;
 }
 .my-card {
 	margin: 3px 5px;

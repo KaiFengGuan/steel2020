@@ -1,5 +1,5 @@
 <template>
-	<div class="custom-marey">
+	<div>
 		<el-row style="margin: 2px 0;background: white">
 			<!-- <el-col :span="7">
 				<wheeler ref="wheelering" style="height:530px;width:530px"></wheeler>
@@ -16,7 +16,8 @@
 			<!-- <el-col :span="7">
 				<chord ref="chording" style="height:475px;width:475px"></chord>
             </el-col>	 -->
-			<slider style="height:700px,width:400px"></slider>
+			<!-- <slider style="height:700px,width:400px"></slider> -->
+			<!-- <simder style="height:700px,width:400px"></simder> -->
 		</el-row>
 	</div>
 </template>
@@ -36,6 +37,7 @@ import chord from './chord.vue';
 import wheeler from './wheeler.vue';
 import mareyChart from './mareyChart.vue';
 import slider from './slider.vue'
+import simder from './simder.vue'
 import polyLineChart from './polyLine.vue';
 import plateTemperature from './plateTemperature.vue';
 import timeBrush from './timeBrush.vue';
@@ -49,7 +51,8 @@ import scatterAxis from "./scatterAxis.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 var echarts = require('echarts');
 export default {
-	components: { mareyChart, scatter, polyLineChart, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog,wheel,wheeler,bundle,chord ,slider},
+	components: { mareyChart, scatter, polyLineChart, plateTemperature, 
+	timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog,wheel,wheeler,bundle,chord ,slider, simder},
 	data() {
 		return {
 			bundling:false,

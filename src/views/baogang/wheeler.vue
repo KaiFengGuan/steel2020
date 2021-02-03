@@ -507,7 +507,8 @@ export default {
                     wm=this,
                     colorLinear1=[],
                     colorLinear2=[];
-                    const sortdata=d3.filter(this._chartData, d => d.humidity>1.5|d.precipitation>1.5);
+                    const sortdata= this._chartData;
+                    // const sortdata=d3.filter(this._chartData, d => d.humidity>1.5|d.precipitation>1.5);
                     const SPE=d3.sort(sortdata,d=>d.precipitation),
                         T2=d3.sort(sortdata,d=>d.humidity),
                         res=d3.sort(sortdata,d=>d.deviation);
@@ -517,6 +518,14 @@ export default {
                         SPE[item].order=+item+1+(+T2.findIndex((value, index, arr)=> value.dateStr===query))+1+(+res.findIndex((value, index, arr)=> value.dateStr===query))+1
                     }
                     const sample=d3.sort(SPE,d=>d.order);
+                    const sliderdata = sample.map((d, i) => {
+                        d.color = lc[this._months.indexOf(d.month)]
+                        d.process  = this._months.indexOf(d.month)
+                        return d
+                    })
+                    // console.log(sample)
+                    // console.log(this._chartData)
+                    // console.log(sliderdata)
                 const vis = this._g.selectAll("#" +menuId + " .vis").data(this._chartData);
                 for (let key in xpad){
                     const processdata = [], 
@@ -840,6 +849,7 @@ export default {
                         graph.nodes.push({'id':id,'group':key,'targets':targets})
                     }
                 }
+                vm.$emit("indexSort", sliderdata);
                 // d3.xml("../../assets/images/heat.svg")
                 // .then(data => {
                 //     console.log(data)
@@ -913,7 +923,7 @@ export default {
                             .style("font-family", "DIN")
                             .attr("x" , r.bubble*0.5 - 20)
                             .text((d , i)=> d.toUpperCase())
-                            .attr("fill", d3.color("grey").darker(0.9))
+                            .attr("fill", "#7a7e81")
                             .attr("stroke", "none")
                         )
                         .call(g => g.append("rect")
@@ -932,7 +942,7 @@ export default {
                             .attr("y", (d,i)=> i*17-12)
                             .attr("rx" , 2)
                             .attr("ry" , 2)
-                            .style("fill","pink")
+                            .style("fill","#cbdcea")
                             .attr("stroke", "none")
                             .attr("stroke-width",0.25)
                             .attr("width", (d , i) => widthScale[i])
@@ -953,7 +963,7 @@ export default {
                             .attr("font-weight", "normal")
                             .style("font-family", "DIN")
                             .text((d , i) => i>=2 ? (i!==2 ? this._details['steel'][i+1] +' m' : (this._details['steel'][i+1]*1000).toFixed(2) +' mm') : this._details['steel'][i])
-                            .attr("fill", d3.color("grey").darker(0.5))
+                            .attr("fill", "#7a7e81")
                             .attr("stroke", "none")
                         ))
 

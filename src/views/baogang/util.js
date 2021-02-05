@@ -36,7 +36,8 @@ var categoryslabel = {
 // var labelColor = [ '#fa558f', '#7f8df5']    //颜色控制
 // var labelColor = [ "#e0978f" , "#8fa4ae"]   //blue red original
 var labelColor = [ "#c65b24", "#94a7b7"] // red grey
-var labelColor2 = [ '#e34649', '#5164f5'] 
+var labelColor2 = [ '#e34649', '#5164f5']
+var processColor =['#fcd8a9','#cce9c7',"#c1c9ee"]; 
 // var labelColor = ['#ff005a', '#3888fa', '#88fa38', '#fa3888', '#38faaa']   //多个颜色
 export default {
     // 除子节点
@@ -69,7 +70,8 @@ export default {
         for (let i = 0; i < categorys.length; i++) {
             for (let item in categoryslabel){
                 if(categoryslabel[item].includes(index)){
-                    colors[categorys[i]]=d3.schemeSet1[+item+1]
+                    if(item == 2 )item = 3
+                    colors[categorys[i]]=d3.schemeTableau10[+item]
                 }
                 
             }
@@ -78,13 +80,14 @@ export default {
         //     colors[categorys[i]] = d3.schemeCategory10[i % 10]
         // }
         if(index==='H40'){
-            return d3.schemeSet1[6]
+            return d3.schemeTableau10[6]
         }
         return index ? colors[index] : colors
     },
     // labelColor: ['red', d3.schemeCategory10[0]]
     labelColor2: labelColor2,
     labelColor: labelColor,
+    processColor: processColor,
     labelColorFunc (index) {
         return labelColor[index]
     },

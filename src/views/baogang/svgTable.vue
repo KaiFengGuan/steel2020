@@ -483,9 +483,9 @@ export default {
                     border: true,
                     borderColor: "#aaa",
                     textColor: "#b8bfc5",
-                    headerColor: "white",
+                    headerColor: "#30445a",
                     background: "white",
-                    headerBackground: "#b1c0c6",
+                    headerBackground: "#f4f6f6",
                     fixedBackground: "#ffffff",
                     highlight: "cross", // none, cell, cross
                     highlightBackground: "#fff3b0"

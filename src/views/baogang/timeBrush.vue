@@ -149,7 +149,7 @@ export default {
         paintData.bad_flag.push(0)
         paintData.good_flag.push(0)
       }
-      while(paintData.good_flag.length<30){
+      while(paintData.good_flag.length<20){
           let entry=paintData.endTimeOutput[0]
           entry = entry.replace(/-/g,"/");          
           var datestart = new Date(entry );

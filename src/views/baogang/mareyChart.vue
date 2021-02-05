@@ -21,10 +21,14 @@ export default {
 			trainGroupStyle: undefined,
 			showColor: util.categoryColor,
 			changeColor: false,
-			data:[],
-			station:[],
+			data: undefined,
+			station: undefined,
 			highLightStrokeWidth : 2,
-			defaultStrokeWidth : undefined
+			defaultStrokeWidth : undefined,
+			minrange: 20,
+			minconflict: 5,
+			isMerge: true,
+			processColor: util.processColor
 		}
 	},
 	methods: {
@@ -39,7 +43,7 @@ export default {
 		this.changeColor = changeColor
 		this.changeColor ?(this.trainGroupStyle =  d => d.flag === 0 ? vm.labelColors[0] : vm.labelColors[1]) :(this.trainGroupStyle = d => vm.categoryColors(d.productcategory));
 		
-		var stationcolor =['#fcd8a9','#cce9c7',"#c1c9ee"];
+		var stationcolor = this.processColor;
 		// data
 		this.data=alldata;
 		this.station=stationsData;
@@ -50,10 +54,6 @@ export default {
 		var stops = d3.merge(data.map(d => d.stops.map(s => ({ train: d, stop: s }))))
 		var statname = d3.map(stations, d => d.name)
 		const statOver =  (e,m)  =>{
-			// d3.select("#polygon" + m.name).attr("fill" , (d , i) => {
-			// 	var tempcolor = i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1])
-			// 	return d3.color(tempcolor).darker(0.6)
-			// })
 			d3.select("#polygon" + m.name).attr("fill", (d,i) => d3.color(statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(0.2))
 			d3.select("#line" + m.name).attr("stroke-width" , 2.5)
 			d3.select("#station" + m.name).attr("font-weight", "bold")
@@ -70,8 +70,8 @@ export default {
 			.range([0.5, 1.2])
 		this.defaultStrokeWidth = defaultStrokeWidth
 		var highLightStrokeWidth = this.highLightStrokeWidth
-		var margin = ({ top: 70, right: 90, bottom: 0, left: 90 })
-
+		var margin = ({ top: 65, right: 90, bottom: 0, left: 90 })
+		// margin.right = this.isMerge ? 90 : 50;
 		var x = d3.scaleLinear()
 			.domain(d3.extent(stations, d => d.distance))
 			.range([margin.left + 10, width - 1.5 * margin.right ])
@@ -204,25 +204,42 @@ export default {
 					.attr("dy", "0.35em")
 					.attr("font-family" , "DIN")
 					.attr("fill", "white")
-					.text(d => d.name)
+					.text(d => d.name.replace(/harging/, "harge").replace(/Cc/, "").replace(/ing/, ""))
 					.on("mouseover", statOver)
 					.on("mouseout", statOut))
-
+			var polygonlength = (width - 1.5 * margin.right - (margin.left + 10))/1.414  +  labelwidth + 3
+			var xRect = g => g.append("polygon")
+					.attr("transform", `translate(${margin.left + 10 - labelwidth/2 - 6} ,${margin.top -1.5}) rotate(-45)`)
+					.attr("id", "rectxLine")
+					.attr("points", `0, 0  ${polygonlength},${polygonlength} ${112 - labelwidth + polygonlength}, ${polygonlength}  ${112 - labelwidth}, 0`)
+					// .attr("stroke", "grey")
+					.attr("fill", "none")
+					// .attr("filter","url(#label-rect)")
+					.attr("stroke", "#c4c4c4")
+					.attr("stroke-width", 0.15)
+					.attr("filter","url(#shadow-card)")
+			
 			// var xGroup = renderG.append("g")
 			// 	.call(xAxis);
 			const defs = renderG.append("defs");
 			const filtershadow =defs.append("filter").attr("id", "shadow-rect")
 			filtershadow.append("feDropShadow")
-				.attr("dx","0")
-				.attr("dy", "0")
-				.attr("stdDeviation", 5)
+				.attr("dx",0)
+				.attr("dy", 0)
+				.attr("stdDeviation", 2.5)
 				.attr("flood-color", "#bfbdbd")
 			const filterrect =defs.append("filter").attr("id", "shadow-card")
 			filterrect.append("feDropShadow")
-				.attr("dx","0")
-				.attr("dy", "0")
+				.attr("dx",0)
+				.attr("dy", 0)
 				.attr("stdDeviation", 5)
 				.attr("flood-color", "#ededed")
+			const filterlabel =defs.append("filter").attr("id", "label-rect")
+			filtershadow.append("feDropShadow")
+				.attr("dx",0)
+				.attr("dy", 0)
+				.attr("stdDeviation", 10)
+				.attr("flood-color", "#bfbdbd")
 
 			renderG.append("g")
 				.call(g => g.append("rect")
@@ -306,7 +323,7 @@ export default {
 					.attr("opacity" , 0.4)
 					.attr("stroke" , (d , i) => d3.color(i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1]))))
 
-
+			filterdata = vm.isMerge ? filterdata : data
 			var train = renderG.append("g")
 				.attr("fill", "white")
 				.selectAll("g")
@@ -323,11 +340,13 @@ export default {
 			var maxlength = d3.max(mergeresult, d => d["merge"].length)
 			var axislength = 6 ;
 			var lmaxlength = 50 ;
+			var qualityData = [];
 			const circledot = width - margin.right * 0.75;
 			var circleline = d3.scaleLinear()
 					.domain([20 , maxlength ]).nice()
 					.range([ 40 , lmaxlength])
 			for (let item in mergeresult){
+				if(!vm.isMerge) break
 				var xaxlength = 30
 				// circleline(mergeresult[item]["merge"].length)
 				var index = mergeresult[item]["data"]
@@ -339,12 +358,15 @@ export default {
 				var linetransfrom = 0
 				// (y((new Date(data[midindex+1].stops[0].time))) - y(new Date(data[midindex].stops[0].time)))
 
+				var quality = d3.sort(d3.groups(mergeresult[item]["merge"], d => d.flag), d=> d[1].length)
+				// console.log(quality)
+				// vm.changeColor
 				renderG.append("g")
 					.attr("fill", "white")
 					.selectAll(`g`+item)
 					.data(data.slice(midindex , midindex+1))
 					.join("g")
-					.style("color", vm.trainGroupStyle)
+					.style("color", vm.changeColor ?  (quality[1] !== undefined ? vm.labelColors[quality[1][0]] : vm.labelColors[quality[0][0]]) : vm.trainGroupStyle)
 					.attr("stroke-width", lineheight )
 					.attr("transform", `translate( 0 ,${ linetransfrom })`)
 					.call(g => g.append("path")
@@ -363,6 +385,22 @@ export default {
 						var mergemouse = d3.map(mergeresult[item]["merge"], d => d.upid)
 						vm.$emit("trainMouse", {upid: d3.filter(mergemouse , d => selectmouse.indexOf(d) === -1 ),  mouse: 1});
 					})
+				if(vm.changeColor && quality[1] !== undefined){
+					renderG.append("g")
+					.attr("fill", "white")
+					.selectAll(`.select g`+item)
+					.data(quality[1] !== undefined ? quality[0][1] : [])
+					.join("g")
+					.style("color", vm.trainGroupStyle)
+					.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) } )
+					.attr("id", d => ("id" + d.upid))
+					.attr("transform", `translate( 0 ,${ linetransfrom })`)
+					.call(g => g.append("path")
+						.attr("fill", "none")
+						.attr("stroke", "currentColor")
+						.attr("d", d => line(d.stops)))
+					qualityData.push(...d3.map(quality[0][1], d=> d.upid))
+				}
 				renderG.append("g")
 					.attr("fill", "white")
 					.selectAll(`.select g`+item)
@@ -384,6 +422,117 @@ export default {
 				var eDate = mergeresult[item]["merge"].slice(-1)[0].stops[stations.length-1].time;
 				const position = [ circledot , (y((new Date(data[midindex+1].stops[stations.length-1].time))) )];
 				const rectG = renderG.append("g")
+				const rectwidth = xaxlength + 25;
+				var rectCard;
+				var lineDate = g => g.append("g")
+					.attr("transform", `translate(${[position[0]-rectwidth, position[1]-rectwidth]})`)
+					.call(g => g.append("rect")
+						.attr("stroke", "#c4c4c4")
+						.attr("stroke-width", 0.15)
+						.attr("fill", "white")
+						.attr("x", -rectwidth)
+						// .attr("transform", `translate(${[-xaxlength-25, -xaxlength-25]})`)
+						.attr("width", 3*rectwidth)
+						.attr("height", 2*rectwidth)
+						.attr("filter","url(#shadow-card)"))
+				if(item == 0 ||  item == mergeresult.length - 1){
+					rectCard = g => g.append("g")
+						.attr("transform", `translate(${[position[0] - 25, position[1]-rectwidth -  22]})`)
+						.data(data.slice(midindex , midindex+1))
+						.call(g => g.append("rect")
+							.attr("stroke", "#c4c4c4")
+							.attr("stroke-width", 0.15)
+							.attr("width", 40)
+							.attr("height", 20)
+							.attr("fill", d => vm.categoryColors(d.productcategory))
+							.attr("opacity", 0.7)
+							.attr("rx", 10)
+							.attr("filter","url(#shadow-card)"))
+						.call(g => g.append("text")
+							.attr("x", 25)
+							.attr("y", 15)
+							.attr("fill", "white")
+							// .attr("opacity", 0.6)
+							.attr("font-family", "DIN")
+                            .attr("font-size", "10pt")
+                            .attr("font-weight", "450")
+                            .attr("text-anchor", "middle")
+                            .text(d  =>  d.productcategory)
+							.attr("stroke", "none"))
+				}else{
+					var Cateindex = Math.floor(d3.mean(mergeresult[+ item + 1 + ""]["data"]));
+					rectCard = g => {
+						var sries = g.append("defs")
+						var marker =sries.append("marker")
+								.attr("id", "triangle"+item)
+								.attr("markerUnits", "strokeWidth")
+								.attr("markerWidth", 5)
+								.attr("markerWidth", 4)
+								.attr("refX", 0)
+								.attr("refY", 2)
+								.attr("orient", "auto")
+						marker.append("path")
+									.attr("d", "M 0 0 L 5 2 L 0 4 z")
+									.attr("fill", "#c4c4c4")
+						g.append("g")
+							.attr("transform", `translate(${[position[0]  - rectwidth * 0.1, position[1]-rectwidth -  12]})`)
+							.call(g => g.append("path")
+								.attr("stroke", "#c4c4c4")
+								.attr("stroke-width", 2)
+								.attr("fill", "none")
+								.style("marker-end", `url(#triangle${item})`)
+								.attr("d", "M -5,0 L 6,0"))
+						g.append("g")
+							.attr("transform", `translate(${[position[0] - 25 - rectwidth * 0.6 , position[1]-rectwidth -  22]})`)
+							.data(data.slice(midindex , midindex+1))
+							.call(g => g.append("rect")
+								.attr("stroke", "#c4c4c4")
+								.attr("stroke-width", 0.15)
+								.attr("width", 40)
+								.attr("height", 20)
+								.attr("fill", d => vm.categoryColors(d.productcategory))
+								.attr("opacity", 0.7)
+								.attr("rx", 10)
+								.attr("filter","url(#shadow-card)"))
+							.call(g => g.append("text")
+								.attr("x", 25)
+								.attr("y", 15)
+								.attr("fill", "white")
+								// .attr("opacity", 0.6)
+								.attr("font-family", "DIN")
+								.attr("font-size", "10pt")
+								.attr("font-weight", "450")
+								.attr("text-anchor", "middle")
+								.text(d  =>  d.productcategory)
+								.attr("stroke", "none"))
+						
+						g.append("g")
+							.attr("transform", `translate(${[position[0] - 25 + rectwidth * 0.6 , position[1]-rectwidth -  22]})`)
+							.data(data.slice(Cateindex , Cateindex+1))
+							.call(g => g.append("rect")
+								.attr("stroke", "#c4c4c4")
+								.attr("stroke-width", 0.15)
+								.attr("width", 40)
+								.attr("height", 20)
+								.attr("fill", d => vm.categoryColors(d.productcategory))
+								.attr("opacity", 0.7)
+								.attr("rx", 10)
+								.attr("filter","url(#shadow-card)"))
+							.call(g => g.append("text")
+								.attr("x", 25)
+								.attr("y", 15)
+								.attr("fill", "white")
+								// .attr("opacity", 0.6)
+								.attr("font-family", "DIN")
+								.attr("font-size", "10pt")
+								.attr("font-weight", "450")
+								.attr("text-anchor", "middle")
+								.text(d  =>  d.productcategory)
+								.attr("stroke", "none"))
+					}
+				}
+				rectG.call(lineDate)
+				// .call(rectCard)
 				for (let i in indexname){
 					// const categorys = d3.group(data , d => d.productcategory)[]
 					let linedata = d3.map(categorysdata , d => d[indexname[i]]).sort()
@@ -416,6 +565,7 @@ export default {
 
 					lineposition.push(meandata)
 					lineScale.push(xline)
+					
 
 					rectG.append("path")
 						.datum(sortdata)
@@ -469,7 +619,6 @@ export default {
 					.range([ 8 , 0]);
 				const arrayindex =  [ [0 , 6 ] , [ 6 , -2 ] , [-5]];
 				const piedata = d3.map(arrayindex , d => wheeldata.slice(...d));
-				const rectwidth = xaxlength + 25;
 				var lineSate = data[index[0]].stops.slice(-1)[0].time;
 				var lineEate = data[index[1]].stops.slice(-1)[0].time;
 				var meanposition = y(new Date(data.slice(midindex , midindex+1)[0].stops.slice(-1)[0].time))
@@ -490,17 +639,7 @@ export default {
 						return (f * 1 /3 -1/6+ ( i)/(piedata[f].length - 1)/3 ) * 2 * Math.PI}))
 					//i*360/mergeresult[item]["wave"].length/180
 				// console.log(piedata)
-				var lineDate = g => g.append("g")
-					.attr("transform", `translate(${[position[0]-rectwidth, position[1]-rectwidth]})`)
-					.call(g => g.append("rect")
-						.attr("stroke", "#c4c4c4")
-						.attr("stroke-width", 0.15)
-						.attr("fill", "white")
-						.attr("x", -rectwidth)
-						// .attr("transform", `translate(${[-xaxlength-25, -xaxlength-25]})`)
-						.attr("width", 3*rectwidth)
-						.attr("height", 2*rectwidth)
-						.attr("filter","url(#shadow-card)"))
+
 					// .call(g => g.append("line")
 					// 	.attr("stroke", "#c4c4c4")
 					// 	.attr("stroke-width", 0.45)
@@ -514,7 +653,6 @@ export default {
 					// 	// .attr("y2", y(new Date(lineEate)) - position[1]+rectwidth)
 					// 	.attr("y2", meanposition + rectwidth - position[1] + lineheight/2)
 					// 	.attr("x2", width - 1.5 * margin.right -position[0]+rectwidth))
-				rectG.call(lineDate)
 				rectG
 				.append("g")
 				.attr("transform", ` translate( ${position})`)
@@ -619,7 +757,7 @@ export default {
 						.attr("d", (d, i) => voronoi.renderCell(i))
 
 					.on("mouseout", (event, d) => {
-						if( filter.indexOf(d.train.upid) !==-1 ) return
+						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return
 						if (vm.changeColor) {
 						// vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(parseInt(d.train.flag)), mouse: 1});
 						
@@ -637,7 +775,7 @@ export default {
 
 					.on("mouseover", (event, d) => {
 						// console.log(d)
-						if( filter.indexOf(d.train.upid) !== -1 ) return
+						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return
 						if (vm.changeColor) {
 						// vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(parseInt(d.train.flag)), mouse: 0});
 						
@@ -706,7 +844,8 @@ export default {
 			d3.select(".axisrect").raise()
 			
 			var xGroup = renderG.append("g")
-				.call(xAxis);
+				.call(xRect).call(xAxis);
+			renderG
 			d3.select(".shadow_rect").raise()
 			// var yGroup = renderG.append("g")
 			// 	.call(yAxis);
@@ -714,7 +853,7 @@ export default {
 		}
 		render()
 
-		const miniMargin = { top: 115, right: 30, bottom: -35, left: 15 },
+		const miniMargin = { top: 115, right: 25, bottom: -35, left: 25 },
 			mainHeight = document.getElementById(this.menuId).offsetHeight,
 			miniheight =  mainHeight - miniMargin.top - miniMargin.bottom,
 			miniwidth = 75,
@@ -736,7 +875,8 @@ export default {
 			miniline = d3.line()
 				.x(d => miniYScale(d.station.distance))
 				.y(d => miniXScale(new Date(d.time))),
-			initialBrushXSelection = [0, miniXScale(new Date(jsondata[50].stops[0].time))],
+			BrushSelectHeight = this.isMerge ? miniXScale(new Date(jsondata[50].stops[0].time)) : miniXScale(new Date(jsondata[75].stops[0].time)),
+			initialBrushXSelection = [0, BrushSelectHeight],
 			brush = d3.brushY()
 				.extent([[0, 0], [miniwidth - miniMargin.right - miniMargin.left, miniheight - miniMargin.bottom - miniMargin.top]])
 				.on("brush", brushmove),
@@ -896,6 +1036,23 @@ export default {
 			.attr("transform", `translate(${[miniwidth - miniMargin.right +5, miniMargin.top]})`)
 			.call(miniyAxis)
 		axis.selectAll("text").attr("text-anchor", "start")
+		const defs = svg.append("defs");
+			const filterrect =defs.append("filter").attr("id", "shadow-label")
+			filterrect.append("feDropShadow")
+				.attr("dx",0)
+				.attr("dy", 0)
+				.attr("stdDeviation", 20)
+				.attr("flood-color", "#c9cbcc")
+		svg
+			.append("rect")
+			.attr("class", "miniaxisrect")
+			.attr("transform", `translate(${[miniMargin.left, miniMargin.top]})`)
+			.attr("height", miniheight - miniMargin.bottom - miniMargin.top)
+			.attr("width", miniwidth - miniMargin.right - miniMargin.left)
+			.attr("fill", "none")
+			.attr("stroke", "#c9cbcc")
+			.attr("stroke-width", 0.15)
+			.attr("filter","url(#shadow-label)")
 		brushGroup.call(brush.move, initialBrushXSelection);
 		d3.select(".selection")
 			.attr("fill", "none")
@@ -978,11 +1135,12 @@ export default {
 		merge(json , stations){
 			const categorys = d3.group(json , d => d.productcategory)
 			const mergecategorys = []	// merge categorys
-			const minrange = 20
-			const minconflict = 5
+			const minrange = this.minrange
+			const minconflict = this.minconflict
+			console.log(minconflict)
 			const mergedata = {}
 			const mergeIndex = {}	// merge station maxlength
-			const mergeresult = [] , mpass=/MPass/ ;
+			const mergeresult = [] , mpass = /MPass/ ;
 			const mpassnumber = (+stations.slice(-4)[0].name.replace(mpass,''))
 			for (let item of [...categorys]){
 				item[1].length>minrange ? mergecategorys.push(item[0]) : undefined
@@ -1136,12 +1294,22 @@ export default {
 					.attr("stroke", "none");
 				d3.select(`#miniBar${value.upid}`)
 					.attr("fill", d=>  this.trainGroupStyle(d))
+			}
+		},
+		renderChart(value1, value2, value3){
+			this.$nextTick(() => {
+				this.isMerge = value1
+				this.minrange = value2
+				this.minconflict  =  value3
+				if(this.data !== undefined && this.station !== undefined){
+					this.paintMareyChart(this.data,this.station, this.changeColor)
+				}
+			})
+
 		}
-		
-	},
 	},
 	mounted() {
-	}
+	},
 }
 </script>
 

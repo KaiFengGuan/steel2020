@@ -42,15 +42,23 @@
 
 
 					<el-row>
-						<el-card class="myel-card" style="margin:1px 5px">
-							<div class="my-card-body" style="height:48px; width:100%; display:flex;">
-								<time-brush ref="timeBrush" style="flex: 1 0 210px;" 
-									@timeBrushed="setStartEndDate"
-									:custom-height="'50px'">
-								</time-brush>
-								<el-button style="height: 48px; flex: 0 0 auto; " type="danger" size="small" @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
-							</div>	
-						</el-card>
+						<el-col :span="12">
+							<el-date-picker v-model="dateselect" type="datetimerange" range-separator=" " 
+								@change="changeTime" start-placeholder="开始日期" end-placeholder="结束日期" style="width:160px;margin:10px 0px 10px 20px" size="mini">                 
+							</el-date-picker> 
+						</el-col>
+						<el-col :span="12">
+							<el-card class="myel-card" style="margin:1px 5px">
+								<div class="my-card-body" style="height:42px; width:100%; display:flex;">
+									<time-brush ref="timeBrush" style="flex: 1 0 152px;" 
+										@timeBrushed="setStartEndDate"
+										:custom-height="'42px'">
+									</time-brush>
+									<el-button round style="flex: 0 0 auto;width:30px;height:30px;margin-top:5px" type="info" size="mini" @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
+								</div>	
+							</el-card>
+						</el-col>
+						
 					</el-row>
 					<el-row>
 						<el-col :span="24" 
@@ -77,12 +85,12 @@
 						<!-- <div class="panel-title">Tabular Parameters</div> -->
 						<el-row :gutter="8">
 						<!-- <div class="panel-title"></div> -->
-						<el-form size="mini" label-width="100px" style="padding-right: 10px;margin-top:5px">
+						<!-- <el-form size="mini" label-width="100px" style="padding-right: 10px;margin-top:5px">
 							<el-form-item label="Date">
 								<el-date-picker v-model="dateselect" type="datetimerange" range-separator=" " @change="changeTime" start-placeholder="开始日期" end-placeholder="结束日期" style="width:200px;" size="mini">                 
 								</el-date-picker> 
 							</el-form-item>
-						</el-form>
+						</el-form> -->
 						</el-row>
 						<!-- <el-row :gutter="8">
 							<el-col :span="8" style="font-size: 13px;">
@@ -147,11 +155,34 @@
 						<el-row>
 							<el-card class="myel-card">
 								<div class="my-card-title" slot="header">
-									<span>Condition View</span>
-									<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" class="myel-swtich"></el-switch>
+									<el-col :span="8"><span>Condition View</span></el-col>
+									<el-col :span="4">
+										<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" class="myel-swtich"></el-switch>
+									</el-col>
+									<el-col :span="2" style="font-size: 12px;margin:2px 0px">MinRange:</el-col>
+									<el-col :span="2">
+										<el-slider v-model="minrange" :step="1" :min="15" :max="40" class="my-slider"
+											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate1"></el-slider>
+									</el-col>
+									<el-col :span="2" style="font-size: 12px;margin:2px 0px">MinMerge:</el-col>
+									<el-col :span="2">
+										<el-slider v-model="minconflict" :step="1" :min="1" :max="15" class="my-slider"
+											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate2"></el-slider>
+									</el-col>
+									<!-- <el-col :span="1">{{minconflict}}</el-col> -->
+									<el-col :span="2">
+										<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:-2px" type="info" plain >
+											<img src="../../assets/images/brush.svg" style="height:16px;width:16px;"></el-button>
+									</el-col>
+									<el-col :span="1">
+										<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:-2px" type="info" plain @click="mergeUpdate">
+											<img src="../../assets/images/diagnosis.svg" style="height:16px;width:16px;"></el-button>
+									</el-col>
+
+
 								</div>
 								<div class="my-card-body">
-									<marey-chart style="text-align: center; height: 480px;width:100%;" ref="mareyChart" @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
+									<marey-chart style="text-align: center; height: 480px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
 								</div>
 							</el-card>
 						</el-row>
@@ -206,9 +237,9 @@
 										<div style="height: 24px;padding-left:12px;margin:15px 0" class="fontcolor">LengthGap </div>
 									</el-col>
 									<el-col :span="10" id="imput-line">
-										<el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" class="slider_self"></el-slider>
-										<el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" class="slider_self"></el-slider>
-										<el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" class="slider_self"></el-slider>
+										<el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" ></el-slider>
+										<el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
+										<el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
 										<!-- <mu-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider> -->
 										<!-- <mu-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
 										<mu-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider> -->
@@ -232,7 +263,7 @@
 										<div style="height: 24px;padding-left:40px;margin:8px 0px" class="fontcolor">Range </div>                
 									</el-col>
 									<el-col :span="10" id="imput-line">
-										<el-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" style="margin:2.5px;color:#999a9d" class="slider_self"></el-slider>
+										<el-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" style="margin:2.5px;color:#999a9d" ></el-slider>
 									</el-col>
 									<el-col :span="4">
 										<div style="margin:2px">{{plateTempProp.deviation}}%</div>
@@ -340,6 +371,9 @@ export default {
 	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel , simder},
 	data() {
 		return {
+			isMerge: true,
+			minrange: 20,
+			minconflict: 5,
 			symbolvalue:0.05,
 			linesize:0.25,
 			heatindex:false,
@@ -371,7 +405,7 @@ export default {
 			isSwitch: false,
 			startDate: new Date('2018-10-16 00:00:00'),
 			endDate: new Date('2018-10-19 04:00:00'),
-			dateselect:[new Date(2018, 10, 1, 0, 0), new Date(2018, 10, 15, 0, 0)],
+			dateselect:[new Date(2018, 10, 1, 0, 0), new Date(2018, 10, 10, 0, 0)],
 			display: false,
 			time: undefined,
 			radarIndicatorOptions: [],
@@ -857,6 +891,21 @@ export default {
 
 			
 		},
+		mareyUpdate(){
+			this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
+		},
+		mergeUpdate(){
+			this.isMerge = !this.isMerge
+			this.mareyUpdate()
+		},
+		mareyUpdate1(value){
+			this.minrange = value
+			this.mareyUpdate()
+		},
+		mareyUpdate2(value){
+			this.minconflict = value
+			this.mareyUpdate()
+		},
 		indexSort(sliderdata){
 			this.$refs.simpleSlider.paintChart(sliderdata)
 		},
@@ -1145,6 +1194,19 @@ export default {
 		// this.platetype('18B09019000')
 		this.getplatetype()
 		this.scattlog()
+	},
+	watch: {
+		minconflict:  {
+			handler(val){
+				console.log(val)
+				console.log(this.isSwitch)
+			},
+			deep: true,
+			immediate: false,
+		},
+		minrange:  function(val, oldVal){
+			console.log(val)
+		}
 	}
 	
 }
@@ -1176,7 +1238,7 @@ export default {
 	}
 }
 .custom-marey {
-	background: #ecf0f1;
+	background: white;
 	margin: -18px;
 	padding: 8px;
 	.el-button--danger {
@@ -1235,12 +1297,12 @@ export default {
 		border-radius: 4px;
 		transform: translate(5px, 0px);
 		// box-shadow: rgb(148, 148, 148) 2px 2px 2.5px !important;
-		box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
+		box-shadow: 0 0 5px rgba(0, 0, 0, 0.1) !important;
 		.el-card__header {
 			font-family: futura !important;
 			// font-family: Calibri;
 			background-color: #f7f7f7;
-			font-weight: normal;
+			font-weight: 500;
 			text-align: left;
 			font-size: 14px;
 			color: #6d7885;
@@ -1253,11 +1315,18 @@ export default {
 		}
 	}
 	.myel-swtich{
-		float:right;
-		padding:4px 25px 0px 0px;
+		// float:right;
+		margin-top: -2px;
+		padding:0px 10px 0px 0px;
 		font-family : DIN;
 		.el-switch__label{
 			span{
+				font-family: futura !important;
+				background-color: #f7f7f7;
+				font-weight: normal;
+				text-align: left;
+				font-size: 12px;
+				color: #6d7885;
 				color: #6d7885;
 			}
 		}
@@ -1293,6 +1362,17 @@ export default {
 }
 .el-slider__bar{
 	background-color :#999a9d !important;
+}
+.my-slider >>> .el-slider__runway {
+		margin: 10px 0;
+}
+.el-button--info.is-plain:focus, .el-button--info.is-plain:hover {
+    background: #dddedf !important;
+    border-color: #909399;
+    color: #FFF;
+}
+.el-button--mini, .el-button--mini.is-round {
+    padding: 5px 15px !important;
 }
 .my-card {
 	margin: 3px 5px;
@@ -1364,6 +1444,7 @@ export default {
 	height: 60px;
 	// color: #f3f3f3;
 	background-color: #f3f3f3;
+	border: solid 0.25px #e0e0e0;
 	box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
 	position: relative;
 }
@@ -1379,6 +1460,9 @@ export default {
 	left: 50%;
 	top: 50%;
 	transform: translateX(-50%) translateY(-50%);
+}
+.el-icon-search{
+	transform: translate(-5px, 0px);
 }
 </style>
 

@@ -501,8 +501,8 @@ export default {
                     outrate = (item1 , item2) => {
                         return d => (d.humidity>1.5|d.precipitation>1.5) ? item1 : item2
                     },
-                    titleinfo = ["upid", "cate", "p_thick", "p_wid", "p_len"],
-                    titleicon=[upidicon,categoryicon,thickicon,widthicon,lengthicon],
+                    titleinfo = [ "cate", "p_thick", "p_wid", "p_len"],
+                    titleicon=[categoryicon,thickicon,widthicon,lengthicon],
                     graph={nodes:[],links:[]},
                     wm=this,
                     colorLinear1=[],
@@ -962,7 +962,7 @@ export default {
                             .attr("font-size", "8pt")
                             .attr("font-weight", "normal")
                             .style("font-family", "DIN")
-                            .text((d , i) => i>=2 ? (i!==2 ? this._details['steel'][i+1] +' m' : (this._details['steel'][i+1]*1000).toFixed(2) +' mm') : this._details['steel'][i])
+                            .text((d , i) => i>=1 ? (i!==2 ? this._details['steel'][i+1] +' m' : (this._details['steel'][i+1]*1000).toFixed(2) +' mm') : this._details['steel'][i+1])
                             .attr("fill", "#7a7e81")
                             .attr("stroke", "none")
                         ))

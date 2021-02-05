@@ -17,7 +17,8 @@ module.exports = {
             
             '/baogangapi': {
                 // target: 'http://219.216.81.86:5000',
-                target: 'http://localhost:5000',
+                // target: 'http://localhost:5000',
+                target: 'http://202.118.21.236:7205',
                 // target: 'http://219.216.80.62:5000',
                 changeOrigin: true,
                 pathRewrite: {

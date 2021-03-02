@@ -18,7 +18,7 @@
             </el-col>	 -->
 			<!-- <slider style="height:700px,width:400px"></slider> -->
 			<!-- <simder style="height:700px,width:400px"></simder> -->
-			{{bundling}}{{selectId}}
+			{{bundling}}
 		</el-row>
 	</div>
 </template>
@@ -50,7 +50,6 @@ import riverLike from "./riverLike.vue";
 import bar from "./Bar.vue";
 import scatterAxis from "./scatterAxis.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
-import { mapGetters, mapMutations} from 'vuex'
 var echarts = require('echarts');
 export default {
 	components: { mareyChart, scatter, polyLineChart, plateTemperature, 
@@ -144,19 +143,11 @@ export default {
 			scatterResponse: null
 		}
 	},
-	computed: {
-		...mapGetters([
-                "selectId",
-            ]),
-		
-	},
+	computed: {},
 	created() {
 		// this.day()
 	},
 	methods: {
-		...mapMutations([
-			"selectUpid"
-		]),
 		forceswtich(){
 			this.$refs.force.sizechange()
 		},
@@ -905,8 +896,6 @@ export default {
 	mounted() {
 		// this.getRadarIndicatorOptions();
 		this.paintRiverLike();
-		this.selectUpid("gyeiogeuiqug")
-		// this.$store.commit("selectUpid","gyeiogeuiqug")
 	}
 	
 }

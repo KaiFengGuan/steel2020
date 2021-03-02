@@ -16,7 +16,7 @@ export default {
 			data:[],
 			tooltip:undefined,
 			scatterdata:[],
-			changeColor: true,
+			changeColor: false,
 			categoryColors: util.categoryColor,
 			labelColors: util.labelColor, // [bad, good]
 			labelColorsFunc: util.labelColorFunc,

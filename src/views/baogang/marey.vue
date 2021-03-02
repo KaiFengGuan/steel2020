@@ -48,13 +48,13 @@
 							</el-date-picker> 
 						</el-col>
 						<el-col :span="12">
-							<el-card class="myel-card" style="margin:1px 5px">
-								<div class="my-card-body" style="height:42px; width:100%; display:flex;">
+							<el-card class="myel-card" style="margin:5px 5px">
+								<div class="my-card-body" style="height:32px; width:100%; display:flex;">
 									<time-brush ref="timeBrush" style="flex: 1 0 152px;" 
 										@timeBrushed="setStartEndDate"
-										:custom-height="'42px'">
+										:custom-height="'32px'">
 									</time-brush>
-									<el-button round style="flex: 0 0 auto;width:30px;height:30px;margin-top:5px" type="info" size="mini" @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
+									<el-button round style="flex: 0 0 auto;width:30px;height:30px;margin-top:0px" type="info" size="mini" plain @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
 								</div>	
 							</el-card>
 						</el-col>
@@ -74,7 +74,7 @@
 								</el-select>
 							</div>
 							<div class="my-card-body">
-								<scatterlog ref="scatterloging" style="height:360px;" @scatterMouse="scatterMouse"></scatterlog>
+								<scatterlog ref="scatterloging" style="height:370px;" @scatterMouse="scatterMouse"></scatterlog>
 							</div>
 						</el-card>
 					</el-col>
@@ -83,7 +83,6 @@
 						<el-card class="myel-card">
 						<el-row style="background: white">
 						<!-- <div class="panel-title">Tabular Parameters</div> -->
-						<el-row :gutter="8">
 						<!-- <div class="panel-title"></div> -->
 						<!-- <el-form size="mini" label-width="100px" style="padding-right: 10px;margin-top:5px">
 							<el-form-item label="Date">
@@ -91,7 +90,6 @@
 								</el-date-picker> 
 							</el-form-item>
 						</el-form> -->
-						</el-row>
 						<!-- <el-row :gutter="8">
 							<el-col :span="8" style="font-size: 13px;">
 								<div style="height: 24px;padding-right:5px;margin:2px 0" class="fontcolor">ThicknessGap </div>
@@ -134,10 +132,13 @@
 							</el-col>
 						</el-row> -->
 						</el-row>			 
-
-						<el-row style="background: white">
-							<svgTable ref="jsontable" style="height:500px;width:100%"></svgTable>
-						</el-row>
+						<div class="my-card-title" slot="header">
+							<span>Tabular View</span>
+						</div>
+						<div class="my-card-body" style="padding-top:5px">
+							<brushableParallel ref="parallel" style="height:506px;width:100%"></brushableParallel>
+							
+						</div>
 					</el-card>
 					</el-row>
 			</el-col>
@@ -155,24 +156,24 @@
 						<el-row>
 							<el-card class="myel-card">
 								<div class="my-card-title" slot="header">
-									<el-col :span="8"><span>Condition View</span></el-col>
-									<el-col :span="4">
+									<el-col :span="12"><span>Condition View</span></el-col>
+									<!-- <el-col :span="4">
 										<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" class="myel-swtich"></el-switch>
-									</el-col>
-									<el-col :span="2" style="font-size: 12px;margin:2px 0px">MinRange:</el-col>
+									</el-col> -->
+									<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:20px">MinRange</el-col>
 									<el-col :span="2">
 										<el-slider v-model="minrange" :step="1" :min="15" :max="40" class="my-slider"
 											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate1"></el-slider>
 									</el-col>
-									<el-col :span="2" style="font-size: 12px;margin:2px 0px">MinMerge:</el-col>
+									<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:20px">MinMerge</el-col>
 									<el-col :span="2">
 										<el-slider v-model="minconflict" :step="1" :min="1" :max="15" class="my-slider"
 											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate2"></el-slider>
 									</el-col>
 									<!-- <el-col :span="1">{{minconflict}}</el-col> -->
 									<el-col :span="2">
-										<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:-2px" type="info" plain >
-											<img src="../../assets/images/brush.svg" style="height:16px;width:16px;"></el-button>
+										<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:0px" type="info" plain @click="changeColor">
+											<img src="../../assets/images/color.svg" style="height:16px;width:16px;transform: translate(0px, -2px)"></el-button>
 									</el-col>
 									<el-col :span="1">
 										<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:-2px" type="info" plain @click="mergeUpdate">
@@ -182,29 +183,67 @@
 
 								</div>
 								<div class="my-card-body">
-									<marey-chart style="text-align: center; height: 480px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
+									<marey-chart style="text-align: center; height: 484px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
 								</div>
 							</el-card>
 						</el-row>
 						<el-row>
 							<div>
 								<el-card class="myel-card">
-									
 									<div class="my-card-title" slot="header">
-										<el-col :span="12"><span>Diagnosis View</span></el-col>
-										<!-- <el-col :span="8"></el-col> -->
-										<el-col :span="8" style="float:right"><simder style="height:700px,width:400px" ref="simpleSlider"></simder></el-col>
-										
+										<el-col :span="13"><span>Diagnosis View</span></el-col>
+										<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:36px">SortIndex</el-col>
+										<el-col :span="8" ><div style="height:100px,width:350px;border:solid 0.01px #f7f7f7"><simder ref="simpleSlider"></simder></div></el-col>
+										<el-col :span="1">
+											<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;float:right">
+											<el-row class="toltip">
+												<el-row :gutter="8">
+													<el-col :span="8" style="font-size: 13px;">
+														<div style="height: 24px;padding-right:5px;margin:9px 0px 15px 0px" class="fontcolor">ThicknessGap </div>
+														<div style="height: 24px;padding-left:16px;margin:15px 0" class="fontcolor">WidthGap </div>
+														<div style="height: 24px;padding-left:12px;margin:15px 0" class="fontcolor">LengthGap </div>
+													</el-col>
+													<el-col :span="10" id="imput-line">
+														<el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" ></el-slider>
+														<el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
+														<el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
+													</el-col>
+													<el-col :span="4">
+														<div style="margin:5px 0px 21.5px 0px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
+														<div style="margin:21.5px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
+														<div style="margin:21.5px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
+													</el-col>
+												</el-row>
+												<el-form size="mini" label-width="100px" >
+													<el-form-item label="Category" style="padding-right: 10px;font-size:13px;padding-left:2px" class="abel">
+															<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
+															<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+														</el-select>
+													</el-form-item>
+												</el-form>
+											</el-row>
+												<img src="../../assets/images/config.svg" style="height:16px;width:16px;vertical-align: middle;line-height:1.5" slot="reference">
+											</el-popover>
+										</el-col>
 									</div>
 									<div style="padding-right:5px; padding-bottom : 5px">
 										<el-col :span="11">
-											<el-card class="myel-card">
+											<el-card class="myel-card myelTab myel-upid">
+												
+												<div slot="header">
+													<el-row>
+														<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
+														<span class="upidtext">{{selectedUpid}}</span></el-col>
+														<el-col :span="16" style="background-color:white"></el-col>
+													</el-row>
+												</div>
 												<div class="my-card-body" >
-													<wheeler ref="wheelering" style="height:500px" @indexSort="indexSort"></wheeler>
+													<wheeler ref="wheelering" style="height:476px" @indexSort="indexSort"></wheeler>
 												</div>
 											</el-card>
 										</el-col>
-										<el-col :span="13" style="padding-right:5px">
+										
+										<!-- <el-col :span="13" style="padding-right:5px">
 											<el-card class="myel-card">
 												<div class="my-card-body" >
 													<swheel ref="wheeler1" style="height:248px"></swheel>
@@ -215,6 +254,79 @@
 													<swheel ref="wheeler2" style="height:248px"></swheel>
 												</div>
 											</el-card>	
+										</el-col> -->
+										<el-col :span="13" style="padding-right:5px">
+											<el-col :span="2">
+												<div style="float:left;margin-top: 30px;position:relative;left: 25px;width: 1px;height: 450px; background: #c9c9c9;"></div>
+												<img src="../../assets/images/left.svg" class="upidicon" style="position:relative;top:250px;left:20px">
+											</el-col>
+											<el-col :span="21">
+												<el-row>
+													<el-col :span="12">
+														<el-card class="myel-card myel-tab">
+															<div slot="header">
+																<el-row>
+																	<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
+																	<span class="upidtext">UPID {{upidSelect[0]}}</span></el-col>
+																	<el-col :span="8"></el-col>
+																</el-row>
+															</div>
+															<div class="my-card-body">
+																<swheel ref="wheeler0" style="height:223px"></swheel>
+															</div>
+														</el-card>
+													</el-col>
+													<el-col :span="12">
+													<el-card class="myel-card myel-tab">
+														<div slot="header">
+																<el-row style="height:25px"> 
+																	<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
+																	<span class="upidtext">UPID {{upidSelect[1]}}</span></el-col>
+																	<el-col :span="8"></el-col>
+																</el-row>
+															</div>
+														<div class="my-card-body">
+															<swheel ref="wheeler1" style="height:223px"></swheel>
+														</div>
+													</el-card>
+													</el-col>
+												</el-row>
+												<el-row>
+													<el-col :span="12">
+														<el-card class="myel-card myel-tab">
+															<div slot="header">
+																<el-row>
+																	<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
+																	<span class="upidtext">UPID {{upidSelect[2]}}</span></el-col>
+																	<el-col :span="8"></el-col>
+																</el-row>
+															</div>
+															<div class="my-card-body">
+																<swheel ref="wheeler2" style="height:223px"></swheel>
+															</div>
+														</el-card>
+													</el-col>
+													<el-col :span="12">
+													<el-card class="myel-card myel-tab">
+														<div slot="header">
+																<el-row>
+																	<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
+																	<span class="upidtext">UPID {{upidSelect[3]}}</span></el-col>
+																	<el-col :span="8"></el-col>
+																</el-row>
+															</div>
+														<div class="my-card-body">
+															<swheel ref="wheeler3" style="height:223px"></swheel>
+														</div>
+													</el-card>
+													</el-col>
+												</el-row>
+											</el-col>
+											<el-col :span="1">
+												<!-- <el-button circle style="box-shadow:1px 1px 2.5px #000;position:relative;top:250px;left:5px;" size="mini">
+													<img src="../../assets/images/right.svg" class="upidicon" style=""></el-button> -->
+												<img src="../../assets/images/right.svg" class="upidicon" style="position:relative;top:250px;left:10px">
+											</el-col>
 										</el-col>
 									</div>
 								</el-card>							
@@ -225,38 +337,9 @@
 						<el-card class="myel-card">
 							<div class="my-card-title" slot="header">
 								<span>Key-Stage View</span>
-								<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini"  @change="orderchange" class="card-select">
-									<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-								</el-select>
-								<el-popover placement="top" width="350" trigger="click" style="float:right;margin-right:11px">
+								
+								<el-popover placement="top" width="350" trigger="hover" style="float:right;margin-right:11px">
 							<el-row class="toltip">
-								<el-row :gutter="8">
-									<el-col :span="8" style="font-size: 13px;">
-										<div style="height: 24px;padding-right:5px;margin:9px 0px 15px 0px" class="fontcolor">ThicknessGap </div>
-										<div style="height: 24px;padding-left:16px;margin:15px 0" class="fontcolor">WidthGap </div>
-										<div style="height: 24px;padding-left:12px;margin:15px 0" class="fontcolor">LengthGap </div>
-									</el-col>
-									<el-col :span="10" id="imput-line">
-										<el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" ></el-slider>
-										<el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
-										<el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
-										<!-- <mu-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider> -->
-										<!-- <mu-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider>
-										<mu-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" :display-value="false" style="margin:3px 0;color:#999a9d"></mu-slider> -->
-									</el-col>
-									<el-col :span="4">
-										<div style="margin:5px 0px 21.5px 0px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
-										<div style="margin:21.5px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
-										<div style="margin:21.5px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
-									</el-col>
-								</el-row>
-								<el-form size="mini" label-width="100px" >
-									<el-form-item label="Category" style="padding-right: 10px;font-size:13px;padding-left:2px" class="abel">
-											<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
-											<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-										</el-select>
-									</el-form-item>
-								</el-form>
 
 								<el-row :gutter="8">
 									<el-col :span="8" style="font-size: 13px;">
@@ -301,24 +384,43 @@
 									</div>
 								</el-row>
 							</el-row>
-								<i class="el-icon-s-data" slot="reference" style="vertical-align: middle;line-height:1.5"></i>
-							
+								<img src="../../assets/images/config.svg" style="height:16px;width:16px;vertical-align: middle;line-height:1.5" slot="reference">
+
 								</el-popover>
-								
+								<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini"  @change="orderchange" class="card-select">
+									<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+								</el-select>
 								</div>
 							<el-row>
 								
 							</el-row>
-							<el-row style="margin: 2px 0">
+							<el-row style="margin: 2px 0;height:1030px;overflow-y:scroll;overflow-x:hidden">
 									<el-col :span="24">
-									<div  v-for="item of processInTurn" :key = item class="myel-card" style="width:100%">
+										<el-card class="myel-card myel-tab" v-for="item of processInTurn" :key = item style="width:100%">
+											<div class="my-card-title" slot="header">
+												<el-row :gutter="18">
+													<el-col :span="1">
+														<img src="../../assets/images/series.svg" style="height:14px;width:14px;" class="upidicon">
+													</el-col>
+													<el-col :span="4">
+														<span class="upidtext" style="position:relative;top:-5px">{{item}}</span>
+													</el-col>
+												</el-row>
+												
+												
+											</div>
+											<div class="my-card-body">
+												<three-bar :ref="item" style="height: 190px;" ></three-bar>
+											</div>
+										</el-card>
+									<!-- <div  v-for="item of processInTurn" :key = item class="myel-card" style="width:100%">
 										<div class="my-card-title" style="height: 3px;font-size:10px;font-weight:150">{{item}}</div>
 											<div class="my-card-body">
-											<three-bar :ref="item" style="height: 190px;" ></three-bar>
+												<three-bar :ref="item" style="height: 190px;" ></three-bar>
 											</div>
-									</div>	
+									</div>	 -->
 									</el-col>
-									
+									<svgTable ref="jsontable" style="height:506px;width:100%"></svgTable>
 							</el-row>
 						</el-card>
 					</el-col>
@@ -363,12 +465,15 @@ import riverLike from "./riverLike.vue";
 import svgTable from "./svgTable.vue";
 import bar from "./Bar.vue";
 import scatterAxis from "./scatterAxis.vue"
+import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import myJsonData from "./jsondata.js"
 import myStationData from "./stationdata.js"
+import scatterdata from "./scatterdata.json"
 var echarts = require('echarts');
 export default {
-	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel , simder},
+	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat,
+		brushableParallel, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel , simder},
 	data() {
 		return {
 			isMerge: true,
@@ -402,7 +507,7 @@ export default {
 			orderselect:'Deviation',
 			errorflag:false,
 			plateTempPropvalue:['All'],
-			isSwitch: false,
+			isSwitch: true,
 			startDate: new Date('2018-10-16 00:00:00'),
 			endDate: new Date('2018-10-19 04:00:00'),
 			dateselect:[new Date(2018, 10, 1, 0, 0), new Date(2018, 10, 10, 0, 0)],
@@ -415,6 +520,7 @@ export default {
 			selectedTrainColor: 'green',
 			tempStations: [],
 			interval: 12,
+			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
 				"T-SNE", "ISOMAP", "UMAP"
@@ -450,7 +556,8 @@ export default {
 				width: 0.5,
 				thickness: 0.5
 			},
-			scatterResponse: null
+			scatterResponse: null,
+			upidSelect: ["", "", "", ""]
 		}
 	},
 	computed: {},
@@ -497,12 +604,15 @@ export default {
 			if(end)this.endDate = new Date(end)
 		},
 		async getHttpData() {
+			
 			this.jsonData = myJsonData
 			this.mergeflag()
 			this.$refs.mareyChart.paintMareyChart(this.jsonData,myStationData, this.isSwitch)
 			var jsonupid = d3.map(this.jsonData, d => d.upid)
-			var scatterlogdata = Object.values(this.scatterlogdata)
+			var scatterlogdata = Object.values(scatterdata)
+			// var scatterlogdata = Object.values(this.scatterlogdata)
 			// var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
+			this.$refs.parallel.paintChart(scatterlogdata, this.startDate, this.endDate)
 			this.$refs.jsontable.paintChart(scatterlogdata)
 			// this.$refs.jsontable.paintChart(tabledata)
 			return
@@ -561,14 +671,24 @@ export default {
 			console.log(d3.groups(this.jsonData , d => d.flag))
 			if(this.scatterlogdata.length!==0)	this.mergeflag()
 			console.log(d3.groups(this.jsonData , d => d.flag))
-			// this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData, this.isSwitch);
-			this.$refs.mareyChart.paintMareyChart()
+			this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData, this.isSwitch);
+			// this.$refs.mareyChart.paintMareyChart()
 
 			// clear
 			this.selectedTrainData = [];
 			// this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
 			this.scatterLoading = false
 			this.isSearch = false
+
+
+			// this.jsonData = myJsonData
+			// this.mergeflag()
+			// this.$refs.mareyChart.paintMareyChart(this.jsonData,myStationData, this.isSwitch)
+			// var jsonupid = d3.map(this.jsonData, d => d.upid)
+			var scatterlogdata = Object.values(this.scatterlogdata)
+			// var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
+			this.$refs.jsontable.paintChart(scatterlogdata)
+			// this.$refs.jsontable.paintChart(tabledata)
 		},
 		mergeflag(){
 			// let mergedata=this.scatterlogdata
@@ -707,6 +827,10 @@ export default {
 					callback: action => {
 					}
 				});
+		},
+		changeColor(){
+			this.isSwitch = !this.isSwitch
+			this.switchChange(this.isSwitch)
 		},
 		switchChange(bool) {
 			let selectcolor=this.$refs.mareyChart.setTrainColor(bool)
@@ -847,7 +971,7 @@ export default {
 		// 		this.isSearch = false
 		// }, 
 
-		trainClick(value) {
+		async trainClick(value) {
 
 			this.selectedTrainData = value.list;
 			this.selectedTrainColor = value.color;
@@ -885,11 +1009,52 @@ export default {
 			// 	});
 			// }
 			this.chooseList = value.list
-			this.paintUnderCharts(this.chooseList[0]);
+			await this.paintUnderCharts(this.chooseList[0]);
+			while(true){
+				if(value.upidSelect.length !==0)break
+				await this.paintUnderCharts(value.upidSelect.shift());
+				if(this.diagnosisData["result"].length === 0) continue
+				break
+			}
+			for(let item = 0;item < 4;item++){
+				this.$refs["wheeler" + item].init()
+			}
+			this.upidSelect = []
+			console.log(value.upidSelect)
+			let index = 0
+			for(let item in value.upidSelect){
+				if(this.upidSelect.length > 3) break
+				if(value.upidSelect[item] !== undefined && this.upidSelect.length < 4)
+				var label = await this.paintScatteLog(value.upidSelect[item], index)
+				console.log(label)
+				if(label){
+					index ++
+					(this.upidSelect.push(value.upidSelect[item]))
+				}
+				
+			}
 			// plate heat
 			// this.selectedTrainData.length > 0 && this.getPlate(this.selectedTrainData.slice(-1)[0]);
 
 			
+		},
+		async paintScatteLog(upid, index) {
+			let query=[]
+			for (let item of this.plateTempPropvalue){
+				if(item==='All'){
+					query.push(item)
+				}
+			}
+			if(this.upidSelect.length > 3) return		
+			if(query.length===0)query=this.plateTempPropvalue
+			let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
+			if(diagnosisData["result"].length === 0){
+				return false
+			}
+			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
+				this.$refs["wheeler" + index].paintChart(diagnosisData,Response.data)
+			})
+			return true
 		},
 		mareyUpdate(){
 			this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
@@ -947,16 +1112,11 @@ export default {
 				}
 			}		
 			if(query.length===0)query=this.plateTempPropvalue
+			this.selectedUpid = this.selectedTrainData[this.selectedTrainData.length-1]!==undefined ? "UPID " + this.selectedTrainData[this.selectedTrainData.length-1] : "UPID"
 			let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
 			this.diagnosisData=diagnosisData
-			if(diagnosisData["result"].length === 0){
-				this.erroralert("钢板数据标签不足")
-				return
-			}
 			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
 				this.$refs.wheelering.paintChart(diagnosisData,Response.data)
-				this.$refs.wheeler1.paintChart(diagnosisData,Response.data)
-				this.$refs.wheeler2.paintChart(diagnosisData,Response.data)
 			})
 			this.paintDetailPro(this.processTurn)
 		},
@@ -1297,7 +1457,8 @@ export default {
 		border-radius: 4px;
 		transform: translate(5px, 0px);
 		// box-shadow: rgb(148, 148, 148) 2px 2px 2.5px !important;
-		box-shadow: 0 0 5px rgba(0, 0, 0, 0.1) !important;
+		// box-shadow: 0 0 5px rgba(0, 0, 0, 0.1) !important;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04) !important;
 		.el-card__header {
 			font-family: futura !important;
 			// font-family: Calibri;
@@ -1312,6 +1473,42 @@ export default {
 		}
 		.el-card__body {
 			padding: 1px;
+		}
+		.upidicon{
+			height:20px;
+			width:20px;
+			vertical-align: middle;
+			margin-top:-7px;
+			line-height:1.5;
+			margin-right:5px;
+			margin-left:-5px
+		}
+	}
+	.myelTab{
+		.el-card__header {
+			height: 28px;
+		}
+		.upidicon{
+			margin-top:0px;
+		}
+		.upidtext{
+			font-size: 10px;
+		}
+	}
+	.myel-upid{
+		.el-card__header {
+			background-color: #fcfcfc;
+		}
+	}
+	.myel-tab{
+		.el-card__header {
+			height: 25px;
+			background-color: #fcfcfc;
+		}
+
+		.upidtext{
+			font-size: 10px;
+			position:relative;top:-3px
 		}
 	}
 	.myel-swtich{
@@ -1373,6 +1570,22 @@ export default {
 }
 .el-button--mini, .el-button--mini.is-round {
     padding: 5px 15px !important;
+}
+.el-tabs--border-card>.el-tabs__header .el-tabs__item.is-active {
+    color: rgb(122, 126, 129) !important;
+	font-family: DIN !important;
+	font-weight: normal !important;
+    background-color: #FFF;
+	font-size: 10px !important;
+    border-right-color: #DCDFE6;
+    border-left-color: #DCDFE6;
+}
+.el-tabs__item {
+	// height: 30px !important;
+	
+}
+.el-tabs--border-card>.el-tabs__content {
+    padding: 0px !important;
 }
 .my-card {
 	margin: 3px 5px;

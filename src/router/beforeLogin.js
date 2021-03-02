@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import controlView from 'views/baogang/control.vue'
 import visualView from 'views/baogang/marey.vue'
 import scatterloger from 'views/baogang/scatterloger.vue'
+import test from 'views/baogang/test.vue'
 import layout from 'components/layout/index.vue'
 import routerView from './routerView.vue'
 
@@ -19,10 +20,17 @@ const routerMap =  [
         name: '可视化',
         component: visualView,
         icon: 'fa fa-eye fa-lg'
-    },    {
+    },
+    {
         path: '/scatterloger',
         name: 'scatterloger',
         component: scatterloger,
+        icon: 'fa fa-eye fa-lg'
+    },
+    {
+        path: '/test',
+        name: 'test',
+        component: test,
         icon: 'fa fa-eye fa-lg'
     },
 ]

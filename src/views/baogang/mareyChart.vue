@@ -49,7 +49,8 @@ export default {
 		this.station=stationsData;
 		var data = alldata
 		var width = document.getElementById(this.menuId).offsetWidth;
-
+		const mainHeight = document.getElementById(this.menuId).offsetHeight;
+		const upidArray = d3.map(data, d => d.upid)
 		var stations = stationsData
 		var stops = d3.merge(data.map(d => d.stops.map(s => ({ train: d, stop: s }))))
 		var statname = d3.map(stations, d => d.name)
@@ -70,19 +71,21 @@ export default {
 			.range([0.5, 1.2])
 		this.defaultStrokeWidth = defaultStrokeWidth
 		var highLightStrokeWidth = this.highLightStrokeWidth
-		var margin = ({ top: 65, right: 90, bottom: 0, left: 90 })
+		var margin = ({ top: 65, right: 85, bottom: 0, left: 90 })
 		// margin.right = this.isMerge ? 90 : 50;
 		var x = d3.scaleLinear()
 			.domain(d3.extent(stations, d => d.distance))
 			.range([margin.left + 10, width - 1.5 * margin.right ])
 
 		// zpj 2019-4-15 20:02:15
-		var minDate = data[0].stops[0].time;
-		var maxDate = data.slice(-1)[0].stops.slice(-1)[0].time
+		var minDate = data[0].stops[0].time.slice(0, 19);
+		var maxDate = data.slice(-1)[0].stops.slice(-1)[0].time.slice(0, 19);
 		var unitHeight = 300;
 		var unitPerTime = 3.5;
 		const timeHeightScale = unitHeight / (60 * 60 * 1000 * unitPerTime) // 单位高度 时间跨度x小时
-		var height = (new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale
+		var height = 500
+		console.log((new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale)
+		// var height = (new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale
 		var y = d3.scaleTime()
 			.domain([new Date(minDate), new Date(maxDate)])
 			.range([margin.top, height - margin.bottom])
@@ -106,6 +109,7 @@ export default {
 			.attr("width", width)
 			.attr("height", height)
 			.attr("class", "svgWrapper")
+			.attr("transform", "translate(-10,0)")
 			.call(zoomer);
 		const svg = this.svg;
 
@@ -368,6 +372,9 @@ export default {
 					.join("g")
 					.style("color", vm.changeColor ?  (quality[1] !== undefined ? vm.labelColors[quality[1][0]] : vm.labelColors[quality[0][0]]) : vm.trainGroupStyle)
 					.attr("stroke-width", lineheight )
+					.attr("class", "mergerect")
+					.attr("id", "mergerect"+item)
+					.attr("opacity" , 1)
 					.attr("transform", `translate( 0 ,${ linetransfrom })`)
 					.call(g => g.append("path")
 						.attr("fill", "none")
@@ -421,7 +428,36 @@ export default {
 				var sDate = mergeresult[item]["merge"].slice(0)[0].stops[stations.length-1].time;
 				var eDate = mergeresult[item]["merge"].slice(-1)[0].stops[stations.length-1].time;
 				const position = [ circledot , (y((new Date(data[midindex+1].stops[stations.length-1].time))) )];
-				const rectG = renderG.append("g")
+				const rectG = renderG
+					.append("g")
+					.on("click",(e,d) => {
+						console.log("ghsui")
+						d3.selectAll(".lineDate").attr("stroke-width", 0.15)
+						d3.select("#lineDate"+item).attr("stroke-width", 1.5)
+						let badupid = d3.map(d3.filter(mergeresult[item]["merge"], d => d.flag === 0), d => d.upid)
+						// var selectUpid = new Set(badupid)
+						// (d3.map(mergeresult[item]["merge"], d => d.upid)).forEach(x => selectUpid.add(x))
+						var selectUpid = [...badupid,...d3.map(mergeresult[item]["select"], d => d.upid)] 
+						if(mergeresult[item]["select"].length !==0)
+							vm.trainSelectedList.push(mergeresult[item]["select"].slice(-1)[0].upid)
+						let upidSelect = [...selectUpid]
+						vm.$emit("trainClick",{list: vm.trainSelectedList, 
+								color: vm.trainGroupStyle(mergeresult[item]["select"].slice(-1)[0]),
+								upidSelect:upidSelect.slice(0,-1),
+								"type":"group"})
+						
+
+						// let upidSelect = d3.map(d3.filter(data.slice(upidArray.indexOf(d.train.upid)), d => d.flag === 0), d => d.upid)
+						// // let upidSelect = upidArray.slice(upidArray.indexOf(d.train.upid)+1, upidArray.indexOf(d.train.upid)+5)
+						// vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(parseInt(d.train.flag)), upidSelect:upidSelect});
+					})
+					.on("mouseout",(e,d) => {
+						d3.selectAll(".mergerect").attr("opacity", 1)
+					})
+					.on("mouseover",(e,d) => {
+						d3.selectAll(".mergerect").attr("opacity", 0.6)
+						d3.select("#mergerect"+item).attr("opacity", 1)
+					})
 				const rectwidth = xaxlength + 25;
 				var rectCard;
 				var lineDate = g => g.append("g")
@@ -430,6 +466,8 @@ export default {
 						.attr("stroke", "#c4c4c4")
 						.attr("stroke-width", 0.15)
 						.attr("fill", "white")
+						.attr("class", "lineDate")
+						.attr("id", "lineDate"+item)
 						.attr("x", -rectwidth)
 						// .attr("transform", `translate(${[-xaxlength-25, -xaxlength-25]})`)
 						.attr("width", 3*rectwidth)
@@ -547,6 +585,9 @@ export default {
 						sortdata.push([maxmin[0] + (j+0.5) * linelength , 0 ])
 					}
 					for (let j in linedata){
+						if(linelength == 0)break
+						// console.log(Math.floor((linedata[j] - maxmin[0])/linelength))
+						// console.log(sortdata[Math.floor((linedata[j] - maxmin[0])/linelength)])
 						sortdata[Math.floor((linedata[j] - maxmin[0])/linelength)][1] += 1
 					}
 					// if((+i)!==1) console.log(sortdata)
@@ -765,12 +806,14 @@ export default {
 						// vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(d.train.productcategory), mouse: 1});
 						}
 						vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 1});
+						tooltip.style("display", "none");
 						let currentIdSearch = "#id" + d.train.upid;
+						if(vm.trainSelectedList.includes(d.train.upid))return
 						d3.select(currentIdSearch)
 						.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
 						.selectAll("rect")
 						.attr("stroke", "none");
-						tooltip.style("display", "none");
+						
 					})
 
 					.on("mouseover", (event, d) => {
@@ -825,20 +868,34 @@ export default {
 						vm.trainSelectedList = vm.trainSelectedList.filter(v => v !== d.train.upid)
 						let currentIdSearch = "#id" + d.train.upid;
 						d3.select(currentIdSearch).attr("fill", "white")
+						d3.select(currentIdSearch)
+						.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
+						.selectAll("rect")
+						.attr("stroke", "none");
 						} else {
 						// 选中
+						if(vm.trainSelectedList.length !==0){
+							d3.select("#id"+ vm.trainSelectedList[vm.trainSelectedList.length-1])
+								.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
+								.selectAll("rect")
+								.attr("stroke", "none");
+						}
 						vm.trainSelectedList.push(d.train.upid);
 						let currentIdSearch = "#id" + d.train.upid;
 						d3.select(currentIdSearch).attr("fill", "grey")
+						d3.select(currentIdSearch)
+						.attr("stroke-width", highLightStrokeWidth)
+						.selectAll("rect")
+						.attr("stroke", "black");
 						}
+						let upidSelect = d3.map(d3.filter(data.slice(upidArray.indexOf(d.train.upid)), d => d.flag === 0), d => d.upid)
+						// let upidSelect = upidArray.slice(upidArray.indexOf(d.train.upid)+1, upidArray.indexOf(d.train.upid)+5)
 						if (vm.changeColor) {
-						vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(parseInt(d.train.flag))});
+						vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(parseInt(d.train.flag)), upidSelect:upidSelect});
 						
 						}else {
-						vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(d.train.productcategory)});
+						vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(d.train.productcategory), upidSelect:upidSelect});
 						}
-						
-						// vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.trainSelectedColor});
 					})
 			});
 			d3.select(".axisrect").raise()
@@ -854,7 +911,7 @@ export default {
 		render()
 
 		const miniMargin = { top: 115, right: 25, bottom: -35, left: 25 },
-			mainHeight = document.getElementById(this.menuId).offsetHeight,
+
 			miniheight =  mainHeight - miniMargin.top - miniMargin.bottom,
 			miniwidth = 75,
 			miniXScale = d3.scaleTime()
@@ -875,7 +932,8 @@ export default {
 			miniline = d3.line()
 				.x(d => miniYScale(d.station.distance))
 				.y(d => miniXScale(new Date(d.time))),
-			BrushSelectHeight = this.isMerge ? miniXScale(new Date(jsondata[50].stops[0].time)) : miniXScale(new Date(jsondata[75].stops[0].time)),
+			BrushSelectHeight = this.isMerge ? miniXScale(new Date(data[50].stops[0].time.slice(0, 19))) : miniXScale(new Date(data[75].stops[0].time.slice(0, 19))),
+			// BrushSelectHeight =50,
 			initialBrushXSelection = [0, BrushSelectHeight],
 			brush = d3.brushY()
 				.extent([[0, 0], [miniwidth - miniMargin.right - miniMargin.left, miniheight - miniMargin.bottom - miniMargin.top]])
@@ -1160,7 +1218,7 @@ export default {
 				//filter data
 				if(categoryindex ===-1)	continue
 				var index =item
-				while(json[index] !== undefined &json[item].productcategory === json[index].productcategory){
+				while(json[index] !== undefined && json[item].productcategory === json[index].productcategory){
 					index++
 				}
 				if( index - item < minrange) continue

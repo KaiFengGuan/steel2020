@@ -1123,8 +1123,62 @@ export default {
                     .join("g")
                     .attr("class", "column")
                     .attr("transform", d => `translate(${d.column.tx},0)`)
-                    .call(g => this._addCell(g, style.headerBackground, 0, true, true))
+                    .call(g => 
+                    // {
+                    //     const style = this._style,
+                    //         fill = style.headerBackground,
+                    //         base = 0,
+                    //         isHeader = true,
+                    //         isFixed = true;
+                    //         const rect = g.append("rect")
+                    //             .attr("width", d => d.column.width)
+                    //             .attr("height", this._cellHeightA)
+                    //             .attr("fill", d => this._cellColor(d, fill, isHeader, isFixed))
+                    //             .attr("stroke-width", 0.1)
+                    //             .attr("stroke", style.border ? style.borderColor : fill);
+                    //         if (!style.border)
+                    //             g.append("line")
+                    //                 .attr("x1", d => d.column.width - 1).attr("y1", 5)
+                    //                 .attr("x2", d => d.column.width - 1).attr("y2", this._cellHeightA - 5)
+                    //                 .attr("stroke", style.borderColor);
+
+                    //         this._arrow(g, base, "asc", "M 0 8 L 3 4 L 6 8");
+                    //         this._arrow(g, base, "desc", "M 0 11 L 3 15 L 6 11");
+                    // }
+                    this._addCell(g, style.headerBackground, 0, true, true)
+                    )
                     .on("click", (e, d) => this._sort(d));
+            //                     _addCell(g, fill, base, isHeader, isFixed) {
+            //     const style = this._style;
+
+            //     const rect = g.append("rect")
+            //         .attr("width", d => d.column.width)
+            //         .attr("height", this._cellHeightA)
+            //         .attr("fill", d => this._cellColor(d, fill, isHeader, isFixed))
+            //         .attr("stroke-width", 0.1)
+            //         .attr("stroke", style.border ? style.borderColor : fill);
+
+            //     if (this._heatmap && !(isHeader || isFixed)) rect.attr("opacity", 0.5);
+
+            //     const t = g.append("text").attr("y", "1em").attr("dy", this._cellPaddingV).attr("fill", style.textColor).attr("dx", d => d.column.width/2).attr("text-anchor", "middle");
+
+            //     if (isHeader) {
+            //         if (!style.border)
+            //             g.append("line")
+            //                 .attr("x1", d => d.column.width - 1).attr("y1", 5)
+            //                 .attr("x2", d => d.column.width - 1).attr("y2", this._cellHeightA - 5)
+            //                 .attr("stroke", style.borderColor);
+
+            //         this._arrow(g, base, "asc", "M 0 8 L 3 4 L 6 8");
+            //         this._arrow(g, base, "desc", "M 0 11 L 3 15 L 6 11");
+
+            //         // Header cell
+            //         t
+            //         // .attr("dx", this._cellPaddingH)
+            //             .attr("clip-path", d => this._clipPath(`headerClip${d.column.index}`))
+            //             .attr("fill", style.headerColor)
+            //             .text(d => d.column.name);
+            //     }
                 console.log(this._columns)
                 header.selectAll(".totalcolumn")
                     // Unify the the data structure make it compatible with addCell
@@ -1232,7 +1286,7 @@ export default {
                                 const stats = d3boxplot.boxplotStats(plotdata)
                                 const x = d3.scaleLinear()
                                     .domain([d3.extent(plotdata)[0]*0.95, d3.extent(plotdata)[1]*1.05])
-                                    .range([0, W - 5])
+                                    .range([0, W - 2])
                                 const boxplot = d3boxplot.boxplot()
                                     .scale(x)
                                     .showInnerDots(false)
@@ -1246,14 +1300,14 @@ export default {
                                     .attr('transform', 'translate(0, 0)')
                                     .call(d3.axisBottom()
                                         .scale(x)
-                                        .ticks(2)
-                                        .tickSize(5)
+                                        .ticks(4)
+                                        .tickSize(2)
                                         .tickSizeInner(0)
                                         .tickSizeOuter(4))
                                 const boxplotScale = g =>  g.append("g").datum(stats)
                                     .attr("transform", `translate(${[0,  this._cellHeightA]})`)
                                     .attr("class", "boxplotgfeqge")
-                                    .attr('color', "#a8b8bf")
+                                    .attr('color', "rgb(203, 220, 234)")
                                     .call(boxplot)
                                 boxFix.call(boxplotScale).call(xScale)
                         }

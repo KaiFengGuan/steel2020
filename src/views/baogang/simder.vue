@@ -24,7 +24,7 @@ export default {
             const vm=this
             // const height = document.getElementById(this.menuId).offsetHeight;
             const height = 22	
-            const width = 400;
+            const width = 350;
             this.svg !== undefined && this.svg.remove()
             this.svg=d3.select("#"+vm.menuId)
 			.append("svg")
@@ -32,7 +32,7 @@ export default {
             .attr("height", height);
             // Simple
             const data = [0, 20]
-            const sliderwidth = 250
+            const sliderwidth = 200
             const sliderScale = d3.scaleLinear()
 				.range(data)
 				.domain([-sliderwidth/2 , sliderwidth/2])
@@ -47,7 +47,7 @@ export default {
                     .data(sliderdata)
                     .join("g")      
                     .attr("class", "sliderRect")
-                    .attr("transform", `translate(${[width / 2, 0]})`)
+                    .attr("transform", `translate(${[width / 3, 0]})`)
                     .call(g => g.append("rect")
                         .attr("fill", d => d.color)
                         .attr("height", boxHeight - 10)
@@ -71,36 +71,81 @@ export default {
                 // Set the value of the circle coordinates
                 // and maintain the click/touch offset
                 // console.log(event)
-                if(Math.abs(event.x - width / 2) > sliderwidth/2)return
+                if(Math.abs(event.x - width / 3) > sliderwidth/2)return
                 d3.select(this)
                     .attr('cx', event.x - offset.x)
-                console.log(Math.round(sliderScale(event.x - width / 2)))
+                // d3.select("#sliderShadow").attr("width", event.x -( width / 3 - sliderwidth/2))
+                console.log(Math.round(sliderScale(event.x - width / 3)))
                 // .attr('cy', event.y - offset.y);
             }
+            function dragEnd(event){
+                const label = Math.round(sliderScale(event.x - width / 3))
+                d3.select("#labeltext").text(sliderdata[label].date)
+                d3.select("#labelrect").attr("fill", sliderdata[label].color)
+                    .attr("stroke", d3.color(sliderdata[label].color).darker(2))
+            }
             svg.append("rect")
-                .attr("transform", `translate(${[width / 2 - sliderwidth/2 , boxHeight -10]})`)
-                .attr("height", 8)
+                .attr("transform", `translate(${[width / 3 - sliderwidth/2 , boxHeight -10]})`)
+                .attr("height", 6)
                 .attr("width", sliderwidth)
-                .attr("fill", "#b8b8b8")
-                // .attr("fill", "black")
-                // .attr("stroke", "")
+                .attr("fill", "#E4E7ED")
+                .attr("rx", 3)
+                .attr("ry", 3)
+            // svg.append("rect")
+            //     .attr("transform", `translate(${[width / 3 - sliderwidth/2 , boxHeight -10]})`)
+            //     .attr("height", 6)
+            //     .attr("id", "sliderShadow")
+            //     .attr("width", sliderwidth / 2)
+            //     .attr("fill", "#999a9d")
+            //     .attr("rx", 3)
+            //     .attr("ry", 3)
+            svg.append("g")
+                .call(g => g.append("rect")
+                        .attr("stroke", "#c4c4c4")
+                        .attr("transform", `translate(${[width / 3 + sliderwidth/2 +10, 0]})`)
+                        .attr("stroke-width", 0.15)
+                        .attr("width", 120)
+                        .attr("height", 20)
+                        // .attr("fill", "#f4f4f5")
+                        .attr("fill", sliderdata[Math.round(sliderScale(0))].color)
+                        .attr("text-anchor", "middle")
+                        .attr("stroke", d3.color(sliderdata[Math.round(sliderScale(0))].color).darker(2))
+                        .attr("id", "labelrect")
+                        .attr("opacity", 0.7)
+                        .attr("rx", 10)
+                        .attr("ry", 5))
+                .call(g => g.append("text")
+                    .attr("transform", `translate(${[width / 3 + sliderwidth/2 + 75, 15]})`)
+                    .style("font-family", "DIN")
+                    .style("padding", "0px")
+                    .attr("font-size", "9pt")
+                    .attr("id", "labeltext")
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "#6d7885")
+                    .attr("font-weight", 500)
+                    .text(sliderdata[Math.round(sliderScale(0))].date))
             svg
             .append('circle')
-            .attr('cx', width / 2)
-            .attr('cy', boxHeight -5)
-            .attr('r', 8)
+            .attr('cx', width / 3)
+            .attr('cy', boxHeight - 7)
+            .attr('r', 7.5)
             .style('fill', 'white')
-            .style('stroke', "#90a4ae")
+            .attr('stroke', "#90a4ae")
+            .attr('stroke-width', 2)
             .call(
             // Attach drag event handlers to the circle
             d3
                 .drag()
                 .on('start', dragStart)
                 .on('drag', drag)
+                .on('end', dragEnd)
             );
 
         }
+    },
+    mounted(){
     }
+
 }
 </script>
 

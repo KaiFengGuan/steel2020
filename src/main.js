@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import App from './App.vue'
 import router from './router/beforeLogin.js'
-// import store from './store/index.js'
+import store from './store/index.js'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import 'font-awesome/scss/font-awesome.scss'
@@ -38,7 +38,7 @@ Vue.use(MuseUI)
 
 export default new Vue({
     router,
-    // store,
+    store,
     render: h => h(App)
 }).$mount('#app')
 

@@ -27,50 +27,55 @@ export default {
             var brushdata = plData
             console.log(brushdata)
             this.changeColor ?(this.trainGroupStyle =  d => +d.label == 0 ? vm.labelColors[0] : vm.labelColors[1]) :(this.trainGroupStyle = d => vm.categoryColors(d.productcategory));
-            var margin = {top: 90, right: 15, bottom: 30, left: 15},
+            var margin = {top: 60, right: 25, bottom: 35, left: 25},
                 brushHeight = 10,
                 vm = this,
                 deselectedColor = "#eeeeee",
                 selectedColor = "#cccccc",
                 label = d => d.name,
-                selectedLineColor = "lightblue",
                 keys = ["ave_temp_dis", "avg_p5", "tgtwidth", "tgtplatethickness2", "tgtplatelength2"],
-                // keys = ["ave_temp_dis", "avg_p5", "p_width", "p_thickness", "p_length"],
                 // keys = Object.keys(brushdata[0]).filter(d => d !== "name"),
                 bardata = d3.map(keys, d => d3.map(brushdata, index => index[d])),
-                barbin = d3.map(bardata, d => {
-                    var i = 6;
-                    // while(d3.max(d3.bin().thresholds(6)(d), m => m.length)/d.length > 0.3){
-                    //     console.log(i)
-                    // }
-                    // var bin = d3.bin().thresholds(6)(d)
-                    // d3.max()
-                    return d3.bin().thresholds(6)(d)
+                barbin = d3.map(keys, (d, i) => {
+                    var length = 6;
+                    var maxlength = bardata[i].length
+                    while(true){
+                        var max = d3.max(d3.bin().thresholds(length)(bardata[i]), d => d.length) 
+                        if(max/maxlength < 0.7){
+                            break
+                        }else{
+                            length++
+                        }
+                    }
+                    return d3.bin().thresholds(length)(bardata[i])
                 }),
-                barNum = d3.map(bardata, alldata => {
-                    let range = d3.extent(alldata)
-                    let path = (range[1] - range[0])/6;
-                    let init = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0}
-                    let array = d3.groups(alldata, d => d == null ? 1 : Math.floor((d - range[0])/path) + 1)
-                    d3.map(array, (d,i) => {
-                        init[d[0]] = d[1].length
-                    })
-                    return Object.values(init)
-                }),
+                // barNum = d3.map(bardata, alldata => {
+                //     let range = d3.extent(alldata)
+                //     let path = (range[1] - range[0])/6;
+                //     let init = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0}
+                //     let array = d3.groups(alldata, d => d == null ? 1 : Math.floor((d - range[0])/path) + 1)
+                //     d3.map(array, (d,i) => {
+                //         init[d[0]] = d[1].length
+                //     })
+                //     return Object.values(init)
+                // }),
+                barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.extent(d3.map(array, d => d.length))[1]]).range([10, 50])),
                 barRange = new Map(d3.zip(keys,d3.map(bardata, alldata => d3.extent(alldata)))),
-                barScale = d3.map(barNum, num => d3.scalePow().domain([0, d3.extent(num)[1]]).range([10, 50])),
+                // barScale = d3.map(barNum, num => d3.scalePow().domain([0, d3.extent(num)[1]]).range([10, 50])),
                 width = document.getElementById(this.menuId).offsetWidth,
-                xBand = d3.scaleBand()
-                    .domain(d3.range(barNum[0].length))
-                    .range([margin.left, width - margin.right])
-                    .padding(0.5),
+                // xBand = d3.scaleBand()
+                //     .domain(d3.range(barNum[0].length))
+                //     .range([margin.left, width - margin.right])
+                //     .padding(0.5),
                 arc = d3.arc()
                     .innerRadius(0)
                     .outerRadius(8)
                     .startAngle(0)
                     .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
-                height = keys.length * 85,
-                x = new Map(Array.from(keys, key => [key, d3.scaleLinear(d3.extent(brushdata, d => d[key]), [margin.left, width - margin.right])])),
+                height = keys.length * 90,
+                x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
+                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1]), [margin.left, width - margin.right])])),
+                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear(d3.extent(brushdata, d => d[key]), [margin.left, width - margin.right])])),
                 y = d3.scalePoint(keys, [margin.top, height - margin.bottom]),
                 line = d3.line()
                     .defined(([, value]) => value != null)
@@ -83,7 +88,7 @@ export default {
                         enter => enter.append("path")
                             .attr("class", "handle--custom")
                             .attr("fill", "white")
-                            .attr("fill-opacity", 0.8)
+                            .attr("fill-opacity", 1)
                             .attr("stroke", "#90a4ae")
                             .attr("stroke-width", 2)
                             .attr("cursor", "ew-resize")
@@ -97,9 +102,10 @@ export default {
                     // d3.selectAll("#parallel .parallelPath").raise()
                     d3.selectAll(".handle--custom").raise()
                     d3.selectAll("#parallel .domain").remove()
+                    d3.selectAll("#parallel .overlay").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
+                    d3.selectAll("#parallel .selection").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
+                    d3.selectAll("#parallel .tick text").attr("font-family", "DIN").attr("stroke", "none").attr("fill", "#2c3e50")
                 }
-
-            console.log(barbin)
 
             // const 
             // const height = document.getElementById(this.menuId).offsetHeight;
@@ -122,19 +128,33 @@ export default {
                 ])
                 .on("start brush end", brushed);
             for(let item in keys){
+                var barmargin =  (width - margin.right - margin.left) / barbin[item].length/2;
                 svg.append("g")
                     .attr("class", "rectBar")
                     .attr("transform",`translate(0,${y(keys[item])})`)
                     .call(g => g.append("g")
                         .selectAll(".rect"+item)
-                        .data(barNum[item])
+                        .data(barbin[item])
                         .join("rect")
                         .attr("class", "rect" +item)
-                        .attr("x", (d, i) => xBand(i))
+                        .attr("x", d => x.get(keys[item])(d.x0))
                         .attr("fill", selectedColor)
-                        .attr("y", d => -barScale[item](d))
-                        .attr("height", d => barScale[item](d))
-                        .attr("width", xBand.bandwidth()))
+                        .attr("y", d => -barScale[item](d.length)+1)
+                        .attr("height", d => barScale[item](d.length))
+                        .attr("width", d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin))
+                // svg.append("g")
+                //     .attr("class", "rectBar")
+                //     .attr("transform",`translate(0,${y(keys[item])})`)
+                //     .call(g => g.append("g")
+                //         .selectAll(".rect"+item)
+                //         .data(barNum[item])
+                //         .join("rect")
+                //         .attr("class", "rect" +item)
+                //         .attr("x", (d, i) => xBand(i))
+                //         .attr("fill", selectedColor)
+                //         .attr("y", d => -barScale[item](d))
+                //         .attr("height", d => barScale[item](d))
+                //         .attr("width", xBand.bandwidth()))
                 // this.brushSelection.set(keys[item], d3.extent(d3.map(brushdata.slice(400), d => d[keys[item]])))
                 this.brushSelection.set(keys[item], d3.extent(d3.filter(brushdata, d => new Date(d.toc) >= startTime && new Date(d.toc) <= endTime), d => d[keys[item]]))
             }
@@ -146,7 +166,6 @@ export default {
                 .selectAll("path")
                 .data(brushdata.slice().sort((a, b) => d3.ascending(a["upid"], b["upid"])))
                 .join("path")
-                // .attr("stroke", selectedLineColor)
                 .attr("stroke", d =>  this.trainGroupStyle(d))
                 .attr("d", d => line(d3.cross(keys, [d], (key, d) => [key, d[key]])))
                 .on("mouseover", pathover)
@@ -161,23 +180,37 @@ export default {
                 .join("g")
                 .attr("transform", d => `translate(0,${y(d)+6})`)
                 .attr("id", (d, i) => "parallel" + i)
-                .each(function(d) { d3.select(this).call(d3.axisBottom(x.get(d)).tickSizeOuter(10).tickSizeInner(10)); })
+                // .attr("fill", "#2c3e50")
+                .each(function(d,i) { 
+                    d3.select(this)
+                    
+                        .call(d3.axisBottom(x.get(d))
+                            .tickSizeOuter(10)
+                            .tickSizeInner(10)
+                            .ticks(barbin[i].length)); 
+                })
                 .call(g => g.append("text")
-                    .attr("x", margin.left)
-                    .attr("y", -12)
-                    .attr("text-anchor", "start")
-                    .attr("fill", "currentColor")
+                    .attr("x", width - margin.left)
+                    .attr("y", -50)
+                    .attr("text-anchor", "end")
+                    .attr("fill", "#c0c5cb")
+                    .attr("font-family", "DIN")
+                    .attr("font-size", "10px")
                     .text(d => d))
                 .call(g => g.selectAll("text")
                     .clone(true).lower()
                     .attr("fill", "none")
                     .attr("stroke-width", 5)
                     .attr("stroke-linejoin", "round")
-                    .attr("stroke", "white"))
+                    .attr("font-family", "DIN")
+                    // .attr("stroke", "white")
+                    )
                 .call(g =>g.selectAll(".domain").remove())
                 .call(brush)
                 .call(brush.move, d => selections.get(d).map(x.get(d)));
                 brushSlider()
+                // svg.selectAll("text").attr("font-family", "DIN").attr("stroke", "none").style("fill", "#2c3e50")
+                
             function pathover(e,d){
                 // d3.select(this).attr("stroke-width", 5)
             }
@@ -200,12 +233,10 @@ export default {
                     d3.select(".rect" + keys.indexOf(key))
                     .attr("fill", selectedColor)
                 }else{
-                    let Range = barRange.get(key)
-                    let path = (Range[1] - Range[0])/6
                     let brushRange = d3.map(selection, x.get(key).invert)
-                    let [min, max] = [Math.floor((brushRange[0] - Range[0])/path), Math.floor((brushRange[1] - Range[0])/path)]
+                    // let [min, max] = [Math.floor((brushRange[0] - Range[0])/path), Math.floor((brushRange[1] - Range[0])/path)]
                     d3.selectAll(".rect" + keys.indexOf(key))
-                        .attr("fill", (d,i) => i >= min && i <= max ? selectedColor : deselectedColor)
+                        .attr("fill", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? selectedColor : deselectedColor)
                 }
                 // console.log(this)
                 // console.log(d3.select("#parallel" + keys.indexOf(key)).node())
@@ -237,4 +268,7 @@ export default {
 .tick line {
     stroke: "#E6E5F0";
 } */
+text{
+    fill: black;
+}
 </style>

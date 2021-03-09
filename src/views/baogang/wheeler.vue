@@ -575,7 +575,7 @@ export default {
                     outrate = (item1 , item2) => {
                         return d => (d.humidity>1.5|d.precipitation>1.5) ? item1 : item2
                     },
-                    sample =this._indexdata;
+                    sample = this._indexdata;
                     for (let item in this._chartData){
                         const pindex = this._chartData[item];
                         const xkey = +this._processindex[this._chartData[item].month];
@@ -598,14 +598,52 @@ export default {
                             .style("stroke", d3.color(lc[+xkey]).darker(2))
                             .style('stroke-width', 0.25)
                             .attr("opacity", 1)
-                        this._chartData.map(d => {
+                        this._chartData.map((d,i)=> {
                             let angles = (xpad[+this._processindex[d.month]](d.date) + v) * 180 / Math.PI - 180
-                            d.path = []
-                            d.path.push([Math.abs(R * Math.cos(angles)), (R) * Math.sin(angles)])
+                            d.path = [];
+                            d.index = i;
+                            let startX = Math.abs(R * Math.cos(angles)), startY = R * Math.sin(angles),
+                                endX = r.outer+r.bubble*3.60, 
+                                endY = (this._height - 50)/sample.length * i - this._height/2+25,
+                                rangeX = endX - startX,
+                                rangeY = endY - startY;
+                            d.path.push([startX, startY])
+                            d.path.push([r.outer+r.bubble*2.80, rangeY/3 + startY])
+                            d.path.push([r.outer+r.bubble*3.2, rangeY/2 + startY])
+                            d.path.push([r.outer+r.bubble*3.4, rangeY*2/3 + startY])
+                            d.path.push([endX, endY])
+                            // const line = d3.line()
+                            //     .x(d => d[0])
+                            //     .y(d => d[1])
+                            //     .curve(d3.curveBundle)
+                            // this._g.append("path")
+                            // .attr("class", "gfhegiehfi")
+                            //     .attr("d", line(d.path))
+                            //     .attr("stroke", "red")
+                            //     .attr("fill", "none");
                         })
+                        // const line = d3.line()
+                        //         .x(d => d[0])
+                        //         .y(d => d[1])
+                        //         .curve(d3.curveBundle)
+                        //     this._g.append("path")
+                        //     .attr("class", "gfhegiehfi")
+                        //         .attr("d", line(this._chartData[0].path))
+                        //         .attr("stroke", "red")
+                        //         .attr("fill", "none");
                         console.log([Math.abs(R * Math.cos(angle)), (R) * Math.sin(angle)] )
                     }
-                    console.log(d3.color(lc[2]).darker(0.8))
+                    this._chartData.map(d =>{
+                        const line = d3.line()
+                                .x(d => d[0])
+                                .y(d => d[1])
+                                .curve(d3.curveBundle)
+                            this._g.append("path")
+                            .attr("class", "gfhegiehfi")
+                                .attr("d", line(d.path))
+                                .attr("stroke", "red")
+                                .attr("fill", "none");
+                    })
                 console.log(sample)
             }
             _renderWheelContent() {
@@ -1569,6 +1607,7 @@ export default {
 	},
 	},
 	mounted() {
+        this.paintChart()
 	},
 	computed:{
 	}

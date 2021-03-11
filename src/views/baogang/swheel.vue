@@ -775,13 +775,13 @@ export default {
                             .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 5.8})`)
                             .attr("y",-r.inner*1)
                             .attr("href", icon[key]))
-                    if(+key === 2){
-                        d3.select("#" +menuId + " #icon"+key)
-                            .attr("width", "30px")
-                            .attr("height","30px")
-                            .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 13.8})`)
-                            .attr("y", "-4.1em")
-                    }                        
+                    // if(+key === 2){
+                    //     d3.select("#" +menuId + " #icon"+key)
+                    //         .attr("width", "30px")
+                    //         .attr("height","30px")
+                    //         .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 13.8})`)
+                    //         .attr("y", "-4.1em")
+                    // }                        
 
                     for (let item in processdata){
                         const pindex=processdata[item];

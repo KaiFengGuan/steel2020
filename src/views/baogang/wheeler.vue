@@ -14,6 +14,8 @@ import coolicon from "../../assets/images/coolwheel.svg";
 import coolwhite from "../../assets/images/coolwhite.svg";
 import rollicon from "../../assets/images/rollwheel.svg";
 import rollwhite from "../../assets/images/rollwhite.svg";
+import mergeLabel from "../../assets/images/mergeLabel.svg";
+import deMergeLabel from "../../assets/images/deMergeLabel.svg"
 import thickicon from "../../assets/images/wheel/thick.svg";
 import widthicon from "../../assets/images/wheel/width.svg";
 import lengthicon from "../../assets/images/wheel/length.svg";
@@ -196,6 +198,7 @@ export default {
                 this._linespace=6;
                 this._merge = true;
                 this._indexdata = {};
+                this._indexInfo = []
             }
             getProcess(_){
                 for (let item in this.process){
@@ -247,19 +250,49 @@ export default {
             }
             render() {
                 this._init();
+                this._renderComponents()
                 // this._process();
                 // this._fliterdata();
-                this._merge ? this._fliterdata() : this._process();
+                // this._merge ? this._fliterdata() : this._process();
                 this._g = this._container.append("g");
+                this._renderMerge()
                 // this._initGradients();
-
-                this._renderMainWheel();
-                // this._merge ? this._fliterdata() : undefined;
-                this._renderMainBar();
+                // this._renderMiniBar();
+                // this._renderMainWheel();
+                
                 // this._initDynamicParts();
                 // this._renderMainWheel();
                 // this._showStatistics(this._chartData, this._year);
+                this._renderMainBar()
                 return this;
+            }
+            _renderBar(){
+                this._fliterdata();
+                this._renderMiniBar();
+                this._renderMainWheel();
+            }
+            _renderWheel(){
+                this._process();
+                this._renderMainWheel();
+            }
+            _renderMerge(){
+                this._g.remove();
+                this._g = this._container.append("g");
+                this._merge ? this._renderBar() : this._renderWheel();
+            }
+            _renderComponents(){
+                const b = this._container.append("g")
+                b.call(g => g.append("image")
+                            .attr("class", "mergeIcon")
+                            .attr("width", "25px")
+                            .attr("height","25px")
+                            .attr("transform", `translate(${[-12.5, -12.5]})`)
+                            .attr("href", mergeLabel))
+                    .on("click", (e,d) => {
+                        this._merge = !this._merge
+                        this._renderMerge()
+                        d3.select(".mergeIcon").attr("href", this._merge ? mergeLabel: deMergeLabel)
+                    })
             }
             _init() {
                 const r = this._radius;
@@ -367,9 +400,8 @@ export default {
                     let query=SPE[item].dateStr                     
                     SPE[item].order=+item+1+(+T2.findIndex((value, index, arr)=> value.dateStr===query))+1+(+res.findIndex((value, index, arr)=> value.dateStr===query))+1
                 }
-                const sample=d3.sort(SPE,d=>d.order);
-                // this._chartData = sample.slice(0,50).filter(d => (d.humidity>1.5|d.precipitation>1.5) ? true : false)
-                this._chartData = sample.slice(0,50)
+                const sample=d3.sort(SPE,d=> -d.order).filter(d => (d.humidity > 1.2| d.precipitation >1.2) ? true : false);
+                this._chartData = sample
                 this._padprocess=[[],[],[]];
                 this._chartData.map(datum => {
                     wm._padprocess[wm._processindex[wm.getProcess(datum.dateStr)]].push(datum.dateStr)
@@ -380,18 +412,22 @@ export default {
                     humis.push(datum.humidity);
                     return datum;
                 });
-                this._indexdata = this._chartData
-                const pad = 0;
-                const angle = (Math.PI*0.8 - 3 * pad )/this._chartData.length
-                this._dayRadian = (Math.PI*0.8- 3 * pad) / this._chartData.length + Math.PI;
-                const a = angle * this._padprocess[0].length + 0.1 * Math.PI, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
+                this._indexdata = this._chartData.slice(0);
+                const mergeLength = this._indexdata.length > 50 ? this._indexdata.length :50,
+                    pad = 0,
+                    angle = (Math.PI - 3 * pad )/mergeLength;
+                this._dayRadian = (Math.PI- 3 * pad) / mergeLength + Math.PI;
+                const diverangle = (mergeLength - this._indexdata.length) * angle / 2
+                const a = angle * this._padprocess[0].length + diverangle, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
                 this._padAngle=[
-                    [0.1 * Math.PI, a ],
+                    [diverangle, a ],
                     [a +pad, a + b + pad ],
                     [a + b + 2 * pad, a + b + c + 2 * pad],
                 ]
                 this._label=labels
                 this._initScales(labels, lows, highs, precs, humis);
+                console.log(diverangle/Math.PI)
+                console.log((a + b + c + 2 * pad)/Math.PI)
             }
             _initScales(labels, lows, highs, precs, humis) {
                 const d = this._chartData, r = this._radius;
@@ -561,6 +597,145 @@ export default {
                     .attr("in", "SourceGraphic")
                     .attr("mode","normal"))
             }
+            _renderMiniBar(){
+                const r = this._radius,
+                    c = this._colors,
+                    lc =this._labelcolor,
+                    a = this._padAngle,
+                    xpad = this._xpad,
+                    v = (this._dayRadian-Math.PI)/2,
+                    icon = [heaticon , rollicon , coolicon],
+                    piearc = d3.arc()
+                        .innerRadius(0)
+                        .outerRadius(r.bubble * 0.12),
+                    outrate = (item1 , item2) => {
+                        return d => (d.humidity>1.5|d.precipitation>1.5) ? item1 : item2
+                    };
+                    this._indexInfo = this._indexdata.slice(0,10);
+                    for (let item in this._indexdata){
+                        const pindex = this._indexdata[item];
+                        const xkey = +this._processindex[this._indexdata[item].month];
+                        if(item >= 10) continue
+                        const R = r.outer+r.bubble*1.05,
+                                angle = (xpad[xkey](pindex.date) + v) * 180 / Math.PI - 180 ;
+                            let d = this._indexdata[item]
+                                d.path = [];
+                                d.index = item;
+                                let startX = R * (Math.sin(xpad[xkey](pindex.date)+ v)), startY = R * Math.cos(Math.abs(xpad[xkey](pindex.date)+ v)),
+                                    endX = r.outer+r.bubble*3.60, 
+                                    endY = (this._height - 50)/10 * item - this._height/2+25;
+                                d.path.push([startX, startY])
+                                d.path.push([endX, endY])
+                            const line = d3.line()
+                                    .x(d => d[0])
+                                    .y(d => d[1])
+                                    .curve(d3.curveCatmullRom)
+                                this._g.append("path")
+                                .attr("class", "gfhegiehfi")
+                                    .attr("d", d3.linkHorizontal()({
+                                        source: d.path[0],
+                                        target: d.path[1]
+                                        }))
+                                    .attr("stroke", "grey")
+                                    .attr("opacity", 0.6)
+                                    .attr("stroke-width", 3.5)
+                                    .attr("fill", "none").on("mouseover", function(e,d){
+                                        console.log(angle)
+                                    })
+                        // this._indexdata.map((d,i)=> {
+                        //     let angles = (xpad[+this._processindex[d.month]](d.date) + v) * 180 / Math.PI - 180
+                        //     d.path = [];
+                        //     d.index = i;
+                        //     let startX = Math.abs(R * Math.cos(angles)), startY = R * Math.sin(angles),
+                        //         endX = r.outer+r.bubble*3.60, 
+                        //         endY = (this._height - 50)/sample.length * i - this._height/2+25,
+                        //         rangeX = endX - startX,
+                        //         rangeY = endY - startY;
+                        //     d.path.push([startX, startY])
+                        //     d.path.push([r.outer+r.bubble*2.80, rangeY/3 + startY])
+                        //     d.path.push([r.outer+r.bubble*3.2, rangeY/2 + startY])
+                        //     d.path.push([r.outer+r.bubble*3.4, rangeY*2/3 + startY])
+                        //     d.path.push([endX, endY])
+                            // const line = d3.line()
+                            //     .x(d => d[0])
+                            //     .y(d => d[1])
+                            //     .curve(d3.curveBundle)
+                            // this._g.append("path")
+                            // .attr("class", "gfhegiehfi")
+                            //     .attr("d", line(d.path))
+                            //     .attr("stroke", "red")
+                            //     .attr("fill", "none");
+                        // })
+                        // const line = d3.line()
+                        //         .x(d => d[0])
+                        //         .y(d => d[1])
+                        //         .curve(d3.curveBundle)
+                        //     this._g.append("path")
+                        //     .attr("class", "gfhegiehfi")
+                        //         .attr("d", line(this._indexdata[0].path))
+                        //         .attr("stroke", "red")
+                        //         .attr("fill", "none");
+                        // console.log([Math.abs(R * Math.cos(angle)), (R) * Math.sin(angle)] )
+                    }
+                    // var linksss = d3.linkHorizontal()
+                    //     .x(d => d[0])
+                    //     .y(d => d[1]);
+                    // this._indexdata.map((d, i) =>{
+                    //     const R = r.outer+r.bubble*1.20;
+                    //     let angles = (xpad[+this._processindex[d.month]](d.date) + v) * 180 / Math.PI - 180
+                    //         d.path = [];
+                    //         d.index = i;
+                    //         let startX = R * Math.cos(angles), startY = R * Math.sin(angles),
+                    //             endX = r.outer+r.bubble*3.60, 
+                    //             endY = (this._height - 50)/sample.length * i - this._height/2+25,
+                    //             rangeX = endX - startX,
+                    //             rangeY = endY - startY;
+                    //         d.path.push([startX, startY])
+                    //         d.path.push([endX, endY])
+                    //     console.log(angles)
+                    //     this._g.append("circle").attr("transform", "translate("+ startX + startY+")").attr("r", 1)
+                    //     const line = d3.line()
+                    //             .x(d => d[0])
+                    //             .y(d => d[1])
+                    //             .curve(d3.curveCatmullRom)
+                    //         this._g.append("path")
+                    //         .attr("class", "gfhegiehfi")
+                    //             .attr("d", d3.linkHorizontal()({
+                    //                 source: d.path[0],
+                    //                 target: d.path[1]
+                    //                 }))
+                    //             .attr("stroke", "grey")
+                    //             .attr("opacity", 0.6)
+                    //             .attr("stroke-width", 7.5)
+                    //             .attr("fill", "none")
+                    // })
+                    // this._indexdata.map((d, i) =>{
+                    //     const R = r.outer+r.bubble*1.20;
+                    //     let angles = (xpad[+this._processindex[d.month]](d.date) + v) * 180 / Math.PI -180
+                    //         d.path = [];
+                    //         d.index = i;
+                    //         let startX = Math.abs(R * Math.cos(angles)), startY = R * Math.sin(angles),
+                    //             endX = r.outer+r.bubble*3.60, 
+                    //             endY = (this._height - 50)/sample.length * i - this._height/2+25,
+                    //             rangeX = endX - startX,
+                    //             rangeY = endY - startY;
+                    //         d.path.push([startX, startY])
+                    //         // d.path.push([startX + r.bubble*2.40, rangeY/6 + startY])
+                    //         // d.path.push([r.outer+r.bubble*2.80, rangeY/3 + startY])
+                    //         // d.path.push([r.outer+r.bubble*3.2, rangeY/2 + startY])
+                    //         // d.path.push([r.outer+r.bubble*3.4, rangeY*2/3 + startY])
+                    //         d.path.push([endX, endY])
+                    //     const line = d3.line()
+                    //             .x(d => d[0])
+                    //             .y(d => d[1])
+                    //             .curve(d3.curveCatmullRom)
+                    //         this._g.append("path")
+                    //         .attr("class", "gfhegiehfi")
+                    //             .attr("d", line(d.path))
+                    //             .attr("stroke", "grey")
+                    //             .attr("fill", "none")
+                    // })
+            }
             _renderMainBar(){
                 const r = this._radius,
                     c = this._colors,
@@ -574,77 +749,46 @@ export default {
                         .outerRadius(r.bubble * 0.12),
                     outrate = (item1 , item2) => {
                         return d => (d.humidity>1.5|d.precipitation>1.5) ? item1 : item2
-                    },
-                    sample = this._indexdata;
-                    for (let item in this._chartData){
-                        const pindex = this._chartData[item];
-                        const xkey = +this._processindex[this._chartData[item].month];
-                        // if(xkey === key) continue
-                        const R = r.outer+r.bubble*1.30,
-                                angle = (xpad[xkey](pindex.date) + v) * 180 / Math.PI - 180;
-                        const pie = d3.pie()
-                            .value(d => d.angle)
-                            .startAngle(0.5* Math.PI)
-                            .endAngle(2.5 * Math.PI);
-                        let piedata=pie(pindex.property)
-                        let g=this._g.selectAll("#" +menuId + " .pie"+pindex.date)
-                            .data(piedata).enter()
-                            .append("g")
-                            .attr("transform", `rotate(${angle }) translate(${[0,R]})`);
-                        g.append("path")
-                            .attr("class", `arcpie`+xkey +' pie'+ pindex.date)
-                            .attr("d", piearc)
-                            .attr("fill", (d,i) => ((+d.data.value)>1.5? lc[+xkey] : "white"))
-                            .style("stroke", d3.color(lc[+xkey]).darker(2))
-                            .style('stroke-width', 0.25)
-                            .attr("opacity", 1)
-                        this._chartData.map((d,i)=> {
-                            let angles = (xpad[+this._processindex[d.month]](d.date) + v) * 180 / Math.PI - 180
-                            d.path = [];
-                            d.index = i;
-                            let startX = Math.abs(R * Math.cos(angles)), startY = R * Math.sin(angles),
-                                endX = r.outer+r.bubble*3.60, 
-                                endY = (this._height - 50)/sample.length * i - this._height/2+25,
-                                rangeX = endX - startX,
-                                rangeY = endY - startY;
-                            d.path.push([startX, startY])
-                            d.path.push([r.outer+r.bubble*2.80, rangeY/3 + startY])
-                            d.path.push([r.outer+r.bubble*3.2, rangeY/2 + startY])
-                            d.path.push([r.outer+r.bubble*3.4, rangeY*2/3 + startY])
-                            d.path.push([endX, endY])
-                            // const line = d3.line()
-                            //     .x(d => d[0])
-                            //     .y(d => d[1])
-                            //     .curve(d3.curveBundle)
-                            // this._g.append("path")
-                            // .attr("class", "gfhegiehfi")
-                            //     .attr("d", line(d.path))
-                            //     .attr("stroke", "red")
-                            //     .attr("fill", "none");
-                        })
-                        // const line = d3.line()
-                        //         .x(d => d[0])
-                        //         .y(d => d[1])
-                        //         .curve(d3.curveBundle)
-                        //     this._g.append("path")
-                        //     .attr("class", "gfhegiehfi")
-                        //         .attr("d", line(this._chartData[0].path))
-                        //         .attr("stroke", "red")
-                        //         .attr("fill", "none");
-                        console.log([Math.abs(R * Math.cos(angle)), (R) * Math.sin(angle)] )
-                    }
-                    this._chartData.map(d =>{
-                        const line = d3.line()
-                                .x(d => d[0])
-                                .y(d => d[1])
-                                .curve(d3.curveBundle)
-                            this._g.append("path")
-                            .attr("class", "gfhegiehfi")
-                                .attr("d", line(d.path))
-                                .attr("stroke", "red")
-                                .attr("fill", "none");
-                    })
-                console.log(sample)
+                    };
+                    // for (let item in this._indexInfo){
+                    //     const pindex = this._indexInfo[item];
+                    //     const xkey = +this._processindex[this._indexInfo[item].month];
+                    //     const R = r.outer+r.bubble*1.05,
+                    //             angle = (xpad[xkey](pindex.date) + v) * 180 / Math.PI - 180 ;
+                    //         let d = this._indexInfo[item]
+                    //             d.path = [];
+                    //             d.index = item;
+                    //             // let startX = R * (Math.sin(xpad[xkey](pindex.date)+ v)), startY = R * Math.cos(Math.abs(xpad[xkey](pindex.date)+ v)),
+                    //             //     endX = r.outer+r.bubble*3.60, 
+                    //             //     endY = (this._height - 50)/sample.length * item - this._height/2+25;
+                    //             // d.path.push([startX, startY])
+                    //             // d.path.push([endX, endY])
+                    //     this._g.append("path")
+                    //     .attr("class", "linkToRect")
+                    //         .attr("d", d3.linkHorizontal()({
+                    //             source: d.path[0],
+                    //             target: d.path[1]
+                    //             }))
+                    //         .attr("stroke", "grey")
+                    //         .attr("opacity", 0.6)
+                    //         .attr("stroke-width", 3.5)
+                    //         .attr("fill", "none")
+                    // }
+                    this._g.append("g")
+                        .call(g => g.selectAll("#" +menuId + " .rect_doct").data(this._indexInfo).join("g")      
+                        .attr("class", "rect_doct")
+                        .attr("transform", (d, i) => `translate(${[r.outer+r.bubble*3.60, (this._height - 50)/10 * i - this._height/2+25]})`)
+                        .call(g => g.append("rect")
+                            // .attr("class", "circle_color"+key)
+                            // .attr('id',d=>'circle'+d.dateStr)
+                            // .attr("fill", d3.color(lck).darker(0.2))
+                            .attr("stroke", "grey")
+                            .attr("width", 150)
+                            .attr("height", 82)
+                            // .attr("opacity", 1)
+                            .attr("stroke-width", 0.5)
+                            .attr("stroke-opacity", 1)
+                            ))
             }
             _renderWheelContent() {
                 const r = this._radius,

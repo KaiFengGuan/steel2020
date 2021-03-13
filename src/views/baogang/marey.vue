@@ -186,7 +186,7 @@
 								<el-col :span="3">
 									<!-- <div style="float:left;margin-top: 30px;position:relative;left: 25px;width: 1px;height: 450px; background: #c9c9c9;"></div> -->
 									<el-row>
-										<el-row>
+										<!-- <el-row>
 											<el-card class="myel-card myel-tab">
 												<div slot="header">
 													<el-row>
@@ -195,7 +195,7 @@
 														<el-col :span="8"></el-col>
 													</el-row>
 												</div>
-												<div class="my-card-body">
+												<div class="my-card-body" @click="changeUpid(upidSelect[0])">
 													<swheel ref="wheeler0" style="height:223px"></swheel>
 												</div>
 											</el-card>
@@ -213,7 +213,49 @@
 												<swheel ref="wheeler1" style="height:223px"></swheel>
 											</div>
 										</el-card>
+										</el-row> -->
+										<div style="overflow-y:scroll;height:510px">
+										<el-row v-for="item of upidSelect" :key = item>
+											<el-card class="myel-card myel-tab">
+												<div slot="header">
+														<el-row style="height:25px"> 
+															<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
+															<span class="upidtext">UPID {{item}}</span></el-col>
+															<el-col :span="8"></el-col>
+														</el-row>
+													</div>
+												<div class="my-card-body" @click="changeUpid(item)">
+													<swheel :ref="item" style="height:223px"></swheel>
+												</div>
+											</el-card>
 										</el-row>
+										</div>
+
+										<!-- <el-row style="margin: 2px 0; ;overflow-y:scroll;overflow-x:hidden; display:flex;flex-wrap: nowrap;height:400px">
+											<el-row  style="flex-shrink: 0;flex-grow: 0;width:100%" v-for="item of upidSelect" :key = item>
+												<el-card class="myel-card myel-tab">
+													<div slot="header">
+															<el-row style="height:25px"> 
+																<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
+																<span class="upidtext">UPID {{item}}</span></el-col>
+																<el-col :span="8"></el-col>
+															</el-row>
+														</div>
+													<div class="my-card-body">
+														<swheel :ref="item" style="height:223px"></swheel>
+													</div>
+												</el-card>
+											</el-row> -->
+											
+											<!-- <el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
+												<el-card class="my-card-body-detail">
+													<div class="my-card-title" style="height: 3px;font-size:10px;font-weight:150">{{item}}</div>
+													<div class="my-card-body-detail-some">
+														<three-bar :ref="item" style="height: 190px;" ></three-bar>
+													</div>
+												</el-card>
+											</el-col> -->
+										<!-- </el-row> -->
 									</el-row>
 								</el-col>
 									<el-col :span="12">
@@ -356,6 +398,7 @@ import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import myJsonData from "./jsondata.js"
 import myStationData from "./stationdata.js"
 import scatterdata from "./scatterdata.json"
+import * as steel from 'services/steel.js'
 var echarts = require('echarts');
 export default {
 	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat,
@@ -443,7 +486,7 @@ export default {
 				thickness: 0.5
 			},
 			scatterResponse: null,
-			upidSelect: ["", ""]
+			upidSelect: ["", "  "]
 		}
 	},
 	computed: {},
@@ -451,11 +494,23 @@ export default {
 		// this.day()
 	},
 	methods: {
-		// forceswtich(){
-		// 	this.$refs.force.sizechange()
-		// },
 		changeTimeBrush() {
 			this.getTimeBrushData();
+		},
+		async changeUpid(upid){
+			let query=[]
+			for (let item of this.plateTempPropvalue){
+				if(item==='All'){
+					query.push(item)
+				}
+			}		
+			if(query.length===0)query=this.plateTempPropvalue
+			this.selectedUpid = upid!==undefined ? "UPID " + upid : "UPID"
+			let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
+			this.diagnosisData=diagnosisData
+			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
+				this.$refs.wheelering.paintChart(diagnosisData,Response.data)
+			})
 		},
 		changeTime() {
 			// // this.$message('这是一条消息提示');
@@ -619,13 +674,20 @@ export default {
 
 		// 获取诊断视图数据
 		getDiagnosisData(choseUpid, widthGap, lengthGap, thicknessGap,platetype) {
-			return baogangPlotAxios('/baogangapi/v1.0/baogangPlot/diagnosesdata', {
+			return steel.getDiadata({
 				'upid': choseUpid,
 				'width': widthGap,
 				'length': lengthGap, 
 				'thickness': thicknessGap,
 				'platetype':JSON.stringify(platetype),
 			})
+			// return baogangPlotAxios('/baogangapi/v1.0/baogangPlot/diagnosesdata', {
+			// 	'upid': choseUpid,
+			// 	'width': widthGap,
+			// 	'length': lengthGap, 
+			// 	'thickness': thicknessGap,
+			// 	'platetype':JSON.stringify(platetype),
+			// })
 		},
 
 		getDetailProcess(upid, process, width, length, thickness,platetype,deviation) {
@@ -738,163 +800,10 @@ export default {
 			this.isSearch = false
 		},
 
-		// changeScatterColor() {
-		// 		var symbolSizeScaler = d3.scaleLinear()
-		// 			.domain([0.006, 0.16])
-		// 			.range([6, 12])
-		// 		// this.scatterLoading = true
-		// 		let tempArray = []
-		// 		for (let key in this.scatterResponse.data) {
-		// 			tempArray.push(this.scatterResponse.data[key]);
-		// 		}
-
-		// 		// let nestedArrayByCategory = d3.nest()
-		// 		// 	.key(d => d.productcategory)
-		// 		// 	.entries(tempArray);
-		// 		// let nestedArrayByCategory=d3.rollup(tempArray, v => v,d => d.productcategory);
-		// 		let nestedArrayByCategory=d3.groups(tempArray, d => d.productcategory);
-		// 		for (let item in nestedArrayByCategory){
-		// 			nestedArrayByCategory[item]={key:nestedArrayByCategory[item][0],values:nestedArrayByCategory[item][1]}
-		// 		}
-		// 		// console.log(nestedArrayByCategory)
-		// 		let seriesDataForLabel = [
-		// 			{
-		// 				name: '0',
-		// 				type: 'scatter',
-		// 				data: tempArray.filter(d => d.label === '0').map(v => {
-		// 					return {
-		// 						value: [v.x, v.y],
-		// 						name: v.upid.toString()
-		// 					}
-		// 				}),
-		// 				symbolSize: (data, params) => {
-		// 					return symbolSizeScaler(tempArray[params.dataIndex].tgtplatethickness2)
-		// 				},
-		// 				itemStyle: {
-		// 					color: util.labelColor[0],
-		// 				}
-		// 			},
-		// 			{
-		// 				name: '1',
-		// 				type: 'scatter',
-		// 				data: tempArray.filter(d => d.label === '1').map(v => {
-		// 					return {
-		// 						value: [v.x, v.y],
-		// 						name: v.upid.toString()
-		// 					}
-		// 				}),
-		// 				symbolSize: (data, params) => {
-		// 					return symbolSizeScaler(tempArray[params.dataIndex].tgtplatethickness2)
-		// 				},
-		// 				itemStyle: {
-		// 					color: util.labelColor[1]
-		// 				}
-		// 			}
-		// 		]
-		// 		let scatterOption =
-		// 		{
-		// 			seriesData: this.isSwitch ? seriesDataForLabel : nestedArrayByCategory.map(n => {
-		// 				return {
-		// 					name: n.key,
-		// 					type: 'scatter',
-		// 					data: [...n.values].map(v => {
-		// 						return {
-		// 							value: [v.x, v.y],
-		// 							name: v.upid.toString()
-		// 						}
-		// 					}),
-		// 					symbolSize: (data, params) => {
-		// 						return symbolSizeScaler(tempArray[params.dataIndex].tgtplatethickness2)
-		// 					},
-		// 					itemStyle: {
-		// 						color: util.categoryColor(n.key)
-		// 					}
-		// 				}
-		// 			}),
-		// 			tooltip: {
-		// 				formatter: function (params) {
-		// 					return "upid:" + tempArray[params.dataIndex].upid + "<br/>"
-		// 						+ "category:" + tempArray[params.dataIndex].productcategory + "<br/>"
-		// 						+ "time:" + tempArray[params.dataIndex].toc + "<br/>"
-		// 						// + "tgtwidth:" + tempArray[params.dataIndex].tgtwidth + "<br/>"
-		// 						// + "crowntotal:" + tempArray[params.dataIndex].crowntotal + "<br/>"
-		// 						// + "wedgetotal:" + tempArray[params.dataIndex].wedgetotal + "<br/>"
-		// 						// + "tgtplatethickness2:" + tempArray[params.dataIndex].tgtplatethickness2 + "<br/>"
-		// 						// + "ave_temp_dis:" + tempArray[params.dataIndex].ave_temp_dis + "<br/>"
-		// 				}
-		// 			},
-					
-					
-		// 		}
-		// 		this.myScatterChart = echarts.init(document.getElementById('scatter'))
-		// 		this.scatterChange = scatterOption
-		// 		var OptionFScatter = {}
-		// 		OptionFScatter.series = scatterOption.seriesData;
-		// 		OptionFScatter.tooltip = scatterOption.tooltip;
-		// 		OptionFScatter.xAxis =  [{
-		// 			show: false,
-		// 			type: 'value',
-		// 			scale: true,
-		// 			splitLine: {
-		// 				show: true
-		// 			},
-		// 			axisLabel: {
-		// 					show: false
-		// 			}
-		// 		}]
-		// 		OptionFScatter.yAxis = [{
-		// 			show: false,
-		// 			type: 'value',
-		// 			scale: true,
-		// 			splitLine: {
-		// 				show: true
-		// 			},
-		// 			axisLabel: {
-		// 					show: false
-		// 			}
-		// 		}]
-		// 		this.myScatterChart.setOption(OptionFScatter, true);
-		// 		this.scatterLoading = false
-		// 		this.isSearch = false
-		// }, 
-
 		async trainClick(value) {
-
 			this.selectedTrainData = value.list;
 			this.selectedTrainColor = value.color;
-			// if (this.chooseList.length === 0) {
-			// 	// 高亮当前图形
-			// 	this.myScatterChart.dispatchAction({
-			// 			type: 'highlight',
-			// 			name: value.list[value.list.length-1]
-			// 	});
-			// 	// 显示 tooltip
-			// 	this.myScatterChart.dispatchAction({
-			// 			type: 'showTip',
-			// 			name: value.list[value.list.length-1]
-			// 	});
-			// }
-			// else if (value.list.length < this.chooseList.length) {
-			// 	this.myScatterChart.dispatchAction({
-			// 			type: 'downplay',
-			// 			name: this.chooseList[this.chooseList.length-1]
-						
-			// 	})
-			// } else {
-			// 	// 高亮当前图形
-			// 	this.myScatterChart.dispatchAction({
-			// 			type: 'highlight',
-			// 			// seriesIndex: 1,
-			// 			name: value.list[value.list.length-1]
-			// 	});
-			// 	// 显示 tooltip
-			// 	this.myScatterChart.dispatchAction({
-			// 			type: 'showTip',
-			// 			// seriesIndex: 0,
-			// 			name: value.list[value.list.length-1]
-						
-			// 	});
-			// }
+			console.log(value)
 			this.chooseList = value.list
 			await this.paintUnderCharts(this.chooseList[0]);
 			while(true){
@@ -903,27 +812,51 @@ export default {
 				if(this.diagnosisData["result"].length === 0) continue
 				break
 			}
-			for(let item = 0;item < 2;item++){
-				this.$refs["wheeler" + item].init()
-			}
+			// for(let item = 0;item < 2;item++){
+			// 	this.$refs["wheeler" + item].init()
+			// }
 			this.upidSelect = []
-			console.log(value.upidSelect)
+			console.log(value.upidSelect.length)
+			console.log([...value.upidSelect].length)
+			value.upidSelect = [...new Set(value.upidSelect)]
+			this.upidSelect = value.upidSelect
+			console.log(this.upidSelect)
 			let index = 0
-			for(let item in value.upidSelect){
-				if(this.upidSelect.length > 3) break
-				if(value.upidSelect[item] !== undefined && this.upidSelect.length < 2)
-				var label = await this.paintScatteLog(value.upidSelect[item], index)
-				console.log(label)
-				if(label){
-					index ++
-					(this.upidSelect.push(value.upidSelect[item]))
-				}
-				
-			}
-			// plate heat
-			// this.selectedTrainData.length > 0 && this.getPlate(this.selectedTrainData.slice(-1)[0]);
+			// for(let item in value.upidSelect){
+			// 	// if(this.upidSelect.length > 3) break
+			// 	if(value.upidSelect[item] !== undefined && this.upidSelect.length < 2)
+			// 	var label = await this.paintScatteLog(value.upidSelect[item], index)
+			// 	console.log(label)
+			// 	if(label){
+			// 		index ++
+			// 		(this.upidSelect.push(value.upidSelect[item]))
+			// 	}
+			// }
 
-			
+			for(let item of value.upidSelect){
+				this.paintScatterList(item)
+			}
+		},
+		async paintScatterList(upid){
+			this.$nextTick(function() {this.$refs[upid][0].init()})
+			let query=[]
+			for (let item of this.plateTempPropvalue){
+				if(item==='All'){
+					query.push(item)
+				}
+			}		
+			if(query.length===0)query=this.plateTempPropvalue
+			let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
+			console.log(diagnosisData["result"].length === 0)
+			if(diagnosisData["result"].length === 0){
+				return false
+			}
+			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
+				this.$nextTick(function() {
+				this.$refs[upid][0].paintChart(diagnosisData,Response.data)
+			})
+				
+			})
 		},
 		async paintScatteLog(upid, index) {
 			let query=[]

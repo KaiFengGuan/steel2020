@@ -55,7 +55,7 @@ export default {
         console.log(this.menuId)
 		this.svg=d3.select("#"+vm.menuId)
 			.append("svg")
-			.attr("viewBox", `${-diameter / 2} ${-diameter / 2} ${width} ${diameter}`)
+			.attr("viewBox", `${-diameter / 2.4} ${-diameter / 2.05} ${width} ${diameter}`)
             .style("width", width)
             .style("height", diameter);
         class wheelRound{
@@ -473,59 +473,6 @@ export default {
                     .attr("dy", "0")
                     .attr("stdDeviation", 4)
                     .attr("flood-color", "#bfbdbd")
-                // const filter=defs.append("filter")
-                //     .attr("id","shadow-filter")
-                //     .attr("x", "-5%")
-                //     .attr("y", "-5%")  
-                //     .attr("width", "110%")
-                //     .attr("height", "110%")
-                //     .attr("filterUnits", "objectBoundingBox");
-                // filter
-                // .call(g =>g.append("feOffset")
-                //     .attr("result", "shadowOffsetOuter1")
-                //     .attr("in", "SourceAlpha")
-                //     .attr("dx","0")
-                //     .attr("dy", "0.5")
-                //     .attr("flood-color", "#bebebe"))
-                // .call(g =>g.append("feGaussianBlur")
-                //     .attr("result", "shadowBlurOuter1")
-                //     .attr("in", "shadowOffsetOuter1")
-                //     .attr("stdDeviation","0.5"))
-                // .call(g =>g.append("feBlend")
-                //     .attr("values", "0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.2 0")
-                //     .attr("in", "shadowBlurOuter1")
-                //     .attr("mode","normal")
-                //     .attr("type", "matrix")
-                //     .attr("result", "shadowMatrixOuter1"))
-                // const feMerge = filter.append("feMerge");
-                // feMerge
-                //     .call(g => g.append("feMergeNode")
-                //         .attr("in", "shadowMatrixOuter1"))
-                //     .call(g => g.append("feMergeNode")
-                //         .attr("in", "SourceGraphic"))
-
-
-
-                // const filter=defs.append("filter")
-                //                 .attr("id","filter")
-                //                 .attr("x", "0")
-                //                 .attr("y", "0")
-                //                 .attr("width", "200%")
-                //                 .attr("height", "200%");
-                // filter
-                // .call(g =>g.append("feOffset")
-                //     .attr("result", "offOut")
-                //     .attr("in", "SourceGraphic")
-                //     .attr("dx","2.5")
-                //     .attr("dy", "2.5"))
-                // .call(g =>g.append("feGaussianBlur")
-                //     .attr("result", "blurOut")
-                //     .attr("in", "offOut")
-                //     .attr("stdDeviation","2"))
-                // .call(g =>g.append("feBlend")
-                //     .attr("in2", "blurOut")
-                //     .attr("in", "SourceGraphic")
-                //     .attr("mode","normal"))
             }
             _renderWheelContent() {
                 const r = this._radius,
@@ -654,7 +601,7 @@ export default {
                             d3.selectAll("#" +menuId + " #icon"+key)
                                 .attr("href", iconwhite[key])
                             d3.selectAll("#" +menuId + " .circle_color"+key)
-                                .attr("r",outrate (3.5 , 2))
+                                .attr("r",outrate (2 , 1))
                                 .attr("opacity", 1);
                             d3.selectAll("#" +menuId + " .precipitation"+key)
                                 .attr("stroke",d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorlinear1(d.precipitation)+2) :daker)
@@ -688,7 +635,7 @@ export default {
                             d3.selectAll("#" +menuId + " #icon"+key)
                                 .attr("href", icon[key])
                             d3.selectAll("#" +menuId + " .circle_color"+key)
-                                    .attr("r",2);
+                                    .attr("r",1);
                             d3.selectAll("#" +menuId + " .precipitation"+key)
                                 .attr("stroke",daker)
                             d3.selectAll("#" +menuId + " .humidity"+key)
@@ -718,7 +665,7 @@ export default {
                             .attr("stroke-width", 0.5)
                             .attr("stroke-opacity", 1)
                             .attr("cy", d => this._y(d.avg))
-                            .attr("r",2))
+                            .attr("r",1))
                         .call(g => g.append("line")     //line1
                             .attr("class" , d => "lead"+key +" line" + d.dateStr +" "+"linecurve")
                             .attr("id" , d => "linecurve"+ d.dateStr)
@@ -770,8 +717,8 @@ export default {
                     .call(g => g.append("image")    //icon
                             .attr("class", "icon")
                             .attr("id", "icon"+key)
-                            .attr("width", "12px")
-                            .attr("height","12px")
+                            .attr("width", "10px")
+                            .attr("height","10px")
                             .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 5.8})`)
                             .attr("y",-r.inner*1)
                             .attr("href", icon[key]))
@@ -1176,7 +1123,7 @@ export default {
                         d3.selectAll("#" +menuId + " #process" + key)
                                 .attr("opacity" , 0.6)
                         d3.select("#" +menuId + " #circle"+name)
-                                .attr("r",3.5)
+                                .attr("r",2)
                                 .attr("opacity", 1);
                         d3.select("#" +menuId + " #precipitation"+name)
                             .attr("stroke",d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorLinear1[key](d.precipitation)+2) :daker)
@@ -1216,7 +1163,7 @@ export default {
                     function axisout(name,key,lck,daker,flag){
                         // initcss()
                         d3.select("#" +menuId + " #circle"+name)
-                                    .attr("r",2);
+                                    .attr("r",1);
                         d3.select("#" +menuId + " #precipitation"+name)
                             .attr("stroke",daker)
                         d3.select("#" +menuId + " #humidity"+name)

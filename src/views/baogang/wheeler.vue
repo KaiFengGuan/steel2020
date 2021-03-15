@@ -24,6 +24,7 @@ import categoryicon from "../../assets/images/wheel/category.svg";
 import util from './util.js';
 import corrdata from "./corrdata.json"
 import diagnoesdata from "./diagnoesdata.json"
+import normeddata from "./normeddata.json"
 export default {
 	data() {
 		return {
@@ -749,6 +750,7 @@ export default {
                     xpad = this._xpad,
                     v = (this._dayRadian-Math.PI)/2,
                     indexs = this._indexlength,
+                    RectWidth = 280,
                     piearc = d3.arc()
                         .innerRadius(0)
                         .outerRadius(r.bubble * 0.12),
@@ -757,13 +759,6 @@ export default {
                     },
                     fillcolor = d => d3.color(lc[+this._processindex[d.month]]).darker(0.2),
                     bordercolor = d => d3.color(lc[+this._processindex[d.month]]).darker(1);
-                    // [field.humidity], "angle": 0.1 },
-                    //         {"label": "PCASPE", "value": d[field.precipitation], "angle": 0.1},
-                    //         {"label": "result", "value": d[field.precipitation], "angle": 0.2}
-                    //     ]
-                    // };
-                    // const e=datum;
-                    // datum.property[2].value=e.avg>e.low&e.high>e.avg
                     this._g.append("g")
                         .call(g => g.selectAll("#" +menuId + " .rect_doct").data(this._indexInfo).join("g")      
                         .attr("class", "rect_doct")
@@ -771,45 +766,12 @@ export default {
                             .call(g => g.append("rect")
                                 .attr("fill", "none")
                                 .attr("stroke", bordercolor)
-                                .attr("width", 220)
+                                .attr("width", RectWidth)
                                 .attr("height", 60)
                                 .attr("x", 30)
                                 .attr("y", -10)
                                 .attr("stroke-width", 0.5)
                                 .attr("stroke-opacity", 1))
-                            // .call(g => g.append("rect")
-                            //     .attr("fill", "none")
-                            //     .attr("stroke", bordercolor)
-                            //     .attr("x", 20)
-                            //     .attr("width", 20)
-                            //     .attr("y", 20)
-                            //     .attr("height", 20)
-                            //     .attr("stroke-width", 0.5)
-                            //     .attr("stroke-opacity", 1))
-                            // .call(g => g.append("circle")
-                            //     .attr("fill", d => d.humidity > 1.5 ? fillcolor(d) : "none")
-                            //     .attr("stroke", bordercolor)
-                            //     .attr("cx", 30)
-                            //     .attr("r", 5)
-                            //     .attr("cy", 30)
-                            //     .attr("stroke-width", 0.5)
-                            //     .attr("stroke-opacity", 1))
-                            // .call(g => g.append("circle")
-                            //     .attr("fill", d => d.precipitation > 1.5 ? fillcolor(d) : "none")
-                            //     .attr("stroke", bordercolor)
-                            //     .attr("cx", 10)
-                            //     .attr("r", 5)
-                            //     .attr("cy", 30)
-                            //     .attr("stroke-width", 0.5)
-                            //     .attr("stroke-opacity", 1))
-                            // .call(g => g.append("circle")
-                            //     .attr("fill",d =>  d.avg>d.low&d.high>d.avg ? "none" : fillcolor(d))
-                            //     .attr("stroke", bordercolor)
-                            //     .attr("cx", 20)
-                            //     .attr("r", 5)
-                            //     .attr("cy", 10)
-                            //     .attr("stroke-width", 0.5)
-                            //     .attr("stroke-opacity", 1))
                             .call(g => g.append("rect")
                                 .attr("fill", d => d.precipitation > 1.5 ? fillcolor(d) : "none")
                                 .attr("stroke", bordercolor)
@@ -840,8 +802,16 @@ export default {
                                 .attr("x1", 30)
                                 .attr("y1", 15)
                                 .attr("y2", 15)
-                                .attr("x2", 250)
+                                .attr("x2", RectWidth + 30)
                                 .attr("stroke-width", 1)
+                                .attr("stroke-opacity", 1))
+                            .call(g => g.append("line")
+                                .attr("transform", `translate(${[30,35]})`)
+                                .attr("stroke", d => d3.color(lc[+this._processindex[d.month]]).darker(0.6))
+                                .attr("x1", 0)
+                                .attr("x2", RectWidth)
+                                .attr("stroke-width", 0.5)
+                                .attr("stroke-dasharray", "2,1,2,1")
                                 .attr("stroke-opacity", 1)))
                             // .call(g => g.append("rect")
                             //     .attr("fill", d => d3.color(lc[+this._processindex[d.month]]).darker(0.5))
@@ -861,11 +831,44 @@ export default {
                             //     .attr("fill", "white")
                             //     .text(d => d.dateStr))
                     for(let item in this._indexInfo){
-                        let area = area = d3.area()
-                            .curve(d3.curveLinear)
-                            .x(d => d*21 +18)
-                            .y0(0)
-                            .y1(d => -10);
+                        let overlap = 3,
+                            h = 40,
+                            step = h,
+                            horizenWidth = 260,
+                            overlaps = Array.from({length: overlap * 2} , (_, i) => Object.assign({index: i < overlap ? -i - 1: i - overlap})),
+                            xHorizon = d3.scaleBand()
+                                .range([0, horizenWidth])
+                                .domain(normeddata.map(d => d.date)),
+                            xScale = d3.scaleBand()
+                                .range([10, RectWidth+10])
+                                .domain(d3.map([1,2,3,4,5,6,7,8,9,10], (d,i)=> i)),
+                            color = i => {
+                                return ["#e34649", "#f7a8a9", "#fcdcdc", "#f7f7f7", "#fcdcdc","#f7a8a9", "#e34649"][i + (i >= 0) + overlap]
+                            },
+                            max = d3.max(normeddata, d => Math.abs(d.value)),
+                            yHorizon = d3.scaleLinear()
+                                    .range([ h * overlap, -overlap * h ])
+                                    .domain([-max, +max]),
+                            dataarea = d3.area()
+                                .curve(d3.curveBasis)
+                                .x(d => xHorizon(d.date))
+                                .y0(0)
+                                .y1(d => yHorizon(d.value)),
+                            xrectdata = [4,5],
+                            xRect =  d3.scaleLinear()
+                                    .range([ 0, 30 ])
+                                    .domain([0, 10]),
+                            t2Rect = d3.scaleLinear()
+                                    .range([ 0, 10 ])
+                                    .domain([0, 1]),
+                            speRect = d3.scaleLinear()
+                                    .range([ 0, 10 ])
+                                    .domain([0, 1]),
+                            areaValue = d3.area()
+                                .curve(d3.curveLinear)
+                                .x((d, i) => xScale(i))
+                                .y0(0)
+                                .y1(d => -10);
                         this._g.append("g")   
                         .attr("class", "rect_doct")
                         .attr("transform", `translate(${[r.outer+r.bubble*3.60, (this._height - 50)/indexs * (item-0.5)- (this._height - 50)/2+45]})`)
@@ -877,9 +880,9 @@ export default {
                                     .attr("fill", d3.color(lc[+this._processindex[this._indexInfo[item].month]]).darker(0.6))
                                     .attr("stroke", "grey")
                                     .attr("width", 6)
-                                    .attr("x", (d,i) => i * 20 + 16)
-                                    .attr("y", -10)
-                                    .attr("height", 10)
+                                    .attr("x", (d,i) => xScale(i))
+                                    .attr("y", -speRect(0.5))
+                                    .attr("height", speRect(0.5))
                                     .attr("stroke-width", 0.5)
                                     .attr("stroke-opacity", 1))
                                 .call(g => g.append("rect")
@@ -888,32 +891,66 @@ export default {
                                     .attr("fill", d3.color(lc[+this._processindex[this._indexInfo[item].month]]).darker(0.6))
                                     .attr("stroke", "grey")
                                     .attr("width", 6)
-                                    .attr("x", (d,i) => i * 20 + 16)
-                                    .attr("height", 10)
+                                    .attr("x", (d,i) => xScale(i))
+                                    .attr("height", t2Rect(Math.random()))
                                     .attr("stroke-width", 0.5)
                                     .attr("stroke-opacity", 1)))
-                            .call(g => g.append("line")
-                                .attr("transform", `translate(${[30,35]})`)
-                                .attr("fill",d3.color(lc[+this._processindex[this._indexInfo[item].month]]).darker(0.6))
-                                .attr("stroke", d3.color(lc[+this._processindex[this._indexInfo[item].month]]).darker(0.6))
-                                .attr("x1", 0)
-                                .attr("x2", 220)
-                                .attr("stroke-width", 0.5)
-                                .attr("stroke-dasharray", "2,1,2,1")
-                                .attr("stroke-opacity", 1))
+
                             .call(g => g.append("path")
                                 .datum([1,2,3,4,5,6,7,8,9,10])
                                 .attr("class", "DUGUDU")
-                                .attr("transform", `translate(${[0,15]})`)
+                                .attr("transform", `translate(${[30,15]})`)
                                 .attr("fill",d3.color(lc[+this._processindex[this._indexInfo[item].month]]).darker(0.6))
-                                .attr("d", area)
-                                // .attr("stroke", d3.color(lc[+this._processindex[this._indexInfo[item].month]]).darker(0.6))
-                                // .attr("x1", 0)
-                                // .attr("x2", 220)
-                                // .attr("stroke-width", 0.5)
-                                // .attr("stroke-dasharray", "2,1,2,1")
-                                // .attr("stroke-opacity", 1)
-                                )
+                                .attr("d", areaValue))
+                            .call(g => g.append("rect")
+                                    .attr("transform", `translate(${[RectWidth + 30, 9.5]})`)
+                                    .attr("fill", util.labelColor[1])
+                                    .attr("stroke", "none")
+                                    .attr("width", xRect(xrectdata[0]))
+                                    .attr("height", 11))
+                            .call(g => g.append("rect")
+                                    .attr("transform", `translate(${[RectWidth + 30 + xRect(xrectdata[0]),  9.5]})`)
+                                    .attr("fill", util.labelColor[0])
+                                    .attr("stroke", "none")
+                                    .attr("width", xRect(xrectdata[1]))
+                                    .attr("height", 11))
+                            
+                        this._g.append("g")   
+                        .attr("class", "rect_doct")
+                        .attr("transform", `translate(${[r.outer+r.bubble*3.60, (this._height - 50)/indexs * (item-0.5)- (this._height - 50)/2+45]})`)
+                            .call(g => g.append("g")
+                                .attr("transform", `translate(${[RectWidth + 160,0]})`)
+                                .call(g => g.append("clipPath")
+                                    .attr("id", `clipy${item}`)
+                                        .append("rect")
+                                        .attr("stroke", 1)
+                                        .attr("width", horizenWidth)
+                                        .attr("height", h))
+                                .call(g => g
+                                .append("defs")
+                                    .append("path")
+                                    .attr("id", `path-def${item}`)
+                                    .datum(normeddata)
+                                    .attr("d", dataarea)
+                                    )
+                                .call(g => g.append("g")
+                                    .attr("clip-path", `url(#clipy${item})`)
+                                    .selectAll("use")
+                                    .data(overlaps)
+                                        .enter().append("use")
+                                        .attr("fill", d => color(d.index))
+                                        .attr("transform", d => `translate(0,${(d.index + 1) * step})`)
+                                        .attr("href", "#path-def" + item))
+                                // .append("path")
+                                //     .attr("d", d3.linkHorizontal()({
+                                //         source: [-70, 15],
+                                //         target: [0, h/2]
+                                //         }))
+                                //     .attr("stroke", d3.color(lc[+this._processindex[this._indexInfo[item].month]]).darker(0.5))
+                                //     .attr("opacity", 0.6)
+                                //     .attr("stroke-width", 2.5)
+                                //     .attr("fill", "none")
+                                        )
                     }
                     
             }

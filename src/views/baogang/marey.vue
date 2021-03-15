@@ -258,7 +258,7 @@
 										<!-- </el-row> -->
 									</el-row>
 								</el-col>
-									<el-col :span="12">
+									<el-col :span="14">
 										<el-card class="myel-card myelTab myel-upid">
 											
 											<div slot="header">
@@ -547,6 +547,9 @@ export default {
 		async getHttpData() {
 			
 			this.jsonData = myJsonData
+			console.log(myJsonData)
+			console.log(myJsonData.length)
+			console.log(util.timeFormat(this.startDate),util.timeFormat(this.endDate))
 			this.mergeflag()
 			this.$refs.mareyChart.paintMareyChart(this.jsonData,myStationData, this.isSwitch)
 			var jsonupid = d3.map(this.jsonData, d => d.upid)
@@ -681,13 +684,6 @@ export default {
 				'thickness': thicknessGap,
 				'platetype':JSON.stringify(platetype),
 			})
-			// return baogangPlotAxios('/baogangapi/v1.0/baogangPlot/diagnosesdata', {
-			// 	'upid': choseUpid,
-			// 	'width': widthGap,
-			// 	'length': lengthGap, 
-			// 	'thickness': thicknessGap,
-			// 	'platetype':JSON.stringify(platetype),
-			// })
 		},
 
 		getDetailProcess(upid, process, width, length, thickness,platetype,deviation) {

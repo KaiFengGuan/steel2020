@@ -158,7 +158,7 @@ export default {
 		function zoomed({transform}) {
 			d3.select(".scatter").attr("transform", transform);
 		}
-		console.log('paint completed')
+		// console.log('paint completed')
 	},
 	paintArc([dateStart,dateEnd]){
 		this.GaleArray=[dateStart,dateEnd];
@@ -176,7 +176,7 @@ export default {
 				.attr("r",2)
 				.style("opacity",1);
 		}
-		console.log('select completed')
+		// console.log('select completed')
 		// const w = 510, h = 350,marginH = 10, marginW = 20;
 		// this.GaleArray=[dateStart,dateEnd];
 		// const vm=this;

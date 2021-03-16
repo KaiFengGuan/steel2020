@@ -258,7 +258,7 @@
 										<!-- </el-row> -->
 									</el-row>
 								</el-col>
-									<el-col :span="14">
+									<el-col :span="15">
 										<el-card class="myel-card myelTab myel-upid">
 											
 											<div slot="header">
@@ -399,6 +399,7 @@ import myJsonData from "./jsondata.js"
 import myStationData from "./stationdata.js"
 import scatterdata from "./scatterdata.json"
 import * as steel from 'services/steel.js'
+import offline from "./offline.json"
 var echarts = require('echarts');
 export default {
 	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat,
@@ -446,6 +447,7 @@ export default {
 			indicators: [],
 			temperatureData: {},
 			selectedTrainData: [],
+			corrdata:[],
 			selectedTrainColor: 'green',
 			tempStations: [],
 			interval: 12,
@@ -697,7 +699,7 @@ export default {
 					'deviation':deviation
 				}).catch(error=>{
 					if(!this.errorflag){
-						this.erroralert("缺乏工序数据，请重新选择钢板或工序\n或钢板量少，请修改Tabular Parameters参数")
+						// this.erroralert("缺乏工序数据，请重新选择钢板或工序\n或钢板量少，请修改Tabular Parameters参数")
 					}this.errorflag=false
 		})
 		},
@@ -830,8 +832,9 @@ export default {
 			// }
 
 			for(let item of value.upidSelect){
-				this.paintScatterList(item)
+				// await this.paintScatterList(item)
 			}
+			this.corrdata = []
 		},
 		async paintScatterList(upid){
 			this.$nextTick(function() {this.$refs[upid][0].init()})
@@ -847,9 +850,14 @@ export default {
 			if(diagnosisData["result"].length === 0){
 				return false
 			}
+			if(this.corrdata.length !== 0) {
+				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
+				return false
+			}
 			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
 				this.$nextTick(function() {
 				this.$refs[upid][0].paintChart(diagnosisData,Response.data)
+				this.corrdata = Response.data
 			})
 				
 			})
@@ -928,8 +936,17 @@ export default {
 			this.selectedUpid = this.selectedTrainData[this.selectedTrainData.length-1]!==undefined ? "UPID " + this.selectedTrainData[this.selectedTrainData.length-1] : "UPID"
 			let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
 			this.diagnosisData=diagnosisData
+			// let processDetail = []
+			// for(let item of this.processArray){
+			// 	console.log(item)
+			// 	let detailProData = (await this.getDetailProcess(this.selectedTrainData[this.selectedTrainData.length-1], item, this.plateTempProp.width/1000, 
+			// 		this.plateTempProp.length, this.plateTempProp.thickness/1000,query,this.plateTempProp.deviation)).data
+			// 	processDetail.push(detailProData)
+			// 	// Object.assign(processDetail, detailProData)
+			// }
+			// console.log(processDetail)
 			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${util.timeFormat(this.dateselect[0])}/${util.timeFormat(this.dateselect[1])}/`).then(Response => {
-				this.$refs.wheelering.paintChart(diagnosisData,Response.data)
+				this.$refs.wheelering.paintChart(diagnosisData,Response.data, )
 			})
 			// this.paintDetailPro(this.processTurn)
 		},
@@ -960,7 +977,8 @@ export default {
 			this.processData = processDetail
 			this.processName=processName
 			// this.processInTurn = Object.keys(processDetail)
-			this.orderchange()
+			console.log(processDetail)
+			// this.orderchange()
 		},
 		orderchange(){
 			this.processInTurn = Object.keys(this.processData)
@@ -1158,12 +1176,12 @@ export default {
 		},
 	},
 	mounted() {
+		console.log(offline)
 		// baogangAxios('/baogangapi/v1.0/getFlag/2018-10-15%2000:00:00/2018-10-16%2000:00:00/')
 		// this.getRadarIndicatorOptions();
 		this.getTimeBrushData();
 		// this.click()
 		// this.paintDetailPro(2)
-		// this.getDetailProcess('18A15070000', 'roll', 0.5, 10, 0.01,['All'])
 		// this.platetype('18B09019000')
 		this.getplatetype()
 		this.scattlog()

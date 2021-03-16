@@ -39,7 +39,7 @@ export default {
                 name:jsondata['PCASPE']['xData'][item],
                 PCASPE:jsondata['PCASPE']['sData'][item]?jsondata['PCASPE']['sData'][item]:0,
                 PCAT2:jsondata['PCAT2']['sData'][item]?jsondata['PCAT2']['sData'][item]:0,
-                outOfGau:jsondata['outOfGau']['sData'][item],
+                // outOfGau:jsondata['outOfGau']['sData'][item],
                 result_value:jsondata['result'][item]['value'],
                 result_low:jsondata['result'][item]['l'],
                 result_high:jsondata['result'][item]['u'],
@@ -52,7 +52,7 @@ export default {
         const diameter = document.getElementById(this.menuId).offsetHeight;	
         const width = document.getElementById(this.menuId).offsetWidth;	
         this.svg !== undefined && this.svg.remove()
-        console.log(this.menuId)
+        // console.log(this.menuId)
 		this.svg=d3.select("#"+vm.menuId)
 			.append("svg")
 			.attr("viewBox", `${-diameter / 2.4} ${-diameter / 2.05} ${width} ${diameter}`)
@@ -477,6 +477,7 @@ export default {
             _renderWheelContent() {
                 const r = this._radius,
                     c = this._colors,
+                    limit = 0.5,
                     lc =this._labelcolor,
                     a = this._padAngle,
                     xpad = this._xpad,
@@ -487,7 +488,7 @@ export default {
                         .innerRadius(0)
                         .outerRadius(r.bubble * 0.12),
                     outrate = (item1 , item2) => {
-                        return d => (d.humidity>1.5|d.precipitation>1.5) ? item1 : item2
+                        return d => (d.humidity>limit|d.precipitation>limit) ? item1 : item2
                     },
                     titleinfo = ["upid" , "toc" , "cate", "p_thick", "p_wid", "p_len", "s_thick", "s_wid", "s_len"],
                     titleicon=[upidicon,timesvg,categoryicon,thickicon,widthicon,lengthicon,thickicon,widthicon,lengthicon],
@@ -495,7 +496,7 @@ export default {
                     wm=this,
                     colorLinear1=[],
                     colorLinear2=[];
-                    const sortdata=d3.filter(this._chartData, d => d.humidity>1.5|d.precipitation>1.5);
+                    const sortdata=d3.filter(this._chartData, d => d.humidity>limit|d.precipitation>limit);
                     const SPE=d3.sort(sortdata,d=>d.precipitation),
                         T2=d3.sort(sortdata,d=>d.humidity),
                         res=d3.sort(sortdata,d=>d.deviation);
@@ -583,7 +584,7 @@ export default {
                         .attr("stroke-width", 0.5)
                         .attr("opacity", 0.6)
                         .on("mouseover", (e, d) => {
-                            console.log("hdh")
+                            // console.log("hdh")
                             hightlightcss()
                             d3.selectAll("#" +menuId +" .riline"+key)
                                 .attr("opacity",1)
@@ -604,18 +605,18 @@ export default {
                                 .attr("r",outrate (2 , 1))
                                 .attr("opacity", 1);
                             d3.selectAll("#" +menuId + " .precipitation"+key)
-                                .attr("stroke",d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorlinear1(d.precipitation)+2) :daker)
+                                .attr("stroke",d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorlinear1(d.precipitation)+2) :daker)
                                 .attr("opacity", 1)
                             d3.selectAll("#" +menuId + " .humidity"+key)
-                                .attr("stroke",d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorlinear2(d.humidity)+2) :daker)
+                                .attr("stroke",d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorlinear2(d.humidity)+2) :daker)
                                 .attr("opacity", 1)
                             d3.selectAll("#" +menuId + " .lead"+key )
-                                .attr("stroke-width", outrate(1.5,0.5))
+                                .attr("stroke-width", outrate(limit,0.5))
                                 .attr("opacity", 0.4)
                             d3.selectAll("#" +menuId + " .linestart")
-                                .attr("y1", d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? this._y(d.avg)+3.5 : this._y(d.avg)+2)
+                                .attr("y1", d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? this._y(d.avg)+3.5 : this._y(d.avg)+2)
                             d3.selectAll("#" +menuId + " .linecurve")
-                                .attr("y2", d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? this._y(d.avg)-3.5 : this._y(d.avg)-2)
+                                .attr("y2", d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? this._y(d.avg)-3.5 : this._y(d.avg)-2)
                             d3.selectAll("#" +menuId + " .textname" + key)
                                 .attr("font-weight", "bold")
                                 .attr("opacity" , 1)
@@ -732,7 +733,7 @@ export default {
 
                     for (let item in processdata){
                         const pindex=processdata[item];
-                        if(pindex.humidity<1.5&&pindex.precipitation<1.5)continue
+                        if(pindex.humidity<limit&&pindex.precipitation<limit)continue
                         const thisangel=(xpad[key](pindex.date) + v) * 180 / Math.PI - 180;
                         
                         const pie = d3.pie()
@@ -749,7 +750,7 @@ export default {
                         g.append("path")
                             .attr("class", `arcpie`+key +' pie'+ pindex.date)
                             .attr("d", piearc)
-                            .attr("fill", (d,i) => ((+d.data.value)>1.5? lck : "white"))
+                            .attr("fill", (d,i) => ((+d.data.value)>limit? lck : "white"))
                             .style("stroke", darkerborder)
                             .style('stroke-width', 0.25)
                             .attr("opacity", 1)
@@ -830,148 +831,7 @@ export default {
                         graph.nodes.push({'id':id,'group':key,'targets':targets})
                     }
                 }
-                // d3.xml("../../assets/images/heat.svg")
-                // .then(data => {
-                //     console.log(data)
-                //     this._g.node().append(data.documentElement)
-                // });
-
-                // var myimg = require('./b_icon__fire.png')
-                // console.log(myimg)
-                // var img = document.createElement("img");
-                // // img.src = "b_icon__fire.png";
-                // img.src = myimg
-                // // src = getElementById("gamediv");
-                // var src = document.getElementById("gamediv");
-                // src.appendChild(img)                  
-                // console.log(src)
-                
-                // d3.selectAll(".circle_color").raise()
-                // d3.selectAll(".steelcircle").lower()
-                // const initial = 40;
-                // const barrect = [initial, 125];
-                // const length=d3.scaleLinear()
-                //         .domain([0,51.5])
-                //         .range(barrect);
-                // const width=d3.scaleLinear()
-                //         .domain([1.32,4.82])
-                //         .range(barrect);
-                // const thickness=d3.scaleLinear()
-                //         .domain([0.001,0.230])
-                //         .range(barrect)
-                // const sthickness=d3.scaleLinear()
-                //         .domain([100 , 600])
-                //         .range(barrect);
-                // const swidth=d3.scaleLinear()
-                //         .domain([1300 , 2300])
-                //         .range(barrect)
-                // const slength=d3.scaleLinear()
-                //         .domain([1520 , 5800])
-                //         .range(barrect);
-                // const widthScale =  [0 ,0 ,0 ,thickness(this._details['steel'][3]) ,width(this._details['steel'][4]) ,length(this._details['steel'][5])  ,
-                //     sthickness(this._details['steel'][6]) , swidth(this._details['steel'][7]) , slength(this._details['steel'][8])]
-                // const position =[r.max+r.bubble*2.2 + 20 , -80];
-                // if(this._details['steel'][2].length > 5)[this._details['steel'][1] , this._details['steel'][2]] = [this._details['steel'][2].slice(2) , this._details['steel'][1]];
-                // this._g
-                //     .call(g => g.append("rect")
-                //             .attr("transform",`translate(${position})`)
-                //             .attr("x" , -18)
-                //             .attr("y", -20)
-                //             .attr("rx" , 2)
-                //             .attr("ry", 2)
-                //             .style("fill","white")
-                //             .attr("stroke", "#ababab")
-                //             .attr("stroke-width", 0.75)
-                //             .attr("width", r.bubble*3.2 + 158)
-                //             .attr("height", 200)
-                //             // .attr("box-shadow" , "0 0 20px rgba(0, 0, 0, 0.1)")
-                //             .attr("filter","url(#shadow-filter)")
-                //             // .attr("filter" , "drop-shadow(-25px 25px 25px rgba(26,58,70,0.7))")
-                //         )
-                //     .call(g => g.append("line")
-                //             .attr("transform",`translate(${[position[0] - 53 , 0]})`)
-                //             .attr("x1" , 0)
-                //             .attr("y1", -110)
-                //             .attr("y2", 110)
-                //             .attr("stroke", "#ababab")
-                //             .attr("stroke-width" , 1.25))
-                //     .call(g => g.append("line")
-                //             .attr("transform",`translate(${[position[0] + 75 , 0]})`)
-                //             .attr("x1" , 0)
-                //             .attr("y1", -94)
-                //             .attr("y2", 90)
-                //             .attr("stroke", "#e3e3e3")
-                //             .attr("stroke-width" , 1.5))
-                //     .call(g => g.selectAll("#" +menuId + " .steel_text").data(titleinfo).join("g")
-                //         .attr("transform", (d , i) => `translate(${position})`)
-                //         .call(g => g.append("rect")
-                //             .attr("x" , -8.5)
-                //             .attr("y", (d,i)=> i*16.5-12)
-                //             .style("fill","none")
-                //             .attr("stroke", "none")
-                //             // .attr("stroke", "grey")
-                //             .attr("stroke-width",0.5)
-                //             .attr("width", r.bubble*1.2+4.5)
-                //             .attr("height", 16)
-                //         )
-                //         .call(g => g.append("image")    //titleicon
-                //             .attr("width", 17.5)
-                //             .attr("height", 17.5)
-                //             .attr("x" , - 6)
-                //             .attr("y",(d,i)=> i* 20.5 -12)
-                //             .attr("href",(d,i) => titleicon[i]))
-                //         .call(g => g.append("text")
-                //             .attr("y", (d,i)=> i * 20.5)
-                //             .attr("font-size", "10pt")
-                //             .attr("font-weight", "normal")
-                //             .style("font-family", "DIN")
-                //             // .attr("x" , r.bubble*0.5 + 26)
-                //             .attr("x" , r.bubble*0.5 + 4 )
-                //             .text((d , i)=> d.toUpperCase())
-                //             .attr("fill", "#7a7e81")
-                //             .attr("stroke", "none")
-                //             // .attr("text-anchor", "middle")
-                //         )
-                //         .call(g => g.append("rect")
-                //             .attr("x" , r.bubble*1.2)
-                //             .attr("y", (d,i)=> i*16.5-12)
-                //             .style("fill","none")
-                //             // .attr("rx" , 2)
-                //             // .attr("ry" , 2)
-                //             // .attr("stroke", "grey")
-                //             .attr("stroke", "none")
-                //             .attr("stroke-width",0.5)
-                //             .attr("width", r.bubble*2)
-                //             .attr("height", 16)
-                //         )
-                //         .call(g => g.append("rect")
-                //             .attr("x" , 83)
-                //             .attr("y", (d,i)=> i * 20.5 - 12)
-                //             .attr("rx" , 2)
-                //             .attr("ry" , 2)
-                //             .style("fill","#cbdcea")
-                //             .attr("stroke", "none")
-                //             .attr("stroke-width",0.25)
-                //             .attr("width", (d , i) => widthScale[i])
-                //             .attr("height", 16)
-                //         )
-                //         .call(g => g.append("line")
-                //             .attr("transform", (d,i) => `translate(${[0 , i * 20.5 + 6]})`)
-                //             .attr("x1" , -15)
-                //             .attr("x2" , 200)
-                //             .attr("y1", 0)
-                //             .attr("stroke", (d,i) => i !== titleinfo.length-1 ? "#e3e3e3" :"none")
-                //             .attr("stroke-width" , 0.75))
-                //         .call(g => g.append("text")
-                //             .attr("x", 90)
-                //             .attr("y", (d,i)=> i*20.5)
-                //             .attr("font-size", "10pt")
-                //             .attr("font-weight", "normal")
-                //             .style("font-family", "DIN")
-                //             .text((d , i) => i>=3 ? (this._details['steel'][i]<1 ? this._details['steel'][i].toFixed(3) +' m' : (i>5 ? (this._details['steel'][i]/1000).toFixed(1) +' m' : this._details['steel'][i].toFixed(1) +' m') ): this._details['steel'][i])
-                //             .attr("fill", "#7a7e81")
-                //             .attr("stroke", "none")
-                //         ))
+                // console.log(graph)
 
                 const radius = r.outer*1.115,
                     colornone = "#ccc",
@@ -1126,10 +986,10 @@ export default {
                                 .attr("r",2)
                                 .attr("opacity", 1);
                         d3.select("#" +menuId + " #precipitation"+name)
-                            .attr("stroke",d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorLinear1[key](d.precipitation)+2) :daker)
+                            .attr("stroke",d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorLinear1[key](d.precipitation)+2) :daker)
                             .attr("opacity", 1)
                         d3.select("#" +menuId + " #humidity"+name)
-                            .attr("stroke",d=> d => d.humidity>1.5|d.precipitation>1.5|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorLinear2[key](d.humidity)+2) :daker)
+                            .attr("stroke",d=> d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorLinear2[key](d.humidity)+2) :daker)
                             .attr("opacity", 1)
                         d3.selectAll("#" +menuId + " .line"+name)
                             .attr("stroke",d3.color(lck).darker(4))
@@ -1181,7 +1041,7 @@ export default {
                             .attr("y2", d =>  wm._y(d.avg)-3.5)
                         d3.selectAll("#" +menuId + " #name" + name)
                             .attr("font-weight", "normal")
-                            .style("visibility", d => d.humidity>1.5|d.precipitation>1.5 ? "visible" : "hidden")
+                            .style("visibility", d => d.humidity>limit|d.precipitation>limit ? "visible" : "hidden")
                         d3.selectAll("#" +menuId + " .pie"+ name)
                             .style('stroke-width', 0.25)
                         d3.selectAll("#" +menuId + " #arctext"+name)

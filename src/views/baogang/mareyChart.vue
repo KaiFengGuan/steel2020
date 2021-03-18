@@ -28,16 +28,16 @@ export default {
 			minrange: 20,
 			minconflict: 5,
 			isMerge: true,
-			processColor: util.processColor
+			processColor: util.processColor,
+			brushData: undefined
 		}
 	},
 	methods: {
-		paintMareyChart(alldata, stationsData, changeColor) {
-		
-		// paintMareyChart(alldata, stationsData, conditionData) {
-		// paintMareyChart() {
-		// const alldata=myJsonData
-		// const stationsData=myStationData
+		paintMareyChart(alldata, stationsData, changeColor, brushData) {
+		this.brushData = brushData
+		console.log(brushData[0])
+		const brushUCL = Array.from(d3.group(brushData, d => d.upid), ([key, value]) => ({[key]:value[0]}))
+		// console.log(Array.from(d3.group(brushData, d => d.upid), ([key, value]) => ({[key]:value[0]})))
 		this.trainSelectedList = []; // 2019-5-16 23:29:30 清空选择列表
 		var vm = this;
 		this.changeColor = changeColor
@@ -71,11 +71,12 @@ export default {
 			.range([0.5, 1.2])
 		this.defaultStrokeWidth = defaultStrokeWidth
 		var highLightStrokeWidth = this.highLightStrokeWidth
-		var margin = ({ top: 65, right: 85, bottom: 0, left: 90 })
+		let margin = ({ top: 65, right: 90, bottom: 0, left: 100 }),
+			mareylength = width - 6 * margin.right;
 		// margin.right = this.isMerge ? 90 : 50;
 		var x = d3.scaleLinear()
 			.domain(d3.extent(stations, d => d.distance))
-			.range([margin.left + 10, width - 1.5 * margin.right ])
+			.range([margin.left + 10, mareylength ])
 
 		// zpj 2019-4-15 20:02:15
 		var minDate = data[0].stops[0].time.slice(0, 19);
@@ -163,7 +164,7 @@ export default {
 			renderG !== undefined && renderG.remove()
 			renderG = vm.svg.append("g").attr("class", "renderg")
 			//add Axis
-			const labellength =  width - 1.5 * margin.right - (margin.left + 10),
+			const labellength =  mareylength - (margin.left + 10),
 				labelwidth = ((labellength / (stations.length - 1)) )/1.5;
 			var xAxis = g => g
 				.style("font", "12px DIN")
@@ -193,7 +194,7 @@ export default {
 				// 	)
 				.call(g => g.append("polygon")
 					.attr("transform", `translate(${-labelwidth} , ${margin.top + 0}) rotate(-45)`)
-					.attr("points", `0, 0  ${labelwidth},${labelwidth}  110 , ${labelwidth}  ${110 - labelwidth}, 0`)
+					.attr("points", `0, 0  ${labelwidth},${labelwidth}  95 , ${labelwidth}  ${95 - labelwidth}, 0`)
 					// .attr("points", "0, 0  17, 17  110 , 17  93, 0")
 					.attr("fill", (d,i) => statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1]))
 					// .attr("fill" , (d , i) => i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1]))
@@ -208,7 +209,7 @@ export default {
 					.attr("dy", "0.35em")
 					.attr("font-family" , "DIN")
 					.attr("fill", "white")
-					.text(d => d.name.replace(/harging/, "harge").replace(/Cc/, "").replace(/ing/, ""))
+					.text(d => d.name.replace(/harging/, "harge").replace(/Cc/, "C").replace(/ing/, "").replace(/MPass/, "MP").replace(/arge/, ""))
 					.on("mouseover", statOver)
 					.on("mouseout", statOut))
 			var polygonlength = (width - 1.5 * margin.right - (margin.left + 10))/1.414  +  labelwidth + 3
@@ -354,6 +355,8 @@ export default {
 				var xaxlength = 30
 				// circleline(mergeresult[item]["merge"].length)
 				var index = mergeresult[item]["data"]
+				// console.log(mergeresult[item])
+
 				var sDate = data[index[0]].stops[0].time;
 				var eDate = data[index[1]].stops[0].time
 				var lineheight = (y((new Date(eDate))) - y(new Date(sDate)))
@@ -363,7 +366,6 @@ export default {
 				// (y((new Date(data[midindex+1].stops[0].time))) - y(new Date(data[midindex].stops[0].time)))
 
 				var quality = d3.sort(d3.groups(mergeresult[item]["merge"], d => d.flag), d=> d[1].length)
-				// console.log(quality)
 				// vm.changeColor
 				renderG.append("g")
 					.attr("fill", "white")
@@ -1198,7 +1200,7 @@ export default {
 				this.trainGroupStyle = d => this.categoryColors(d.productcategory)
 			}
 			this.changeTrainColor(bool);
-			this.paintMareyChart(this.data,this.station, this.changeColor)
+			this.paintMareyChart(this.data,this.station, this.changeColor, this.brushData)
 			if(this.trainSelectedList.length!==0){
 			let selectupid=this.trainSelectedList[this.trainSelectedList.length-1]
 			let selectcolor
@@ -1245,7 +1247,7 @@ export default {
 			const mergecategorys = []	// merge categorys
 			const minrange = this.minrange
 			const minconflict = this.minconflict
-			console.log(minconflict)
+			// console.log(minconflict)
 			const mergedata = {}
 			const mergeIndex = {}	// merge station maxlength
 			const mergeresult = [] , mpass = /MPass/ ;
@@ -1410,7 +1412,7 @@ export default {
 				this.minrange = value2
 				this.minconflict  =  value3
 				if(this.data !== undefined && this.station !== undefined){
-					this.paintMareyChart(this.data,this.station, this.changeColor)
+					this.paintMareyChart(this.data,this.station, this.changeColor, this.brushData)
 				}
 			})
 

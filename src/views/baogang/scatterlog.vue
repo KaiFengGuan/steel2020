@@ -29,8 +29,7 @@ export default {
 	},
 	methods: {
 	paintChart(jsondata) {
-		const vm=this		
-		console.log(document.getElementById(this.menuId.offsetHeight))
+		const vm=this
 		const w = document.getElementById(this.menuId).offsetWidth, h = document.getElementById(this.menuId).offsetHeight,marginH = 10, marginW = 20;
 		// this.svg.remove()
 		this.svg !== undefined && this.svg.remove()
@@ -78,7 +77,7 @@ export default {
 				.on("mouseover", (event, d)=> {
 					const tooltip = vm.svg.append("g")
 						.attr("class", "scattertooltip")
-						.style("font", "12px sans-serif");
+						.style("font", "12px DIN");
 
 					const path = tooltip.append("path")
 						.attr("fill", "rgba(245, 245, 230, 0.97)");
@@ -110,8 +109,8 @@ export default {
 						.attr("stroke", "none")
 						.attr("fill", vm.tooltipColor(label));
 					const box = text.node().getBBox();
-					let x = event.x - 78,
-						y = event.y - 150;
+					let x = event.pageX - 78,
+						y = event.pageY - 150;
 					// const x=vm.scaleX(d.x)-75
 					// let y=vm.scaleY(d.y)+12
 					if(y+box.height + 30>h-8*marginH){					
@@ -167,6 +166,7 @@ export default {
 			let toc=new Date(item.toc)
 			return toc<dateEnd&&toc>dateStart
 		})
+		// console.log(data.length)
 		d3.selectAll(".dot")
 			.attr("r",1)
 			.style("opacity",0.4)

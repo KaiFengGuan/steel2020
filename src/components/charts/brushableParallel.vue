@@ -25,7 +25,7 @@ export default {
     methods: {
         paintChart(plData, startTime, endTime) {
             var brushdata = plData
-            console.log(brushdata)
+            // console.log(brushdata)
             this.changeColor ?(this.trainGroupStyle =  d => +d.label == 0 ? vm.labelColors[0] : vm.labelColors[1]) :(this.trainGroupStyle = d => vm.categoryColors(d.productcategory));
             var margin = {top: 60, right: 25, bottom: 35, left: 25},
                 brushHeight = 10,
@@ -33,7 +33,7 @@ export default {
                 deselectedColor = "#eeeeee",
                 selectedColor = "#cccccc",
                 label = d => d.name,
-                keys = ["ave_temp_dis", "avg_p5", "tgtwidth", "tgtplatethickness2", "tgtplatelength2"],
+                keys = [ "tgtwidth", "tgtplatethickness2", "tgtplatelength2","slab_width", "slab_thickness", "slab_length"],
                 // keys = Object.keys(brushdata[0]).filter(d => d !== "name"),
                 bardata = d3.map(keys, d => d3.map(brushdata, index => index[d])),
                 barbin = d3.map(keys, (d, i) => {
@@ -72,7 +72,7 @@ export default {
                     .outerRadius(8)
                     .startAngle(0)
                     .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
-                height = keys.length * 90,
+                height = keys.length * 85,
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
                 // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1]), [margin.left, width - margin.right])])),
                 // x = new Map(Array.from(keys, key => [key, d3.scaleLinear(d3.extent(brushdata, d => d[key]), [margin.left, width - margin.right])])),
@@ -211,12 +211,146 @@ export default {
                 brushSlider()
                 // svg.selectAll("text").attr("font-family", "DIN").attr("stroke", "none").style("fill", "#2c3e50")
                 
-            function pathover(e,d){
+            function pathover(event,d){
                 // d3.select(this).attr("stroke-width", 5)
+                // const tooltip = svg.append("g")
+                //     .attr("class", "parallelTooltip")
+                //     .style("font", "12px DIN");
+
+                // const path = tooltip.append("path")
+                //     .attr("fill", "rgba(245, 245, 230, 0.97)");
+                // const text = tooltip.append("text");
+
+                // const line1 = text.append("tspan")
+                //     .attr("x", 0)
+                //     .attr("y", 0)
+                //     .style("font-weight", "bold");
+
+                // const line2 = text.append("tspan")
+                //     .attr("x", 0)
+                //     .attr("y", "1.1em");
+
+				// 	const line3 = text.append("tspan")
+				// 		.attr("x", 0)
+				// 		.attr("y", "2.2em");
+				// 	const label=d;
+				// 	d3.selectAll("circle.dot").style("opacity", 0.4);
+				// 	d3.select("#scatter"+label.upid).attr("r",2).style("opacity", 1);				
+				// 	tooltip
+				// 		.style("display", null)
+				// 		.attr("fill", "white");
+				// 	line1.text(`upid:`+ d.upid);
+				// 	line2.text(`category: `+d.productcategory);
+				// 	line3.text(`time:`+d.toc);
+				// 	path
+				// 		.attr("stroke", "none")
+				// 		.attr("fill", vm.tooltipColor(label));
+				// 	const box = text.node().getBBox();
+				// 	let x = event.pageX - 78,
+				// 		y = event.pageY - 150;
+				// 	// const x=vm.scaleX(d.x)-75
+				// 	// let y=vm.scaleY(d.y)+12
+				// 	if(y+box.height + 30>h-8*marginH){					
+				// 	path.attr("d", `
+				// 		M${box.x - 10},${box.y - 10}
+				// 		H${box.width / 2 - 5}l5,15l5,-15
+				// 		H${box.width + 10}
+				// 		v-${box.height + 20}
+				// 		h-${box.width + 20}
+				// 		z
+				// 	`)
+				// 	text.attr("transform", `translate(${[box.x,box.y - 50]})`);
+				// 	}else if(y+box.height + 30<h-2*marginH){
+				// 	y=y+24
+				// 	path.attr("d", `
+				// 		M${box.x - 10},${box.y - 10}
+				// 		H${box.width / 2 - 5}l5,-15l5,15
+				// 		H${box.width + 10}
+				// 		v${box.height + 20}
+				// 		h-${box.width + 20}
+				// 		z
+				// 	`);
+				// 	text.attr("transform", `translate(${[box.x+5,box.y+10]})`);
+				// 	}
+				// 	tooltip.attr("transform", `translate(${[x,y]})`);
+				// 	vm.$emit("scatterMouse", {upid: d.upid,  mouse: 0});
             }
             function pathout(e,d){
                 // d3.select(this).attr("stroke-width", 5)
             }
+            	// 			.on("mouseover", (event, d)=> {
+				// 	const tooltip = vm.svg.append("g")
+				// 		.attr("class", "scattertooltip")
+				// 		.style("font", "12px sans-serif");
+
+				// 	const path = tooltip.append("path")
+				// 		.attr("fill", "rgba(245, 245, 230, 0.97)");
+
+				// 	const text = tooltip.append("text");
+
+				// 	const line1 = text.append("tspan")
+				// 		.attr("x", 0)
+				// 		.attr("y", 0)
+				// 		.style("font-weight", "bold");
+
+				// 	const line2 = text.append("tspan")
+				// 		.attr("x", 0)
+				// 		.attr("y", "1.1em");
+
+				// 	const line3 = text.append("tspan")
+				// 		.attr("x", 0)
+				// 		.attr("y", "2.2em");
+				// 	const label=d;
+				// 	d3.selectAll("circle.dot").style("opacity", 0.4);
+				// 	d3.select("#scatter"+label.upid).attr("r",2).style("opacity", 1);				
+				// 	tooltip
+				// 		.style("display", null)
+				// 		.attr("fill", "white");
+				// 	line1.text(`upid:`+ d.upid);
+				// 	line2.text(`category: `+d.productcategory);
+				// 	line3.text(`time:`+d.toc);
+				// 	path
+				// 		.attr("stroke", "none")
+				// 		.attr("fill", vm.tooltipColor(label));
+				// 	const box = text.node().getBBox();
+				// 	let x = event.pageX - 78,
+				// 		y = event.pageY - 150;
+				// 	// const x=vm.scaleX(d.x)-75
+				// 	// let y=vm.scaleY(d.y)+12
+				// 	if(y+box.height + 30>h-8*marginH){					
+				// 	path.attr("d", `
+				// 		M${box.x - 10},${box.y - 10}
+				// 		H${box.width / 2 - 5}l5,15l5,-15
+				// 		H${box.width + 10}
+				// 		v-${box.height + 20}
+				// 		h-${box.width + 20}
+				// 		z
+				// 	`)
+				// 	text.attr("transform", `translate(${[box.x,box.y - 50]})`);
+				// 	}else if(y+box.height + 30<h-2*marginH){
+				// 	y=y+24
+				// 	path.attr("d", `
+				// 		M${box.x - 10},${box.y - 10}
+				// 		H${box.width / 2 - 5}l5,-15l5,15
+				// 		H${box.width + 10}
+				// 		v${box.height + 20}
+				// 		h-${box.width + 20}
+				// 		z
+				// 	`);
+				// 	text.attr("transform", `translate(${[box.x+5,box.y+10]})`);
+				// 	}
+				// 	tooltip.attr("transform", `translate(${[x,y]})`);
+				// 	vm.$emit("scatterMouse", {upid: d.upid,  mouse: 0});
+				// })
+				// .on("mouseout", (event, d)=> {
+				// 	d3.select("#scatter"+d.upid).style("opacity", 1)
+				// 	let toc=new Date(d.toc)
+				// 	if(toc<this.GaleArray[1]&&toc>this.GaleArray[0]){}else{
+				// 		d3.select("#scatter"+d.upid).attr("r",1)
+				// 	}					
+				// 	d3.selectAll(".scattertooltip").remove();
+				// 	vm.$emit("scatterMouse", {upid: d.upid,  mouse: 1});
+				// })
             function brushed({selection}, key) {
                 if (selection === null) selections.delete(key);
                 else selections.set(key, selection.map(x.get(key).invert));
@@ -230,7 +364,7 @@ export default {
                 }
                 });
                 if (selection === null){
-                    d3.select(".rect" + keys.indexOf(key))
+                    d3.selectAll(".rect" + keys.indexOf(key))
                     .attr("fill", selectedColor)
                 }else{
                     let brushRange = d3.map(selection, x.get(key).invert)

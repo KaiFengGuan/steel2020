@@ -14,26 +14,40 @@ export default {
             svg: undefined,
             labelColors: util.labelColor, // [bad, good]
             categoryColors: util.categoryColor,
-            trainGroupStyle: undefined,
-            changeColor: true,
         }
     },
 
     mounted () {
     },
-
+    computed:{
+        ...mapGetters([
+			"isSwitch",
+			"trainGroupStyle",
+            "brushMouseId",
+            "brushSelection"
+		])
+    },
+    watch:{
+        isSwitch(val,oldVal){
+            d3.selectAll(".pathColor").attr("stroke", this.trainGroupStyle)
+        }
+    },
     methods: {
         paintChart(plData, startTime, endTime) {
-            var brushdata = plData
-            // console.log(brushdata)
-            this.changeColor ?(this.trainGroupStyle =  d => +d.label == 0 ? vm.labelColors[0] : vm.labelColors[1]) :(this.trainGroupStyle = d => vm.categoryColors(d.productcategory));
-            var margin = {top: 60, right: 25, bottom: 35, left: 25},
+            // var brushdata = plData
+            // console.log(brushdata[0].slab_thickness)
+            var brushdata = d3.map(plData, d => {
+                // d.slab_thickness = d.slab_thickness/100;
+                return d
+            })
+            console.log(brushdata[0].slab_thickness)
+            var margin = {top: 60, right: 30, bottom: 40, left: 30},
                 brushHeight = 10,
                 vm = this,
                 deselectedColor = "#eeeeee",
                 selectedColor = "#cccccc",
                 label = d => d.name,
-                keys = [ "tgtwidth", "tgtplatethickness2", "tgtplatelength2","slab_width", "slab_thickness", "slab_length"],
+                keys = [ "tgtwidth", "tgtplatethickness2", "tgtplatelength2","slab_thickness","charging_temp_act", ],
                 // keys = Object.keys(brushdata[0]).filter(d => d !== "name"),
                 bardata = d3.map(keys, d => d3.map(brushdata, index => index[d])),
                 barbin = d3.map(keys, (d, i) => {
@@ -166,8 +180,9 @@ export default {
                 .selectAll("path")
                 .data(brushdata.slice().sort((a, b) => d3.ascending(a["upid"], b["upid"])))
                 .join("path")
-                .attr("stroke", d =>  this.trainGroupStyle(d))
+                .attr("stroke", this.trainGroupStyle)
                 .attr("d", d => line(d3.cross(keys, [d], (key, d) => [key, d[key]])))
+                .attr("class", "pathColor")
                 .on("mouseover", pathover)
                 .on("mouseout", pathout);
 
@@ -357,7 +372,8 @@ export default {
                 const selected = [];
                 path.each(function(d) {
                 const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
-                d3.select(this).style("stroke", active ? vm.trainGroupStyle(d) : "none");
+                d3.select(this).attr("visibility", active ? "visible" : "hidden");
+                // .style("stroke", active ? vm.trainGroupStyle(d) : "none");
                 if (active) {
                     d3.select(this).raise();
                     selected.push(d);
@@ -386,11 +402,11 @@ export default {
     },
     mounted(){
     },
-    computed:{
-        ...mapGetters([
-            "brushMouseId",
-            "brushSelection"])
-    }
+    // computed:{
+    //     ...mapGetters([
+    //         "brushMouseId",
+    //         "brushSelection"])
+    // }
 
 }
 </script>

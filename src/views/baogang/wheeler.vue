@@ -1994,7 +1994,7 @@ export default {
 	},
 	},
 	mounted() {
-        this.paintChart()
+        // this.paintChart()
 	},
 	computed:{
 	}

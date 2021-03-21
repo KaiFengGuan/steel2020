@@ -20,7 +20,7 @@ export default {
 			trainSelectedList: [],
 			trainGroupStyle: undefined,
 			showColor: util.categoryColor,
-			changeColor: false,
+			changeColor: true,
 			data: undefined,
 			station: undefined,
 			highLightStrokeWidth : 2,
@@ -34,15 +34,52 @@ export default {
 	},
 	methods: {
 		paintMareyChart(alldata, stationsData, changeColor, brushData) {
+		// console.log(sta)
 		this.brushData = brushData
-		console.log(brushData[0])
-		const brushUCL = Array.from(d3.group(brushData, d => d.upid), ([key, value]) => ({[key]:value[0]}))
-		// console.log(Array.from(d3.group(brushData, d => d.upid), ([key, value]) => ({[key]:value[0]})))
+		const brushUCL = d3.group(brushData, d => d.upid),
+			dataUCL = d3.group(alldata, d => d.upid),
+			allupid = d3.map(alldata, d => d.upid),	//total upid
+			allDetail = d3.map(allupid, d  => {
+				let arr = brushUCL.get(d)[0]
+				return {
+					thickness : arr.platedata[0][5],
+					width : arr.platedata[0][6],
+					length : arr.platedata[0][7],
+					good :	arr.good_plate_num,
+					bad : arr.bad_plate_num,
+					num : arr.same_cate_plate_num
+				}
+			}),		//total platedata
+			allmaxxen = {	//total max
+				width : d3.max(allDetail, d => d.width),
+				thickness : d3.max(allDetail, d => d.thickness),
+				length : d3.max(allDetail, d => d.length),
+				num : d3.max(allDetail, d => d.num),
+				good : d3.max(allDetail, d => d.good),
+				bad : d3.max(allDetail, d => d.bad),
+				percent : d3.max(allDetail, d => d.good/d.num)
+			},
+			allminxen = {	//total max
+				width : d3.min(allDetail, d => d.width),
+				thickness : d3.min(allDetail, d => d.thickness),
+				length : d3.min(allDetail, d => d.length),
+				num : d3.min(allDetail, d => d.num),
+				good : d3.min(allDetail, d => d.good),
+				bad : d3.min(allDetail, d => d.bad),
+				percent : d3.min(allDetail, d => d.good/d.num)
+			},
+			rectlength = 40 ,	//tag length
+			allScale = {	//total scale
+				width : d3.scaleLinear().domain([allminxen.width , allmaxxen.width]).range([0, rectlength]),
+				length : d3.scaleLinear().domain([allminxen.length , allmaxxen.length]).range([0, rectlength]),
+				thickness : d3.scaleLinear().domain([allminxen.thickness , allmaxxen.thickness]).range([0, rectlength]),
+				percent : d3.scaleLinear().domain([allminxen.percent , allmaxxen.percent]).range([0, 150]),
+				num : d3.scaleLinear().domain([allminxen.num , allmaxxen.num]).range([0, 150])
+			};
 		this.trainSelectedList = []; // 2019-5-16 23:29:30 清空选择列表
 		var vm = this;
 		this.changeColor = changeColor
-		this.changeColor ?(this.trainGroupStyle =  d => d.flag === 0 ? vm.labelColors[0] : vm.labelColors[1]) :(this.trainGroupStyle = d => vm.categoryColors(d.productcategory));
-		
+		this.trainGroupStyle = this.changeColor ?(  d => d.flag === 0 ? vm.labelColors[0] : vm.labelColors[1]) :( d => vm.categoryColors(d.productcategory));
 		var stationcolor = this.processColor;
 		// data
 		this.data=alldata;
@@ -50,20 +87,10 @@ export default {
 		var data = alldata
 		var width = document.getElementById(this.menuId).offsetWidth;
 		const mainHeight = document.getElementById(this.menuId).offsetHeight;
-		const upidArray = d3.map(data, d => d.upid)
 		var stations = stationsData
 		var stops = d3.merge(data.map(d => d.stops.map(s => ({ train: d, stop: s }))))
 		var statname = d3.map(stations, d => d.name)
-		const statOver =  (e,m)  =>{
-			d3.select("#polygon" + m.name).attr("fill", (d,i) => d3.color(statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(0.2))
-			d3.select("#line" + m.name).attr("stroke-width" , 2.5)
-			d3.select("#station" + m.name).attr("font-weight", "bold")
-		}
-		const statOut =  (e,m)  =>{
-			d3.select("#polygon" + m.name).attr("fill", (d,i) => statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1]))
-			d3.select("#line" + m.name).attr("stroke-width" , 0.5)
-			d3.select("#station" + m.name).attr("font-weight", "normal")
-		}
+
 		// chart
 		// var height = 2400;
 		var defaultStrokeWidth = d3.scaleLinear()
@@ -71,12 +98,13 @@ export default {
 			.range([0.5, 1.2])
 		this.defaultStrokeWidth = defaultStrokeWidth
 		var highLightStrokeWidth = this.highLightStrokeWidth
-		let margin = ({ top: 65, right: 90, bottom: 0, left: 100 }),
-			mareylength = width - 6 * margin.right;
+		let margin = ({ top: 50, right: 70, bottom: 0, left: 100 }),
+			mareylength = width - 3.5 * margin.right,
+			mareyEntry = 2.85 * margin.left;
 		// margin.right = this.isMerge ? 90 : 50;
 		var x = d3.scaleLinear()
 			.domain(d3.extent(stations, d => d.distance))
-			.range([margin.left + 10, mareylength ])
+			.range([ mareyEntry , mareylength ])
 
 		// zpj 2019-4-15 20:02:15
 		var minDate = data[0].stops[0].time.slice(0, 19);
@@ -84,9 +112,9 @@ export default {
 		var unitHeight = 300;
 		var unitPerTime = 3.5;
 		const timeHeightScale = unitHeight / (60 * 60 * 1000 * unitPerTime) // 单位高度 时间跨度x小时
-		var height = 500
-		console.log((new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale)
-		// var height = (new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale
+		// var height = document.getElementById(this.menuId).offsetHeight
+		// console.log((new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale)
+		var height = (new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale
 		var y = d3.scaleTime()
 			.domain([new Date(minDate), new Date(maxDate)])
 			.range([margin.top, height - margin.bottom])
@@ -97,7 +125,7 @@ export default {
 
 		var voronoi = Delaunay
 			.from(stops, d => x(d.stop.station.distance), d => y(new Date(d.stop.time)))
-			.voronoi([0, 0, width, height])
+			.voronoi([mareyEntry, margin.top, mareylength, margin.top + height])
 
 		var tooltipColors = this.categoryColors
 		var tooltiplabelColors = this.labelColorsFunc
@@ -114,7 +142,102 @@ export default {
 			.call(zoomer);
 		const svg = this.svg;
 
+		const statOver =  (e,m)  =>{
+			d3.select("#polygon" + m.name).attr("fill", (d,i) => d3.color(statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(0.2))
+			d3.select("#line" + m.name).attr("stroke-width" , 2.5)
+			d3.select("#station" + m.name).attr("font-weight", "bold")
+		}
+		const statOut =  (e,m)  =>{
+			d3.select("#polygon" + m.name).attr("fill", (d,i) => statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1]))
+			d3.select("#line" + m.name).attr("stroke-width" , 0.5)
+			d3.select("#station" + m.name).attr("font-weight", "normal")
+		}
+		function mouseoverUCL(e, d){
+			let selectUpid = d3.select(this).attr("upid")
+			mouseoverLine(selectUpid)
+			let upiddata = dataUCL.get(selectUpid)[0]
+			const tooltip = svg.append("g")
+				.attr("class", "UCLtooltip")
+				.style("font", "15px DIN");
+			const path = tooltip.append("path")
+				.attr("fill", "rgba(245, 245, 230, 0.97)");
 
+			const text = tooltip.append("text");
+
+			const line1 = text.append("tspan")
+				.attr("x", 0)
+				.attr("y", 0)
+				.style("font-weight", "bold");
+			const line2 = text.append("tspan")
+				.attr("x", 0)
+				.attr("y", "1.1em");
+			const line3 = text.append("tspan")
+				.attr("x", 0)
+				.attr("y", "2.2em");
+			let toopcolor
+			if(!vm.changeColor){
+				toopcolor=tooltipColors(upiddata.productcategory)
+			}else{
+				toopcolor=tooltiplabelColors(upiddata.flag)
+			}
+			tooltip
+				.style("display", null)
+				.attr("fill", "white");
+				line1.text(`upid: ${upiddata.upid}`);
+				// line2.text(d.stop.station.name);productcategory
+				line2.text(`category: ${upiddata.productcategory}`);
+				// line3.text(`time: ${upiddata.toc.toLocaleString(undefined, { hour: "numeric", minute: "numeric" })}`);
+				path
+				.attr("stroke", "none")
+				.attr("fill", toopcolor);
+				//.attr("opacity", 0.96);
+				const box = text.node().getBBox();
+				path.attr("d", `
+				M${box.x - 10},${box.y - 10}
+				H${box.width / 2 - 5}l5,-15l5,15
+				H${box.width + 10}
+				v${box.height + 20}
+				h-${box.width + 20}
+				z
+			`);
+			tooltip.attr("transform", `translate(${[e.offsetX - 75, e.offsetY + 35]})`)
+		}
+		function mouseoverLine(selectUpid){
+			d3.select("#id"+ selectUpid)
+				.attr("stroke-width", highLightStrokeWidth)
+				.selectAll("rect")
+				.attr("stroke", "black");
+			d3.selectAll(".Qcircle"+ selectUpid)
+				.attr("r", 3.5);
+			d3.selectAll(".T2circle"+ selectUpid)
+				.attr("r", 3.5);
+			d3.selectAll(".addline"+ selectUpid)
+				.attr("stroke-width", 2)
+				.style("visibility", "visible");
+			d3.selectAll(".startline"+ selectUpid)
+				.style("visibility", "visible");
+		}
+		function mouseoutUCL(e, d){
+			let selectUpid = d3.select(this).attr("upid")
+			mouseoutLine(selectUpid)
+			d3.select(".UCLtooltip").remove()
+		}
+		function mouseoutLine(selectUpid){
+			const flag = dataUCL.get(selectUpid)[0].flag;
+			d3.select("#id"+ selectUpid)
+			.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
+			.selectAll("rect")
+			.attr("stroke", "none");
+			d3.selectAll(".Qcircle"+ selectUpid)
+				.attr("r", (d, i) => flag == 0 ? 2 : 0.5);
+			d3.selectAll(".T2circle"+ selectUpid)
+				.attr("r", (d, i) => flag == 0 ? 2 : 0.5);
+			d3.selectAll(".addline"+ selectUpid)
+				.attr("stroke-width", 0.5)
+				.style("visibility", (d, i) => flag == 0 ? "visible" :  "hidden" );
+			d3.selectAll(".startline"+ selectUpid)
+				.style("visibility", "hidden");
+		}
 		// var train = this.svg.append("g")
 		// 	.attr("fill", "white")
 		// 	.selectAll("g")
@@ -164,7 +287,7 @@ export default {
 			renderG !== undefined && renderG.remove()
 			renderG = vm.svg.append("g").attr("class", "renderg")
 			//add Axis
-			const labellength =  mareylength - (margin.left + 10),
+			const labellength =  mareylength - (mareyEntry),
 				labelwidth = ((labellength / (stations.length - 1)) )/1.5;
 			var xAxis = g => g
 				.style("font", "12px DIN")
@@ -194,7 +317,7 @@ export default {
 				// 	)
 				.call(g => g.append("polygon")
 					.attr("transform", `translate(${-labelwidth} , ${margin.top + 0}) rotate(-45)`)
-					.attr("points", `0, 0  ${labelwidth},${labelwidth}  95 , ${labelwidth}  ${95 - labelwidth}, 0`)
+					.attr("points", `0, 0  ${labelwidth},${labelwidth}  100 , ${labelwidth}  ${100 - labelwidth}, 0`)
 					// .attr("points", "0, 0  17, 17  110 , 17  93, 0")
 					.attr("fill", (d,i) => statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1]))
 					// .attr("fill" , (d , i) => i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1]))
@@ -212,12 +335,11 @@ export default {
 					.text(d => d.name.replace(/harging/, "harge").replace(/Cc/, "C").replace(/ing/, "").replace(/MPass/, "MP").replace(/arge/, ""))
 					.on("mouseover", statOver)
 					.on("mouseout", statOut))
-			var polygonlength = (width - 1.5 * margin.right - (margin.left + 10))/1.414  +  labelwidth + 3
+			var polygonlength = (width - 1.5 * margin.right - (mareyEntry))/1.414  +  labelwidth + 3
 			var xRect = g => g.append("polygon")
-					.attr("transform", `translate(${margin.left + 10 - labelwidth/2 - 6} ,${margin.top -1.5}) rotate(-45)`)
+					.attr("transform", `translate(${mareyEntry - labelwidth/2 - 6} ,${margin.top -1.5}) rotate(-45)`)
 					.attr("id", "rectxLine")
 					.attr("points", `0, 0  ${polygonlength},${polygonlength} ${112 - labelwidth + polygonlength}, ${polygonlength}  ${112 - labelwidth}, 0`)
-					// .attr("stroke", "grey")
 					.attr("fill", "none")
 					// .attr("filter","url(#label-rect)")
 					.attr("stroke", "#c4c4c4")
@@ -248,21 +370,21 @@ export default {
 
 			renderG.append("g")
 				.call(g => g.append("rect")
-					.attr("x" , margin.left - 5)
+					.attr("x" , mareyEntry - labelwidth)
 					.attr("y", margin.top)
 					.style("fill","white")
 					.attr("stroke", "#aaa")
 					.attr("stroke-width",0.25)
-					.attr("width", width - margin.left - 1.5*margin.right +15)
+					.attr("width", mareylength- mareyEntry + 5 + labelwidth)
 					.attr("height", height - margin.top - margin.bottom))
 				.call(g => g.append("rect")
-					.attr("x" , margin.left - 5)
+					.attr("x" , mareyEntry -labelwidth)
 					.attr("class", "shadow_rect")
 					.attr("y", margin.top)
 					.style("fill","none")
 					.attr("stroke", "#aaa")
 					.attr("stroke-width",0.25)
-					.attr("width", width - margin.left - 1.5*margin.right +15)
+					.attr("width", mareylength- mareyEntry + 5 + labelwidth)
 					.attr("height", height - margin.top - margin.bottom))
 					.attr("filter","url(#shadow-rect)")
 					
@@ -270,35 +392,15 @@ export default {
 			renderG.append("g")
 				.attr("class", "axisrect")
 				.call(g => g.append("rect")
-					.attr("x" , margin.left - 5)
+					// .attr("x" , margin.left - 5)
 					.attr("class", "background")
 					.attr("y", 0)
 					.style("fill","white")
 					.attr("stroke", "none")
-					.attr("width", width - margin.left)
+					.attr("width", width)
 					.attr("height", margin.top))
 
-				// .call(g => g
-				// 	.style("font", "12px DIN")
-				// 	.selectAll("g")
-				// 	.data(stations)
-				// 	.join("g")
-				// 	.attr("transform", d => `translate(${x(d.distance)},0)`)
-				// 	.call(g => g.append("line")
-				// 		.attr("y1", margin.top - 3)
-				// 		.attr("y2", height - margin.bottom + 3)
-				// 		// .attr("stroke-dasharray", "1.5,2")
-				// 		.attr("opacity" , 0.4)
-				// 		.attr("stroke" , (d , i) => d3.color(i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(1)))
-				// 	.call(g => g.append("text")
-				// 		.attr("transform", `translate(-4 ,${margin.top + 0}) rotate(-45)`)
-				// 		.attr("class", "xAxisLabel")
-				// 		.attr("x", 8)
-				// 		.attr("dy", "0.35em")
-				// 		.attr("font-family" , "DIN")
-				// 		.attr("fill", "white")
-				// 		.text(d => d.name))
-				// )
+
 			var _yAxis = d3.axisLeft(y)
 				.ticks(d3.formatMinute)
 				.tickSize(0)
@@ -346,13 +448,13 @@ export default {
 			var axislength = 6 ;
 			var lmaxlength = 50 ;
 			var qualityData = [];
-			const circledot = width - margin.right * 0.75;
+			const circledot = mareyEntry * 0.72;
 			var circleline = d3.scaleLinear()
 					.domain([20 , maxlength ]).nice()
 					.range([ 40 , lmaxlength])
 			for (let item in mergeresult){
 				if(!vm.isMerge) break
-				var xaxlength = 30
+				var xaxlength = 45
 				// circleline(mergeresult[item]["merge"].length)
 				var index = mergeresult[item]["data"]
 				// console.log(mergeresult[item])
@@ -429,13 +531,12 @@ export default {
 				const lineScale = [];
 				var sDate = mergeresult[item]["merge"].slice(0)[0].stops[stations.length-1].time;
 				var eDate = mergeresult[item]["merge"].slice(-1)[0].stops[stations.length-1].time;
-				const position = [ circledot , (y((new Date(data[midindex+1].stops[stations.length-1].time))) )];
+				const position = [ circledot , (y((new Date(data[midindex+1].stops[0].time))) )];
 				const rectG = renderG
 					.append("g")
 					.on("click",(e,d) => {
-						console.log("ghsui")
-						d3.selectAll(".lineDate").attr("stroke-width", 0.15)
-						d3.select("#lineDate"+item).attr("stroke-width", 1.5)
+						d3.selectAll(".lineRect").attr("stroke-width", 0.15)
+						d3.select("#lineRect"+item).attr("stroke-width", 1.5)
 						let badupid = d3.map(d3.filter(mergeresult[item]["merge"], d => d.flag === 0), d => d.upid)
 						// var selectUpid = new Set(badupid)
 						// (d3.map(mergeresult[item]["merge"], d => d.upid)).forEach(x => selectUpid.add(x))
@@ -449,8 +550,8 @@ export default {
 								"type":"group"})
 						
 
-						// let upidSelect = d3.map(d3.filter(data.slice(upidArray.indexOf(d.train.upid)), d => d.flag === 0), d => d.upid)
-						// // let upidSelect = upidArray.slice(upidArray.indexOf(d.train.upid)+1, upidArray.indexOf(d.train.upid)+5)
+						// let upidSelect = d3.map(d3.filter(data.slice(allupid.indexOf(d.train.upid)), d => d.flag === 0), d => d.upid)
+						// // let upidSelect = allupid.slice(allupid.indexOf(d.train.upid)+1, allupid.indexOf(d.train.upid)+5)
 						// vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(parseInt(d.train.flag)), upidSelect:upidSelect});
 					})
 					.on("mouseout",(e,d) => {
@@ -460,119 +561,155 @@ export default {
 						d3.selectAll(".mergerect").attr("opacity", 0.6)
 						d3.select("#mergerect"+item).attr("opacity", 1)
 					})
-				const rectwidth = xaxlength + 25;
-				var rectCard;
-				var lineDate = g => g.append("g")
+				const mergeupid = d3.map(mergeresult[item].merge, d => d.upid),		//merge upid
+					mergeDetail = d3.map(mergeupid, d  => {
+						let arr = brushUCL.get(d)[0]
+						return {
+							thickness : arr.platedata[0][5],
+							width : arr.platedata[0][6],
+							length : arr.platedata[0][7],
+							good :	arr.good_plate_num,
+							bad : arr.bad_plate_num,
+							num : arr.same_cate_plate_num
+						}
+					}),		//merge platedata
+					mergemixen = {	//merge max
+						width : d3.mean(mergeDetail, d => d.width),
+						thickness : d3.mean(mergeDetail, d => d.thickness),
+						length : d3.mean(mergeDetail, d => d.length),
+						num : d3.mean(mergeDetail, d => d.num),
+						good : d3.mean(mergeDetail, d => d.good),
+						bad : d3.mean(mergeDetail, d => d.bad),
+						percent : d3.mean(mergeDetail, d => d.good/d.num)
+					};
+
+				// 	labelindex = [
+				// 		"Cool_Q", "Cool_QUCL", "Cool_T2", "Cool_T2UCL", "Heat_Q", 
+				// 		"Heat_QUCL", "Heat_T2", "Heat_T2UCL", "Q", "QUCL", "Roll_Q", 
+				// 		"Roll_QUCL", "Roll_T2", "Roll_T2UCL", "T2", "T2UCL1", "bad_plate_num", "good_plate_num"
+				// 	],
+				// 	labelArray = [],
+				// 	labels = ["Cool_Q",  "Cool_T2", "Heat_Q", "Heat_T2",  "Q",  "Roll_Q", "Roll_T2", "T2"],
+				// 	labelsUCL = [ "Cool_QUCL", "Cool_T2UCL", "Heat_QUCL",  "Heat_T2UCL", "QUCL", "Roll_QUCL", "Roll_T2UCL", "T2UCL1"];
+				// for(let i in mergeupid){
+				// 	let tempdata = {}
+				// 	for(let index in labelindex){
+				// 		tempdata[labelindex[index]] = brushUCL.get(mergeupid[i])[0][labelindex[index]]
+				// 	}
+				// 	labelArray.push(tempdata)
+				// }
+				// const labelnumbers = [];
+				// for(let i in labels){
+				// 	let temparray = d3.filter(labelArray, (d, i) => {
+				// 		return d[labels[i]] > d[labelsUCL[i]]
+				// 	})
+				// 	labelnumbers.push({
+				// 		value : labels[i],
+				// 		good  : mergeupid.length - temparray.length,
+				// 		bad : temparray.length
+				// 	})
+				// }
+				// const minUpid = data.slice(midindex , midindex+1)[0].upid;
+				// labelnumbers.push({value: })
+				const rectwidth = xaxlength + 25,
+					labelLength = rectwidth/4,	//tag distance
+					labelColor = "#cbdcea",
+					textColor = "#6c6c6c",
+					numlength = allScale.num(mergemixen.num),
+					goodlength = numlength * mergemixen.percent,
+					badlength = numlength * (1 - mergemixen.percent);	
+				var lineRect = g => g.append("g")
 					.attr("transform", `translate(${[position[0]-rectwidth, position[1]-rectwidth]})`)
+					.call(g => g.append("rect")
+						.attr("transform", `translate(${[rectwidth -labelLength, 0]})`)
+						.attr("stroke", "none")
+						.attr("y", - goodlength)
+						.attr("height", goodlength + 5)
+						.attr("width", labelLength/2)
+						.attr("fill", vm.labelColors[1]))
+					.call(g => g.append("rect")
+						.attr("transform", `translate(${[rectwidth + labelLength/2, 0]})`)
+						.attr("stroke", "none")
+						.attr("y", - badlength)
+						.attr("height", badlength + 5)
+						.attr("width", labelLength/2)
+						.attr("fill", vm.labelColors[0]))
+					.call(g => g.append("rect")
+						.attr("transform", `translate(${[-rectlength - 2, (labelLength + 10) - 2]})`)
+						.attr("stroke", labelColor)
+						.attr("stroke-width", 2)
+						.attr("height", labelLength/2 + 4)
+						.attr("width", rectlength + 4)
+						.attr("fill", "none"))
+					.call(g => g.append("rect")
+						.attr("transform", `translate(${[-allScale.width(mergemixen.width), (labelLength + 10)]})`)
+						// .attr("srtoke", "none")
+						.attr("stroke", labelColor)
+						.attr("stroke-width", 2.5)
+						.attr("height", labelLength/2)
+						.attr("width", allScale.width(mergemixen.width) + 5)
+						.attr("fill", labelColor))
+					.call(g => g.append("text")
+						.attr("transform", `translate(${[-rectlength - 5, (labelLength + 10) - 2 + labelLength/2]})`)
+						.attr("text-anchor", "end")
+						.attr("dy", "0.25em")
+						.attr("font-family" , "DIN")
+						.attr("fill", textColor)
+						.text("width"))
+					.call(g => g.append("rect")
+						.attr("transform", `translate(${[-rectlength - 2, (labelLength + 10) * 2 - 2]})`)
+						.attr("stroke", labelColor)
+						.attr("stroke-width", 2)
+						.attr("height", labelLength/2 + 4)
+						.attr("width", rectlength + 4)
+						.attr("fill", "none"))
+					.call(g => g.append("rect")
+						.attr("transform", `translate(${[-allScale.length(mergemixen.length), (labelLength + 10) * 2]})`)
+						// .attr("srtoke", "none")
+						.attr("stroke", labelColor)
+						.attr("stroke-width", 2.5)
+						.attr("height", labelLength/2)
+						.attr("width", allScale.length(mergemixen.length) + 5)
+						.attr("fill", labelColor))
+					.call(g => g.append("text")
+						.attr("transform", `translate(${[-rectlength - 5, (labelLength + 10) * 2 - 2 + labelLength/2]})`)
+						.attr("text-anchor", "end")
+						.attr("dy", "0.25em")
+						.attr("font-family" , "DIN")
+						.attr("fill", textColor)
+						.text("length"))
+					.call(g => g.append("rect")
+						.attr("transform", `translate(${[-rectlength - 2, (labelLength + 10) * 3 - 2]})`)
+						.attr("stroke", labelColor)
+						.attr("stroke-width", 2.5)
+						.attr("height", labelLength/2 + 4)
+						.attr("width", rectlength + 4)
+						.attr("fill", "none"))
+					.call(g => g.append("rect")
+						.attr("transform", `translate(${[-allScale.thickness(mergemixen.thickness)-5, (labelLength + 10) * 3]})`)
+						// .attr("srtoke", "none")
+						.attr("stroke", labelColor)
+						.attr("stroke-width", 2)
+						.attr("height", labelLength/2)
+						.attr("width", allScale.thickness(mergemixen.thickness) + 10)
+						.attr("fill", labelColor))
+					.call(g => g.append("text")
+						.attr("transform", `translate(${[-rectlength - 5, (labelLength + 10) * 3 - 2 + labelLength/2]})`)
+						.attr("text-anchor", "end")
+						.attr("dy", "0.25em")
+						.attr("font-family" , "DIN")
+						.attr("fill", textColor)
+						.text("thick"))
 					.call(g => g.append("rect")
 						.attr("stroke", "#c4c4c4")
 						.attr("stroke-width", 0.15)
 						.attr("fill", "white")
-						.attr("class", "lineDate")
-						.attr("id", "lineDate"+item)
-						.attr("x", -rectwidth)
-						// .attr("transform", `translate(${[-xaxlength-25, -xaxlength-25]})`)
-						.attr("width", 3*rectwidth)
+						.attr("class", "lineRect")
+						.attr("id", "lineRect"+item)
+						.attr("width", 2*rectwidth)
 						.attr("height", 2*rectwidth)
 						.attr("filter","url(#shadow-card)"))
-				if(item == 0 ||  item == mergeresult.length - 1){
-					rectCard = g => g.append("g")
-						.attr("transform", `translate(${[position[0] - 25, position[1]-rectwidth -  22]})`)
-						.data(data.slice(midindex , midindex+1))
-						.call(g => g.append("rect")
-							.attr("stroke", "#c4c4c4")
-							.attr("stroke-width", 0.15)
-							.attr("width", 40)
-							.attr("height", 20)
-							.attr("fill", d => vm.categoryColors(d.productcategory))
-							.attr("opacity", 0.7)
-							.attr("rx", 10)
-							.attr("filter","url(#shadow-card)"))
-						.call(g => g.append("text")
-							.attr("x", 25)
-							.attr("y", 15)
-							.attr("fill", "white")
-							// .attr("opacity", 0.6)
-							.attr("font-family", "DIN")
-                            .attr("font-size", "10pt")
-                            .attr("font-weight", "450")
-                            .attr("text-anchor", "middle")
-                            .text(d  =>  d.productcategory)
-							.attr("stroke", "none"))
-				}else{
-					var Cateindex = Math.floor(d3.mean(mergeresult[+ item + 1 + ""]["data"]));
-					rectCard = g => {
-						var sries = g.append("defs")
-						var marker =sries.append("marker")
-								.attr("id", "triangle"+item)
-								.attr("markerUnits", "strokeWidth")
-								.attr("markerWidth", 5)
-								.attr("markerWidth", 4)
-								.attr("refX", 0)
-								.attr("refY", 2)
-								.attr("orient", "auto")
-						marker.append("path")
-									.attr("d", "M 0 0 L 5 2 L 0 4 z")
-									.attr("fill", "#c4c4c4")
-						g.append("g")
-							.attr("transform", `translate(${[position[0]  - rectwidth * 0.1, position[1]-rectwidth -  12]})`)
-							.call(g => g.append("path")
-								.attr("stroke", "#c4c4c4")
-								.attr("stroke-width", 2)
-								.attr("fill", "none")
-								.style("marker-end", `url(#triangle${item})`)
-								.attr("d", "M -5,0 L 6,0"))
-						g.append("g")
-							.attr("transform", `translate(${[position[0] - 25 - rectwidth * 0.6 , position[1]-rectwidth -  22]})`)
-							.data(data.slice(midindex , midindex+1))
-							.call(g => g.append("rect")
-								.attr("stroke", "#c4c4c4")
-								.attr("stroke-width", 0.15)
-								.attr("width", 40)
-								.attr("height", 20)
-								.attr("fill", d => vm.categoryColors(d.productcategory))
-								.attr("opacity", 0.7)
-								.attr("rx", 10)
-								.attr("filter","url(#shadow-card)"))
-							.call(g => g.append("text")
-								.attr("x", 25)
-								.attr("y", 15)
-								.attr("fill", "white")
-								// .attr("opacity", 0.6)
-								.attr("font-family", "DIN")
-								.attr("font-size", "10pt")
-								.attr("font-weight", "450")
-								.attr("text-anchor", "middle")
-								.text(d  =>  d.productcategory)
-								.attr("stroke", "none"))
-						
-						g.append("g")
-							.attr("transform", `translate(${[position[0] - 25 + rectwidth * 0.6 , position[1]-rectwidth -  22]})`)
-							.data(data.slice(Cateindex , Cateindex+1))
-							.call(g => g.append("rect")
-								.attr("stroke", "#c4c4c4")
-								.attr("stroke-width", 0.15)
-								.attr("width", 40)
-								.attr("height", 20)
-								.attr("fill", d => vm.categoryColors(d.productcategory))
-								.attr("opacity", 0.7)
-								.attr("rx", 10)
-								.attr("filter","url(#shadow-card)"))
-							.call(g => g.append("text")
-								.attr("x", 25)
-								.attr("y", 15)
-								.attr("fill", "white")
-								// .attr("opacity", 0.6)
-								.attr("font-family", "DIN")
-								.attr("font-size", "10pt")
-								.attr("font-weight", "450")
-								.attr("text-anchor", "middle")
-								.text(d  =>  d.productcategory)
-								.attr("stroke", "none"))
-					}
-				}
-				rectG.call(lineDate)
-				// .call(rectCard)
+				rectG.call(lineRect)
 				for (let i in indexname){
 					// const categorys = d3.group(data , d => d.productcategory)[]
 					let linedata = d3.map(categorysdata , d => d[indexname[i]]).sort()
@@ -810,17 +947,161 @@ export default {
 					.attr("cx", 0)
 					.attr("cy", 0)
 					.attr("r", xaxlength + 10))
-				
-				// .call(g => g.append("path")
-				// 	.attr("class" , "dguerug")
-				// 	.attr("fill", vm.categoryColors(mergeresult[item]["merge"][0].productcategory))
-				// 	.attr("d", area
-				// 		.innerRadius(d => d===0 ? xaxlength - 5 : xaxlength - 5 - cRadius(d))
-				// 		.outerRadius(xaxlength)
-				// 	(wheeldata)))
 				rectG.lower()
 			}
-			
+			// const pathindex = [
+			// 	"Cool_Q", "Cool_QUCL", "Cool_T2", "Cool_T2UCL", "Heat_Q", 
+			// 	"Heat_QUCL", "Heat_T2", "Heat_T2UCL", "Q", "QUCL", "Roll_Q", 
+			// 	"Roll_QUCL", "Roll_T2", "Roll_T2UCL", "T2", "T2UCL1"
+			// ],
+			// pathdata = {
+			// 	Cool_Q: [],
+			// 	Cool_QUCL: [],
+			// 	Cool_T2: [],
+			// 	Cool_T2UCL: [],
+			// 	Heat_Q: [],
+			// 	Heat_QUCL: [],
+			// 	Heat_T2: [],
+			// 	Heat_T2UCL: [],
+			// 	Q: [],
+			// 	QUCL: [],
+			// 	Roll_Q: [],
+			// 	Roll_QUCL: [],
+			// 	Roll_T2: [],
+			// 	Roll_T2UCL: [],
+			// 	T2: [],
+			// 	T2UCL1: [],
+			// 	time: []
+			// };
+			const pathindex = ["Q", "QUCL", "T2", "T2UCL1"],
+			pathdata = {
+				Q: [],
+				QUCL: [],
+				T2: [],
+				T2UCL1: [],
+				time: []
+			};
+			for (let item in data){
+				for(let index in pathindex){
+					pathdata[pathindex[index]].push(brushUCL.get(data[item].upid)[0][pathindex[index]])
+				}
+				pathdata["time"].push(new Date(data[item].stops.slice(-1)[0].time))
+			}
+			for(let index in pathindex){
+				let item = pathdata[pathindex[index]]
+				for(let i in item){
+					item[i] = (item[i] - d3.min(item))/(d3.max(item) - d3.min(item))
+				}
+			}
+			let QUCLMax = d3.max([...pathdata.Q, ...pathdata.QUCL]),
+				T2UCLMax = d3.max([...pathdata.T2, ...pathdata.T2UCL1]);
+			const QScale = d3.scaleLinear()
+				.domain([-1, QUCLMax])
+				.range([0, 50]);
+			const T2Scale = d3.scaleLinear()
+					.domain( [-1 , T2UCLMax])
+					.range([0 , 50]);
+			const  Qline  = d3.line()
+					.x(d => - QScale(d))
+					.y((d,i) => +y(pathdata["time"][i]))
+					.curve(d3.curveLinear);
+			const  T2line  = d3.line()
+					.x(d => T2Scale(d))
+					.y((d,i) => +y(pathdata["time"][i]))
+					.curve(d3.curveLinear);
+			const areaQUCL = d3.area()
+				.curve(d3.curveBasis)
+				.x0(5)
+				.x1((d, i) => - QScale(d))
+				.y((d,i) => +y(pathdata["time"][i]));
+			const areaT2UCL = d3.area()
+				.curve(d3.curveBasis)
+				.x1(- 5)
+				.x0((d, i) => T2Scale(d))
+				.y((d,i) => +y(pathdata["time"][i]));
+			renderG.append("rect")
+				.attr("transform", `translate(${[mareylength + 15, margin.top]})`)
+				.attr("stroke", "#c4c4c4")
+				.attr("stroke-width", 1)
+				.attr("width", 140)
+				.attr("height", height - margin.top)
+				.attr("fill", "none")
+				.attr("opacity", 0.7)
+				.attr("filter","url(#shadow-card)")
+			renderG.append("g")
+				.attr("transform", `translate(${[mareylength + 80, 0]})`)
+				.call(g => g.selectAll(".addline").data(pathdata.T2).join("line")
+					.attr("class", (d, i) => "addline" + data[i].upid)
+					.attr("transform", (d, i) =>  `translate(${[0, y(pathdata["time"][i])]})`)
+					.attr("fill", "none")
+					.style("visibility", (d, i) => data[i].flag == 0 ? "visible" :  "hidden" )
+					.attr("stroke", (d, i) => vm.trainGroupStyle(data[i]))
+					.attr("stroke-width", 0.5)
+					.attr("x1", (d, i) => - QScale(pathdata.Q[i]) +2)
+					.attr("x2", (d, i) => 10 + T2Scale(d) -2)
+					.attr("upid", (d, i) => data[i].upid)
+					.on("mouseover", mouseoverUCL)
+					.on("mouseout", mouseoutUCL))
+				.call(g => g.selectAll(".startline").data(pathdata.T2).join("line")
+					.attr("class", (d, i) => "startline" + data[i].upid)
+					.attr("transform", (d, i) =>  `translate(${[0, y(pathdata["time"][i])]})`)
+					.attr("fill", "none")
+					.style("visibility", "hidden")
+					.attr("stroke", (d, i) => vm.trainGroupStyle(data[i]))
+					.attr("stroke-width", 2)
+					.attr("x2", (d, i) => - QScale(pathdata.Q[i]) - 3.5)
+					.attr("x1", (d, i) => -80))
+				.call(g => g.append("line")
+					.attr("fill", "none")
+					.attr("stroke", "#4a4a4a")
+					.attr("stroke-width", 1)
+					.attr("transform", `translate(${[5, 0]})`)
+					.attr("y1", y(pathdata["time"][0]))
+					.attr("y2", height - margin.top))
+				.call(g => g.append("path")
+						.datum(pathdata.QUCL)
+						.attr("class", "QUCL")
+						.attr("fill", "#94a7b7")
+						.attr("opacity", 0.4)
+						.attr("d", areaQUCL))
+				.call(g => g.append("path")
+						.attr("fill", "none")
+						.attr("stroke", "grey")
+						.attr("opacity", 0.4)
+						.attr("d", Qline(pathdata.Q)))
+				.call(g => g.selectAll(".Qcircle").data(pathdata.Q).join("circle")
+						.attr("class", (d, i) => "Qcircle" + data[i].upid)
+						.attr("r",  (d, i) => data[i].flag == 0 ? 2 : 0.5)
+						.attr("cy", (d, i) => y(pathdata["time"][i]))
+						.attr("cx", d => - QScale(d))
+						.attr("fill", "none")
+						.attr("stroke", (d, i) => vm.trainGroupStyle(data[i]))
+						.attr("upid", (d, i) => data[i].upid)
+						.on("mouseover", mouseoverUCL)
+						.on("mouseout", mouseoutUCL))
+			renderG.append("g")
+				.attr("transform", `translate(${[mareylength + 90, 0]})`)
+				.call(g => g.append("path")
+						.datum(pathdata.T2UCL1)
+						.attr("class", "QUCL")
+						.attr("fill", "#94a7b7")
+						.attr("opacity", 0.4)
+						.attr("d", areaT2UCL))
+				.call(g => g.append("path")
+						.attr("fill", "none")
+						.attr("stroke", "grey")
+						.attr("opacity", 0.4)
+						.attr("d", T2line(pathdata.T2)))
+				.call(g => g.selectAll(".T2circle").data(pathdata.T2).join("circle")
+						.attr("class", (d, i) => "T2circle" + data[i].upid)
+						.attr("r", (d, i) => data[i].flag == 0 ? 2 : 0.5)
+						.attr("cy", (d, i) => y(pathdata["time"][i]))
+						.attr("cx", (d, i) => T2Scale(d))
+						.attr("fill", "none")
+						.attr("stroke", (d, i) => vm.trainGroupStyle(data[i]))
+						.attr("upid", (d, i) => data[i].upid)
+						.on("mouseover", mouseoverUCL)
+						.on("mouseout", mouseoutUCL))
 			renderG.append("g")
 				.call(g => {
 					const tooltip = g.append("g")
@@ -859,12 +1140,13 @@ export default {
 						}
 						vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 1});
 						tooltip.style("display", "none");
-						let currentIdSearch = "#id" + d.train.upid;
+						// let currentIdSearch = "#id" + d.train.upid;
 						if(vm.trainSelectedList.includes(d.train.upid))return
-						d3.select(currentIdSearch)
-						.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
-						.selectAll("rect")
-						.attr("stroke", "none");
+						mouseoutLine(d.train.upid)
+						// d3.select(currentIdSearch)
+						// .attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
+						// .selectAll("rect")
+						// .attr("stroke", "none");
 						
 					})
 
@@ -881,13 +1163,13 @@ export default {
 						let toopcolor
 							if(!vm.changeColor){toopcolor=tooltipColors(d.train.productcategory)}
 							else{toopcolor=tooltiplabelColors(d.train.flag)}
-						let currentIdSearch = "#id" + d.train.upid;
-						// console.log(toopcolor)
-						d3.select(currentIdSearch)
-						.attr("stroke-width", highLightStrokeWidth)
-						.selectAll("rect")
-						.attr("stroke", "black");
-
+						// let currentIdSearch = "#id" + d.train.upid;
+						// // console.log(toopcolor)
+						// d3.select(currentIdSearch)
+						// .attr("stroke-width", highLightStrokeWidth)
+						// .selectAll("rect")
+						// .attr("stroke", "black");
+						mouseoverLine(d.train.upid)
 						tooltip
 						.style("display", null)
 						.attr("fill", "white");
@@ -940,8 +1222,8 @@ export default {
 						.selectAll("rect")
 						.attr("stroke", "black");
 						}
-						let upidSelect = d3.map(d3.filter(data.slice(upidArray.indexOf(d.train.upid)), d => d.flag === 0), d => d.upid)
-						// let upidSelect = upidArray.slice(upidArray.indexOf(d.train.upid)+1, upidArray.indexOf(d.train.upid)+5)
+						let upidSelect = d3.map(d3.filter(data.slice(allupid.indexOf(d.train.upid)), d => d.flag === 0), d => d.upid)
+						// let upidSelect = allupid.slice(allupid.indexOf(d.train.upid)+1, allupid.indexOf(d.train.upid)+5)
 						if (vm.changeColor) {
 						vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(parseInt(d.train.flag)), upidSelect:upidSelect});
 						
@@ -954,7 +1236,7 @@ export default {
 			
 			var xGroup = renderG.append("g")
 				.call(xRect).call(xAxis);
-			renderG
+			// renderG
 			d3.select(".shadow_rect").raise()
 			// var yGroup = renderG.append("g")
 			// 	.call(yAxis);
@@ -962,29 +1244,30 @@ export default {
 		}
 		render()
 
-		const miniMargin = { top: 115, right: 25, bottom: -35, left: 25 },
+		const miniMargin = { top: 115, right: 15, bottom: -35, left: 35 },
 
 			miniheight =  mainHeight - miniMargin.top - miniMargin.bottom,
 			miniwidth = 75,
 			miniXScale = d3.scaleTime()
 				.domain([new Date(minDate), new Date(maxDate)])
 				.range([0, miniheight - miniMargin.bottom - miniMargin.top]),
-			miniYScale = d3.scaleLinear()
-				.domain(d3.extent(stations, d => d.distance))
-				.range([0 , miniwidth - miniMargin.right - miniMargin.left ]),
-			mainXScale = d3.scaleTime()
-				.domain([new Date(minDate), new Date(maxDate)])
-				.range([margin.top, height - margin.bottom]),
-			mainYScale = d3.scaleLinear()
-				.domain(d3.extent(stations, d => d.distance))
-				.range([margin.left + 10, width - 1.5 * margin.right ]),
+			// miniYScale = d3.scaleLinear()
+			// 	.domain(d3.extent(stations, d => d.distance))
+			// 	.range([0 , miniwidth - miniMargin.right - miniMargin.left ]),
+			// mainXScale = d3.scaleTime()
+			// 	.domain([new Date(minDate), new Date(maxDate)])
+			// 	.range([margin.top, height - margin.bottom]),
+			// mainYScale = d3.scaleLinear()
+			// 	.domain(d3.extent(stations, d => d.distance))
+			// 	.range([mareyEntry, width - 1.5 * margin.right ]),
 			mainXZoom = d3.scaleLinear()
 				.range([margin.top, mainHeight - margin.bottom])
 				.domain([0, miniheight - miniMargin.bottom - miniMargin.top]),
-			miniline = d3.line()
-				.x(d => miniYScale(d.station.distance))
-				.y(d => miniXScale(new Date(d.time))),
-			BrushSelectHeight = this.isMerge ? miniXScale(new Date(data[50].stops[0].time.slice(0, 19))) : miniXScale(new Date(data[75].stops[0].time.slice(0, 19))),
+			// miniline = d3.line()
+			// 	.x(d => miniYScale(d.station.distance))
+			// 	.y(d => miniXScale(new Date(d.time))),
+			BrushSelectHeight = data.length > 50 ? (this.isMerge ? miniXScale(new Date(data[50].stops[0].time.slice(0, 19))) : miniXScale(new Date(data[65].stops[0].time.slice(0, 19)))) : (this.isMerge ? 0.5 * unitHeight : 0.3 * unitHeight),
+			// miniXScale(new Date(data[65].stops[0].time.slice(0, 19))),
 			// BrushSelectHeight =50,
 			initialBrushXSelection = [0, BrushSelectHeight],
 			brush = d3.brushY()
@@ -1008,7 +1291,7 @@ export default {
 				.y(d => y(new Date(d.time)))
 			voronoi = Delaunay
 				.from(stops, d => x(d.stop.station.distance), d => y(new Date(d.stop.time)))
-				.voronoi([margin.left, margin.top, width-margin.left, miniheight-margin.top])
+				.voronoi([mareyEntry, margin.top, mareylength, margin.top + height])
 			d3.select(".miniGroup").selectAll(".rect")
 				.attr("opacity", d=> miniXScale(new Date(d.stops[0].time))>extentX[0] && miniXScale(new Date(d.stops[0].time))<extentX[1] ? 0.4 : 0.2)
 			d3.select(".miniLine1").attr("y1", miniMargin.top + extentX[0])
@@ -1055,20 +1338,20 @@ export default {
 
 			gBrush.call(brush.move, [topSection, topSection + size]);
 		}
-		// const defs = svg.append("defs");
 
 
 		const wrapperGroup = svg.append("g")
 			.attr("class", "wrapperGroup");
 
-		const mainBarsGroup = wrapperGroup.append("g")
-			.attr("class", "mainBarsGroup");
+		// const mainBarsGroup = wrapperGroup.append("g")
+		// 	.attr("class", "mainBarsGroup");
+		const brushXPosition = width - miniMargin.right - margin.right / 2;
 		const miniGroup = svg.append("g")
 			.attr("class", "miniGroup")
-			.attr("transform", `translate(${[miniMargin.left, miniMargin.top]})`);
+			.attr("transform", `translate(${[brushXPosition, miniMargin.top]})`);
 		const brushGroup = svg.append("g")
 			.attr("class", "brushWrapper")
-			.attr("transform", `translate(${[miniMargin.left, miniMargin.top]})`)
+			.attr("transform", `translate(${[brushXPosition, miniMargin.top]})`)
 			.append("g")
 				.attr("class", "brush")
 				.call(brush);
@@ -1108,19 +1391,19 @@ export default {
 					// .attr("fill", d=> miniXScale(new Date(d.stops[0].time))>initialBrushXSelection[0] && miniXScale(new Date(d.stops[0].time))<initialBrushXSelection[1] ? this.trainGroupStyle(d) : d3.color(this.trainGroupStyle(d)).brighter(1.2))
 		const miniLine = svg
 			.call(g => g.append("line")
-						.attr("x1", miniwidth - miniMargin.right )
+						.attr("x1", brushXPosition)
 						.attr("y1", miniMargin.top + initialBrushXSelection[0])
 						.attr("class", "miniLine1")
 						.style("stroke","#c9cbcc")
-						.attr("x2", margin.left - 5)
+						.attr("x2", mareylength + 155)
 						.attr("y2", margin.top)
 						.style("stroke-width", 0.75))
 			.call(g => g.append("line")
 						.attr("class", "miniLine2")
-						.attr("x1", miniwidth - miniMargin.right )
+						.attr("x1", brushXPosition)
 						.attr("y1", miniMargin.top + initialBrushXSelection[1])
 						.style("stroke","#c9cbcc")
-						.attr("x2", margin.left - 5)
+						.attr("x2", mareylength + 155)
 						.attr("y2", mainHeight)
 						.style("stroke-width", 0.75))
 		var miniAxis = d3.axisLeft(miniXScale)
@@ -1143,7 +1426,7 @@ export default {
 		const axis = svg
 			.append("g")
 			.attr("class", "axisclass")
-			.attr("transform", `translate(${[miniwidth - miniMargin.right +5, miniMargin.top]})`)
+			.attr("transform", `translate(${[brushXPosition + 30, miniMargin.top]})`)
 			.call(miniyAxis)
 		axis.selectAll("text").attr("text-anchor", "start")
 		const defs = svg.append("defs");
@@ -1156,7 +1439,7 @@ export default {
 		svg
 			.append("rect")
 			.attr("class", "miniaxisrect")
-			.attr("transform", `translate(${[miniMargin.left, miniMargin.top]})`)
+			.attr("transform", `translate(${[brushXPosition, miniMargin.top]})`)
 			.attr("height", miniheight - miniMargin.bottom - miniMargin.top)
 			.attr("width", miniwidth - miniMargin.right - miniMargin.left)
 			.attr("fill", "none")
@@ -1217,17 +1500,21 @@ export default {
 			}
 		},
 		changeTrainColor(bool) {
-		if (bool) {
-			this.changeColor = true
-			this.showColor = this.labelColorsFunc
-			this.trainGroup &&
-			this.trainGroup.style('color', d => d.flag === 0 ? this.labelColors[0] : this.labelColors[1])
-		} else {
-			this.changeColor = false
-			this.showColor = this.categoryColors
-			this.trainGroup &&
-			this.trainGroup.style('color', d => this.categoryColors(d.productcategory))
-		}
+			// if (bool) {
+			// 	this.changeColor = true
+			// 	this.showColor = this.labelColorsFunc
+			// 	this.trainGroup &&
+			// 	this.trainGroup.style('color', d => d.flag === 0 ? this.labelColors[0] : this.labelColors[1])
+			// } else {
+			// 	this.changeColor = false
+			// 	this.showColor = this.categoryColors
+			// 	this.trainGroup &&
+			// 	this.trainGroup.style('color', d => this.categoryColors(d.productcategory))
+			// }
+			this.changeColor = ! this.changeColor
+			if(this.data !== undefined && this.station !== undefined){
+				this.paintMareyChart(this.data,this.station, this.changeColor, this.brushData)
+			}
 		},
 		deepCopy(obj){
 			if(typeof obj!=='object') return obj;

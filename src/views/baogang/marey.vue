@@ -58,11 +58,12 @@
 
 
 			</el-col>
-			<el-col :span="20" style="margin-top:5px"
+			<el-col :span="16" style="margin-top:5px"
 				v-loading="loadingDataLoading"
 				element-loading-text="loading..."
 				element-loading-spinner="el-icon-loading"
 				element-loading-background="rgba(0, 0, 0, 0.3)">
+				<el-row></el-row>
 				<el-row>
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
@@ -396,11 +397,13 @@ import bar from "./Bar.vue";
 import scatterAxis from "./scatterAxis.vue"
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
-import myJsonData from "./jsondata.js"
+import myJsonData from "./sampledata/jsondata.json"
+// import myJsonData from "./jsondata.js"
 import myStationData from "./stationdata.js"
 import scatterlogerdata from "./sampledata/scatterlog.json"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
+import { mapGetters, mapMutations} from 'vuex'
 // import offline from "./offline.json"
 var echarts = require('echarts');
 export default {
@@ -440,8 +443,8 @@ export default {
 			errorflag:false,
 			plateTempPropvalue:['All'],
 			isSwitch: true,
-			startDate: new Date('2018-10-16 00:00:00'),
-			endDate: new Date('2018-10-19 04:00:00'),
+			startDate: new Date('2018-11-04 00:00:00'),
+			endDate: new Date('2018-11-06 04:00:00'),
 			startmonth: new Date(2018, 10, 1, 0, 0),
 			// dateselect:[new Date(2018, 10, 1, 0, 0), new Date(2018, 10, 10, 0, 0)],
 			display: false,
@@ -516,12 +519,19 @@ export default {
 				return toc < this.endDate && toc > this.startDate
 			})
 		},
-		brushUpid : vm => d3.map(vm.brushData, d => d.upid)
+		brushUpid : vm => d3.map(vm.brushData, d => d.upid),
+		...mapGetters([
+			// "isSwitch",
+			"trainGroupStyle"
+		])
 	},
 	created() {
 		// this.day()
 	},
 	methods: {
+		...mapMutations([
+			"changeLabelColor"
+		]),
 		getNotification(notice){
 			const h = this.$createElement;
 
@@ -581,6 +591,8 @@ export default {
 			if(end)this.endDate = new Date(end)
 		},
 		async getHttpData() {
+			this.startDate = new Date('2018-11-04 00:00:00'),
+			this.endDate = new Date('2018-11-06 04:00:00'),
 			console.log(this.brushData)
 			this.jsonData = myJsonData
 			this.mergeflag()
@@ -819,11 +831,12 @@ export default {
 		// 		});
 		// },
 		changeColor(){
-			this.isSwitch = !this.isSwitch
+			this.changeLabelColor()
+			// this.isSwitch = !this.isSwitch
 			this.switchChange(this.isSwitch)
 		},
 		switchChange(bool) {
-			let selectcolor=this.$refs.mareyChart.setTrainColor(bool)
+			let selectcolor=this.$refs.mareyChart.changeTrainColor(bool)
 			console.log(selectcolor)
 			if(selectcolor)(this.selectedTrainColor=selectcolor)
 			// this.changeScatterColor();
@@ -832,7 +845,8 @@ export default {
 			// let seletcolor=this.$refs.mareyChart.setTrainColor(bool) 
 			// // this.changeScatterColor();
 			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
-			this.selectedTrainData !== undefined && this.paintSwitchUnderCharts(this.selectedTrainData); 
+			
+			// this.selectedTrainData !== undefined && this.paintSwitchUnderCharts(this.selectedTrainData); 
 		},
 		async getAlgorithmData() {
 			await this.scattlog();

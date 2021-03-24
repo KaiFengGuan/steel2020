@@ -14,6 +14,7 @@ export default {
             svg: undefined,
             labelColors: util.labelColor, // [bad, good]
             categoryColors: util.categoryColor,
+            mouseList: undefined
         }
     },
 
@@ -24,7 +25,8 @@ export default {
 			"isSwitch",
 			"trainGroupStyle",
             "brushMouseId",
-            "brushSelection"
+            "brushSelection",
+            "brushSelectColor"
 		])
     },
     watch:{
@@ -33,15 +35,29 @@ export default {
         }
     },
     methods: {
+        deepCopy(obj){
+			if(typeof obj!=='object') return obj;
+			var newObj=obj instanceof Array ? [] :{};
+			for (let key in obj){
+				if(obj.hasOwnProperty(key)){
+					if(obj[key]===null){
+						newObj[key]===null;
+					}
+					newObj[key]=typeof obj[key] ? this.deepCopy(obj[key]) : obj[key];
+				}
+			}
+			return newObj
+		},
         paintChart(plData, startTime, endTime) {
-            // var brushdata = plData
-            // console.log(brushdata[0].slab_thickness)
-            var brushdata = d3.map(plData, d => {
-                // d.slab_thickness = d.slab_thickness/100;
+            console.log(this)
+            plData = this.deepCopy(plData)
+            var brushdata = plData.map( d => {
+                d.slab_thickness = d.slab_thickness/100;
                 return d
             })
             console.log(brushdata[0].slab_thickness)
-            var margin = {top: 60, right: 30, bottom: 40, left: 30},
+            // return
+            var margin = {top: 60, right: 20, bottom: 40, left: 20},
                 brushHeight = 10,
                 vm = this,
                 deselectedColor = "#eeeeee",
@@ -55,7 +71,7 @@ export default {
                     var maxlength = bardata[i].length
                     while(true){
                         var max = d3.max(d3.bin().thresholds(length)(bardata[i]), d => d.length) 
-                        if(max/maxlength < 0.7){
+                        if(max/maxlength < 0.8){
                             break
                         }else{
                             length++
@@ -86,7 +102,7 @@ export default {
                     .outerRadius(8)
                     .startAngle(0)
                     .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
-                height = keys.length * 85,
+                height = keys.length * 90,
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
                 // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1]), [margin.left, width - margin.right])])),
                 // x = new Map(Array.from(keys, key => [key, d3.scaleLinear(d3.extent(brushdata, d => d[key]), [margin.left, width - margin.right])])),
@@ -111,14 +127,14 @@ export default {
                         .attr("display", selection === null ? "none" : null)
                         .attr("transform", selection === null ? null : (d, i) => `translate(${selection[i]},${0})`)
                 function brushSlider(){
-                    d3.selectAll("#parallel .overlay").attr("fill", "#eeeeee").raise()
-                    d3.selectAll("#parallel .selection").attr("fill", selectedColor).attr("fill-opacity", 1).raise()
-                    // d3.selectAll("#parallel .parallelPath").raise()
-                    d3.selectAll(".handle--custom").raise()
-                    d3.selectAll("#parallel .domain").remove()
-                    d3.selectAll("#parallel .overlay").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
-                    d3.selectAll("#parallel .selection").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
-                    d3.selectAll("#parallel .tick text").attr("font-family", "DIN").attr("stroke", "none").attr("fill", "#2c3e50")
+                    svg.selectAll("#parallel .overlay").attr("fill", "#eeeeee").raise()
+                    svg.selectAll("#parallel .selection").attr("fill", vm.brushSelectColor).attr("fill-opacity", 0.8).raise()
+                    // svg.selectAll("#parallel .parallelPath").raise()
+                    svg.selectAll(".handle--custom").raise()
+                    svg.selectAll("#parallel .domain").remove()
+                    svg.selectAll("#parallel .overlay").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
+                    svg.selectAll("#parallel .selection").attr("rx", "5").attr("ry", "5").attr("stroke", "#aaa").attr("stroke-width", 1)
+                    svg.selectAll("#parallel .tick text").attr("font-family", "DIN").attr("stroke", "none").attr("fill", "#2c3e50")
                 }
 
             // const 
@@ -181,6 +197,7 @@ export default {
                 .data(brushdata.slice().sort((a, b) => d3.ascending(a["upid"], b["upid"])))
                 .join("path")
                 .attr("stroke", this.trainGroupStyle)
+                .attr("id", d=> `paraPath${d.upid}`)
                 .attr("d", d => line(d3.cross(keys, [d], (key, d) => [key, d[key]])))
                 .attr("class", "pathColor")
                 .on("mouseover", pathover)
@@ -222,157 +239,83 @@ export default {
                     )
                 .call(g =>g.selectAll(".domain").remove())
                 .call(brush)
-                .call(brush.move, d => selections.get(d).map(x.get(d)));
+                // .call(brush.move, d => selections.get(d).map(x.get(d)));
                 brushSlider()
                 // svg.selectAll("text").attr("font-family", "DIN").attr("stroke", "none").style("fill", "#2c3e50")
                 
             function pathover(event,d){
                 // d3.select(this).attr("stroke-width", 5)
-                // const tooltip = svg.append("g")
-                //     .attr("class", "parallelTooltip")
-                //     .style("font", "12px DIN");
+                console.log(d)
+                const tooltip = vm.svg.append("g")
+                    .attr("class", "tooltip")
+                    .style("font", "12px DIN");
 
-                // const path = tooltip.append("path")
-                //     .attr("fill", "rgba(245, 245, 230, 0.97)");
-                // const text = tooltip.append("text");
+                const path = tooltip.append("path")
+                    .attr("fill", "rgba(245, 245, 230, 0.97)");
 
-                // const line1 = text.append("tspan")
-                //     .attr("x", 0)
-                //     .attr("y", 0)
-                //     .style("font-weight", "bold");
+                const text = tooltip.append("text");
 
-                // const line2 = text.append("tspan")
-                //     .attr("x", 0)
-                //     .attr("y", "1.1em");
+                const line1 = text.append("tspan")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .style("font-weight", "bold");
 
-				// 	const line3 = text.append("tspan")
-				// 		.attr("x", 0)
-				// 		.attr("y", "2.2em");
-				// 	const label=d;
-				// 	d3.selectAll("circle.dot").style("opacity", 0.4);
-				// 	d3.select("#scatter"+label.upid).attr("r",2).style("opacity", 1);				
-				// 	tooltip
-				// 		.style("display", null)
-				// 		.attr("fill", "white");
-				// 	line1.text(`upid:`+ d.upid);
-				// 	line2.text(`category: `+d.productcategory);
-				// 	line3.text(`time:`+d.toc);
-				// 	path
-				// 		.attr("stroke", "none")
-				// 		.attr("fill", vm.tooltipColor(label));
-				// 	const box = text.node().getBBox();
-				// 	let x = event.pageX - 78,
-				// 		y = event.pageY - 150;
-				// 	// const x=vm.scaleX(d.x)-75
-				// 	// let y=vm.scaleY(d.y)+12
-				// 	if(y+box.height + 30>h-8*marginH){					
-				// 	path.attr("d", `
-				// 		M${box.x - 10},${box.y - 10}
-				// 		H${box.width / 2 - 5}l5,15l5,-15
-				// 		H${box.width + 10}
-				// 		v-${box.height + 20}
-				// 		h-${box.width + 20}
-				// 		z
-				// 	`)
-				// 	text.attr("transform", `translate(${[box.x,box.y - 50]})`);
-				// 	}else if(y+box.height + 30<h-2*marginH){
-				// 	y=y+24
-				// 	path.attr("d", `
-				// 		M${box.x - 10},${box.y - 10}
-				// 		H${box.width / 2 - 5}l5,-15l5,15
-				// 		H${box.width + 10}
-				// 		v${box.height + 20}
-				// 		h-${box.width + 20}
-				// 		z
-				// 	`);
-				// 	text.attr("transform", `translate(${[box.x+5,box.y+10]})`);
-				// 	}
-				// 	tooltip.attr("transform", `translate(${[x,y]})`);
-				// 	vm.$emit("scatterMouse", {upid: d.upid,  mouse: 0});
+                const line2 = text.append("tspan")
+                    .attr("x", 0)
+                    .attr("y", "1.1em");
+
+                const line3 = text.append("tspan")
+                    .attr("x", 0)
+                    .attr("y", "2.2em");			
+                tooltip
+                    .style("display", null)
+                    .attr("fill", "white");
+                line1.text(`upid:`+ d.upid);
+                line2.text(`category: `+d.productcategory);
+                line3.text(`time:`+d.toc);
+                path
+                    .attr("stroke", "none")
+                    .attr("fill", vm.trainGroupStyle(d));
+                const box = text.node().getBBox();
+                console.log(event)
+                let x = event.offsetX - 78,
+                    y = event.offsetY + 10;					
+                path.attr("d", `
+                    M${box.x - 10},${box.y - 10}
+                    H${box.width / 2 - 5}l5,15l5,-15
+                    H${box.width + 10}
+                    v-${box.height + 20}
+                    h-${box.width + 20}
+                    z
+                `)
+                text.attr("transform", `translate(${[box.x,box.y - 50]})`);
+                tooltip.attr("transform", `translate(${[x,y]})`);
+                vm.svg.selectAll(`.pathColor`)
+                .attr("stroke-opacity", 0.01)
+                .attr("stroke-width", 0.25)
+                // .style("visibility", "hidden")
+					vm.svg.select(`#paraPath${d.upid}`)
+						.attr("stroke-opacity", 0.6)
+                        .attr("stroke-width", 1.75)
+                vm.$emit("parallMouse", {upid: [d.upid],  mouse: 0});
             }
             function pathout(e,d){
                 // d3.select(this).attr("stroke-width", 5)
+                vm.svg.selectAll(`.pathColor`)
+                    .attr("stroke-opacity", 0.6)
+                    .attr("stroke-width", 1)
+                vm.svg.selectAll(".tooltip").remove()
+                vm.mouseList !==undefined ? vm.mouse(vm.mouseList) : false
+                vm.$emit("parallMouse", {upid: [d.upid],  mouse: 1});
             }
-            	// 			.on("mouseover", (event, d)=> {
-				// 	const tooltip = vm.svg.append("g")
-				// 		.attr("class", "scattertooltip")
-				// 		.style("font", "12px sans-serif");
-
-				// 	const path = tooltip.append("path")
-				// 		.attr("fill", "rgba(245, 245, 230, 0.97)");
-
-				// 	const text = tooltip.append("text");
-
-				// 	const line1 = text.append("tspan")
-				// 		.attr("x", 0)
-				// 		.attr("y", 0)
-				// 		.style("font-weight", "bold");
-
-				// 	const line2 = text.append("tspan")
-				// 		.attr("x", 0)
-				// 		.attr("y", "1.1em");
-
-				// 	const line3 = text.append("tspan")
-				// 		.attr("x", 0)
-				// 		.attr("y", "2.2em");
-				// 	const label=d;
-				// 	d3.selectAll("circle.dot").style("opacity", 0.4);
-				// 	d3.select("#scatter"+label.upid).attr("r",2).style("opacity", 1);				
-				// 	tooltip
-				// 		.style("display", null)
-				// 		.attr("fill", "white");
-				// 	line1.text(`upid:`+ d.upid);
-				// 	line2.text(`category: `+d.productcategory);
-				// 	line3.text(`time:`+d.toc);
-				// 	path
-				// 		.attr("stroke", "none")
-				// 		.attr("fill", vm.tooltipColor(label));
-				// 	const box = text.node().getBBox();
-				// 	let x = event.pageX - 78,
-				// 		y = event.pageY - 150;
-				// 	// const x=vm.scaleX(d.x)-75
-				// 	// let y=vm.scaleY(d.y)+12
-				// 	if(y+box.height + 30>h-8*marginH){					
-				// 	path.attr("d", `
-				// 		M${box.x - 10},${box.y - 10}
-				// 		H${box.width / 2 - 5}l5,15l5,-15
-				// 		H${box.width + 10}
-				// 		v-${box.height + 20}
-				// 		h-${box.width + 20}
-				// 		z
-				// 	`)
-				// 	text.attr("transform", `translate(${[box.x,box.y - 50]})`);
-				// 	}else if(y+box.height + 30<h-2*marginH){
-				// 	y=y+24
-				// 	path.attr("d", `
-				// 		M${box.x - 10},${box.y - 10}
-				// 		H${box.width / 2 - 5}l5,-15l5,15
-				// 		H${box.width + 10}
-				// 		v${box.height + 20}
-				// 		h-${box.width + 20}
-				// 		z
-				// 	`);
-				// 	text.attr("transform", `translate(${[box.x+5,box.y+10]})`);
-				// 	}
-				// 	tooltip.attr("transform", `translate(${[x,y]})`);
-				// 	vm.$emit("scatterMouse", {upid: d.upid,  mouse: 0});
-				// })
-				// .on("mouseout", (event, d)=> {
-				// 	d3.select("#scatter"+d.upid).style("opacity", 1)
-				// 	let toc=new Date(d.toc)
-				// 	if(toc<this.GaleArray[1]&&toc>this.GaleArray[0]){}else{
-				// 		d3.select("#scatter"+d.upid).attr("r",1)
-				// 	}					
-				// 	d3.selectAll(".scattertooltip").remove();
-				// 	vm.$emit("scatterMouse", {upid: d.upid,  mouse: 1});
-				// })
             function brushed({selection}, key) {
                 if (selection === null) selections.delete(key);
                 else selections.set(key, selection.map(x.get(key).invert));
                 const selected = [];
                 path.each(function(d) {
                 const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
-                d3.select(this).attr("visibility", active ? "visible" : "hidden");
+                d3.select(this).attr("stroke", active ? vm.trainGroupStyle : "none");
+                // .attr("visibility", active ? "visible" : "hidden");
                 // .style("stroke", active ? vm.trainGroupStyle(d) : "none");
                 if (active) {
                     d3.select(this).raise();
@@ -398,7 +341,32 @@ export default {
                 d3.select(".rectBar").lower();
                 brushSlider()
             }
-        }
+        },
+        mouse(value){
+			console.log(value)
+			const vm=this
+			this.mouseList = value
+            this.svg.selectAll(`.pathColor`)
+                // .attr("stroke-opacity", 0.05)
+                .attr("stroke-width", 1)
+                .style("visibility", "hidden")
+			if(value.mouse===0){
+				for(let item in value.upid){
+                    console.log(item)
+					this.svg.select(`#paraPath${value.upid[item]}`)
+                        .style("visibility", "visible")
+						// .attr("stroke-opacity", 0.6)
+                        .attr("stroke-width", 1.75)
+				}
+
+			}else{
+                this.svg.selectAll(`.pathColor`)
+                    .style("visibility", "visible")
+                    .attr("stroke-width", 1)
+                // .attr("stroke-opacity", 0.6)
+			}
+			
+		},
     },
     mounted(){
     },

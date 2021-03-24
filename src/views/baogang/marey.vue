@@ -12,7 +12,7 @@
 								@change="changeTime" start-placeholder="开始日期" end-placeholder="结束日期" style="width:160px;margin:10px 0px 10px 20px" size="mini">                 
 							</el-date-picker>  -->
 						</el-col>
-						<el-col :span="14">
+						<!-- <el-col :span="14">
 							<el-card class="myel-card" style="margin:5px 5px">
 								<div class="my-card-body" style="height:32px; width:100%; display:flex;">
 									<time-brush ref="timeBrush" style="flex: 1 0 152px;" 
@@ -22,9 +22,12 @@
 									<el-button round style="flex: 0 0 auto;width:30px;height:30px;margin-top:0px" type="info" size="mini" plain @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
 								</div>	
 							</el-card>
-						</el-col>
-						
+						</el-col> -->
+						<el-button round style="flex: 0 0 auto;width:30px;height:30px;margin-top:0px" type="info" size="mini" plain @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
 					</el-row>
+					<!-- <el-row>
+						<slider style="height:80px;width:100%" ref="brushSlider"></slider>
+					</el-row> -->
 					<el-row>
 						<el-col :span="24" 
 							v-loading="scatterLoading"
@@ -39,19 +42,25 @@
 									</el-select>
 								</div>
 								<div class="my-card-body">
-									<scatterlog ref="scatterloging" style="height:360px;" @scatterMouse="scatterMouse"></scatterlog>
+									<el-row>
+										<slider style="height:80px;width:100%" ref="brushSlider"></slider>
+									</el-row>
+									<el-row>
+										<scatterlog ref="scatterloging" style="height:305px;" @scatterMouse="scatterMouse"></scatterlog>
+									</el-row>
+									
 								</div>
 							</el-card>
 						</el-col>
 					</el-row>
 				</el-row>
 				<el-row>
-					<el-card class="myel-card" >		 
-						<div class="my-card-title" slot="header">
+					<el-card >		 
+						<!-- <div class="my-card-title" slot="header">
 							<span style="margin-left:5px">Tabular View</span>
-						</div>
+						</div> -->
 						<div class="my-card-body" style="padding-top:5px">
-							<brushableParallel ref="parallel" style="height:506px;width:100%"></brushableParallel>
+							<brushableParallel ref="parallel" style="height:506px;width:100%" @parallMouse="parallMouse"></brushableParallel>
 						</div>
 					</el-card>
 				</el-row>
@@ -389,11 +398,11 @@ import gauge from './gauge.vue';
 import threeBar from './threeBar.vue';
 import wheeler from './wheeler.vue';
 import swheel from './swheel.vue';
-import force from './force.vue';
 import heat from "./heat.vue";
 import riverLike from "./riverLike.vue";
 import svgTable from "./svgTable.vue";
 import bar from "./Bar.vue";
+import slider from './slider.vue'
 import scatterAxis from "./scatterAxis.vue"
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
@@ -408,12 +417,12 @@ import { mapGetters, mapMutations} from 'vuex'
 var echarts = require('echarts');
 export default {
 	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat,
-		brushableParallel, riverLike, bar, scatterAxis, threeBar, force,scatterlog , wheeler , swheel},
+		brushableParallel, riverLike, bar, scatterAxis, threeBar,scatterlog , wheeler , swheel, slider},
 	data() {
 		return {
 			isMerge: true,
 			minrange: 20,
-			minconflict: 5,
+			minconflict: 4,
 			symbolvalue:0.05,
 			linesize:0.25,
 			heatindex:false,
@@ -443,8 +452,8 @@ export default {
 			errorflag:false,
 			plateTempPropvalue:['All'],
 			isSwitch: true,
-			startDate: new Date('2018-11-04 00:00:00'),
-			endDate: new Date('2018-11-06 04:00:00'),
+			// startDate: new Date('2018-11-04 00:00:00'),
+			// endDate: new Date('2018-11-06 04:00:00'),
 			startmonth: new Date(2018, 10, 1, 0, 0),
 			// dateselect:[new Date(2018, 10, 1, 0, 0), new Date(2018, 10, 10, 0, 0)],
 			display: false,
@@ -498,6 +507,12 @@ export default {
 		}
 	},
 	computed: {
+		...mapGetters([
+			// "isSwitch",
+			"trainGroupStyle",
+			"startDate",
+			"endDate"
+		]),
 		dateselect : function(){
 			var endmonth = new Date(this.startmonth.valueOf())
 			if(endmonth.getMonth() < 12){
@@ -514,16 +529,24 @@ export default {
 		selectDateStart: vm => util.timeFormat(vm.dateselect[0]),
 		selectDateEnd: vm => util.timeFormat(vm.dateselect[1]),
 		brushData : function(){
+			var start = new Date('2018-11-04 00:00:00'),
+				end = new Date('2018-11-06 04:00:00');
 			return this.monthdata.filter(d =>{
-				var toc = new Date(d.toc)
-				return toc < this.endDate && toc > this.startDate
+				var toc = new Date(d.toc);
+				
+				return toc < end && toc > start
+				// return toc < this.endDate && toc > this.startDate
 			})
 		},
 		brushUpid : vm => d3.map(vm.brushData, d => d.upid),
-		...mapGetters([
-			// "isSwitch",
-			"trainGroupStyle"
-		])
+		paralleldata: vm => {
+			console.log(scatterlogerdata)
+			var scatterdata = Object.values(scatterlogerdata)
+			return  scatterdata.filter(d =>{
+				var toc = new Date(d.toc);
+				return toc < vm.endDate && toc > vm.startDate
+			})
+		}
 	},
 	created() {
 		// this.day()
@@ -558,13 +581,12 @@ export default {
 				this.$refs.wheelering.paintChart(diagnosisData,Response.data)
 			})
 		},
-		changeTime() {
+		async changeTime() {
 			// // this.$message('这是一条消息提示');
 			// this.$message(this.monthToShow.toString())
 			// let timeArr = this.monthToShow.toString().split(' ')
-			this.changeTimeBrush()
-			// this.getRadarIndicatorOptions()
-			this.scattlog()
+			await this.changeTimeBrush()
+			await this.scattlog()
 		},
 		cellStyle (rowData) {
 			if (rowData.columnIndex === 2) {
@@ -591,21 +613,23 @@ export default {
 			if(end)this.endDate = new Date(end)
 		},
 		async getHttpData() {
-			this.startDate = new Date('2018-11-04 00:00:00'),
-			this.endDate = new Date('2018-11-06 04:00:00'),
+			// this.startDate = new Date('2018-11-04 00:00:00'),
+			// this.endDate = new Date('2018-11-06 04:00:00'),
 			console.log(this.brushData)
 			this.jsonData = myJsonData
 			this.mergeflag()
 			this.jsonData = this.jsonData.filter(d => {
 				return this.brushUpid.includes(d.upid)
 			})
+			// this.datafliter(this.jsonData, myStationData)
 			this.$refs.mareyChart.paintMareyChart(this.jsonData,myStationData, this.isSwitch, this.brushData)
 			// var jsonupid = d3.map(this.jsonData, d => d.upid)
 			// console.log(scatterlogerdata)
-			var scatterlogdata = Object.values(scatterlogerdata)
+			// var scatterlogdata = Object.values(scatterlogerdata)
 			// var scatterlogdata = Object.values(this.scatterlogdata)
 			// var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
-			this.$refs.parallel.paintChart(scatterlogdata, this.startDate, this.endDate)
+			console.log(this.paralleldata)
+			this.$refs.parallel.paintChart(this.paralleldata, this.startDate, this.endDate)
 
 			// this.$refs.wheelering.paintChart()
 			// this.$refs.jsontable.paintChart(scatterlogdata)
@@ -691,6 +715,81 @@ export default {
 			// var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
 			// this.$refs.jsontable.paintChart(scatterlogdata)
 			// this.$refs.jsontable.paintChart(tabledata)
+		},
+		deepCopy(obj){
+			if(typeof obj!=='object') return obj;
+			var newObj=obj instanceof Array ? [] :{};
+			for (let key in obj){
+				if(obj.hasOwnProperty(key)){
+					if(obj[key]===null){
+						newObj[key]===null;
+					}
+					newObj[key]=typeof obj[key] ? this.deepCopy(obj[key]) : obj[key];
+				}
+			}
+			return newObj
+		},
+		datafliter(alldata, stationsData){
+			alldata = this.deepCopy(alldata);
+			stationsData = this.deepCopy(stationsData);
+			var sampleStaions = stationsData.slice(0, 7),
+				collstation = stationsData.slice(-3),
+				rollStation = [ "RMF3", "RML3", "RMEnd","FMStart", "FMF3", "FML3", "FMEnd"],
+				fmindex = [7, 8, 9, 10, 11 , 12  ,13],
+				ccindex = [-3, -2, -1];
+			for(let i in rollStation){
+				sampleStaions.push({
+					distance: sampleStaions.slice(-1)[0].distance + 40,
+					key: "020" + i,
+					name: rollStation[i],
+					zone: "2"
+				})
+			}
+			for(let i in collstation){
+				collstation[i].distance = sampleStaions.slice(-1)[0].distance + 40
+				sampleStaions.push(collstation[i])
+			}
+			for(let item in alldata){
+				let rm = alldata[item].totalpassesrm,
+					datastops = alldata[item].stops,
+					heatstops = alldata[item].stops.slice(0, 7),
+					fm = alldata[item].totalpassesfm,
+					fmtime = [ 7  +  3, 7  + rm -3 , 7  +  rm  , 7 + rm + 1, 7 + rm + 3, 7 + rm + fm - 3, 7 + rm + fm],
+					coolstops = (+datastops.slice(-1)[0].station.zone) === 3 ? true : false;		//if cool stops exist
+				// console.log(coolstops)
+				// heatstops.push({
+				// 	realTime: datastops[7 + rm].realTime,
+				// 	station: sampleStaions[7],
+				// 	time: datastops[7 + rm].time,
+				// })
+				for(let j in fmindex){
+					heatstops.push({
+						realTime: datastops[fmtime[j]].realTime,
+						station: sampleStaions[fmindex[j]],
+						time: datastops[fmtime[j]].time,
+					})
+				}
+				if(coolstops){
+					for(let j in ccindex){
+						heatstops.push({
+							realTime: datastops.slice(ccindex[j])[0].realTime,
+							station: sampleStaions.slice(ccindex[j])[0],
+							time: datastops.slice(ccindex[j])[0].time
+						})
+					}
+				}else{
+					for(let j in ccindex){
+						heatstops.push({
+							realTime: heatstops.slice(-1)[0].realTime,
+							station: sampleStaions.slice(ccindex[j])[0],
+							time: heatstops.slice(-1)[0].time,
+						})
+					}
+				}
+				alldata[item].stops = heatstops
+			}
+			console.log(alldata)
+			console.log(sampleStaions)
 		},
 		mergeflag(){
 			// let mergedata=this.scatterlogdata
@@ -850,7 +949,6 @@ export default {
 		},
 		async getAlgorithmData() {
 			await this.scattlog();
-			this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
 			this.scatterLoading = false
 			this.isSearch = false
 		},
@@ -954,8 +1052,14 @@ export default {
 		},
 		trainMouse(value){
 			this.$refs.scatterloging.mouse(value)
+			this.$refs.parallel.mouse(value)
 		},
 		scatterMouse(value){
+			this.$refs.mareyChart.mouse(value)
+			this.$refs.parallel.mouse(value)
+		},
+		parallMouse(value){
+			this.$refs.scatterloging.mouse(value)
 			this.$refs.mareyChart.mouse(value)
 		},
 		paintUnderCharts(upid) {
@@ -1104,28 +1208,18 @@ export default {
 			// var s1 = this.dateselect[0].getTime(),s2 = this.dateselect[1].getTime();
 			// var total = (s2 - s1)/1000;
 			// var day = parseInt(total / (24*60*60));//计算整数天数
-			// if(day>=30){
-			// 	this.$alert('选择超过期限，请重新选择', '警告', {
-			// 		confirmButtonText: '确定',
-			// 		callback: action => {
-			// 		}
-			// 	});
-			// 	return 
-			// }
-			let startDate=this.selectDateStart
-			let endDate=this.selectDateEnd
 			// let startDate = util.timeFormat(this.monthToShow);
 			
 			// let end = new Date(this.monthToShow.valueOf());
 			// end.setMonth(end.getMonth() + 1)
 			// let endDate = util.timeFormat(end);
-// .then(Response => {
-//       }).catch(function(error) {
-//     // 处理 getJSON 和 前一个回调函数运行时发生的错误
-//     console.log('发生错误！', error);
-//       })
+			// .then(Response => {
+			//       }).catch(function(error) {
+			//     // 处理 getJSON 和 前一个回调函数运行时发生的错误
+			//     console.log('发生错误！', error);
+			//       })
 			// this.timeBrushData = (await baogangAxios(`/baogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${startDate}/${endDate}/`)).data;
-			await baogangAxios(`/baogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${startDate}/${endDate}/`)
+			await baogangAxios(`/baogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${this.selectDateStart}/${this.selectDateEnd}/`)
 			.then(Response => {
 				this.timeBrushData=Response.data
 					}).catch(function(error) {
@@ -1138,25 +1232,13 @@ export default {
 
 			this.isSearch = false 
 			let keys = ["endTimeOutput", "good_flag", "bad_flag"]
-			this.$refs.timeBrush.paint({
-				paintData: this.timeBrushData,
-				color: util.labelColor,
-				starttime:this.startDateString
-			});
-			this.$refs.scatterloging.paintChart(this.scatterlogdata,[this.startDate, this.endDate])
-		},
-		async getRadarIndicatorOptions() {
-			let startDate = this.selectDateStart;
-			// let end = new Date(this.dateselect[0].valueOf());
-			// end.setMonth(end.getMonth() + 1)
-			// let endDate = util.timeFormat(end)
-			let endDate = this.selectDateEnd
-
-			await baogangAxios(`baogangapi/v1.0/model/VisualizationCorrelation/${startDate}/${endDate}/`).then(Response => {
-				this.forcedata=Response.data
-				// this.$refs.force.paint(Response.data)
-			})
-
+			// this.$refs.timeBrush.paint({
+			// 	paintData: this.timeBrushData,
+			// 	color: util.labelColor,
+			// 	starttime:this.startDateString
+			// });
+			this.$refs.brushSlider.paintChart(this.timeBrushData)
+			// this.$refs.scatterloging.paintChart(this.scatterlogdata,[this.startDate, this.endDate])
 		},
 		day(){
 			var now = new Date();
@@ -1222,26 +1304,16 @@ export default {
 				this.$refs.scatterloging.paintChart(this.scatterlogdata)
 				this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
 			})
-			// await	baogangAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.startDateString}/${this.endDateString}/`).then(Response => {
-			// 	this.scatterlogdata=Response.data
-			// 	this.$refs.scatterloging.paintChart(Response.data,[this.startDate, this.endDate])
-			// 	// this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
-			// })
-
 		},
 	},
 	mounted() {
 		// console.log(this.startmonth.getMonth())
-		// console.log(sampledata)
-		// console.log(this.monthdata)
-		// baogangAxios('/baogangapi/v1.0/getFlag/2018-10-15%2000:00:00/2018-10-16%2000:00:00/')
-		// this.getRadarIndicatorOptions();
-		this.getTimeBrushData();
 		// this.click()
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
 		this.getplatetype()
-		this.scattlog()
+		// this.getHttpData()
+		this.changeTime()
 	},
 	watch: {
 		minconflict:  {
@@ -1254,6 +1326,10 @@ export default {
 		},
 		minrange:  function(val, oldVal){
 			console.log(val)
+		},
+		startDate:function(){
+			this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
+			this.getHttpData()
 		}
 	}
 	

@@ -26,7 +26,7 @@ export default {
 			highLightStrokeWidth : 2,
 			defaultStrokeWidth : undefined,
 			minrange: 20,
-			minconflict: 5,
+			minconflict: 4,
 			isMerge: true,
 			processColor: util.processColor,
 			brushData: undefined
@@ -34,7 +34,75 @@ export default {
 	},
 	methods: {
 		paintMareyChart(alldata, stationsData, changeColor, brushData) {
-		// console.log(sta)
+		alldata  = this.deepCopy(alldata);
+		stationsData = this.deepCopy(stationsData);
+		var sampleStaions = stationsData.slice(0, 7),
+			collstation = stationsData.slice(-3),
+			rollStation = [ "RMF3", "RML3", "RMEnd","FMStart", "FMF3", "FML3", "FMEnd"],
+			fmindex = [7, 8, 9, 10, 11 , 12  ,13],
+			ccindex = [-3, -2, -1];
+		for(let i in rollStation){
+			sampleStaions.push({
+				distance: sampleStaions.slice(-1)[0].distance + 40,
+				key: "020" + i,
+				name: rollStation[i],
+				zone: "2"
+			})
+		}
+		for(let i in collstation){
+			collstation[i].distance = sampleStaions.slice(-1)[0].distance + 40
+			sampleStaions.push(collstation[i])
+		}
+		for(let item in alldata){
+			let rm = alldata[item].totalpassesrm,
+				datastops = alldata[item].stops,
+				heatstops = alldata[item].stops.slice(0, 7),
+				fm = alldata[item].totalpassesfm,
+				fmtime = [ 7  +  3, 7  + rm -3 , 7  +  rm  , 7 + rm + 1, 7 + rm + 3, 7 + rm + fm - 3, 7 + rm + fm],
+				coolstops = (+datastops.slice(-1)[0].station.zone) === 3 ? true : false;		//if cool stops exist
+			// console.log(coolstops)
+			// heatstops.push({
+			// 	realTime: datastops[7 + rm].realTime,
+			// 	station: sampleStaions[7],
+			// 	time: datastops[7 + rm].time,
+			// })
+			for(let j in fmindex){
+				heatstops.push({
+					realTime: datastops[fmtime[j]].realTime,
+					station: sampleStaions[fmindex[j]],
+					time: datastops[fmtime[j]].time,
+				})
+			}
+			if(coolstops){
+				for(let j in ccindex){
+					heatstops.push({
+						realTime: datastops.slice(ccindex[j])[0].realTime,
+						station: sampleStaions.slice(ccindex[j])[0],
+						time: datastops.slice(ccindex[j])[0].time
+					})
+				}
+			}else{
+				for(let j in ccindex){
+					heatstops.push({
+						realTime: heatstops.slice(-1)[0].realTime,
+						station: sampleStaions.slice(ccindex[j])[0],
+						time: heatstops.slice(-1)[0].time,
+					})
+				}
+			}
+			alldata[item].stops = heatstops
+		}
+		var stopsTime = d3.map(alldata, d => {
+			let arr = d3.pairs(d.stops, (a,b) => new Date(b.realTime).getTime() - new Date(a.realTime).getTime())
+			arr.upid = d.upid
+			return arr
+		}),
+		timebins = stopsTime[0].map((d, i) => {
+			return d3.bin().thresholds(20)(d3.map(stopsTime, (e,f) => e[i]))
+		});
+		console.log(stopsTime)
+		console.log(timebins)
+		stationsData = sampleStaions
 		this.brushData = brushData
 		const brushUCL = d3.group(brushData, d => d.upid),
 			dataUCL = d3.group(alldata, d => d.upid),
@@ -74,7 +142,7 @@ export default {
 				length : d3.scaleLinear().domain([allminxen.length , allmaxxen.length]).range([0, rectlength]),
 				thickness : d3.scaleLinear().domain([allminxen.thickness , allmaxxen.thickness]).range([0, rectlength]),
 				percent : d3.scaleLinear().domain([allminxen.percent , allmaxxen.percent]).range([0, 150]),
-				num : d3.scaleLinear().domain([allminxen.num , allmaxxen.num]).range([0, 150])
+				num : d3.scaleLinear().domain([allminxen.num , allmaxxen.num]).range([0, 200])
 			};
 		this.trainSelectedList = []; // 2019-5-16 23:29:30 清空选择列表
 		var vm = this;
@@ -82,8 +150,7 @@ export default {
 		this.trainGroupStyle = this.changeColor ?(  d => d.flag === 0 ? vm.labelColors[0] : vm.labelColors[1]) :( d => vm.categoryColors(d.productcategory));
 		var stationcolor = this.processColor;
 		// data
-		this.data=alldata;
-		this.station=stationsData;
+
 		var data = alldata
 		var width = document.getElementById(this.menuId).offsetWidth;
 		const mainHeight = document.getElementById(this.menuId).offsetHeight;
@@ -100,7 +167,8 @@ export default {
 		var highLightStrokeWidth = this.highLightStrokeWidth
 		let margin = ({ top: 50, right: 70, bottom: 0, left: 100 }),
 			mareylength = width - 3.5 * margin.right,
-			mareyEntry = 2.85 * margin.left;
+			mareyEntry = 2.85 * margin.left,
+			mareyDistance = 2 * margin.top;
 		// margin.right = this.isMerge ? 90 : 50;
 		var x = d3.scaleLinear()
 			.domain(d3.extent(stations, d => d.distance))
@@ -117,7 +185,7 @@ export default {
 		var height = (new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale
 		var y = d3.scaleTime()
 			.domain([new Date(minDate), new Date(maxDate)])
-			.range([margin.top, height - margin.bottom])
+			.range([mareyDistance, height - margin.bottom])
 
 		var line = d3.line()
 			.x(d => x(d.station.distance))
@@ -287,10 +355,49 @@ export default {
 			renderG !== undefined && renderG.remove()
 			renderG = vm.svg.append("g").attr("class", "renderg")
 			//add Axis
+			timebins = timebins.map(d => {
+				let arr1 = [], arr2 = [];
+				if(d.length === 1) {
+					d[0].length = 0
+					arr1.x0 = 1,arr1.x1 = 1;
+					d.push(arr1)
+				}else{
+					arr1.x0 = 0,arr1.x1 = 0;
+					arr2.x0 = d[d.length - 1].x1, arr2.x1 = d[d.length - 1].x1
+					d.unshift(arr1)
+					d.push(arr2)
+				}
+				return d
+			})
 			const labellength =  mareylength - (mareyEntry),
-				labelwidth = ((labellength / (stations.length - 1)) )/1.5;
+				timelength = labellength / (stations.length - 1),
+				binxScale = timebins.map(d => 
+					d3.scaleLinear()
+					.domain([d[0].x0, d[d.length - 1].x1])
+					.range([2, timelength - 2])
+				),
+				binYScale = timebins.map(d => 
+					d3.scaleLinear()
+					.domain([0, d3.max(d, e => e.length)])
+					.range([10, mareyDistance - margin.top - 10])
+				),
+				labelwidth = (timelength) / 1.6;
+			var timedistance = g => g
+				.selectAll("g")
+				.data(stations.slice(0, -1))
+				.join("g")
+				.attr("transform", d => `translate(${[x(d.distance), mareyDistance]})`)
+				.call(g => g.append("path")
+						.attr("class", "dgduusgI")
+						.attr("fill", "none")
+						.attr("stroke", (d,i) => d3.color(i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(0.5))
+						// .attr("opacity", 1)
+						.attr("d", (d, i) =>d3.line()
+							.x(e => binxScale[i]((e.x0 + e.x1)/2))
+							.y(e => e.length === 0 ? -10 : -binYScale[i](e.length))
+							.curve(d3.curveLinear)(timebins[i])))
 			var xAxis = g => g
-				.style("font", "12px DIN")
+				.style("font", "13px DIN")
 				.selectAll("g")
 				.data(stations)
 				.join("g")
@@ -317,7 +424,7 @@ export default {
 				// 	)
 				.call(g => g.append("polygon")
 					.attr("transform", `translate(${-labelwidth} , ${margin.top + 0}) rotate(-45)`)
-					.attr("points", `0, 0  ${labelwidth},${labelwidth}  100 , ${labelwidth}  ${100 - labelwidth}, 0`)
+					.attr("points", `0, 0  ${labelwidth},${labelwidth}  110 , ${labelwidth}  ${110 - labelwidth}, 0`)
 					// .attr("points", "0, 0  17, 17  110 , 17  93, 0")
 					.attr("fill", (d,i) => statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1]))
 					// .attr("fill" , (d , i) => i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1]))
@@ -329,10 +436,11 @@ export default {
 					.attr("transform", `translate(-4 ,${margin.top -1.5}) rotate(-45)`)
 					.attr("id", d => "station"+d.name)
 					.attr("x", 8)
-					.attr("dy", "0.35em")
+					.attr("dy", "0.25em")
 					.attr("font-family" , "DIN")
 					.attr("fill", "white")
-					.text(d => d.name.replace(/harging/, "harge").replace(/Cc/, "C").replace(/ing/, "").replace(/MPass/, "MP").replace(/arge/, ""))
+					.text(d => d.name.replace(/harging/, "harge").replace(/Cc/, "C").replace(/ing/, "").replace(/MPass/, "MP")
+						.replace(/arge/, "").replace(/MPStart/, "RMStart").replace(/CDQ/, "DQ").replace(/CAC/, "AC"))
 					.on("mouseover", statOver)
 					.on("mouseout", statOut))
 			var polygonlength = (width - 1.5 * margin.right - (mareyEntry))/1.414  +  labelwidth + 3
@@ -448,7 +556,7 @@ export default {
 			var axislength = 6 ;
 			var lmaxlength = 50 ;
 			var qualityData = [];
-			const circledot = mareyEntry * 0.72;
+			const circledot = mareyEntry * 0.65;
 			var circleline = d3.scaleLinear()
 					.domain([20 , maxlength ]).nice()
 					.range([ 40 , lmaxlength])
@@ -621,18 +729,24 @@ export default {
 				var lineRect = g => g.append("g")
 					.attr("transform", `translate(${[position[0]-rectwidth, position[1]-rectwidth]})`)
 					.call(g => g.append("rect")
-						.attr("transform", `translate(${[rectwidth -labelLength, 0]})`)
+						.attr("transform", `translate(${[rectwidth, -labelLength*2/3]})`)
 						.attr("stroke", "none")
-						.attr("y", - goodlength)
-						.attr("height", goodlength + 5)
-						.attr("width", labelLength/2)
+						.attr("height", labelLength*2/3 + 5)
+						.attr("width", goodlength)
 						.attr("fill", vm.labelColors[1]))
+					// .call(g => g.append("text")
+					// 	.attr("transform", `translate(${[rectwidth, -labelLength*2/3]})`)
+					// 	.attr("text-anchor", "end")
+					// 	.attr("dy", "0.25em")
+					// 	.attr("font-family" , "DIN")
+					// 	.attr("fill", textColor)
+					// 	.text("width"))
 					.call(g => g.append("rect")
-						.attr("transform", `translate(${[rectwidth + labelLength/2, 0]})`)
+						.attr("transform", `translate(${[rectwidth, -labelLength*2/3]})`)
 						.attr("stroke", "none")
-						.attr("y", - badlength)
-						.attr("height", badlength + 5)
-						.attr("width", labelLength/2)
+						.attr("x", -badlength)
+						.attr("height", labelLength*2/3 + 4 )
+						.attr("width", badlength)
 						.attr("fill", vm.labelColors[0]))
 					.call(g => g.append("rect")
 						.attr("transform", `translate(${[-rectlength - 2, (labelLength + 10) - 2]})`)
@@ -1236,13 +1350,14 @@ export default {
 			
 			var xGroup = renderG.append("g")
 				.call(xRect).call(xAxis);
+			renderG.append("g").call(timedistance);
 			// renderG
 			d3.select(".shadow_rect").raise()
 			// var yGroup = renderG.append("g")
 			// 	.call(yAxis);
 			// d3.select(".xAxisLabel").raise()
 		}
-		render()
+		// render()
 
 		const miniMargin = { top: 115, right: 15, bottom: -35, left: 35 },
 
@@ -1266,7 +1381,7 @@ export default {
 			// miniline = d3.line()
 			// 	.x(d => miniYScale(d.station.distance))
 			// 	.y(d => miniXScale(new Date(d.time))),
-			BrushSelectHeight = data.length > 50 ? (this.isMerge ? miniXScale(new Date(data[50].stops[0].time.slice(0, 19))) : miniXScale(new Date(data[65].stops[0].time.slice(0, 19)))) : (this.isMerge ? 0.5 * unitHeight : 0.3 * unitHeight),
+			BrushSelectHeight = data.length > 50 ? (this.isMerge ? miniXScale(new Date(data[this.minrange * 2].stops[0].time.slice(0, 19))) : miniXScale(new Date(data[65].stops[0].time.slice(0, 19)))) : (this.isMerge ? 0.5 * unitHeight : 0.3 * unitHeight),
 			// miniXScale(new Date(data[65].stops[0].time.slice(0, 19))),
 			// BrushSelectHeight =50,
 			initialBrushXSelection = [0, BrushSelectHeight],
@@ -1285,7 +1400,7 @@ export default {
 			mainXZoom.domain(extentX);
 			y = d3.scaleTime()
 				.domain(selectTime)
-				.range([margin.top, miniheight - miniMargin.bottom - miniMargin.top])
+				.range([mareyDistance, miniheight - miniMargin.bottom - miniMargin.top])
 			line = d3.line()
 				.x(d => x(d.station.distance))
 				.y(d => y(new Date(d.time)))
@@ -1537,8 +1652,9 @@ export default {
 			// console.log(minconflict)
 			const mergedata = {}
 			const mergeIndex = {}	// merge station maxlength
-			const mergeresult = [] , mpass = /MPass/ ;
-			const mpassnumber = (+stations.slice(-4)[0].name.replace(mpass,''))
+			const mergeresult = [] ;
+			// mpass = /MPass/ ;
+			// const mpassnumber = (+stations.slice(-4)[0].name.replace(mpass,''))
 			for (let item of [...categorys]){
 				item[1].length>minrange ? mergecategorys.push(item[0]) : undefined
 			}
@@ -1551,7 +1667,6 @@ export default {
 			// console.log(mergecategorys)
 			// console.log(mergeIndex)
 			for(var item =0;item<json.length-minrange ; item++){
-				const incorp =false
 				const categoryindex=mergecategorys.indexOf(json[item].productcategory)
 
 				//filter data
@@ -1563,35 +1678,33 @@ export default {
 				if( index - item < minrange) continue
 
 				// merge length
-				const mergelength = mergeIndex[json[item].productcategory]
 				const mergedata = json.slice(item,index)
-				// console.log(mergedata)
 
-				//mPass expand
-				for (var key = 0 ; key < mergedata.length-1 ; key++){
-					if(mergedata[key].stops.slice(-1)[0].station.zone === '3'){
-						let mpassindex = (+mergedata[key].stops.slice(-4)[0].station.name.replace(mpass,''))
-						if(mpassindex === mpassnumber) continue
-						const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber , -3)
-						for (let stopkey in stationsstops3){
-							mergedata[key].stops.splice( -3 , 0 , {
-								"time" : mergedata[key].stops.slice(-4)[0].time,
-								"realTime" : mergedata[key].stops.slice(-4)[0].realTime,
-								"station" : stationsstops3[stopkey]
-							})
-						}
-						continue
-					}
-					let mpassindex = (+mergedata[key].stops.slice(-1)[0].station.name.replace(mpass,''))
-					const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber)
-					for (let stopkey in stationsstops3){
-						mergedata[key].stops.push({
-							"time" : mergedata[key].stops.slice(-1)[0].time,
-							"realTime" : mergedata[key].stops.slice(-1)[0].realTime,
-							"station" : stationsstops3[stopkey]
-						})
-					}
-				}
+				// //mPass expand
+				// for (var key = 0 ; key < mergedata.length-1 ; key++){
+				// 	if(mergedata[key].stops.slice(-1)[0].station.zone === '3'){
+				// 		let mpassindex = (+mergedata[key].stops.slice(-4)[0].station.name.replace(mpass,''))
+				// 		if(mpassindex === mpassnumber) continue
+				// 		const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber , -3)
+				// 		for (let stopkey in stationsstops3){
+				// 			mergedata[key].stops.splice( -3 , 0 , {
+				// 				"time" : mergedata[key].stops.slice(-4)[0].time,
+				// 				"realTime" : mergedata[key].stops.slice(-4)[0].realTime,
+				// 				"station" : stationsstops3[stopkey]
+				// 			})
+				// 		}
+				// 		continue
+				// 	}
+				// 	let mpassindex = (+mergedata[key].stops.slice(-1)[0].station.name.replace(mpass,''))
+				// 	const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber)
+				// 	for (let stopkey in stationsstops3){
+				// 		mergedata[key].stops.push({
+				// 			"time" : mergedata[key].stops.slice(-1)[0].time,
+				// 			"realTime" : mergedata[key].stops.slice(-1)[0].realTime,
+				// 			"station" : stationsstops3[stopkey]
+				// 		})
+				// 	}
+				// }
 				
 				const indexarray=[]
 				for (var key = 0 ; key < mergedata.length-1 ; key++){
@@ -1675,6 +1788,152 @@ export default {
 			}
 			return mergeresult
 		},
+		// merge(json , stations){
+		// 	const categorys = d3.group(json , d => d.productcategory)
+		// 	const mergecategorys = []	// merge categorys
+		// 	const minrange = this.minrange
+		// 	const minconflict = this.minconflict
+		// 	// console.log(minconflict)
+		// 	const mergedata = {}
+		// 	const mergeIndex = {}	// merge station maxlength
+		// 	const mergeresult = [] , mpass = /MPass/ ;
+		// 	const mpassnumber = (+stations.slice(-4)[0].name.replace(mpass,''))
+		// 	for (let item of [...categorys]){
+		// 		item[1].length>minrange ? mergecategorys.push(item[0]) : undefined
+		// 	}
+		// 	// console.log(categorys)
+		// 	for (let item of  mergecategorys){
+		// 		let indexdata=d3.groups(categorys.get(item) , d => d.stops.length)
+		// 		// console.log(indexdata)
+		// 		mergeIndex[item] = indexdata[d3.maxIndex(indexdata ,  d => d[1].length)][0]
+		// 	}
+		// 	// console.log(mergecategorys)
+		// 	// console.log(mergeIndex)
+		// 	for(var item =0;item<json.length-minrange ; item++){
+		// 		const incorp =false
+		// 		const categoryindex=mergecategorys.indexOf(json[item].productcategory)
+
+		// 		//filter data
+		// 		if(categoryindex ===-1)	continue
+		// 		var index =item
+		// 		while(json[index] !== undefined && json[item].productcategory === json[index].productcategory){
+		// 			index++
+		// 		}
+		// 		if( index - item < minrange) continue
+
+		// 		// merge length
+		// 		const mergelength = mergeIndex[json[item].productcategory]
+		// 		const mergedata = json.slice(item,index)
+		// 		// console.log(mergedata)
+
+		// 		//mPass expand
+		// 		for (var key = 0 ; key < mergedata.length-1 ; key++){
+		// 			if(mergedata[key].stops.slice(-1)[0].station.zone === '3'){
+		// 				let mpassindex = (+mergedata[key].stops.slice(-4)[0].station.name.replace(mpass,''))
+		// 				if(mpassindex === mpassnumber) continue
+		// 				const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber , -3)
+		// 				for (let stopkey in stationsstops3){
+		// 					mergedata[key].stops.splice( -3 , 0 , {
+		// 						"time" : mergedata[key].stops.slice(-4)[0].time,
+		// 						"realTime" : mergedata[key].stops.slice(-4)[0].realTime,
+		// 						"station" : stationsstops3[stopkey]
+		// 					})
+		// 				}
+		// 				continue
+		// 			}
+		// 			let mpassindex = (+mergedata[key].stops.slice(-1)[0].station.name.replace(mpass,''))
+		// 			const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber)
+		// 			for (let stopkey in stationsstops3){
+		// 				mergedata[key].stops.push({
+		// 					"time" : mergedata[key].stops.slice(-1)[0].time,
+		// 					"realTime" : mergedata[key].stops.slice(-1)[0].realTime,
+		// 					"station" : stationsstops3[stopkey]
+		// 				})
+		// 			}
+		// 		}
+				
+		// 		const indexarray=[]
+		// 		for (var key = 0 ; key < mergedata.length-1 ; key++){
+		// 			// let singlearray=d3.pairs(mergedata[key].stops , (a,b) => {
+		// 			const steeltime = []
+		// 			for (var i = 0 ; i < mergedata[key].stops.length - 1 ; i++){
+		// 				// let sample = {}
+		// 				let stoptime = new Date(mergedata[key].stops[(+i)+1].time) - new Date(mergedata[key].stops[(+i)].time)
+		// 				// sample[mergedata[key].stops[(+i)].station.name] = stoptime < 0 ? 0 : stoptime 
+		// 				steeltime.push(stoptime < 0 ? 0 : stoptime )
+		// 			}
+		// 			indexarray.push(steeltime)
+		// 		}
+		// 		// console.log(indexarray)
+
+		// 		const steeldisTotal=d3.pairs(mergedata , (a,b) => {
+		// 			const steeldistance=[]
+		// 			for (let key in stations){
+		// 				const search = false
+		// 				for (let i in a.stops){
+		// 					if(a.stops[i]["station"].name === stations[key].name){
+		// 						for (let j in b.stops){
+		// 							if(b.stops[j]["station"].name === stations[key].name){
+		// 								steeldistance.push(new Date(b.stops[j].time) - new Date(a.stops[i].time))
+		// 								search=true
+		// 							}
+		// 						}
+		// 					}
+		// 				}
+		// 				search !== true ? steeldistance.push(0) : undefined
+		// 			}
+		// 			return steeldistance
+		// 		})
+		// 		// console.log(steeldisTotal)
+
+		// 		//data mean distance
+		// 		const meandis = []	
+		// 		for (let key in stations){
+		// 			meandis.push(d3.quantile(steeldisTotal, 0.75 , d => d[key]))
+		// 		}
+		// 		// console.log(meandis)
+
+		// 		// merge selection
+		// 		const mergeselect = []
+		// 		const mergeflag = 0 ;
+		// 		for (let i in steeldisTotal){
+		// 			const outrange = 0
+		// 			for (let j in stations){
+		// 				steeldisTotal[i][j] > meandis[j] ? ((steeldisTotal[i][j] - meandis[j])/meandis[j]>1.1 & meandis[j] !==0 ) ? outrange+=5 : outrange+=1 : undefined
+		// 				steeldisTotal[i][j]<0  ?	outrange += 20 : undefined
+		// 			}
+		// 			if(outrange >= 15)  mergeselect.push(mergedata[+i+1])
+		// 			if(mergeselect.length > minconflict -1 ) {
+		// 				mergeflag = (+i) +1
+		// 				break
+		// 			}
+		// 			// mergeselect.push(mergedata[i+1])
+		// 		}
+		// 		// console.log(mergeselect)
+
+		// 		if(mergeflag !== 0){
+		// 			mergeresult.push({
+		// 				"merge" : mergedata.slice(0 , 0 + mergeflag),
+		// 				"select" : mergeselect,
+		// 				"index" : [item , mergeflag ],
+		// 				"data" : [item , item + mergeflag ],
+		// 				"wave" : indexarray.slice(0 , 0 + mergeflag)
+		// 			})
+		// 			item = item + mergeflag
+		// 			continue
+		// 		}
+
+		// 		mergeresult.push({
+		// 			"merge" : mergedata,
+		// 			"select" : mergeselect,
+		// 			"index" : [item , index - item],
+		// 			"data" : [item , index ],
+		// 			"wave" : indexarray
+		// 		})
+		// 		item = index -1
+		// 	}
+		// 	return mergeresult
+		// },
 		mouse(value){
 			const vm = this
 			if(value.mouse===0){

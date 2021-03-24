@@ -16,7 +16,7 @@
 			<!-- <el-col :span="7">
 				<chord ref="chording" style="height:475px;width:475px"></chord>
             </el-col>	 -->
-			<!-- <slider style="height:700px,width:400px"></slider> -->
+			<slider style="height:700px,width:400px"></slider>
 			<!-- <simder style="height:700px,width:400px"></simder> -->
 			{{bundling}}{{selectId}}
 		</el-row>

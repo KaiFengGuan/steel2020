@@ -18,6 +18,9 @@ let getters = {
     trainGroupStyle: state => {
         return state.isSwitch ? (d => +d.label === 0 ? utils.labelColor[0] : utils.labelColor[1]) : (d => utils.categoryColor(d.productcategory))
     },
+    deGroupStyle: state => {
+        return state.isSwitch ? (d => +d.label === 0 ? utils.delabelColor[0] : utils.delabelColor[1]) : (d => utils.categoryColor(d.productcategory))
+    },
     labelColor : state => state.labelColor,
     startDate: state => state.startDate,
     endDate: state => state.endDate,

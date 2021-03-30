@@ -4,6 +4,7 @@
 
 <script>
 import * as d3 from 'd3'
+import util from './util.js';
 import sliderdata from "./data.json"
 import {mapGetters, mapMutations} from "vuex"
 export default {
@@ -31,7 +32,7 @@ export default {
         ]),
         paintChart(brushData) {
             const width = document.getElementById(this.menuId).offsetWidth,
-                height = document.getElementById(this.menuId).offsetHeight,
+                height = document.getElementById(this.menuId).offsetHeight - 5,
                 miniMargin =  {top: 5, right: 20, bottom: 10, left: 30},
                 miniHeight = height - miniMargin.bottom - miniMargin.top,
                 miniXScale = d3.scaleBand()
@@ -48,7 +49,7 @@ export default {
 				.append("svg")
 				.attr("class",'timeSlider')
 				.attr("width", width)
-				.attr("height", height);	
+				.attr("height", height + 5);	
             const svg = this.svg,
                 keys = brushData.endTimeOutput.map((d,i) => i);
             const miniBars = svg.selectAll(".bar")
@@ -83,10 +84,10 @@ export default {
                     .join(
                         enter => enter.append("path")
                             .attr("class", "handle--custom")
-                            .attr("fill", (d, i) => i === 0 ? d3.color(this.labelColor[1 - i]) : d3.color(this.labelColor[1 - i]).brighter(1.6))
+                            .attr("fill", (d, i) => i === 0 ? d3.color(this.labelColor[1 - i]) : util.delabelColor[1 - i])
                             // .attr("fill", (d, i) => this.labelColor[i])
                             // .attr("fill-opacity", 0.8)
-                            .attr("stroke", (d, i) => d3.color(this.labelColor[ 1 - i]).darker(0.5))
+                            .attr("stroke", (d, i) => i === 0 ? d3.color(this.labelColor[1 - i]).darker(0.5) : d3.color(util.delabelColor[1 - i]).darker(0.5))
                             .attr("stroke-width", 2)
                             .attr("cursor", "ew-resize")
                             .attr("d", arc)
@@ -130,8 +131,9 @@ export default {
                     .attr("font-size", "10px")
                     .text(good + bad)
                 // console.log(d3.select(".selectionText").node().getBBox())
-                if(d3.select(".selection").attr("width") - 10 < d3.select(".selectionText").node().getBBox().width){
-                    d3.select(".selectionText").attr("fill", "none")
+                if(d3.select(".selection").attr("width") - 20 < d3.select(".selectionText").node().getBBox().width){
+                    d3.select(".selectionText").attr("fill", "#717072").attr("y", textY + 12)
+                    if(good + bad == 0)d3.select(".selectionText").remove()
                 }
                 // console.log(d3.select(".selection"))
                 d3.selectAll(".handletext").remove()
@@ -233,7 +235,7 @@ export default {
                 tooltip
                     .style("display", null)
                     .attr("fill", "white");
-                line1.text(`Time : `+ brushData.endTimeOutput[d]).attr("fill", "black");
+                line1.text(`Time : `+ brushData.endTimeOutput[d]).attr("fill", "#2c3e50");
                 line2.text(`Good : ` + brushData.good_flag[d]).attr("fill", vm.labelColor[1]);
                 line3.text(`Bad  : ` + brushData.bad_flag[d]).attr("fill", vm.labelColor[0]);
                 const box = text.node().getBBox();

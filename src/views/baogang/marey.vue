@@ -67,7 +67,7 @@
 
 
 			</el-col>
-			<el-col :span="16" style="margin-top:5px"
+			<el-col :span="20" style="margin-top:5px"
 				v-loading="loadingDataLoading"
 				element-loading-text="loading..."
 				element-loading-spinner="el-icon-loading"
@@ -79,12 +79,12 @@
 							<el-col :span="12"><span>Condition View</span></el-col>
 							<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:20px">MinRange</el-col>
 							<el-col :span="2">
-								<el-slider v-model="minrange" :step="1" :min="15" :max="40" class="my-slider"
+								<el-slider v-model="minrange" :step="1" :min="5" :max="40" class="my-slider"
 									style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate1"></el-slider>
 							</el-col>
 							<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:20px">MinMerge</el-col>
 							<el-col :span="2">
-								<el-slider v-model="minconflict" :step="1" :min="1" :max="15" class="my-slider"
+								<el-slider v-model="minconflict" :step="1" :min="1" :max="10" class="my-slider"
 									style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate2"></el-slider>
 							</el-col>
 							<el-col :span="2">
@@ -99,7 +99,7 @@
 
 						</div>
 						<div class="my-card-body">
-							<marey-chart style="text-align: center; height: 470px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
+							<marey-chart style="text-align: center; height: 495px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
 						</div>
 					</el-card>
 				</el-row>
@@ -421,7 +421,7 @@ export default {
 	data() {
 		return {
 			isMerge: true,
-			minrange: 20,
+			minrange: 10,
 			minconflict: 4,
 			symbolvalue:0.05,
 			linesize:0.25,
@@ -621,15 +621,17 @@ export default {
 			this.jsonData = this.jsonData.filter(d => {
 				return this.brushUpid.includes(d.upid)
 			})
+			console.log(this.brushData.length)
+			console.log(this.jsonData.length)
 			// this.datafliter(this.jsonData, myStationData)
-			this.$refs.mareyChart.paintMareyChart(this.jsonData,myStationData, this.isSwitch, this.brushData)
+			this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
 			// var jsonupid = d3.map(this.jsonData, d => d.upid)
 			// console.log(scatterlogerdata)
-			// var scatterlogdata = Object.values(scatterlogerdata)
+			var scatterlogdata = Object.values(scatterlogerdata)
 			// var scatterlogdata = Object.values(this.scatterlogdata)
 			// var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
 			console.log(this.paralleldata)
-			this.$refs.parallel.paintChart(this.paralleldata, this.startDate, this.endDate)
+			this.$refs.parallel.paintChart(scatterlogdata, this.startDate, this.endDate)
 
 			// this.$refs.wheelering.paintChart()
 			// this.$refs.jsontable.paintChart(scatterlogdata)

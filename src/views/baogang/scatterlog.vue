@@ -111,7 +111,7 @@ export default {
 							.attr("stroke", "none")
 							.attr("fill", vm.tooltipColor(label));
 						const box = text.node().getBBox();
-						console.log(event)
+						// console.log(event)
 						let x = event.offsetX - 78,
 							y = event.offsetY ;
 						// const x=vm.scaleX(d.x)-75
@@ -193,30 +193,28 @@ export default {
 			this.mouseList = value
 			if(value.mouse===0){
 				for(let item in value.upid){
-					d3.selectAll(`#scatter${value.upid[item]}`)
-						.attr('fill',"black")
-						.attr("r",2)
+					d3.select(`#scatter${value.upid[item]}`)
+						// .attr('fill',"black")
+						.attr("r", 4)
 						// .attr("stroke", "black")
-						.attr("stroke", (d, i) => d3.color(vm.tooltipColor(d)).darker(1))
-						.attr("stroke-width", 2.75)
+						.attr("stroke", "#666666")
+						.attr("stroke-width", 1).raise()
 				}
 
 			}else{
-				for(let item in value.upid){
-					d3.selectAll(`#scatter${value.upid[item]}`)
-					.attr("fill",vm.tooltipColor)
-					.attr("r",1)
-					.attr("stroke", vm.tooltipColor)
-					.attr("stroke-width", 0.25)
-							// .attr("fill", (d,i) => vm.colorScale(i))
-				}
+				d3.selectAll(".dot")
+				// .attr("fill",vm.tooltipColor)
+				.attr("r",1)
+				.attr("stroke", vm.tooltipColor)
+				.attr("stroke-width", 0.25)
 			}
 			
 		},
 		setTrainColor(){
 			const vm=this;
 			this.changeColor=!this.changeColor;
-			d3.selectAll("circle.dot").attr("fill",vm.tooltipColor)
+			d3.selectAll("circle.dot").attr("fill",vm.tooltipColor).attr("stroke", vm.tooltipColor)
+					.attr("stroke-width", 0.25)
 			this.mouseList !==undefined ? this.mouse(this.mouseList) : false
 		}
 	},

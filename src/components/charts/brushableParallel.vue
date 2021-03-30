@@ -14,7 +14,8 @@ export default {
             svg: undefined,
             labelColors: util.labelColor, // [bad, good]
             categoryColors: util.categoryColor,
-            mouseList: undefined
+            mouseList: undefined,
+            brushdata: undefined
         }
     },
 
@@ -24,14 +25,25 @@ export default {
         ...mapGetters([
 			"isSwitch",
 			"trainGroupStyle",
+            "deGroupStyle",
             "brushMouseId",
             "brushSelection",
-            "brushSelectColor"
-		])
+            "brushSelectColor",
+            "startDate",
+			"endDate"
+		]),
+        paralleldata: vm => {
+            if(vm.brushdata == undefined)return undefined
+			var pathdata = Object.values(vm.brushdata)
+			return  pathdata.filter(d =>{
+				var toc = new Date(d.toc);
+				return toc < vm.endDate && toc > vm.startDate
+			})
+		}
     },
     watch:{
         isSwitch(val,oldVal){
-            d3.selectAll(".pathColor").attr("stroke", this.trainGroupStyle)
+            d3.selectAll(".pathColor").attr("stroke", this.deGroupStyle)
         }
     },
     methods: {
@@ -49,29 +61,28 @@ export default {
 			return newObj
 		},
         paintChart(plData, startTime, endTime) {
-            console.log(this)
+            // console.log(this)
             plData = this.deepCopy(plData)
             var brushdata = plData.map( d => {
                 d.slab_thickness = d.slab_thickness/100;
                 return d
             })
-            console.log(brushdata[0].slab_thickness)
+            // console.log(brushdata)
+            this.brushdata = brushdata
             // return
             var margin = {top: 60, right: 20, bottom: 40, left: 20},
                 brushHeight = 10,
                 vm = this,
                 deselectedColor = "#eeeeee",
                 selectedColor = "#cccccc",
-                label = d => d.name,
-                keys = [ "tgtwidth", "tgtplatethickness2", "tgtplatelength2","slab_thickness","charging_temp_act", ],
-                // keys = Object.keys(brushdata[0]).filter(d => d !== "name"),
+                keys = [ "tgtwidth", "tgtplatethickness2", "tgtplatelength2","slab_thickness","charging_temp_act"],
                 bardata = d3.map(keys, d => d3.map(brushdata, index => index[d])),
                 barbin = d3.map(keys, (d, i) => {
                     var length = 6;
                     var maxlength = bardata[i].length
                     while(true){
                         var max = d3.max(d3.bin().thresholds(length)(bardata[i]), d => d.length) 
-                        if(max/maxlength < 0.8){
+                        if(max/maxlength < 0.6){
                             break
                         }else{
                             length++
@@ -79,30 +90,14 @@ export default {
                     }
                     return d3.bin().thresholds(length)(bardata[i])
                 }),
-                // barNum = d3.map(bardata, alldata => {
-                //     let range = d3.extent(alldata)
-                //     let path = (range[1] - range[0])/6;
-                //     let init = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0}
-                //     let array = d3.groups(alldata, d => d == null ? 1 : Math.floor((d - range[0])/path) + 1)
-                //     d3.map(array, (d,i) => {
-                //         init[d[0]] = d[1].length
-                //     })
-                //     return Object.values(init)
-                // }),
-                barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.extent(d3.map(array, d => d.length))[1]]).range([10, 50])),
-                barRange = new Map(d3.zip(keys,d3.map(bardata, alldata => d3.extent(alldata)))),
-                // barScale = d3.map(barNum, num => d3.scalePow().domain([0, d3.extent(num)[1]]).range([10, 50])),
+                barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.extent(d3.map(array, d => d.length))[1]]).range([0, 50])),
                 width = document.getElementById(this.menuId).offsetWidth,
-                // xBand = d3.scaleBand()
-                //     .domain(d3.range(barNum[0].length))
-                //     .range([margin.left, width - margin.right])
-                //     .padding(0.5),
                 arc = d3.arc()
                     .innerRadius(0)
                     .outerRadius(8)
                     .startAngle(0)
                     .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
-                height = keys.length * 90,
+                height = keys.length * 105,
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
                 // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1]), [margin.left, width - margin.right])])),
                 // x = new Map(Array.from(keys, key => [key, d3.scaleLinear(d3.extent(brushdata, d => d[key]), [margin.left, width - margin.right])])),
@@ -159,33 +154,28 @@ export default {
                 .on("start brush end", brushed);
             for(let item in keys){
                 var barmargin =  (width - margin.right - margin.left) / barbin[item].length/2;
+                // d => (d3.filter(brushdata, e => e[keys] <= d.x1 && d.x0 <= e[keys] && +e.label=== 0)).length
                 svg.append("g")
                     .attr("class", "rectBar")
                     .attr("transform",`translate(0,${y(keys[item])})`)
-                    .call(g => g.append("g")
-                        .selectAll(".rect"+item)
+                    .selectAll(".rect"+item)
                         .data(barbin[item])
-                        .join("rect")
+                        .join("g")
+                    .call(g => g.append("rect")
                         .attr("class", "rect" +item)
                         .attr("x", d => x.get(keys[item])(d.x0))
-                        .attr("fill", selectedColor)
-                        .attr("y", d => -barScale[item](d.length)+1)
-                        .attr("height", d => barScale[item](d.length))
+                        .attr("fill", util.delabelColor[1])
+                        .attr("y", d => -barScale[item]((d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && (+e.label=== 1))).length)+1)
+                        .attr("height", d => barScale[item]((d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && (+e.label=== 1))).length))
                         .attr("width", d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin))
-                // svg.append("g")
-                //     .attr("class", "rectBar")
-                //     .attr("transform",`translate(0,${y(keys[item])})`)
-                //     .call(g => g.append("g")
-                //         .selectAll(".rect"+item)
-                //         .data(barNum[item])
-                //         .join("rect")
-                //         .attr("class", "rect" +item)
-                //         .attr("x", (d, i) => xBand(i))
-                //         .attr("fill", selectedColor)
-                //         .attr("y", d => -barScale[item](d))
-                //         .attr("height", d => barScale[item](d))
-                //         .attr("width", xBand.bandwidth()))
-                // this.brushSelection.set(keys[item], d3.extent(d3.map(brushdata.slice(400), d => d[keys[item]])))
+                    .call(g => g.append("rect")
+                        .attr("class", "rect" +item)
+                        .attr("x", d => x.get(keys[item])(d.x0))
+                        .attr("fill", util.delabelColor[0])
+                        .attr("y", 10)
+                        // .attr("y", d => -barScale[item](d.length)+1)
+                        .attr("height", d => barScale[item]((d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && (+e.label=== 0))).length))
+                        .attr("width", d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin))
                 this.brushSelection.set(keys[item], d3.extent(d3.filter(brushdata, d => new Date(d.toc) >= startTime && new Date(d.toc) <= endTime), d => d[keys[item]]))
             }
             const path = svg.append("g")
@@ -194,9 +184,9 @@ export default {
                 .attr("stroke-opacity", 0.6)
                 .attr("class", "parallelPath")
                 .selectAll("path")
-                .data(brushdata.slice().sort((a, b) => d3.ascending(a["upid"], b["upid"])))
+                .data(vm.paralleldata.slice().sort((a, b) => d3.ascending(a["upid"], b["upid"])))
                 .join("path")
-                .attr("stroke", this.trainGroupStyle)
+                .attr("stroke", this.deGroupStyle)
                 .attr("id", d=> `paraPath${d.upid}`)
                 .attr("d", d => line(d3.cross(keys, [d], (key, d) => [key, d[key]])))
                 .attr("class", "pathColor")
@@ -225,10 +215,12 @@ export default {
                     .attr("x", width - margin.left)
                     .attr("y", -50)
                     .attr("text-anchor", "end")
-                    .attr("fill", "#c0c5cb")
+                    .attr("fill", "#2c3e50")
                     .attr("font-family", "DIN")
                     .attr("font-size", "10px")
-                    .text(d => d))
+                    .attr("font-weight", "normal")
+                    .text(d => d.replace(/tgtwidth/, "tgt_width").replace(/tgtplatethickness2/, "tgt_thickness")
+                        .replace(/tgtplatelength2/, "tgt_length").replace(/slab_thickness/, "slab_thickness").replace(/charging_temp_act/, "charging")))
                 .call(g => g.selectAll("text")
                     .clone(true).lower()
                     .attr("fill", "none")
@@ -239,13 +231,13 @@ export default {
                     )
                 .call(g =>g.selectAll(".domain").remove())
                 .call(brush)
-                // .call(brush.move, d => selections.get(d).map(x.get(d)));
+                .call(brush.move, d => selections.get(d).map(x.get(d)));
                 brushSlider()
                 // svg.selectAll("text").attr("font-family", "DIN").attr("stroke", "none").style("fill", "#2c3e50")
                 
             function pathover(event,d){
                 // d3.select(this).attr("stroke-width", 5)
-                console.log(d)
+                // console.log(d)
                 const tooltip = vm.svg.append("g")
                     .attr("class", "tooltip")
                     .style("font", "12px DIN");
@@ -275,9 +267,9 @@ export default {
                 line3.text(`time:`+d.toc);
                 path
                     .attr("stroke", "none")
-                    .attr("fill", vm.trainGroupStyle(d));
+                    .attr("fill", vm.deGroupStyle(d));
                 const box = text.node().getBBox();
-                console.log(event)
+                // console.log(event)
                 let x = event.offsetX - 78,
                     y = event.offsetY + 10;					
                 path.attr("d", `
@@ -314,9 +306,9 @@ export default {
                 const selected = [];
                 path.each(function(d) {
                 const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
-                d3.select(this).attr("stroke", active ? vm.trainGroupStyle : "none");
+                d3.select(this).attr("stroke", active ? vm.deGroupStyle : "none");
                 // .attr("visibility", active ? "visible" : "hidden");
-                // .style("stroke", active ? vm.trainGroupStyle(d) : "none");
+                // .style("stroke", active ? vm.deGroupStyle(d) : "none");
                 if (active) {
                     d3.select(this).raise();
                     selected.push(d);
@@ -324,12 +316,13 @@ export default {
                 });
                 if (selection === null){
                     d3.selectAll(".rect" + keys.indexOf(key))
-                    .attr("fill", selectedColor)
+                    .attr("opacity", 0.5)
                 }else{
                     let brushRange = d3.map(selection, x.get(key).invert)
                     // let [min, max] = [Math.floor((brushRange[0] - Range[0])/path), Math.floor((brushRange[1] - Range[0])/path)]
                     d3.selectAll(".rect" + keys.indexOf(key))
-                        .attr("fill", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? selectedColor : deselectedColor)
+                        // .attr("fill", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? selectedColor : deselectedColor)
+                        .attr("opacity", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? 0.5 : 0.05)
                 }
                 // console.log(this)
                 // console.log(d3.select("#parallel" + keys.indexOf(key)).node())
@@ -343,7 +336,7 @@ export default {
             }
         },
         mouse(value){
-			console.log(value)
+			// console.log(value)
 			const vm=this
 			this.mouseList = value
             this.svg.selectAll(`.pathColor`)
@@ -352,7 +345,6 @@ export default {
                 .style("visibility", "hidden")
 			if(value.mouse===0){
 				for(let item in value.upid){
-                    console.log(item)
 					this.svg.select(`#paraPath${value.upid[item]}`)
                         .style("visibility", "visible")
 						// .attr("stroke-opacity", 0.6)

@@ -102,7 +102,7 @@ export default {
                     .on("end", endSelect);
             svg.append("g")
                 .call(brush)
-                .call(brush.move, [50, 100]);
+                .call(brush.move, [50, 75]);
             function brushed({selection}) {
                 const brushEnter = d3.map(brushData.endTimeOutput, d => {
                     return miniXScale(d) >= selection[0]  && selection[1] >= miniXScale(d)

@@ -613,30 +613,24 @@ export default {
 			if(end)this.endDate = new Date(end)
 		},
 		async getHttpData() {
-			// this.startDate = new Date('2018-11-04 00:00:00'),
-			// this.endDate = new Date('2018-11-06 04:00:00'),
-			console.log(this.brushData)
-			this.jsonData = myJsonData
-			this.mergeflag()
-			this.jsonData = this.jsonData.filter(d => {
-				return this.brushUpid.includes(d.upid)
-			})
-			console.log(this.brushData.length)
-			console.log(this.jsonData.length)
-			// this.datafliter(this.jsonData, myStationData)
-			this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
-			// var jsonupid = d3.map(this.jsonData, d => d.upid)
-			// console.log(scatterlogerdata)
-			var scatterlogdata = Object.values(scatterlogerdata)
-			// var scatterlogdata = Object.values(this.scatterlogdata)
-			// var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
-			console.log(this.paralleldata)
-			this.$refs.parallel.paintChart(scatterlogdata, this.startDate, this.endDate)
-
-			// this.$refs.wheelering.paintChart()
-			// this.$refs.jsontable.paintChart(scatterlogdata)
-			// this.$refs.jsontable.paintChart(tabledata)
-			return
+			// console.log(this.brushData)
+			// this.jsonData = myJsonData
+			// this.mergeflag()
+			// this.jsonData = this.jsonData.filter(d => {
+			// 	return this.brushUpid.includes(d.upid)
+			// })
+			// console.log(this.brushData)
+			// console.log(this.jsonData.length)
+			// this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
+			// // var jsonupid = d3.map(this.jsonData, d => d.upid)
+			// // console.log(scatterlogerdata)
+			// var scatterlogdata = Object.values(scatterlogerdata)
+			// // var scatterlogdata = Object.values(this.scatterlogdata)
+			// // var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
+			// // this.$refs.wheelering.paintChart()
+			// // this.$refs.jsontable.paintChart(scatterlogdata)
+			// // this.$refs.jsontable.paintChart(tabledata)
+			// return
 
 			// this.clearAllChart()
 			this.plateTempPropvalue=['All']
@@ -656,19 +650,7 @@ export default {
 			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
 			await this.getStationsData(startDate, endDate).then(Response => {
 				this.stationsData=Response.data
-					}).catch(function(error) {
-				// 处理 getJSON 和 前一个回调函数运行时发生的错误
-				console.log('发生错误！', error);
-				// this.$alert('请求时间刷图异常，请检查连接或者刷新', '警告', {
-				//   confirmButtonText: '确定',
-				//   callback: action => {
-				//     this.$message({
-				//       type: 'info',
-				//       message: `action: ${ action }`
-				//     });
-				//   }
-				// });
-					})
+			})
 			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
 			console.log(this.jsonData.length)
 			this.jsonData = this.jsonData.filter(d => {
@@ -699,7 +681,7 @@ export default {
 			console.log(d3.groups(this.jsonData , d => d.flag))
 			if(this.scatterlogdata.length!==0)	this.mergeflag()
 			console.log(d3.groups(this.jsonData , d => d.flag))
-			this.$refs.mareyChart.paintMareyChart(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
+			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
 			// this.$refs.mareyChart.paintMareyChart()
 
 			// clear
@@ -730,68 +712,6 @@ export default {
 				}
 			}
 			return newObj
-		},
-		datafliter(alldata, stationsData){
-			alldata = this.deepCopy(alldata);
-			stationsData = this.deepCopy(stationsData);
-			var sampleStaions = stationsData.slice(0, 7),
-				collstation = stationsData.slice(-3),
-				rollStation = [ "RMF3", "RML3", "RMEnd","FMStart", "FMF3", "FML3", "FMEnd"],
-				fmindex = [7, 8, 9, 10, 11 , 12  ,13],
-				ccindex = [-3, -2, -1];
-			for(let i in rollStation){
-				sampleStaions.push({
-					distance: sampleStaions.slice(-1)[0].distance + 40,
-					key: "020" + i,
-					name: rollStation[i],
-					zone: "2"
-				})
-			}
-			for(let i in collstation){
-				collstation[i].distance = sampleStaions.slice(-1)[0].distance + 40
-				sampleStaions.push(collstation[i])
-			}
-			for(let item in alldata){
-				let rm = alldata[item].totalpassesrm,
-					datastops = alldata[item].stops,
-					heatstops = alldata[item].stops.slice(0, 7),
-					fm = alldata[item].totalpassesfm,
-					fmtime = [ 7  +  3, 7  + rm -3 , 7  +  rm  , 7 + rm + 1, 7 + rm + 3, 7 + rm + fm - 3, 7 + rm + fm],
-					coolstops = (+datastops.slice(-1)[0].station.zone) === 3 ? true : false;		//if cool stops exist
-				// console.log(coolstops)
-				// heatstops.push({
-				// 	realTime: datastops[7 + rm].realTime,
-				// 	station: sampleStaions[7],
-				// 	time: datastops[7 + rm].time,
-				// })
-				for(let j in fmindex){
-					heatstops.push({
-						realTime: datastops[fmtime[j]].realTime,
-						station: sampleStaions[fmindex[j]],
-						time: datastops[fmtime[j]].time,
-					})
-				}
-				if(coolstops){
-					for(let j in ccindex){
-						heatstops.push({
-							realTime: datastops.slice(ccindex[j])[0].realTime,
-							station: sampleStaions.slice(ccindex[j])[0],
-							time: datastops.slice(ccindex[j])[0].time
-						})
-					}
-				}else{
-					for(let j in ccindex){
-						heatstops.push({
-							realTime: heatstops.slice(-1)[0].realTime,
-							station: sampleStaions.slice(ccindex[j])[0],
-							time: heatstops.slice(-1)[0].time,
-						})
-					}
-				}
-				alldata[item].stops = heatstops
-			}
-			console.log(alldata)
-			console.log(sampleStaions)
 		},
 		mergeflag(){
 			// let mergedata=this.scatterlogdata
@@ -956,6 +876,7 @@ export default {
 		},
 
 		async trainClick(value) {
+			if(value.list.length == 0)value.list.push(...value.upidSelect)
 			this.selectedTrainData = value.list;
 			this.selectedTrainColor = value.color;
 			console.log(value)
@@ -971,8 +892,6 @@ export default {
 			// 	this.$refs["wheeler" + item].init()
 			// }
 			this.upidSelect = []
-			console.log(value.upidSelect.length)
-			console.log([...value.upidSelect].length)
 			value.upidSelect = [...new Set(value.upidSelect)]
 			this.upidSelect = value.upidSelect
 			console.log(this.upidSelect)
@@ -989,7 +908,7 @@ export default {
 			// }
 
 			for(let item of value.upidSelect){
-				// await this.paintScatterList(item)
+				await this.paintScatterList(item)
 			}
 			this.corrdata = []
 		},
@@ -1305,6 +1224,7 @@ export default {
 				this.scatterlogdata=Response.data
 				this.$refs.scatterloging.paintChart(this.scatterlogdata)
 				this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
+				this.$refs.parallel.paintChart(Object.values(this.scatterlogdata), this.startDate, this.endDate)
 			})
 		},
 	},
@@ -1314,6 +1234,7 @@ export default {
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
 		this.getplatetype()
+		// this.isSearch = false
 		// this.getHttpData()
 		this.changeTime()
 	},

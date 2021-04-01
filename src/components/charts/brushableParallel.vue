@@ -15,7 +15,8 @@ export default {
             labelColors: util.labelColor, // [bad, good]
             categoryColors: util.categoryColor,
             mouseList: undefined,
-            brushdata: undefined
+            brushdata: undefined,
+            plData: undefined
         }
     },
 
@@ -42,10 +43,15 @@ export default {
 		}
     },
     watch:{
-        isSwitch(val,oldVal){
+		isSwitch(val,oldVal){
             d3.selectAll(".pathColor").attr("stroke", this.deGroupStyle)
-        }
-    },
+        },
+		startDate:function(){
+            if(this.plData !== undefined){
+                this.paintChart(this.plData, this.startDate, this.endDate)
+            }
+		}
+	},
     methods: {
         deepCopy(obj){
 			if(typeof obj!=='object') return obj;
@@ -63,6 +69,7 @@ export default {
         paintChart(plData, startTime, endTime) {
             // console.log(this)
             plData = this.deepCopy(plData)
+            this.plData = plData
             var brushdata = plData.map( d => {
                 d.slab_thickness = d.slab_thickness/100;
                 return d

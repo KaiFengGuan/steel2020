@@ -9,7 +9,6 @@ import * as d3 from 'd3';
 import * as d3boxplot from 'd3-boxplot';
 // import util from './util.js';
 import jsondata from './table.js';
-import myJsonData from "./jsondata.js"
 export default {
 	data() {
 		return {

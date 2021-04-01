@@ -842,7 +842,7 @@ export default {
                     const tree = d3.cluster()
                         .size([2 * Math.PI, r.inner*0.8])
                     const line = d3.lineRadial()
-                        .curve(d3.curveBundle.beta(1.25))
+                        .curve(d3.curveBundle.beta(0.5))
                         // .curve(d3.curveNatural)
                         .radius(d => d.y)
                         .angle(d => d.x)

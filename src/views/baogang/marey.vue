@@ -23,11 +23,8 @@
 								</div>	
 							</el-card>
 						</el-col> -->
-						<el-button round style="flex: 0 0 auto;width:30px;height:30px;margin-top:0px" type="info" size="mini" plain @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
+						<el-button style="margin-top:10px" type="info" size="mini" plain @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
 					</el-row>
-					<!-- <el-row>
-						<slider style="height:80px;width:100%" ref="brushSlider"></slider>
-					</el-row> -->
 					<el-row>
 						<el-col :span="24" 
 							v-loading="scatterLoading"
@@ -95,8 +92,6 @@
 								<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:-2px" type="info" plain @click="mergeUpdate">
 									<img src="../../assets/images/diagnosis.svg" style="height:16px;width:16px;"></el-button>
 							</el-col>
-
-
 						</div>
 						<div class="my-card-body">
 							<marey-chart style="text-align: center; height: 495px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
@@ -194,34 +189,6 @@
 										<el-col :span="4">
 											<!-- <div style="float:left;margin-top: 30px;position:relative;left: 25px;width: 1px;height: 450px; background: #c9c9c9;"></div> -->
 											<el-row>
-												<!-- <el-row>
-													<el-card class="myel-card myel-tab">
-														<div slot="header">
-															<el-row>
-																<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
-																<span class="upidtext">UPID {{upidSelect[0]}}</span></el-col>
-																<el-col :span="8"></el-col>
-															</el-row>
-														</div>
-														<div class="my-card-body" @click="changeUpid(upidSelect[0])">
-															<swheel ref="wheeler0" style="height:223px"></swheel>
-														</div>
-													</el-card>
-												</el-row>
-												<el-row>
-												<el-card class="myel-card myel-tab">
-													<div slot="header">
-															<el-row style="height:25px"> 
-																<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
-																<span class="upidtext">UPID {{upidSelect[1]}}</span></el-col>
-																<el-col :span="8"></el-col>
-															</el-row>
-														</div>
-													<div class="my-card-body">
-														<swheel ref="wheeler1" style="height:223px"></swheel>
-													</div>
-												</el-card>
-												</el-row> -->
 												<div style="overflow-y:scroll;height:510px">
 												<el-row v-for="item of upidSelect" :key = item>
 													<el-card class="myel-card myel-tab">
@@ -233,42 +200,15 @@
 																</el-row>
 															</div>
 														<div class="my-card-body" @click="changeUpid(item)">
-															<swheel :ref="item" style="height:223px"></swheel>
+															<small-wheel :ref="item" style="height:223px"></small-wheel>
 														</div>
 													</el-card>
 												</el-row>
 												</div>
-
-												<!-- <el-row style="margin: 2px 0; ;overflow-y:scroll;overflow-x:hidden; display:flex;flex-wrap: nowrap;height:400px">
-													<el-row  style="flex-shrink: 0;flex-grow: 0;width:100%" v-for="item of upidSelect" :key = item>
-														<el-card class="myel-card myel-tab">
-															<div slot="header">
-																	<el-row style="height:25px"> 
-																		<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
-																		<span class="upidtext">UPID {{item}}</span></el-col>
-																		<el-col :span="8"></el-col>
-																	</el-row>
-																</div>
-															<div class="my-card-body">
-																<swheel :ref="item" style="height:223px"></swheel>
-															</div>
-														</el-card>
-													</el-row> -->
-													
-													<!-- <el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
-														<el-card class="my-card-body-detail">
-															<div class="my-card-title" style="height: 3px;font-size:10px;font-weight:150">{{item}}</div>
-															<div class="my-card-body-detail-some">
-																<three-bar :ref="item" style="height: 190px;" ></three-bar>
-															</div>
-														</el-card>
-													</el-col> -->
-												<!-- </el-row> -->
 											</el-row>
 										</el-col>
 											<el-col :span="20">
 												<el-card class="myel-card myelTab myel-upid">
-													
 													<div slot="header">
 														<el-row>
 															<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
@@ -286,82 +226,6 @@
 								</div>
 							</el-row>
 						</el-col>
-						<!-- <el-col :span="6">
-							<el-card class="myel-card"> -->
-								<!-- <div class="my-card-title" slot="header">
-									<span>Key-Stage View</span>
-									
-									<el-popover placement="top" width="350" trigger="hover" style="float:right;margin-right:11px">
-								<el-row class="toltip">
-
-
-									<el-row style="background: white">
-										<div style="margin: 5px 0px 2px 0px;">
-											<el-row>
-												<el-col :span="8" style="font-size: 12px;">
-													<div style="height: 24px;padding-left:1px;margin-top:10px" class="fontcolor">Crucial Process </div>
-												</el-col>
-												<el-col :span="5">
-													<el-button  circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass heat" @mouseover.native="heatindex=true" 
-														@mouseout.native="heatindex=false" @click="processclick(0)">
-														<img src="../../assets/images/heatwhite.svg" style="height:20px;width:20px;" v-if="heatindex"/>
-														<img src="../../assets/images/heat.svg" style="height:20px;width:20px"  v-if="!heatindex"/>
-													</el-button>
-												</el-col>
-												<el-col :span="5">
-													<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass roll" @mouseover.native="rollindex=true" 
-														@mouseout.native="rollindex=false" @click="processclick(1)">
-														<img src="../../assets/images/rollwhite.svg" style="height:20px;width:20px;" v-if="rollindex"/>
-														<img src="../../assets/images/roll.svg" style="height:20px;width:20px"  v-if="!rollindex"/></el-button>
-												</el-col>
-												<el-col :span="5">
-													<el-button circle style="padding:8px;box-shadow:1px 1px 2.5px #000;" class="heatclass cool" @mouseover.native="coolindex=true" 
-														@mouseout.native="coolindex=false" @click="processclick(2)">
-														<svg v-if="!coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#28b2f7"></path></svg>
-														<svg v-if="coolindex" t="1606749950536" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7351" width="20" height="20"><path d="M494.378667 466.915556V291.356444l-85.731556-41.813333a15.758222 15.758222 0 0 1-8.846222-14.165333v-17.536a15.758222 15.758222 0 0 1 22.670222-14.165334l71.907556 35.072V129.536c0-8.704 7.054222-15.758222 15.772444-15.758222h15.758222c8.704 0 15.758222 7.054222 15.758223 15.758222v109.198222l71.921777-35.072a15.758222 15.758222 0 0 1 22.670223 14.165334v17.536c0 6.030222-3.441778 11.52-8.860445 14.165333l-85.731555 41.813333v175.587556l152.064-87.793778-6.656-95.146667c-0.426667-6.016 2.616889-11.747556 7.836444-14.762666l15.189333-8.760889a15.758222 15.758222 0 0 1 23.608889 12.544l5.589334 79.815111 94.563555-54.584889a15.758222 15.758222 0 0 1 21.532445 5.76l7.879111 13.653333c4.352 7.537778 1.763556 17.180444-5.774223 21.532445l-94.563555 54.599111 66.332444 44.743111a15.758222 15.758222 0 0 1-0.924444 26.723556l-15.189333 8.760888A15.758222 15.758222 0 0 1 796.444444 473.457778l-79.075555-53.347556-152.064 87.793778 152.049778 87.779556 79.075555-53.333334a15.758222 15.758222 0 0 1 16.711111-0.583111l15.189334 8.760889a15.758222 15.758222 0 0 1 0.924444 26.737778l-66.332444 44.728889 94.577777 54.599111c7.537778 4.352 10.112 13.994667 5.76 21.532444l-7.879111 13.653334c-4.352 7.537778-13.994667 10.126222-21.532444 5.76l-94.577778-54.584889-5.575111 79.815111a15.758222 15.758222 0 0 1-23.608889 12.544l-15.189333-8.760889a15.758222 15.758222 0 0 1-7.836445-14.762667l6.656-95.146666-152.064-87.793778v175.587555l85.731556 41.813334c5.418667 2.631111 8.860444 8.135111 8.860444 14.165333v17.536a15.758222 15.758222 0 0 1-22.670222 14.165333l-71.921778-35.072v109.198223c0 8.704-7.054222 15.758222-15.758222 15.758222H510.151111a15.758222 15.758222 0 0 1-15.772444-15.758222v-109.198223l-71.907556 35.072a15.758222 15.758222 0 0 1-22.670222-14.165333v-17.536c0-6.030222 3.427556-11.52 8.846222-14.165333l85.731556-41.813334V548.835556L342.328889 636.629333l6.656 95.146667c0.426667 6.016-2.631111 11.747556-7.850667 14.762667l-15.189333 8.760889a15.758222 15.758222 0 0 1-23.608889-12.544l-5.575111-79.815112-94.563556 54.584889a15.758222 15.758222 0 0 1-21.532444-5.76l-7.879111-13.653333a15.758222 15.758222 0 0 1 5.76-21.532444l94.577778-54.599112-66.346667-44.743111a15.758222 15.758222 0 0 1 0.938667-26.723555l15.189333-8.760889a15.758222 15.758222 0 0 1 16.696889 0.568889l79.075555 53.347555L470.755556 507.889778l-152.064-87.793778-79.075556 53.333333a15.758222 15.758222 0 0 1-16.696889 0.583111l-15.189333-8.760888a15.758222 15.758222 0 0 1-0.938667-26.737778l66.332445-44.728889-94.563556-54.599111a15.758222 15.758222 0 0 1-5.76-21.532445l7.879111-13.653333c4.352-7.537778 13.994667-10.112 21.532445-5.76l94.563555 54.584889 5.575111-79.815111a15.758222 15.758222 0 0 1 23.608889-12.544l15.189333 8.760889c5.219556 3.015111 8.263111 8.746667 7.850667 14.762666l-6.656 95.146667 152.049778 87.793778z" p-id="7352" fill="#ffffff"></path></svg>
-														</el-button>
-												</el-col>									
-											</el-row>
-										</div>
-									</el-row>
-								</el-row>
-									<img src="../../assets/images/config.svg" style="height:16px;width:16px;vertical-align: middle;line-height:1.5" slot="reference">
-
-									</el-popover>
-									<el-select v-model="orderselect"   placeholder="请选择工序排序方法" size="mini"  @change="orderchange" class="card-select">
-										<el-option v-for="item in orderoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-									</el-select>
-									</div> -->
-								<!-- <el-row style="margin: 2px 0;height:1030px;overflow-y:scroll;overflow-x:hidden">
-									<el-col :span="24">
-										<el-card class="myel-card myel-tab" v-for="item of processInTurn" :key = item style="width:100%">
-											<div class="my-card-title" slot="header">
-												<el-row :gutter="18">
-													<el-col :span="1">
-														<img src="../../assets/images/series.svg" style="height:14px;width:14px;" class="upidicon">
-													</el-col>
-													<el-col :span="4">
-														<span class="upidtext" style="position:relative;top:-5px">{{item}}</span>
-													</el-col>
-												</el-row>
-												
-												
-											</div>
-											<div class="my-card-body">
-												<three-bar :ref="item" style="height: 190px;" ></three-bar>
-											</div>
-										</el-card>
-									<div  v-for="item of processInTurn" :key = item class="myel-card" style="width:100%">
-										<div class="my-card-title" style="height: 3px;font-size:10px;font-weight:150">{{item}}</div>
-											<div class="my-card-body">
-												<three-bar :ref="item" style="height: 190px;" ></three-bar>
-											</div>
-									</div>
-									</el-col>
-									<svgTable ref="jsontable" style="height:506px;width:100%"></svgTable>
-								</el-row> -->
-							<!-- </el-card>
-						</el-col> -->
 					</el-row>
 
 						<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
@@ -390,34 +254,25 @@ import * as d3 from 'd3';
 import util from './util.js';
 import scatter from './scatter.vue';
 import mareyChart from './mareyChart.vue';
-import polyLineChart from './polyLine.vue';
-import plateTemperature from './plateTemperature.vue';
 import scatterlog from './scatterlog.vue';
 import timeBrush from './timeBrush.vue';
-import gauge from './gauge.vue';
 import threeBar from './threeBar.vue';
 import wheeler from './wheeler.vue';
-import swheel from './swheel.vue';
-import heat from "./heat.vue";
+import smallWheel from './smallWheel.vue';
 import riverLike from "./riverLike.vue";
-import svgTable from "./svgTable.vue";
-import bar from "./Bar.vue";
 import slider from './slider.vue'
 import scatterAxis from "./scatterAxis.vue"
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import myJsonData from "./sampledata/jsondata.json"
-// import myJsonData from "./jsondata.js"
 import myStationData from "./stationdata.js"
 import scatterlogerdata from "./sampledata/scatterlog.json"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
 import { mapGetters, mapMutations} from 'vuex'
-// import offline from "./offline.json"
-var echarts = require('echarts');
 export default {
-	components: { mareyChart, scatter, polyLineChart, svgTable, plateTemperature, timeBrush, gauge, heat,
-		brushableParallel, riverLike, bar, scatterAxis, threeBar,scatterlog , wheeler , swheel, slider},
+	components: { mareyChart, scatter, timeBrush,
+		brushableParallel, riverLike, scatterAxis, threeBar,scatterlog , wheeler , smallWheel, slider},
 	data() {
 		return {
 			isMerge: true,
@@ -429,7 +284,6 @@ export default {
 			rollindex:false,
 			coolindex:false,
 			diagnosisData:[],
-			// monthToShow: new Date('2018-09-15 00:00:00'),
 			scatterLoading: false,
 			isSearch: true,
 			processName:'',
@@ -452,10 +306,7 @@ export default {
 			errorflag:false,
 			plateTempPropvalue:['All'],
 			isSwitch: true,
-			// startDate: new Date('2018-11-04 00:00:00'),
-			// endDate: new Date('2018-11-06 04:00:00'),
 			startmonth: new Date(2018, 10, 1, 0, 0),
-			// dateselect:[new Date(2018, 10, 1, 0, 0), new Date(2018, 10, 10, 0, 0)],
 			display: false,
 			time: undefined,
 			radarIndicatorOptions: [],
@@ -490,9 +341,6 @@ export default {
 			processData: {},
 			scatterlogdata:[],
 			processArray: ['heat', 'roll', 'cool'],
-			forcedata:{},
-			// biasData: [],
-			// biasCalcuMeth: false,
 			loadingDataLoading: false,
 			radio: 0,
 			chooseList: [],
@@ -562,6 +410,9 @@ export default {
 				title: '消息通知',
 				message: h('i', { style: 'color: teal'}, notice)
 			});
+			this.loadingDataLoading = false
+			this.scatterLoading = false
+			this.isSearch = false
 		},
 		changeTimeBrush() {
 			this.getTimeBrushData();
@@ -583,8 +434,6 @@ export default {
 		},
 		async changeTime() {
 			// // this.$message('这是一条消息提示');
-			// this.$message(this.monthToShow.toString())
-			// let timeArr = this.monthToShow.toString().split(' ')
 			await this.changeTimeBrush()
 			await this.scattlog()
 		},
@@ -619,17 +468,8 @@ export default {
 			// this.jsonData = this.jsonData.filter(d => {
 			// 	return this.brushUpid.includes(d.upid)
 			// })
-			// console.log(this.brushData)
-			// console.log(this.jsonData.length)
 			// this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
-			// // var jsonupid = d3.map(this.jsonData, d => d.upid)
-			// // console.log(scatterlogerdata)
-			// var scatterlogdata = Object.values(scatterlogerdata)
-			// // var scatterlogdata = Object.values(this.scatterlogdata)
-			// // var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
 			// // this.$refs.wheelering.paintChart()
-			// // this.$refs.jsontable.paintChart(scatterlogdata)
-			// // this.$refs.jsontable.paintChart(tabledata)
 			// return
 
 			// this.clearAllChart()
@@ -677,28 +517,17 @@ export default {
 			this.loadingDataLoading = false
 			this.scatterLoading = false
 			this.isSearch = false
-			if(this.jsonData.length===0)	this.getNotification('时间线图选择错误，请重新选择')
-			console.log(d3.groups(this.jsonData , d => d.flag))
-			if(this.scatterlogdata.length!==0)	this.mergeflag()
-			console.log(d3.groups(this.jsonData , d => d.flag))
+			this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
+			this.jsonData = this.jsonData.filter(d => {
+				return this.brushUpid.includes(d.upid)
+			})
+			if(this.scatterlogdata.length!==0)this.mergeflag()
 			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
-			// this.$refs.mareyChart.paintMareyChart()
 
 			// clear
 			this.selectedTrainData = [];
-			// this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
 			this.scatterLoading = false
 			this.isSearch = false
-
-
-			// this.jsonData = myJsonData
-			// this.mergeflag()
-			// this.$refs.mareyChart.paintMareyChart(this.jsonData,myStationData, this.isSwitch)
-			// var jsonupid = d3.map(this.jsonData, d => d.upid)
-			var scatterlogdata = Object.values(this.scatterlogdata)
-			// var tabledata = d3.filter(scatterlogdata, d => jsonupid.indexOf(d.upid) !== -1 )
-			// this.$refs.jsontable.paintChart(scatterlogdata)
-			// this.$refs.jsontable.paintChart(tabledata)
 		},
 		deepCopy(obj){
 			if(typeof obj!=='object') return obj;
@@ -729,17 +558,6 @@ export default {
 					return json
 				})
 			})
-			// let mergejson = [];
-			// this.jsonData.map(item=>{				
-			// 	mergedata.map(json=>{
-			// 		if(item.upid===json.upid){
-			// 			item.flag=+json.label
-			// 			mergejson.push(item)
-			// 		}
-			// 		return json
-			// 	})
-			// })
-			// this.jsonData=mergejson;
 		},
 		// clearAllChart() {
 		//   this.$refs.mareyChart.paintMareyChart([], {}, "conditionData")
@@ -755,7 +573,7 @@ export default {
 
 		// 获取诊断视图数据
 		getDiagnosisData(choseUpid, widthGap, lengthGap, thicknessGap,platetype) {
-			return steel.getDiadata({
+			return steel.getDiagnosis({
 				'upid': choseUpid,
 				'width': widthGap,
 				'length': lengthGap, 
@@ -814,7 +632,6 @@ export default {
 				})
 			})
 		},
-		
 
 		paintProcess(value) {
 			this.processTurn = value
@@ -837,20 +654,10 @@ export default {
 
 		getStationsData(startDate, endDate) {
 			return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoStationDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/`)
-					.catch(function(error){
-						this.getNotification("getStationsData:"+error)
-					})
+				.catch(function(error){
+					this.getNotification("getStationsData:"+error)
+				})
 		},
-		// erroralert(error){
-		// 	this.isSearch = false
-		// 	this.loadingDataLoading = false
-		// 	this.scatterLoading = false
-		// 		this.$alert(error, '警告', {
-		// 			confirmButtonText: '确定',
-		// 			callback: action => {
-		// 			}
-		// 		});
-		// },
 		changeColor(){
 			this.changeLabelColor()
 			// this.isSwitch = !this.isSwitch
@@ -860,7 +667,6 @@ export default {
 			let selectcolor=this.$refs.mareyChart.changeTrainColor(bool)
 			console.log(selectcolor)
 			if(selectcolor)(this.selectedTrainColor=selectcolor)
-			// this.changeScatterColor();
 			this.$refs.scatterloging.setTrainColor();
 			// // this.selectedTrainColor
 			// let seletcolor=this.$refs.mareyChart.setTrainColor(bool) 
@@ -888,9 +694,6 @@ export default {
 				if(this.diagnosisData["result"].length === 0) continue
 				break
 			}
-			// for(let item = 0;item < 2;item++){
-			// 	this.$refs["wheeler" + item].init()
-			// }
 			this.upidSelect = []
 			value.upidSelect = [...new Set(value.upidSelect)]
 			this.upidSelect = value.upidSelect
@@ -1038,7 +841,6 @@ export default {
 			let processName = this.processArray[processNumber]||'heat'
 
 			
-			let biasData = []
 			if(this.selectedTrainData.length===0){
 				this.getNotification("未选择具体钢板进行分析，请在马雷图选择钢板")
 				return
@@ -1129,9 +931,6 @@ export default {
 			// var s1 = this.dateselect[0].getTime(),s2 = this.dateselect[1].getTime();
 			// var total = (s2 - s1)/1000;
 			// var day = parseInt(total / (24*60*60));//计算整数天数
-			// let startDate = util.timeFormat(this.monthToShow);
-			
-			// let end = new Date(this.monthToShow.valueOf());
 			// end.setMonth(end.getMonth() + 1)
 			// let endDate = util.timeFormat(end);
 			// .then(Response => {
@@ -1195,30 +994,6 @@ export default {
 			// this.paintProcess(value)
 			this.paintRiverLike()
 		},
-		click(){
-			let dom=document.getElementsByClassName("heatclass")
-			let heat=dom[0]
-			heat.addEventListener("mouseover",()=>{
-				this.$refs.force.paintcategory(0)
-			})
-			heat.addEventListener("mouseout",()=>{
-				this.$refs.force.paintreset(0)
-			})
-			let roll=dom[1]
-			roll.addEventListener("mouseover",()=>{
-				this.$refs.force.paintcategory(1)
-			})
-			roll.addEventListener("mouseout",()=>{
-				this.$refs.force.paintreset(1)
-			})
-			let cool=dom[2]
-			cool.addEventListener("mouseover",()=>{
-				this.$refs.force.paintcategory(2)
-			})
-			cool.addEventListener("mouseout",()=>{
-				this.$refs.force.paintreset(2)
-			})
-		},
 		async scattlog() {
 			await baogangAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
 				this.scatterlogdata=Response.data
@@ -1230,7 +1005,6 @@ export default {
 	},
 	mounted() {
 		// console.log(this.startmonth.getMonth())
-		// this.click()
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
 		this.getplatetype()
@@ -1511,24 +1285,6 @@ export default {
 .el-switch__core{
     border-color: #dcdfe6!important;
     background-color:rgb(153, 154, 157)!important;
-}
-.heatclass.heat{
-	background-color: #ffffff!important;
-	&:hover{
-		background-color: #fb8b53!important;
-	}
-}
-.heatclass.cool{
-	background-color: #ffffff!important;
-	&:hover{
-		background-color: #28b2f7!important;
-	}		
-}
-.heatclass.roll{
-	background-color: #ffffff!important;
-	&:hover{
-		background-color:#b4b4b4!important;
-	}		
 }
 .el-select-dropdown__item.selected {
     color: #000000!important;

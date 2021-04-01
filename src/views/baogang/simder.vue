@@ -4,7 +4,6 @@
 
 <script>
 import * as d3 from 'd3'
-import { join } from './jsondata'
 
 export default {
     data () {

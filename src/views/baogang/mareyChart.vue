@@ -7,7 +7,6 @@
 import * as d3 from 'd3';
 import { Delaunay } from 'd3-delaunay';
 import util from './util.js';
-import jsondata, { fill } from './jsondata.js';
 export default {
 	data() {
 		return {

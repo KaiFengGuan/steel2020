@@ -95,7 +95,7 @@ export default {
 			this.paintMareyChart(alldata, sampleStaions, changeColor, brushData)
 		},
 		paintMareyChart(alldata, stationsData, changeColor, brushData) {
-		this.data = alldata,this.station = stationsData
+		this.data = this.deepCopy(alldata), this.station = this.deepCopy(stationsData)
 		var stopsTime = d3.map(alldata, d => {
 			let arr = d3.pairs(d.stops, (a,b) => new Date(b.realTime).getTime() - new Date(a.realTime).getTime())
 			arr.upid = d.upid
@@ -1083,6 +1083,85 @@ export default {
 				// 		.attr("text-anchor", "middle")
 				// 		.attr("dy", "0.5em")
 				// 		.text((mergemixen.percent * 100).toFixed(0) + "%"));
+				// const processindex = [
+				// 	"Heat_Q", "Heat_QUCL", "Heat_T2", "Heat_T2UCL",
+				// 	"Roll_Q", "Roll_QUCL", "Roll_T2", "Roll_T2UCL",
+				// 	"Cool_Q", "Cool_QUCL", "Cool_T2", "Cool_T2UCL"
+				// ],
+				// processdata = {Cool_Q: [],Cool_QUCL: [],Cool_T2: [],Cool_T2UCL: [],Heat_Q: [],Heat_QUCL: [],Heat_T2: [],Heat_T2UCL: [],Roll_Q: [],Roll_QUCL: [],Roll_T2: [],Roll_T2UCL: []},
+				// scaleData = {Cool_Q: [],Cool_QUCL: [],Cool_T2: [],Cool_T2UCL: [],Heat_Q: [],Heat_QUCL: [],Heat_T2: [],Heat_T2UCL: [],Roll_Q: [],Roll_QUCL: [],Roll_T2: [],Roll_T2UCL: []};
+				// // var processRemain = [...data.filter(d => mareyDistance - 15 <= yScale(d) && yScale(d)<= mainHeight + 15 && remainId.indexOf(d.upid) !== -1)]
+				// // var mergeRemain = mergeresult.filter((d, i)=> {
+				// // 	d.merge.map(e => e.mergeSearch = i)
+				// // 	if(mareyDistance - 15 <= positionData[i][0][1] && positionData[i][0][1] <= mainHeight + 15)return true
+				// // }).map(d => d.merge).flat()
+				// if(mareyDistance - 15 <= circleRy && circleRy <= mainHeight + 15){}
+				// var monitorData = [
+				// 	// ...mergeRemain,
+				// 	...processRemain];
+				// for (let item in data){
+				// 	for(let index in processindex){
+				// 		scaleData[processindex[index]].push(brushUCL.get(data[item].upid)[0][processindex[index]])
+				// 	}
+				// }
+				// var monitorId = d3.map(monitorData, d => d.upid)
+				// var badlength = 160,goodlength = 50, disrect = 30, startRect = 160, 
+				// 	underUCL = d3.scaleLinear()
+				// 		.domain( [0, 1])
+				// 		.range([startRect + badlength + goodlength + disrect, startRect + badlength + disrect]),
+				// 	divisionFunc = (arr1, arr2) => d3.map(arr1, (d,i) => arr2[i] == 0 ?( arr1[i] == 0 ? 0.5 : 1.5) : arr1[i]/arr2[i]),
+				// 	division = d3.map(new Array(6), (d,i) => divisionFunc(scaleData[processindex[2*i]], scaleData[processindex[2*i + 1]])),
+				// 	UclScale = d3.map(division, (d,i) => {
+				// 		return d3.scaleLinear()
+				// 			.domain( [1, d3.max(division[i]) > 1 ? d3.max(division[i]) : 2])
+				// 			.range([startRect + badlength, startRect])
+				// 	});
+				// var monitorline = (d, i) => {
+				// 	var arr = [];
+				// 	arr.push([mareylength + 120, yScale(dataUCL.get(d)[0])])
+				// 	for(let j = 0; j < 3; j++){
+				// 		arr.push([arr[arr.length - 1][0] + (j == 0 ? 45 : 30), division[2 * j][i] > 1 ? UclScale[2 * j](division[2 * j][i]) : underUCL(division[2 * j][i])])
+				// 		arr.push([arr[arr.length - 1][0] + 30, arr[arr.length - 1][1]])
+				// 	}
+				// 	arr.push([arr[arr.length - 1][0] + 45, yScale(dataUCL.get(d)[0])])
+				// 	return arr
+				// }
+					
+				// monitorG.append("g")
+				// 	.attr("transform", `translate(${[mareylength + 120, startRect]})`)	//95
+				// 	.selectAll(".monitorRect")
+				// 	.data(division.filter((d, i) => (i % 2) ==0)).join("g")
+				// 		.attr("class", "monitorRect")
+				// 		.attr("transform", (d, i) => `translate(${[60 * (i + 1), 0]})`)
+				// 		.call(g => g.append("rect")
+				// 			.attr("stroke", util.labelColor[0])
+				// 			// .attr("stroke-width", 2.5)
+				// 			.attr("x", -15)
+				// 			.attr("width", 30)
+				// 			.attr("fill", "none")
+				// 			.attr("height", badlength))
+				// 		.call(g => g.append("rect")
+				// 			.attr("stroke", util.labelColor[1])
+				// 			.attr("y", badlength + disrect)
+				// 			.attr("width", 30)
+				// 			.attr("x", -15)
+				// 			.attr("fill", "none")
+				// 			.attr("height", goodlength))
+				// monitorG.append("g")
+				// 	.selectAll("monitorLine")
+				// 	.data(monitorId).join("g")
+				// 		.call(g => g.append("path")
+				// 			.attr("fill", "none")
+				// 			.attr("class", "monitorLine")
+				// 			.attr("stroke", d => vm.trainGroupStyle(dataUCL.get(d)[0]))
+				// 			.attr("stroke-width", 1)
+				// 			.attr("stroke-opacity", 0.4)
+				// 			.attr("d", (d, i) => d3.line()
+				// 				.x(e => e[0])
+				// 				.y(e => e[1])
+				// 				.curve(d3.curveLinear)(monitorline(d, i))
+				// 				)
+				// 			)
 				const meanLine = d3.lineRadial()
 					.curve(d3.curveLinearClosed)
 					.angle((d , i) => i*2/3*Math.PI -Math.PI/3);
@@ -1362,7 +1441,9 @@ export default {
 						}
 					}
 				}
-				var monitorData = [...mergeRemain, ...processRemain];
+				var monitorData = [
+					// ...mergeRemain,
+					...processRemain];
 				// flatdata(data, processindex, scaleData)
 				// flatdata(monitorData, processindex, processdata)
 				for (let item in data){

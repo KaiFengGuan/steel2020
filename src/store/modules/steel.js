@@ -8,6 +8,9 @@ let state = {
     startDate: new Date('2018-11-04 00:00:00'),
     endDate: new Date('2018-11-06 04:00:00'),
     brushSelectColor: "#c6cacc",
+    corrSize: 0.5,
+    multiPara: 15,
+    curveSize: 0.5
 }
 
 let getters = {
@@ -24,7 +27,10 @@ let getters = {
     labelColor : state => state.labelColor,
     startDate: state => state.startDate,
     endDate: state => state.endDate,
-    brushSelectColor: state => state.brushSelectColor
+    brushSelectColor: state => state.brushSelectColor,
+    corrSize: state => state.corrSize,
+    multiPara: state => state.multiPara,
+    curveSize: state => state.curveSize
 }
 
 let actions = {
@@ -45,6 +51,15 @@ let mutations = {
     },
     setEndDate(state, Date){
         state.endDate = Date
+    },
+    setCorrSize(state, size){
+        state.corrSize = size
+    },
+    setmultiPara(state, size){
+        state.multiPara = size
+    },
+    setCurveSize(state,size){
+        state.curveSize = size
     }
 }
 

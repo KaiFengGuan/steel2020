@@ -21,33 +21,48 @@ import upidicon from "../../assets/images/wheel/upid.svg";
 import timesvg from "../../assets/images/wheel/timesvg.svg";
 import categoryicon from "../../assets/images/wheel/category.svg";
 import util from './util.js';
+import {mapGetters, mapMutations} from "vuex"
 export default {
 	data() {
 		return {
 			menuId: 'wheeling' + Math.random().toString(32).slice(-6),
 			svg: undefined,
 			data:[],
+            jsondata: undefined,
+            chorddata: undefined
 		}
 	},
 	methods: {
 	paintChart(jsondata,chorddata) {
+        this.jsondata = jsondata, this.chorddata = chorddata;
         const wheeldata = [] , labels = []
         const menuId = this.menuId
-        for(let item in jsondata['PCASPE']['xData']){
-            labels.push(jsondata['PCASPE']['xData'][item])
+        for(let item in jsondata['INDEX']){
+            labels.push(jsondata['INDEX'][item])
             wheeldata.push({
-                name:jsondata['PCASPE']['xData'][item],
-                PCASPE:jsondata['PCASPE']['sData'][item]?jsondata['PCASPE']['sData'][item]:0,
-                PCAT2:jsondata['PCAT2']['sData'][item]?jsondata['PCAT2']['sData'][item]:0,
-                // outOfGau:jsondata['outOfGau']['sData'][item],
-                result_value:jsondata['result'][item]['value'],
-                result_low:jsondata['result'][item]['l'],
-                result_high:jsondata['result'][item]['u'],
-                result_original_l:jsondata['result'][item]['original_l'],
+                name:jsondata['INDEX'][item],
+                PCASPE:jsondata['CONTQ'][item],
+                PCAT2:jsondata['CONTJ'][item],
+                result_value:jsondata['value'][item],
+                result_low:jsondata['l'][item],
+                result_high:jsondata['u'][item]
             })
         }
-        const details=jsondata['Steel']
-        // this.menuId = this.menuId 
+        // console.log(labels)
+        // return
+        // for(let item in jsondata['PCASPE']['xData']){
+        //     labels.push(jsondata['PCASPE']['xData'][item])
+        //     wheeldata.push({
+        //         name:jsondata['PCASPE']['xData'][item],
+        //         PCASPE:jsondata['PCASPE']['sData'][item]?jsondata['PCASPE']['sData'][item]:0,
+        //         PCAT2:jsondata['PCAT2']['sData'][item]?jsondata['PCAT2']['sData'][item]:0,
+        //         // outOfGau:jsondata['outOfGau']['sData'][item],
+        //         result_value:jsondata['result'][item]['value'],
+        //         result_low:jsondata['result'][item]['l'],
+        //         result_high:jsondata['result'][item]['u'],
+        //         result_original_l:jsondata['result'][item]['original_l'],
+        //     })
+        // }
         const vm=this
         const diameter = document.getElementById(this.menuId).offsetHeight;	
         const width = document.getElementById(this.menuId).offsetWidth;	
@@ -55,7 +70,7 @@ export default {
         // console.log(this.menuId)
 		this.svg=d3.select("#"+vm.menuId)
 			.append("svg")
-			.attr("viewBox", `${-diameter / 2.4} ${-diameter / 2.05} ${width} ${diameter}`)
+			.attr("viewBox", `${-diameter / 2.05} ${-diameter / 2.05} ${width} ${diameter}`)
             .style("width", width)
             .style("height", diameter);
         class wheelRound{
@@ -123,7 +138,6 @@ export default {
                 this._dayRadian = 0; // one-day radian
 
                 this._labels=null;
-                this._details=null;
                 this._tempUnit = "°F";
                 this._precUnit = "in";
                 this._currMonth = 0;
@@ -209,9 +223,6 @@ export default {
             }
             labels(_){
                 return arguments.length ? (this._labels = _, this) : this._labels;
-            }
-            details(_){
-                return arguments.length ? (this._details = _, this) : this._labels;
             }
 
             field(_) {
@@ -487,25 +498,32 @@ export default {
                     piearc = d3.arc()
                         .innerRadius(0)
                         .outerRadius(r.bubble * 0.12),
-                    outrate = (item1 , item2) => {
-                        return d => (d.humidity>limit|d.precipitation>limit) ? item1 : item2
-                    },
+
                     titleinfo = ["upid" , "toc" , "cate", "p_thick", "p_wid", "p_len", "s_thick", "s_wid", "s_len"],
                     titleicon=[upidicon,timesvg,categoryicon,thickicon,widthicon,lengthicon,thickicon,widthicon,lengthicon],
                     graph={nodes:[],links:[]},
                     wm=this,
                     colorLinear1=[],
                     colorLinear2=[];
-                    const sortdata=d3.filter(this._chartData, d => d.humidity>limit|d.precipitation>limit);
-                    const SPE=d3.sort(sortdata,d=>d.precipitation),
+                    var SPE=d3.map(this._chartData,d=>d.precipitation),
+                        T2=d3.map(this._chartData,d=>d.humidity);
+                    this._g.attr("class","wheelg")
+                    var sortdata = this._chartData.filter(d =>{
+                        return (SPE.indexOf(d.precipitation)<= vm.multiPara || T2.indexOf(d.humidity)<= vm.multiPara) && d.deviation !==0
+                    })
+                    console.log(sortdata.length)
+                    var SPE=d3.sort(sortdata,d=>d.precipitation),
                         T2=d3.sort(sortdata,d=>d.humidity),
                         res=d3.sort(sortdata,d=>d.deviation);
-                    this._g.attr("class","wheelg")
                     for (let item in SPE){
                         let query=SPE[item].dateStr                     
-                        SPE[item].order=+item+1+(+T2.findIndex((value, index, arr)=> value.dateStr===query))+1+(+res.findIndex((value, index, arr)=> value.dateStr===query))+1
+                        SPE[item].order=+item+1+(+T2.findIndex((value)=> value.dateStr===query))+1+(+res.findIndex((value)=> value.dateStr===query))+1
                     }
                     const sample=d3.sort(SPE,d=>d.order);
+                    var sampleId = d3.map(sample, d => d.dateStr),
+                    outrate = (item1 , item2) => {
+                        return d => (sampleId.indexOf(d.dateStr) !== -1) ? item1 : item2
+                    };
                 const vis = this._g.selectAll("#" +menuId + " .vis").data(this._chartData);
                 for (let key in xpad){
                     const processdata = [], 
@@ -605,18 +623,18 @@ export default {
                                 .attr("r",outrate (2 , 1))
                                 .attr("opacity", 1);
                             d3.selectAll("#" +menuId + " .precipitation"+key)
-                                .attr("stroke",d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorlinear1(d.precipitation)+2) :daker)
+                                .attr("stroke",d => (sampleId.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorlinear1(d.precipitation)+2) : daker)
                                 .attr("opacity", 1)
                             d3.selectAll("#" +menuId + " .humidity"+key)
-                                .attr("stroke",d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorlinear2(d.humidity)+2) :daker)
+                                .attr("stroke",d => (sampleId.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorlinear2(d.humidity)+2) : daker)
                                 .attr("opacity", 1)
                             d3.selectAll("#" +menuId + " .lead"+key )
                                 .attr("stroke-width", outrate(limit,0.5))
                                 .attr("opacity", 0.4)
                             d3.selectAll("#" +menuId + " .linestart")
-                                .attr("y1", d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? this._y(d.avg)+3.5 : this._y(d.avg)+2)
+                                .attr("y1", d => (sampleId.indexOf(d.dateStr) !== -1) ? this._y(d.avg)+3.5: this._y(d.avg)+2)
                             d3.selectAll("#" +menuId + " .linecurve")
-                                .attr("y2", d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? this._y(d.avg)-3.5 : this._y(d.avg)-2)
+                                .attr("y2", d => (sampleId.indexOf(d.dateStr) !== -1) ? this._y(d.avg)-3.5:  this._y(d.avg)-2)
                             d3.selectAll("#" +menuId + " .textname" + key)
                                 .attr("font-weight", "bold")
                                 .attr("opacity" , 1)
@@ -722,14 +740,7 @@ export default {
                             .attr("height","10px")
                             .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 5.8})`)
                             .attr("y",-r.inner*1)
-                            .attr("href", icon[key]))
-                    // if(+key === 2){
-                    //     d3.select("#" +menuId + " #icon"+key)
-                    //         .attr("width", "30px")
-                    //         .attr("height","30px")
-                    //         .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 13.8})`)
-                    //         .attr("y", "-4.1em")
-                    // }                        
+                            .attr("href", icon[key]))                
 
                     for (let item in processdata){
                         const pindex=processdata[item];
@@ -819,20 +830,19 @@ export default {
                                 initcss()
                                 axisout(d.dateStr,key,lck,daker,true);
                             });
-                    const seriesdata=processdata.filter(outrate(true,false))
-                    for (let item in seriesdata){
-                        let index = chorddata['label'].indexOf(seriesdata[item].dateStr),targets=[],id=seriesdata[item].dateStr;
-                        for (let target =item+1;target < seriesdata.length ;target++){
-                            if(chorddata['corr'][item][target]<1&&chorddata['corr'][item][target]>0){
-                                targets.push(seriesdata[target].dateStr)
-                                graph.links.push({'source':id,'target':seriesdata[target].dateStr,value:1})
+                }
+                for (let item in sample){
+                    let targets=[],id=sample[item].dateStr;
+                    for (let target =item+1;target < sample.length ;target++){
+                        if(chorddata['corr'][item][target] < vm.corrSize&&chorddata['corr'][item][target]>0){
+                            if(this._months.indexOf(sample[item].month) == this._months.indexOf(sample[target].month)){
+                                targets.push(sample[target].dateStr)
+                                graph.links.push({'source':id,'target':sample[target].dateStr,value:1})
                             }
                         }
-                        graph.nodes.push({'id':id,'group':key,'targets':targets})
                     }
+                    graph.nodes.push({'id':id,'group': this._months.indexOf(sample[item].month),'targets':targets})
                 }
-                // console.log(graph)
-
                 const radius = r.outer*1.115,
                     colornone = "#ccc",
                     colorout = "#f00",
@@ -842,7 +852,7 @@ export default {
                     const tree = d3.cluster()
                         .size([2 * Math.PI, r.inner*0.8])
                     const line = d3.lineRadial()
-                        .curve(d3.curveBundle.beta(0.5))
+                        .curve(d3.curveBundle.beta(vm.curveSize))
                         // .curve(d3.curveNatural)
                         .radius(d => d.y)
                         .angle(d => d.x)
@@ -885,19 +895,6 @@ export default {
                                 d.x=xpad[+d.data.group](d.data.id) + v +1/3*(Math.PI);
                                 return `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y},0)`
                                 })
-                        // .append("text")
-                        //     .attr("dy", "0.11em")
-                        //     .attr("x", d => d.x < Math.PI ? 6 : -6)
-                        //     .attr("text-anchor", d => d.x < Math.PI ? "start" : "end")
-                        //     .attr("transform", d => d.x >= Math.PI ? "rotate(180)" : null)
-                        //     // .text(d => d.data.id)
-                        //     .text('1')
-                        //     .each(function(d) { d.text = this; })
-                        //     .on("mouseover", overed)
-                        //     .on("mouseout", outed)
-                        //     .call(text => text.append("title").text(d => `${d.data.id}
-                        // ${d.outgoing.length} outgoing
-                        // ${d.incoming.length} incoming`));
                         .call(g =>g.append("path")
                             .attr("transform", d => `translate(${-d.y},0)  rotate(${-90-v* 180 / Math.PI})`)
                             .attr("fill", "white")
@@ -986,10 +983,10 @@ export default {
                                 .attr("r",2)
                                 .attr("opacity", 1);
                         d3.select("#" +menuId + " #precipitation"+name)
-                            .attr("stroke",d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorLinear1[key](d.precipitation)+2) :daker)
+                            .attr("stroke",d => (sampleId.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorLinear1[key](d.precipitation)+2): daker)
                             .attr("opacity", 1)
                         d3.select("#" +menuId + " #humidity"+name)
-                            .attr("stroke",d=> d => d.humidity>limit|d.precipitation>limit|d.low>d.value|d.high<d.value ? d3.color(lck).darker(colorLinear2[key](d.humidity)+2) :daker)
+                            .attr("stroke",d => (sampleId.indexOf(d.dateStr) !== -1) ?  d3.color(lck).darker(colorLinear2[key](d.humidity)+2): daker)
                             .attr("opacity", 1)
                         d3.selectAll("#" +menuId + " .line"+name)
                             .attr("stroke",d3.color(lck).darker(4))
@@ -998,7 +995,7 @@ export default {
                             .attr("opacity", 0.4)
                         d3.selectAll("#" +menuId + " #textline" + name)
                             .style("visibility", "visible")
-                            .attr("y2", outrate(r.outer+r.bubble*1.20,r.outer+r.bubble*1.50))
+                            .attr("y2", outrate(r.outer+r.bubble*1.20,r.outer+r.bubble*1.10))
                         d3.selectAll("#" +menuId + " #linestart"+ name)
                             .attr("y1", d => wm._y(d.avg)+3.5 )
                         d3.selectAll("#" +menuId + " #linecurve" + name)
@@ -1260,7 +1257,6 @@ export default {
                         .size([width, diameter])
                         .data(wheeldata)
                         .labels(labels)
-                        .details(details)
                         .render();
     },
     init(){
@@ -1270,7 +1266,29 @@ export default {
 	mounted() {
 	},
 	computed:{
-	}
+        ...mapGetters([
+            "corrSize",
+            "multiPara",
+            "curveSize"
+        ])
+	},
+    watch:{
+        corrSize:function(){
+            if(this.jsondata !== undefined){
+                this.paintChart(this.jsondata, this.chorddata)
+            }
+		},
+        multiPara:function(){
+            if(this.jsondata !== undefined){
+                this.paintChart(this.jsondata, this.chorddata)
+            }
+        },
+        curveSize: function(){
+            if(this.jsondata !== undefined){
+                this.paintChart(this.jsondata, this.chorddata)
+            }
+        }
+    }
 }
 </script>
 

@@ -73,16 +73,16 @@
 				<el-row>
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
-							<el-col :span="12"><span>Condition View</span></el-col>
-							<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:20px">MinRange</el-col>
-							<el-col :span="2">
+							<el-col :span="14"><span>Condition View</span></el-col>
+							<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">MinRange</el-col>
+							<el-col :span="1">
 								<el-slider v-model="minrange" :step="1" :min="5" :max="40" class="my-slider"
-									style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate1"></el-slider>
+									style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate"></el-slider>
 							</el-col>
-							<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:20px">MinMerge</el-col>
+							<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">MinMerge</el-col>
 							<el-col :span="2">
 								<el-slider v-model="minconflict" :step="1" :min="1" :max="10" class="my-slider"
-									style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate2"></el-slider>
+									style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate"></el-slider>
 							</el-col>
 							<el-col :span="2">
 								<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:0px" type="info" plain @click="changeColor">
@@ -100,48 +100,26 @@
 				</el-row>
 				<el-row>
 					<el-row style="margin-top: 3px;">
-						<el-col :span="24" >
-							<!-- <el-row>
-								<el-card class="myel-card">
-									<div class="my-card-title" slot="header">
-										<el-col :span="12"><span>Condition View</span></el-col> -->
-										<!-- <el-col :span="4">
-											<el-switch v-model="isSwitch" @change="switchChange" active-text="Quality" inactive-text="Category" class="myel-swtich"></el-switch>
-										</el-col> -->
-										<!-- <el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:20px">MinRange</el-col>
-										<el-col :span="2">
-											<el-slider v-model="minrange" :step="1" :min="15" :max="40" class="my-slider"
-												style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate1"></el-slider>
-										</el-col>
-										<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:20px">MinMerge</el-col>
-										<el-col :span="2">
-											<el-slider v-model="minconflict" :step="1" :min="1" :max="15" class="my-slider"
-												style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate2"></el-slider>
-										</el-col> -->
-										<!-- <el-col :span="1">{{minconflict}}</el-col> -->
-										<!-- <el-col :span="2">
-											<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:0px" type="info" plain @click="changeColor">
-												<img src="../../assets/images/color.svg" style="height:16px;width:16px;transform: translate(0px, -2px)"></el-button>
-										</el-col>
-										<el-col :span="1">
-											<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:-2px" type="info" plain @click="mergeUpdate">
-												<img src="../../assets/images/diagnosis.svg" style="height:16px;width:16px;"></el-button>
-										</el-col>
-
-
-									</div>
-									<div class="my-card-body">
-										<marey-chart style="text-align: center; height: 484px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
-									</div>
-								</el-card>
-							</el-row> -->
 							<el-row>
 								<div>
 									<el-card class="myel-card">
 										<div class="my-card-title" slot="header">
-											<el-col :span="23"><span>Diagnosis View</span></el-col>
-											<!-- <el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:36px">SortIndex</el-col>
-											<el-col :span="8" ><div style="height:100px,width:350px;border:solid 0.01px #f7f7f7"><simder ref="simpleSlider"></simder></div></el-col> -->
+											<el-col :span="14"><span>Diagnosis View</span></el-col>
+											<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">CurveSize</el-col>
+											<el-col :span="1">
+												<el-slider v-model="curvesize" :step="0.01" :min="0" :max="1" class="my-slider"
+													style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="curveUpdate"></el-slider>
+											</el-col>
+											<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">MultiPara</el-col>
+											<el-col :span="1">
+												<el-slider v-model="multisize" :step="1" :min="10" :max="40" class="my-slider"
+													style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="multiUpdate"></el-slider>
+											</el-col>
+											<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">CorrConfig</el-col>
+											<el-col :span="1">
+												<el-slider v-model="corrsize" :step="0.1" :min="0" :max="1" class="my-slider"
+													style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="corrUpdate"></el-slider>
+											</el-col>
 											<el-col :span="1">
 												<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;float:right">
 												<el-row class="toltip">
@@ -225,7 +203,6 @@
 									</el-card>							
 								</div>
 							</el-row>
-						</el-col>
 					</el-row>
 
 						<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
@@ -265,7 +242,7 @@ import scatterAxis from "./scatterAxis.vue"
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import myJsonData from "./sampledata/jsondata.json"
-import myStationData from "./stationdata.js"
+import myStationData from "./sampledata/stationdata.js"
 import scatterlogerdata from "./sampledata/scatterlog.json"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
@@ -351,7 +328,10 @@ export default {
 				thickness: 0.5
 			},
 			scatterResponse: null,
-			upidSelect: ["", "  "]
+			upidSelect: ["", "  "],
+			corrsize: 0.5,
+			multisize: 15,
+			curvesize: 0.5
 		}
 	},
 	computed: {
@@ -359,7 +339,9 @@ export default {
 			// "isSwitch",
 			"trainGroupStyle",
 			"startDate",
-			"endDate"
+			"endDate",
+			// "corrSize",
+			// "multiPara"
 		]),
 		dateselect : function(){
 			var endmonth = new Date(this.startmonth.valueOf())
@@ -372,6 +354,8 @@ export default {
 			return [this.startmonth, endmonth]
 		},
 		monthdata : vm => sampledata[+vm.startmonth.getMonth()+1],
+		allupid : vm => d3.map(vm.monthdata, d => d.upid),
+		upidData : vm => d3.group(vm.monthdata, d => d.upid),
 		startDateString: vm => util.timeFormat(vm.startDate),
 		endDateString: vm => util.timeFormat(vm.endDate),
 		selectDateStart: vm => util.timeFormat(vm.dateselect[0]),
@@ -401,7 +385,10 @@ export default {
 	},
 	methods: {
 		...mapMutations([
-			"changeLabelColor"
+			"changeLabelColor",
+			"setCorrSize",
+			"setmultiPara",
+			"setCurveSize"
 		]),
 		getNotification(notice){
 			const h = this.$createElement;
@@ -418,19 +405,19 @@ export default {
 			this.getTimeBrushData();
 		},
 		async changeUpid(upid){
-			let query=[]
-			for (let item of this.plateTempPropvalue){
-				if(item==='All'){
-					query.push(item)
-				}
-			}		
-			if(query.length===0)query=this.plateTempPropvalue
-			this.selectedUpid = upid!==undefined ? "UPID " + upid : "UPID"
-			let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
-			this.diagnosisData=diagnosisData
-			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-				this.$refs.wheelering.paintChart(diagnosisData,Response.data)
-			})
+			// let query=[]
+			// for (let item of this.plateTempPropvalue){
+			// 	if(item==='All'){
+			// 		query.push(item)
+			// 	}
+			// }		
+			// if(query.length===0)query=this.plateTempPropvalue
+			// this.selectedUpid = upid!==undefined ? "UPID " + upid : "UPID"
+			// let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
+			// this.diagnosisData=diagnosisData
+			// await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
+			// 	this.$refs.wheelering.paintChart(diagnosisData,Response.data)
+			// })
 		},
 		async changeTime() {
 			// // this.$message('这是一条消息提示');
@@ -462,15 +449,14 @@ export default {
 			if(end)this.endDate = new Date(end)
 		},
 		async getHttpData() {
-			// console.log(this.brushData)
-			// this.jsonData = myJsonData
-			// this.mergeflag()
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
-			// this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
-			// // this.$refs.wheelering.paintChart()
-			// return
+			console.log(this.brushData)
+			this.jsonData = myJsonData
+			this.mergeflag()
+			this.jsonData = this.jsonData.filter(d => {
+				return this.brushUpid.includes(d.upid)
+			})
+			this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
+			return
 
 			// this.clearAllChart()
 			this.plateTempPropvalue=['All']
@@ -647,7 +633,7 @@ export default {
 
 		getJsonData(startDate, endDate) {
 			return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoDataDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/50/`)
-		 .catch(error => {
+		.catch(error => {
 				this.getNotification("getJsonData:"+error)
 			})
 		},
@@ -698,17 +684,6 @@ export default {
 			value.upidSelect = [...new Set(value.upidSelect)]
 			this.upidSelect = value.upidSelect
 			console.log(this.upidSelect)
-			let index = 0
-			// for(let item in value.upidSelect){
-			// 	// if(this.upidSelect.length > 3) break
-			// 	if(value.upidSelect[item] !== undefined && this.upidSelect.length < 2)
-			// 	var label = await this.paintScatteLog(value.upidSelect[item], index)
-			// 	console.log(label)
-			// 	if(label){
-			// 		index ++
-			// 		(this.upidSelect.push(value.upidSelect[item]))
-			// 	}
-			// }
 
 			for(let item of value.upidSelect){
 				await this.paintScatterList(item)
@@ -717,18 +692,20 @@ export default {
 		},
 		async paintScatterList(upid){
 			this.$nextTick(function() {this.$refs[upid][0].init()})
-			let query=[]
-			for (let item of this.plateTempPropvalue){
-				if(item==='All'){
-					query.push(item)
-				}
-			}		
-			if(query.length===0)query=this.plateTempPropvalue
-			let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
-			console.log(diagnosisData["result"].length === 0)
-			if(diagnosisData["result"].length === 0){
-				return false
-			}
+			// let query=[]
+			// for (let item of this.plateTempPropvalue){
+			// 	if(item==='All'){
+			// 		query.push(item)
+			// 	}
+			// }		
+			// if(query.length===0)query=this.plateTempPropvalue
+			// let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
+			// console.log(diagnosisData["result"].length === 0)
+			// if(diagnosisData["result"].length === 0){
+			// 	return false
+			// }
+			console.log(upid)
+			var diagnosisData = this.upidData.get(upid)[0]
 			if(this.corrdata.length !== 0) {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
 				return false
@@ -766,13 +743,14 @@ export default {
 			this.isMerge = !this.isMerge
 			this.mareyUpdate()
 		},
-		mareyUpdate1(value){
-			this.minrange = value
-			this.mareyUpdate()
+		corrUpdate(){
+			this.setCorrSize(this.corrsize)
 		},
-		mareyUpdate2(value){
-			this.minconflict = value
-			this.mareyUpdate()
+		multiUpdate(){
+			this.setmultiPara(this.multisize)
+		},
+		curveUpdate(){
+			this.setCurveSize(this.curvesize)
 		},
 		trainMouse(value){
 			this.$refs.scatterloging.mouse(value)
@@ -811,16 +789,19 @@ export default {
 		},
 
 		async paintRiverLike() {
-			let query=[]
-			for (let item of this.plateTempPropvalue){
-				if(item==='All'){
-					query.push(item)
-				}
-			}		
-			if(query.length===0)query=this.plateTempPropvalue
+			// let query=[]
+			// for (let item of this.plateTempPropvalue){
+			// 	if(item==='All'){
+			// 		query.push(item)
+			// 	}
+			// }		
+			// if(query.length===0)query=this.plateTempPropvalue
 			this.selectedUpid = this.selectedTrainData[this.selectedTrainData.length-1]!==undefined ? "UPID " + this.selectedTrainData[this.selectedTrainData.length-1] : "UPID"
-			let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
-			this.diagnosisData=diagnosisData
+			// let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
+			var diagnosisData = this.upidData.get(this.selectedTrainData[this.selectedTrainData.length-1])[0]
+			var processData = []
+			this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
+			this.diagnosisData = diagnosisData
 			// let processDetail = []
 			// for(let item of this.processArray){
 			// 	console.log(item)
@@ -831,7 +812,7 @@ export default {
 			// }
 			// console.log(processDetail)
 			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-				this.$refs.wheelering.paintChart(diagnosisData,Response.data, )
+				this.$refs.wheelering.paintChart(diagnosisData,Response.data, processData)
 			})
 			// this.paintDetailPro(this.processTurn)
 		},
@@ -1007,22 +988,45 @@ export default {
 		// console.log(this.startmonth.getMonth())
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
+		// this.paintScatterList("")
 		this.getplatetype()
 		// this.isSearch = false
 		// this.getHttpData()
 		this.changeTime()
+		this.trainClick({
+			"list": [
+				"18B05337000",
+				"18B05338000",
+				"18B05339000",
+				"18B05341000",
+				"18B05342000",
+				"18B05343000",
+				"18B05334000"
+			],
+			"color": "#94a7b7",
+			"upidSelect": [
+				"18B05337000",
+				"18B05338000",
+				"18B05339000",
+				"18B05341000",
+				"18B05342000",
+				"18B05343000",
+				"18B05334000"
+			],
+			"type": "group"
+		})
 	},
 	watch: {
 		minconflict:  {
 			handler(val){
-				console.log(val)
-				console.log(this.isSwitch)
+				// console.log(val)
+				// console.log(this.isSwitch)
 			},
 			deep: true,
 			immediate: false,
 		},
 		minrange:  function(val, oldVal){
-			console.log(val)
+			// console.log(val)
 		},
 		startDate:function(){
 			this.$refs.scatterloging.paintArc([this.startDate, this.endDate])

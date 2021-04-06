@@ -3,7 +3,6 @@
 </template>
 <script>
 var echarts = require('echarts');
-import myJsonData from "./myData.js"
 export default {
     props: {
         chartName: {

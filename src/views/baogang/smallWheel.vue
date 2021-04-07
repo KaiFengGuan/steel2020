@@ -1109,7 +1109,7 @@ export default {
                         const t = wm._texts;
                         let x=e.offsetX+wm._g.node().getBBox().x,
                             y=e.offsetY+wm._g.node().getBBox().y;
-                        x*y>0 ? (x<0 ? (x=x-40,y=y-40):(x=x+20,y=y+40)) :(x<0 ? (x=x-40,y=y+40):(x=x+40,y=y-60));
+                        x*y>0 ? (x<0 ? (x=x-20,y=y-20):(x=x+20,y=y+20)) :(x<0 ? (x=x-20,y=y+20):(x=x+20,y=y-20));
                         wm._dailyInfo = wm._g.append("g")
                             // .style("visibility", "hidden")
                             .attr("transform", `translate(${[x,y]})`)

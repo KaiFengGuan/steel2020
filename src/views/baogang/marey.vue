@@ -5,6 +5,8 @@
 				<el-row>
 					<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
 					<el-row>
+						<!-- id="month-data" -->
+						<el-col :span="10" id="month-data"><span>Month Picker</span></el-col>
 						<el-col :span="10">
 							<el-date-picker v-model="startmonth" type="month" placeholder="选择月" @change="changeTime"
 								style="width:110px;margin:10px 0px 10px 20px" size="mini"></el-date-picker>
@@ -23,7 +25,9 @@
 								</div>	
 							</el-card>
 						</el-col> -->
-						<el-button style="margin-top:10px" type="info" size="mini" plain @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
+						<el-col :span="4">
+							<el-button style="margin-top:10px" size="small" plain @click="getHttpData" icon="el-icon-search" :disabled="isSearch" ></el-button>
+						</el-col>
 					</el-row>
 					<el-row>
 						<el-col :span="24" 
@@ -169,7 +173,7 @@
 											<el-row>
 												<div style="overflow-y:scroll;height:510px">
 												<el-row v-for="item of upidSelect" :key = item>
-													<el-card class="myel-card myel-tab">
+													<el-card class="myel-card myel-tab" :style="{border: sampleCss[item]}">
 														<div slot="header">
 																<el-row style="height:25px"> 
 																	<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
@@ -247,6 +251,7 @@ import scatterlogerdata from "./sampledata/scatterlog.json"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
 import { mapGetters, mapMutations} from 'vuex'
+import Vue from 'vue';
 export default {
 	components: { mareyChart, scatter, timeBrush,
 		brushableParallel, riverLike, scatterAxis, threeBar,scatterlog , wheeler , smallWheel, slider},
@@ -331,13 +336,14 @@ export default {
 			upidSelect: ["", "  "],
 			corrsize: 0.5,
 			multisize: 15,
-			curvesize: 0.5
+			curvesize: 0.5,
+			sampleCss:{}
 		}
 	},
 	computed: {
 		...mapGetters([
 			// "isSwitch",
-			"trainGroupStyle",
+			"trainBorder",
 			"startDate",
 			"endDate",
 			// "corrSize",
@@ -706,35 +712,19 @@ export default {
 			// }
 			console.log(upid)
 			var diagnosisData = this.upidData.get(upid)[0]
+			console.log(diagnosisData)
+			Vue.set(this.sampleCss, upid, "solid 0.25px " + this.trainBorder(diagnosisData))
 			if(this.corrdata.length !== 0) {
+				console.log(this.sampleCss)
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
 				return false
 			}
 			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
 				this.$nextTick(function() {
-				this.$refs[upid][0].paintChart(diagnosisData,Response.data)
-				this.corrdata = Response.data
+					this.$refs[upid][0].paintChart(diagnosisData,Response.data)
+					this.corrdata = Response.data
+				})	
 			})
-				
-			})
-		},
-		async paintScatteLog(upid, index) {
-			let query=[]
-			for (let item of this.plateTempPropvalue){
-				if(item==='All'){
-					query.push(item)
-				}
-			}
-			if(this.upidSelect.length > 3) return		
-			if(query.length===0)query=this.plateTempPropvalue
-			let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
-			if(diagnosisData["result"].length === 0){
-				return false
-			}
-			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-				this.$refs["wheeler" + index].paintChart(diagnosisData,Response.data)
-			})
-			return true
 		},
 		mareyUpdate(){
 			this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
@@ -993,28 +983,6 @@ export default {
 		// this.isSearch = false
 		// this.getHttpData()
 		this.changeTime()
-		this.trainClick({
-			"list": [
-				"18B05337000",
-				"18B05338000",
-				"18B05339000",
-				"18B05341000",
-				"18B05342000",
-				"18B05343000",
-				"18B05334000"
-			],
-			"color": "#94a7b7",
-			"upidSelect": [
-				"18B05337000",
-				"18B05338000",
-				"18B05339000",
-				"18B05341000",
-				"18B05342000",
-				"18B05343000",
-				"18B05334000"
-			],
-			"type": "group"
-		})
 	},
 	watch: {
 		minconflict:  {
@@ -1275,7 +1243,22 @@ export default {
 		border-bottom: solid 0.25px #e0e0e0;
 	}
 }
-
+#month-data {
+	// text-indent:20px;
+	font-family: Calibri;
+	// background-color: #f7f7f7;
+	font-weight: bold;
+	text-align: center;
+	font-size: 14px;
+	color: #6d7885;
+	// height: 30px;
+	padding: 15px 2px 2px 20px;
+	// position: absolute;
+	// left: 50%;
+	// top: 50%;
+	// transform: translate(-50%, -50%);
+	// border-bottom: solid 0.25px #e0e0e0;
+}
 // .el-card.my-card-body-detail{
 //   border: solid #f13615
 // }

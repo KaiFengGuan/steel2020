@@ -684,19 +684,28 @@ export default {
                             const line = d3.line()
                                     .x(d => d[0])
                                     .y(d => d[1])
-                                    .curve(d3.curveCatmullRom)
+                                    .curve(d3.curveLinear)
                                 this._g.append("path")
                                 .attr("class", "gfhegiehfi")
-                                    .attr("d", d3.linkHorizontal()({
-                                        source: d.path[0],
-                                        target: d.path[1]
-                                        }))
+                                    .attr("d", line(d.path))
                                     .attr("stroke", d3.color(lc[xkey]).darker(0.5))
                                     .attr("opacity", 0.6)
                                     .attr("stroke-width", 3.5)
                                     .attr("fill", "none").on("mouseover", function(e,d){
                                         console.log(angle)
                                     })
+                                // this._g.append("path")
+                                // .attr("class", "gfhegiehfi")
+                                //     .attr("d", d3.linkHorizontal()({
+                                //         source: d.path[0],
+                                //         target: d.path[1]
+                                //         }))
+                                //     .attr("stroke", d3.color(lc[xkey]).darker(0.5))
+                                //     .attr("opacity", 0.6)
+                                //     .attr("stroke-width", 3.5)
+                                //     .attr("fill", "none").on("mouseover", function(e,d){
+                                //         console.log(angle)
+                                //     })
                     }
             }
             _renderMainBar(){

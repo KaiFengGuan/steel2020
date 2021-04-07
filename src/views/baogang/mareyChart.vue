@@ -1083,39 +1083,84 @@ export default {
 				// 		.attr("text-anchor", "middle")
 				// 		.attr("dy", "0.5em")
 				// 		.text((mergemixen.percent * 100).toFixed(0) + "%"));
-				// const processindex = [
-				// 	"Heat_Q", "Heat_QUCL", "Heat_T2", "Heat_T2UCL",
-				// 	"Roll_Q", "Roll_QUCL", "Roll_T2", "Roll_T2UCL",
-				// 	"Cool_Q", "Cool_QUCL", "Cool_T2", "Cool_T2UCL"
-				// ],
+			var processindex = [
+					"Heat_Q", "Heat_QUCL", "Heat_T2", "Heat_T2UCL",
+					"Roll_Q", "Roll_QUCL", "Roll_T2", "Roll_T2UCL",
+					"Cool_Q", "Cool_QUCL", "Cool_T2", "Cool_T2UCL"
+				],
 				// processdata = {Cool_Q: [],Cool_QUCL: [],Cool_T2: [],Cool_T2UCL: [],Heat_Q: [],Heat_QUCL: [],Heat_T2: [],Heat_T2UCL: [],Roll_Q: [],Roll_QUCL: [],Roll_T2: [],Roll_T2UCL: []},
-				// scaleData = {Cool_Q: [],Cool_QUCL: [],Cool_T2: [],Cool_T2UCL: [],Heat_Q: [],Heat_QUCL: [],Heat_T2: [],Heat_T2UCL: [],Roll_Q: [],Roll_QUCL: [],Roll_T2: [],Roll_T2UCL: []};
+				scaleData = {Cool_Q: [],Cool_QUCL: [],Cool_T2: [],Cool_T2UCL: [],Heat_Q: [],Heat_QUCL: [],Heat_T2: [],Heat_T2UCL: [],Roll_Q: [],Roll_QUCL: [],Roll_T2: [],Roll_T2UCL: []};
 				// // var processRemain = [...data.filter(d => mareyDistance - 15 <= yScale(d) && yScale(d)<= mainHeight + 15 && remainId.indexOf(d.upid) !== -1)]
 				// // var mergeRemain = mergeresult.filter((d, i)=> {
 				// // 	d.merge.map(e => e.mergeSearch = i)
 				// // 	if(mareyDistance - 15 <= positionData[i][0][1] && positionData[i][0][1] <= mainHeight + 15)return true
 				// // }).map(d => d.merge).flat()
-				// if(mareyDistance - 15 <= circleRy && circleRy <= mainHeight + 15){}
+				for (let item in data){
+					for(let index in processindex){
+						scaleData[processindex[index]].push(brushUCL.get(data[item].upid)[0][processindex[index]])
+					}
+				}
+				if(mareyDistance - 15 <= circleRy && circleRy <= mainHeight + 15){
+					// for (let item in mergeItem){
+					// 	for(let index in processindex){
+					// 		scaleData[processindex[index]].push(brushUCL.get(mergeItem[item].upid)[0][processindex[index]])
+					// 	}
+					// }
+					var badlength = 160,goodlength = 50, disrect = 30, startRect = 160, 
+						underUCL = d3.scaleLinear()
+							.domain( [0, 1])
+							.range([startRect + badlength + goodlength + disrect, startRect + badlength + disrect]),
+						divisionFunc = (arr1, arr2) => d3.map(arr1, (d,i) => arr2[i] == 0 ?( arr1[i] == 0 ? 0.5 : 1.5) : arr1[i]/arr2[i]),
+						division = d3.map(new Array(6), (d,i) => divisionFunc(scaleData[processindex[2*i]], scaleData[processindex[2*i + 1]])),
+						UclScale = d3.map(division, (d,i) => {
+							return d3.scaleLinear()
+								.domain( [1, d3.max(division[i]) > 1 ? d3.max(division[i]) : 2])
+								.range([startRect + badlength, startRect])
+						});
+					var monitorline = (d, i) => {
+						var arr = [];
+						arr.push([mareylength + 120, yScale(d)])
+						for(let j = 0; j < 3; j++){
+							arr.push([arr[arr.length - 1][0] + (j == 0 ? 45 : 30), division[2 * j][i] > 1 ? UclScale[2 * j](division[2 * j][i]) : underUCL(division[2 * j][i])])
+							arr.push([arr[arr.length - 1][0] + 30, arr[arr.length - 1][1]])
+						}
+						arr.push([arr[arr.length - 1][0] + 45, yScale(d)])
+						return arr
+					}
+					var monitorPosition = mergeItem.map(monitorline)
+					console.log(monitorPosition)
+					monitorG
+						.append("path")
+						.attr("fill", pathColor)
+						.attr("opacity", 0.4)
+						.attr("class", "monitorPath")
+						.datum(d3.map(monitorPosition[0], d => d[0]))
+						// .attr("stroke-width", 1)
+						.attr("d", d3.area()
+                                .curve(d3.curveLinear)
+                                .x((d, i) => d)
+                                .y0((d, i) => d3.min(d3.map(monitorPosition, e => e[i][1])))
+                                .y1((d, i) => d3.max(d3.map(monitorPosition, e => e[i][1]))))
+						// .selectAll("monitorLine")
+						// .data(monitorId).join("g")
+						// 	.call(g => g.append("path")
+						// 		.attr("fill", "none")
+						// 		.attr("class", "monitorLine")
+						// 		.attr("stroke", d => vm.trainGroupStyle(dataUCL.get(d)[0]))
+						// 		.attr("stroke-width", 1)
+						// 		.attr("stroke-opacity", 0.4)
+						// 		.attr("d", (d, i) => d3.line()
+						// 			.x(e => e[0])
+						// 			.y(e => e[1])
+						// 			.curve(d3.curveLinear)(monitorline(d, i))
+						// 			)
+						// 		)
+				}
 				// var monitorData = [
 				// 	// ...mergeRemain,
 				// 	...processRemain];
-				// for (let item in data){
-				// 	for(let index in processindex){
-				// 		scaleData[processindex[index]].push(brushUCL.get(data[item].upid)[0][processindex[index]])
-				// 	}
-				// }
 				// var monitorId = d3.map(monitorData, d => d.upid)
-				// var badlength = 160,goodlength = 50, disrect = 30, startRect = 160, 
-				// 	underUCL = d3.scaleLinear()
-				// 		.domain( [0, 1])
-				// 		.range([startRect + badlength + goodlength + disrect, startRect + badlength + disrect]),
-				// 	divisionFunc = (arr1, arr2) => d3.map(arr1, (d,i) => arr2[i] == 0 ?( arr1[i] == 0 ? 0.5 : 1.5) : arr1[i]/arr2[i]),
-				// 	division = d3.map(new Array(6), (d,i) => divisionFunc(scaleData[processindex[2*i]], scaleData[processindex[2*i + 1]])),
-				// 	UclScale = d3.map(division, (d,i) => {
-				// 		return d3.scaleLinear()
-				// 			.domain( [1, d3.max(division[i]) > 1 ? d3.max(division[i]) : 2])
-				// 			.range([startRect + badlength, startRect])
-				// 	});
+				
 				// var monitorline = (d, i) => {
 				// 	var arr = [];
 				// 	arr.push([mareylength + 120, yScale(dataUCL.get(d)[0])])
@@ -1422,7 +1467,7 @@ export default {
 					.attr("height", minHeight/2)
 					.attr("fill", d => +alldata[allupid.indexOf(d)].flag === 0 ? util.labelColor[0] : util.labelColor[1])
 					.attr("opacity", 1))
-				const processindex = [
+			var processindex = [
 					"Heat_Q", "Heat_QUCL", "Heat_T2", "Heat_T2UCL",
 					"Roll_Q", "Roll_QUCL", "Roll_T2", "Roll_T2UCL",
 					"Cool_Q", "Cool_QUCL", "Cool_T2", "Cool_T2UCL"
@@ -1430,10 +1475,10 @@ export default {
 				processdata = {Cool_Q: [],Cool_QUCL: [],Cool_T2: [],Cool_T2UCL: [],Heat_Q: [],Heat_QUCL: [],Heat_T2: [],Heat_T2UCL: [],Roll_Q: [],Roll_QUCL: [],Roll_T2: [],Roll_T2UCL: []},
 				scaleData = {Cool_Q: [],Cool_QUCL: [],Cool_T2: [],Cool_T2UCL: [],Heat_Q: [],Heat_QUCL: [],Heat_T2: [],Heat_T2UCL: [],Roll_Q: [],Roll_QUCL: [],Roll_T2: [],Roll_T2UCL: []};
 				var processRemain = [...data.filter(d => mareyDistance - 15 <= yScale(d) && yScale(d)<= mainHeight + 15 && remainId.indexOf(d.upid) !== -1)]
-				var mergeRemain = mergeresult.filter((d, i)=> {
+				var mergeRemain = vm.isMerge ? mergeresult.filter((d, i)=> {
 					d.merge.map(e => e.mergeSearch = i)
 					if(mareyDistance - 15 <= positionData[i][0][1] && positionData[i][0][1] <= mainHeight + 15)return true
-				}).map(d => d.merge).flat()
+				}).map(d => d.merge).flat() : []
 				function flatdata(array1, array2, array3){
 					for (let i in array1){
 						for(let j in array2){
@@ -1539,32 +1584,14 @@ export default {
 
 					.on("mouseout", (event, d) => {
 						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return
-						if (vm.changeColor) {
-						// vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(parseInt(d.train.flag)), mouse: 1});
-						
-						}else {
-						// vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(d.train.productcategory), mouse: 1});
-						}
 						vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 1});
 						tooltip.style("display", "none");
-						// let currentIdSearch = "#id" + d.train.upid;
 						if(vm.trainSelectedList.includes(d.train.upid))return
 						mouseoutLine(d.train.upid)
-						// d3.select(currentIdSearch)
-						// .attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
-						// .selectAll("rect")
-						// .attr("stroke", "none");
-						
 					})
 
 					.on("mouseover", (event, d) => {
 						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return
-						if (vm.changeColor) {
-						// vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(parseInt(d.train.flag)), mouse: 0});
-						
-						}else {
-						// vm.$emit("trainMouse", {upid: d.train.upid, color: vm.showColor(d.train.productcategory), mouse: 0});
-						}
 						vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 0});
 						let toopcolor
 							if(!vm.changeColor){toopcolor=tooltipColors(d.train.productcategory)}
@@ -1628,12 +1655,7 @@ export default {
 						.attr("stroke", "black");
 						}
 						let upidSelect = d3.map(d3.filter(data.slice(allupid.indexOf(d.train.upid)), d => d.flag === 0), d => d.upid)
-						if (vm.changeColor) {
-						vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(parseInt(d.train.flag)), upidSelect:upidSelect});
-						
-						}else {
-						vm.$emit("trainClick", {list: vm.trainSelectedList, color: vm.showColor(d.train.productcategory), upidSelect:upidSelect});
-						}
+						vm.$emit("trainClick", {list: vm.trainSelectedList, upidSelect: upidSelect, type: "single"});
 					})
 			});
 			d3.select(".axisrect").raise()
@@ -1644,6 +1666,7 @@ export default {
 			// renderG
 			d3.select(".shadow_rect").raise()
 			d3.selectAll(".processline").raise()
+			d3.selectAll(".monitorPath").raise()
 			for(let bin in  stations.slice(0, -1)){
 				renderG.append("g")
 					.attr("transform", `translate(${[x(stations[bin].distance), mareyDistance - 1]})`)
@@ -1697,7 +1720,7 @@ export default {
 			stellheight = d3.scaleLinear()
 				.domain([0.006, 0.16])
 				.range([1.4, 1.5]);
-			// initialBrushXSelection = vm.initialBrushXSelection !== undefined ? vm.initialBrushXSelection : initialBrushXSelection
+			initialBrushXSelection = vm.initialBrushXSelection !== undefined ? vm.initialBrushXSelection : initialBrushXSelection
 			// [miniXScale.invert(extentX[0]),miniXScale.invert(extentX[1])]
 			console.log(BrushSelectHeight)
 
@@ -2100,7 +2123,7 @@ export default {
 							break
 						}
 					}
-					console.log(mergeDistanceTime)
+					// console.log(mergeDistanceTime)
 					if(distanceIndex !== 0){
 						item = item + distanceIndex + 1
 						continue

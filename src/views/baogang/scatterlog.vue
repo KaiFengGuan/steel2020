@@ -7,7 +7,6 @@
 <script>
 import * as d3 from 'd3';
 import util from './util.js';
-import sliderdata from "./data.json";
 import {mapGetters, mapMutations} from "vuex"
 export default {
 	data() {

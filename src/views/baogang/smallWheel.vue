@@ -511,7 +511,7 @@ export default {
                     var sortdata = this._chartData.filter(d =>{
                         return (SPE.indexOf(d.precipitation)<= vm.multiPara || T2.indexOf(d.humidity)<= vm.multiPara) && d.deviation !==0
                     })
-                    console.log(sortdata.length)
+                    // console.log(sortdata.length)
                     var SPE=d3.sort(sortdata,d=>d.precipitation),
                         T2=d3.sort(sortdata,d=>d.humidity),
                         res=d3.sort(sortdata,d=>d.deviation);

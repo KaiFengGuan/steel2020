@@ -32,36 +32,19 @@ export default {
 		paintChart(jsondata) {
 			const vm=this
 			const w = document.getElementById(this.menuId).offsetWidth, h = document.getElementById(this.menuId).offsetHeight,marginH = 15, marginW = 15;
-			// this.svg.remove()
 			this.svg !== undefined && this.svg.remove()
-			// d3.select(".scatterlogger").remove()
 			this.svg=d3.select("#scatterlog")
 				.append("svg")
 				.attr("class",'scatterlogger')
 				.attr("width", w)
 				.attr("height", h);	
-			this.scatterdata=[]
-			for (let item in jsondata){
-				this.scatterdata.push(jsondata[item])
-			}
+			this.scatterdata = []
+			this.scatterdata = Object.values(jsondata)
 			const scatterdata=this.scatterdata
 			const scaleX = d3.scaleLinear().range([marginW, w-marginW]).domain(d3.extent(scatterdata, d => d.x));
 			const scaleY = d3.scaleLinear().range([h-marginH, h -w + marginH]).domain(d3.extent(scatterdata, d => d.y));
 			this.scaleX=scaleX;
 			this.scaleY=scaleY;
-			// const axisX = d3.axisBottom(scaleX)
-			// 		.tickSize(h - marginH*2 + 10)
-			// 		.tickPadding(2);
-			// const axisY = d3.axisLeft(scaleY)
-			// 		.tickSize(w - marginW*2 + 10)
-			// 		.tickPadding(2);
-			// const xG = this.svg.append("g").attr("class", "x-axis")
-			// 	.attr("transform", `translate(${[0,marginH]})`)
-			// 	.call(axisX);
-			// const yG = this.svg.append("g").attr("class", "y-axis")
-			// 		.attr("transform", `translate(${[w-marginW,0]})`)
-			// 		.call(axisY);
-			// d3.selectAll(".domain").remove();
 			var scattertooltip = g => {
 				g.call(g =>g.append("g").attr("class" , "scatter")
 					.selectAll("circle.dot")
@@ -184,10 +167,10 @@ export default {
 					// .attr("r",2)
 					.style("opacity",1);
 			}
-			console.log('select completed')
+			// console.log('select completed')
 		},
 		mouse(value){
-			console.log(value)
+			// console.log(value)
 			const vm=this
 			this.mouseList = value
 			if(value.mouse===0){
@@ -221,21 +204,17 @@ export default {
 	},
 	computed:{
 		tooltipColor:function (){
-			const tooltiplabelColors = this.labelColorsFunc
-			const tooltipcategoryColors=this.categoryColors
 			if (this.changeColor){
-				return (d=> tooltipcategoryColors(d.productcategory))
+				return (d=> this.categoryColors(d.productcategory))
 			}else{
-				return (d=>tooltiplabelColors(+d.label))
+				return (d=> this.labelColorsFunc(+d.label))
 			}
 		},
 		hightLightColor:function (){
-			const tooltiplabelColors = this.labelColorsFunc
-			const tooltipcategoryColors=this.categoryColors
 			if (this.changeColor){
-				return (d=> d3.color(tooltipcategoryColors(d.productcategory)).darker(0.25))
+				return (d=> d3.color(this.categoryColors(d.productcategory)).darker(0.25))
 			}else{
-				return (d=> d3.color(tooltiplabelColors(+d.label)).darker(0.25))
+				return (d=> d3.color(this.labelColorsFunc(+d.label)).darker(0.25))
 			}
 		}
 	}

@@ -379,13 +379,4 @@ export default {
 </script>
 
 <style scoped>
-/* .domain {
-    stroke: "#E6E5F0";
-}
-.tick line {
-    stroke: "#E6E5F0";
-} */
-text{
-    fill: black;
-}
 </style>

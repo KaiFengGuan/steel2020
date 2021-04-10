@@ -17,24 +17,15 @@ module.exports = {
             
             '/baogangapi': {
                 // target: 'http://219.216.81.86:5000',
-                target: 'http://localhost:5005',
-                // target: 'http://202.118.21.236:7205',
+                // target: 'http://localhost:5005',
+                // target: 'http://localhost:7150',
+                target: 'http://202.118.21.236:7150',
                 // target: 'http://219.216.80.62:5000',
                 changeOrigin: true,
                 pathRewrite: {
                     '^/baogangapi': '/api'
                 }
             },
-            
-            '/zengcheng': {
-                // target: 'http://219.216.81.86:5000',
-                target: 'http://219.216.81.96:5001',
-                changeOrigin: true,
-                pathRewrite: {
-                    '^/zengcheng': '/api'
-                }
-            },
-
             'myf': {
                 // target: 'http://219.216.80.62:8088',
                 target: 'http://219.216.80.18:8088',

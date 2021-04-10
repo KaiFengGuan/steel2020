@@ -6,7 +6,6 @@
 
 <script>
 import * as d3 from 'd3';
-import { Delaunay } from 'd3-delaunay';
 import heaticon from "../../assets/images/heatwheel.svg";
 import steelicon from "../../assets/images/steel.svg";
 import heatwhite from "../../assets/images/heatwhite.svg";
@@ -22,7 +21,6 @@ import lengthicon from "../../assets/images/wheel/length.svg";
 import upidicon from "../../assets/images/wheel/upid.svg";
 import categoryicon from "../../assets/images/wheel/category.svg";
 import util from './util.js';
-// import diagnoesdata from "./sampledata/diagnoesdata.json"
 import processDetail from "./sampledata/processDetail"
 import {mapGetters} from "vuex"
 export default {
@@ -67,13 +65,10 @@ export default {
         //     })
         // }
         // const details=jsondata['Steel']
-        // this.menuId = this.menuId 
 		const vm=this		
-        // const diameter=500
         const diameter = document.getElementById(this.menuId).offsetHeight;	
         const width = document.getElementById(this.menuId).offsetWidth;	
         this.svg !== undefined && this.svg.remove()
-        // console.log(this.menuId)
 		this.svg=d3.select("#"+vm.menuId)
 			.append("svg")
 			.attr("viewBox", `${-50} ${-diameter / 2} ${width} ${diameter}`)
@@ -215,7 +210,7 @@ export default {
                 this._indexInfo = [];
                 this._indexlength = 6;
             }
-            getProcess(_){
+            getIndex(_){
                 for (let item in this.process){
                     if(this.process[item].indexOf(_)!==-1){
                         return item
@@ -290,14 +285,10 @@ export default {
                 this._process();
                 this._renderMainWheel();
                 this._g.attr("transform", "translate(300,0)")
-                // this._fliterdata();
-                // this._renderMiniBar();
-                // this._renderMainBar();
             }
             _renderMerge(){
                 this._g.remove();
                 this._g = this._container.append("g").attr("transform", "translate(10,0)");
-                // this._renderBar()
                 this._merge ? this._renderBar() : this._renderWheel();
             }
             _renderComponents(){
@@ -312,29 +303,7 @@ export default {
                         this._merge = !this._merge
                         this._renderMerge()
                         d3.select(".mergeIcon").attr("href", this._merge ? mergeLabel: deMergeLabel);
-                        // (function(console){
-                        // console.save = function(data, filename){
-                        // if(!data) {
-                        // console.error('Console.save: No data')
-                        // return;
-                        // }
-                        // if(!filename) filename = 'console.json'
-                        // if(typeof data === "object"){
-                        // data = JSON.stringify(data, undefined, 4)
-                        // }
-                        // var blob = new Blob([data], {type: 'text/json'}),
-                        // e = document.createEvent('MouseEvents'),
-                        // a = document.createElement('a')
-                        // a.download = filename
-                        // a.href = window.URL.createObjectURL(blob)
-                        // a.dataset.downloadurl = ['text/json', a.download, a.href].join(':')
-                        // e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
-                        // a.dispatchEvent(e)
-                        // }
-                        // })(console)
-                        // console.save(processDetail, "processDetail.json");
                     })
-                
             }
             _init() {
                 const r = this._radius;
@@ -369,7 +338,7 @@ export default {
                     const datum = {
                         dateStr: d[field.date],
                         date: d[field.date],
-                        month: wm.getProcess(d[field.date]),
+                        month: wm.getIndex(d[field.date]),
                         low: d[field.low],
                         high: d[field.high],
                         avg: d[field.avg],
@@ -385,7 +354,7 @@ export default {
                     datum.property[2].value=e.avg>e.low&e.high>e.avg? 0 : 1.6;
                     let deviation=e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg)/e.low : (e.avg-e.high)/e.high);
                     datum.deviation=deviation;
-                    wm._padprocess[wm._processindex[wm.getProcess(d[field.date])]].push(d[field.date])
+                    wm._padprocess[wm._processindex[wm.getIndex(d[field.date])]].push(d[field.date])
                     labels.push(datum.dateStr)
                     lows.push(datum.low);
                     highs.push(datum.high);
@@ -417,7 +386,7 @@ export default {
                     const datum = {
                         dateStr: d[field.date],
                         date: d[field.date],
-                        month: wm.getProcess(d[field.date]),
+                        month: wm.getIndex(d[field.date]),
                         low: d[field.low],
                         high: d[field.high],
                         avg: d[field.avg],
@@ -463,7 +432,7 @@ export default {
                     this._chartData = sample;
                 this._padprocess=[[],[],[]];
                 this._chartData.map(datum => {
-                    wm._padprocess[wm._processindex[wm.getProcess(datum.dateStr)]].push(datum.dateStr)
+                    wm._padprocess[wm._processindex[wm.getIndex(datum.dateStr)]].push(datum.dateStr)
                     labels.push(datum.dateStr)
                     lows.push(datum.low);
                     highs.push(datum.high);
@@ -793,12 +762,13 @@ export default {
                                 return s
                             })
                         let xScale = d3.scaleBand()
-                                .range([10, RectWidth+10])
-                                .domain(d3.map(batch, (d,i)=> i)),
+                                .range([0, RectWidth])
+                                .domain(d3.map(batch, (d,i)=> i))
+                                .padding(0.5),
                             xrectdata = [4,5],
                             yScale =  d3.scaleLinear()
-                                    .range([ 0, 20 ])
-                                    .domain([0, d3.max(d3.map(batch, d => d.max))]),
+                                    .range([ 5, 20 ])
+                                    .domain(d3.extent(d3.map(batch, d => d.max))),
                             xRect =  d3.scaleLinear()
                                     .range([ 0, 30 ])
                                     .domain([0, 10]),
@@ -813,7 +783,6 @@ export default {
                                 .x((d, i) => xScale(i))
                                 .y0(d => 0)
                                 .y1(d => -yScale(d.h));
-                        var miniwidth = xScale(1) - xScale(0);
                         this._g.append("g")   
                         .attr("class", "rect_doct")
                         .attr("transform", `translate(${[r.outer+r.bubble*3.60, (this._height - 50)/indexs * (item-0.5)- (this._height - 50)/2+45]})`)
@@ -840,11 +809,11 @@ export default {
                                     .attr("stroke-width", 0.5)
                                     .attr("stroke-opacity", 1))
                                 .call(g => g.append("rect")
-                                    .attr("transform", `translate(${[30, 15]})`)
+                                    .attr("transform", `translate(${[0, 15]})`)
                                     .attr("fill", d3.color(lc[+processnumber]))
                                     .attr("stroke", d3.color(lc[+processnumber]).darker(1))
-                                    .attr("width", miniwidth)
-                                    .attr("x", d => xScale(d) - miniwidth)
+                                    .attr("width",  xScale.bandwidth())
+                                    .attr("x", d => xScale(d) - xScale.bandwidth()/2)
                                     .attr("y", d => -yScale(batch[d].value))
                                     .attr("height", d => yScale(batch[d].value))
                                     .attr("stroke-width", 0.5)

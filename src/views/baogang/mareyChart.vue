@@ -95,7 +95,7 @@ export default {
 			this.paintMareyChart(alldata, sampleStaions, changeColor, brushData)
 		},
 		paintMareyChart(alldata, stationsData, changeColor, brushData) {
-		this.data = this.deepCopy(alldata), this.station = this.deepCopy(stationsData)
+		this.data = this.deepCopy(alldata), this.station = this.deepCopy(stationsData),this.brushData = brushData
 		var stopsTime = d3.map(alldata, d => {
 			let arr = d3.pairs(d.stops, (a,b) => new Date(b.realTime).getTime() - new Date(a.realTime).getTime())
 			arr.upid = d.upid
@@ -105,8 +105,6 @@ export default {
 			return d3.bin().thresholds(20)(d3.map(stopsTime, (e,f) => e[i]))
 		}),
 		timeMaxRange = timebins.map(d => [d[d3.maxIndex(d, e => e.length)].x0, d[d3.maxIndex(d, e => e.length)].x1]);
-		// stationsData = sampleStaions
-		this.brushData = brushData
 		const brushUCL = d3.group(brushData, d => d.upid),
 			dataUCL = d3.group(alldata, d => d.upid),
 			allupid = d3.map(alldata, d => d.upid),	//total upid
@@ -184,7 +182,7 @@ export default {
 		var unitPerTime = 3.5;
 		const timeHeightScale = unitHeight / (60 * 60 * 1000 * unitPerTime) // 单位高度 时间跨度x小时
 		// var height = document.getElementById(this.menuId).offsetHeight
-		console.log((new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale)
+		// console.log((new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale)
 		var height = (new Date(maxDate).getTime() - new Date(minDate).getTime()) * timeHeightScale
 		var y = d3.scaleTime()
 			.domain([new Date(minDate), new Date(maxDate)])
@@ -706,7 +704,7 @@ export default {
 							vm.$emit("trainClick",{list: vm.trainSelectedList, 
 								color: vm.trainGroupStyle(mergeSelect.slice(-1)[0]),
 								upidSelect: [...badupid, ...selectId],
-								"type":"group"})
+								type: "group"})
 						}
 					})
 					.on("mouseout",pathOut)
@@ -1128,7 +1126,6 @@ export default {
 						return arr
 					}
 					var monitorPosition = mergeItem.map(monitorline)
-					console.log(monitorPosition)
 					monitorG
 						.append("path")
 						.attr("fill", pathColor)
@@ -1722,7 +1719,7 @@ export default {
 				.range([1.4, 1.5]);
 			initialBrushXSelection = vm.initialBrushXSelection !== undefined ? vm.initialBrushXSelection : initialBrushXSelection
 			// [miniXScale.invert(extentX[0]),miniXScale.invert(extentX[1])]
-			console.log(BrushSelectHeight)
+			// console.log(BrushSelectHeight)
 
 		function brushmove(event) {
 			const extentX = event.selection;

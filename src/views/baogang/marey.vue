@@ -5,79 +5,55 @@
 				<el-row>
 					<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
 					<el-row>
-						<!-- id="month-data" -->
 						<el-col :span="10" id="month-data"><span>Month Picker</span></el-col>
 						<el-col :span="10">
 							<el-date-picker v-model="startmonth" type="month" placeholder="选择月" @change="changeTime"
 								style="width:110px;margin:10px 0px 10px 20px" size="mini"></el-date-picker>
-							<!-- <el-date-picker v-model="dateselect" type="datetimerange" range-separator=" " 
-								@change="changeTime" start-placeholder="开始日期" end-placeholder="结束日期" style="width:160px;margin:10px 0px 10px 20px" size="mini">                 
-							</el-date-picker>  -->
 						</el-col>
-						<!-- <el-col :span="14">
-							<el-card class="myel-card" style="margin:5px 5px">
-								<div class="my-card-body" style="height:32px; width:100%; display:flex;">
-									<time-brush ref="timeBrush" style="flex: 1 0 152px;" 
-										@timeBrushed="setStartEndDate"
-										:custom-height="'32px'">
-									</time-brush>
-									<el-button round style="flex: 0 0 auto;width:30px;height:30px;margin-top:0px" type="info" size="mini" plain @click="getHttpData" icon="el-icon-search" :disabled="isSearch"></el-button>
-								</div>	
-							</el-card>
-						</el-col> -->
 						<el-col :span="4">
-							<el-button style="margin-top:10px" size="small" plain @click="getHttpData" icon="el-icon-search" :disabled="isSearch" ></el-button>
+							<el-button style="margin-top:10px" size="small" plain @click="getHttpData" icon="el-icon-search"></el-button>
 						</el-col>
 					</el-row>
 					<el-row>
-						<el-col :span="24" 
-							v-loading="scatterLoading"
-							element-loading-text="拼命计算中"
-							element-loading-spinner="el-icon-loading"
-							element-loading-background="rgba(0, 0, 0, 0.3)">
-							<el-card class="myel-card">
-								<div class="my-card-title" slot="header">
-									<span>Embedding View</span>
-									<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData" class="card-select">
-										<el-option v-for="option in algorithmOptions" :key="option" :label="option" :value="option"></el-option>
-									</el-select>
-								</div>
-								<div class="my-card-body">
-									<el-row>
-										<slider style="height:80px;width:100%" ref="brushSlider"></slider>
-									</el-row>
-									<el-row>
-										<scatterlog ref="scatterloging" style="height:305px;" @scatterMouse="scatterMouse"></scatterlog>
-									</el-row>
-									
-								</div>
-							</el-card>
-						</el-col>
+						<el-card class="myel-card">
+							<div class="my-card-title" slot="header">
+								<span>Embedding View</span>
+								<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData" class="card-select">
+									<el-option v-for="option in algorithmOptions" :key="option" :label="option" :value="option"></el-option>
+								</el-select>
+							</div>
+							<div class="my-card-body">
+								<el-row>
+									<slider style="height:80px;width:100%" ref="brushSlider"></slider>
+								</el-row>
+								<el-row>
+								<!-- v-loading="scatterLoading" element-loading-text="拼命计算中" element-loading-spinner="el-icon-loading" element-loading-background="rgba(0, 0, 0, 0.3)" -->
+									<scatterlog ref="scatterCate" style="height:305px;" @scatterMouse="scatterMouse"></scatterlog>
+								</el-row>
+							</div>
+						</el-card>
 					</el-row>
 				</el-row>
 				<el-row>
-					<el-card >		 
-						<!-- <div class="my-card-title" slot="header">
+					<el-card class="myel-card">		 
+						<div class="my-card-title" slot="header">
 							<span style="margin-left:5px">Tabular View</span>
-						</div> -->
+						</div>
 						<div class="my-card-body" style="padding-top:5px">
 							<brushableParallel ref="parallel" style="height:506px;width:100%" @parallMouse="parallMouse"></brushableParallel>
 						</div>
 					</el-card>
 				</el-row>
-
-
 			</el-col>
-			<el-col :span="20" style="margin-top:5px"
+			<el-col :span="20" style="margin-top:6px"
 				v-loading="loadingDataLoading"
 				element-loading-text="loading..."
 				element-loading-spinner="el-icon-loading"
 				element-loading-background="rgba(0, 0, 0, 0.3)">
-				<el-row></el-row>
 				<el-row>
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
-							<el-col :span="14"><span>Condition View</span></el-col>
+							<el-col :span="15"><span>Condition View</span></el-col>
 							<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">MinRange</el-col>
 							<el-col :span="1">
 								<el-slider v-model="minrange" :step="1" :min="5" :max="40" class="my-slider"
@@ -88,12 +64,12 @@
 								<el-slider v-model="minconflict" :step="1" :min="1" :max="10" class="my-slider"
 									style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate"></el-slider>
 							</el-col>
-							<el-col :span="2">
-								<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:0px" type="info" plain @click="changeColor">
+							<el-col :span="1" :class="{activeStyle: isSwitchClass, deActiveStyle : !isSwitchClass}">
+								<el-button size="mini" round style="height:25px;width: 45px;margin:-2px;padding:0px;"  type="info" plain @click="changeColor">
 									<img src="../../assets/images/color.svg" style="height:16px;width:16px;transform: translate(0px, -2px)"></el-button>
 							</el-col>
-							<el-col :span="1">
-								<el-button size="mini" round style="height:25px;width: 60px;margin:-2px;padding:-2px" type="info" plain @click="mergeUpdate">
+							<el-col :span="1" :class="{activeStyle: isMerge, deActiveStyle : !isMerge}">
+								<el-button size="mini" round style="height:25px;width: 45px;margin:-2px;padding:-2px" type="info" plain @click="mergeUpdate">
 									<img src="../../assets/images/diagnosis.svg" style="height:16px;width:16px;"></el-button>
 							</el-col>
 						</div>
@@ -103,110 +79,108 @@
 					</el-card>
 				</el-row>
 				<el-row>
-					<el-row style="margin-top: 3px;">
-							<el-row>
-								<div>
-									<el-card class="myel-card">
-										<div class="my-card-title" slot="header">
-											<el-col :span="14"><span>Diagnosis View</span></el-col>
-											<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">CurveSize</el-col>
-											<el-col :span="1">
-												<el-slider v-model="curvesize" :step="0.01" :min="0" :max="1" class="my-slider"
-													style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="curveUpdate"></el-slider>
-											</el-col>
-											<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">MultiPara</el-col>
-											<el-col :span="1">
-												<el-slider v-model="multisize" :step="1" :min="10" :max="40" class="my-slider"
-													style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="multiUpdate"></el-slider>
-											</el-col>
-											<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">CorrConfig</el-col>
-											<el-col :span="1">
-												<el-slider v-model="corrsize" :step="0.1" :min="0" :max="1" class="my-slider"
-													style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="corrUpdate"></el-slider>
-											</el-col>
-											<el-col :span="1">
-												<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;float:right">
-												<el-row class="toltip">
-													<el-row :gutter="8">
-														<el-col :span="8" style="font-size: 13px;">
-															<div style="height: 24px;padding-right:5px;margin:9px 0px 15px 0px" class="fontcolor">ThicknessGap </div>
-															<div style="height: 24px;padding-left:16px;margin:15px 0" class="fontcolor">WidthGap </div>
-															<div style="height: 24px;padding-left:12px;margin:15px 0" class="fontcolor">LengthGap </div>
-														</el-col>
-														<el-col :span="10" id="imput-line">
-															<el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" ></el-slider>
-															<el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
-															<el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
-														</el-col>
-														<el-col :span="4">
-															<div style="margin:5px 0px 21.5px 0px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
-															<div style="margin:21.5px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
-															<div style="margin:21.5px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
-														</el-col>
-													</el-row>
-													<el-form size="mini" label-width="100px" >
-														<el-form-item label="Category" style="padding-right: 10px;font-size:13px;padding-left:2px" class="abel">
-																<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
-																<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-															</el-select>
-														</el-form-item>
-													</el-form>
-												</el-row>
-												<el-row :gutter="8">
-													<el-col :span="8" style="font-size: 13px;">
-														<div style="height: 24px;padding-left:40px;margin:8px 0px" class="fontcolor">Range </div>                
-													</el-col>
-													<el-col :span="10" id="imput-line">
-														<el-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" style="margin:2.5px;color:#999a9d" ></el-slider>
-													</el-col>
-													<el-col :span="4">
-														<div style="margin:2px">{{plateTempProp.deviation}}%</div>
-													</el-col>
-												</el-row>
-													<img src="../../assets/images/config.svg" style="height:16px;width:16px;vertical-align: middle;line-height:1.5" slot="reference">
-												</el-popover>
-											</el-col>
-										</div>
-										<div style="padding-right:5px; padding-bottom : 5px">
-										<el-col :span="4">
-											<!-- <div style="float:left;margin-top: 30px;position:relative;left: 25px;width: 1px;height: 450px; background: #c9c9c9;"></div> -->
-											<el-row>
-												<div style="overflow-y:scroll;height:510px">
-												<el-row v-for="item of upidSelect" :key = item>
-													<el-card class="myel-card myel-tab" :style="{border: sampleCss[item]}">
-														<div slot="header">
-																<el-row style="height:25px"> 
-																	<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
-																	<span class="upidtext">UPID {{item}}</span></el-col>
-																	<el-col :span="8"></el-col>
-																</el-row>
-															</div>
-														<div class="my-card-body" @click="changeUpid(item)">
-															<small-wheel :ref="item" style="height:223px"></small-wheel>
-														</div>
-													</el-card>
-												</el-row>
-												</div>
+					<el-row>
+						<div>
+							<el-card class="myel-card">
+								<div class="my-card-title" slot="header">
+									<el-col :span="14"><span>Diagnosis View</span></el-col>
+									<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">CurveSize</el-col>
+									<el-col :span="1">
+										<el-slider v-model="curvesize" :step="0.01" :min="0" :max="1" class="my-slider"
+											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="curveUpdate"></el-slider>
+									</el-col>
+									<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">MultiPara</el-col>
+									<el-col :span="1">
+										<el-slider v-model="multisize" :step="1" :min="10" :max="40" class="my-slider"
+											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="multiUpdate"></el-slider>
+									</el-col>
+									<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">CorrConfig</el-col>
+									<el-col :span="1">
+										<el-slider v-model="corrsize" :step="0.1" :min="0" :max="1" class="my-slider"
+											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="corrUpdate"></el-slider>
+									</el-col>
+									<el-col :span="1">
+										<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;float:right">
+										<el-row class="toltip">
+											<el-row :gutter="8">
+												<el-col :span="8" style="font-size: 13px;">
+													<div style="height: 24px;padding-right:5px;margin:9px 0px 15px 0px" class="fontcolor">ThicknessGap </div>
+													<div style="height: 24px;padding-left:16px;margin:15px 0" class="fontcolor">WidthGap </div>
+													<div style="height: 24px;padding-left:12px;margin:15px 0" class="fontcolor">LengthGap </div>
+												</el-col>
+												<el-col :span="10" id="imput-line">
+													<el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" ></el-slider>
+													<el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
+													<el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
+												</el-col>
+												<el-col :span="4">
+													<div style="margin:5px 0px 21.5px 0px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
+													<div style="margin:21.5px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
+													<div style="margin:21.5px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
+												</el-col>
 											</el-row>
-										</el-col>
-											<el-col :span="20">
-												<el-card class="myel-card myelTab myel-upid">
-													<div slot="header">
-														<el-row>
-															<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
-															<span class="upidtext">{{selectedUpid}}</span></el-col>
-															<el-col :span="16" style="background-color:white"></el-col>
+											<el-form size="mini" label-width="100px" >
+												<el-form-item label="Category" style="padding-right: 10px;font-size:13px;padding-left:2px" class="abel">
+														<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
+														<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+													</el-select>
+												</el-form-item>
+											</el-form>
+										</el-row>
+										<el-row :gutter="8">
+											<el-col :span="8" style="font-size: 13px;">
+												<div style="height: 24px;padding-left:40px;margin:8px 0px" class="fontcolor">Range </div>                
+											</el-col>
+											<el-col :span="10" id="imput-line">
+												<el-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" style="margin:2.5px;color:#999a9d" ></el-slider>
+											</el-col>
+											<el-col :span="4">
+												<div style="margin:2px">{{plateTempProp.deviation}}%</div>
+											</el-col>
+										</el-row>
+											<img src="../../assets/images/config.svg" style="height:16px;width:16px;vertical-align: middle;line-height:1.5" slot="reference">
+										</el-popover>
+									</el-col>
+								</div>
+								<div style="padding-right:5px; padding-bottom : 5px">
+								<el-col :span="4">
+									<!-- <div style="float:left;margin-top: 30px;position:relative;left: 25px;width: 1px;height: 450px; background: #c9c9c9;"></div> -->
+									<el-row>
+										<div style="overflow-y:scroll;height:510px">
+										<el-row v-for="item of upidSelect" :key = item>
+											<el-card class="myel-card myel-tab" :style="{border: sampleCss[item]}">
+												<div slot="header">
+														<el-row style="height:25px"> 
+															<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
+															<span class="upidtext">UPID {{item}}</span></el-col>
+															<el-col :span="8"></el-col>
 														</el-row>
 													</div>
-													<div class="my-card-body" >
-														<wheeler ref="wheelering" style="height:476px"></wheeler>
-													</div>
-												</el-card>
-											</el-col>
+												<div class="my-card-body" @click="changeUpid(item)">
+													<small-wheel :ref="item" style="height:223px"></small-wheel>
+												</div>
+											</el-card>
+										</el-row>
 										</div>
-									</el-card>							
+									</el-row>
+								</el-col>
+									<el-col :span="20">
+										<el-card class="myel-card myelTab myel-upid">
+											<div slot="header">
+												<el-row>
+													<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
+													<span class="upidtext">{{selectedUpid}}</span></el-col>
+													<el-col :span="16" style="background-color:white"></el-col>
+												</el-row>
+											</div>
+											<div class="my-card-body" >
+												<wheeler ref="wheelering" style="height:476px"></wheeler>
+											</div>
+										</el-card>
+									</el-col>
 								</div>
-							</el-row>
+							</el-card>		
+						</div>
 					</el-row>
 
 						<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
@@ -247,14 +221,12 @@ import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import myJsonData from "./sampledata/jsondata.json"
 import myStationData from "./sampledata/stationdata.js"
-import scatterlogerdata from "./sampledata/scatterlog.json"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
 export default {
-	components: { mareyChart, scatter, timeBrush,
-		brushableParallel, riverLike, scatterAxis, threeBar,scatterlog , wheeler , smallWheel, slider},
+	components: { mareyChart, scatter, timeBrush, brushableParallel, riverLike, scatterAxis, threeBar, scatterlog, wheeler , smallWheel, slider},
 	data() {
 		return {
 			isMerge: true,
@@ -262,12 +234,7 @@ export default {
 			minconflict: 4,
 			symbolvalue:0.05,
 			linesize:0.25,
-			heatindex:false,
-			rollindex:false,
-			coolindex:false,
 			diagnosisData:[],
-			scatterLoading: false,
-			isSearch: true,
 			processName:'',
 			myScatterChart: {},
 			plateoptions:[{
@@ -285,19 +252,16 @@ export default {
 					label: 'Original'
 				}],
 			orderselect:'Deviation',
-			errorflag:false,
 			plateTempPropvalue:['All'],
 			isSwitch: true,
 			startmonth: new Date(2018, 10, 1, 0, 0),
-			display: false,
+			isSwitchClass: true,
 			time: undefined,
 			radarIndicatorOptions: [],
-			indicators: [],
 			temperatureData: {},
 			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
-			tempStations: [],
 			interval: 12,
 			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
@@ -317,11 +281,10 @@ export default {
 				thickness: 5,
 				deviation:25
 			},
-			test: 15,
 			detailProcess: [],
 			processInTurn: [null, null ,null, null ,null, null],
 			processData: {},
-			scatterlogdata:[],
+			scatterData:[],
 			processArray: ['heat', 'roll', 'cool'],
 			loadingDataLoading: false,
 			radio: 0,
@@ -346,8 +309,6 @@ export default {
 			"trainBorder",
 			"startDate",
 			"endDate",
-			// "corrSize",
-			// "multiPara"
 		]),
 		dateselect : function(){
 			var endmonth = new Date(this.startmonth.valueOf())
@@ -377,14 +338,7 @@ export default {
 			})
 		},
 		brushUpid : vm => d3.map(vm.brushData, d => d.upid),
-		paralleldata: vm => {
-			console.log(scatterlogerdata)
-			var scatterdata = Object.values(scatterlogerdata)
-			return  scatterdata.filter(d =>{
-				var toc = new Date(d.toc);
-				return toc < vm.endDate && toc > vm.startDate
-			})
-		}
+		isSwitchActive: vm => !vm.isSwitch
 	},
 	created() {
 		// this.day()
@@ -404,58 +358,16 @@ export default {
 				message: h('i', { style: 'color: teal'}, notice)
 			});
 			this.loadingDataLoading = false
-			this.scatterLoading = false
-			this.isSearch = false
-		},
-		changeTimeBrush() {
-			this.getTimeBrushData();
 		},
 		async changeUpid(upid){
-			// let query=[]
-			// for (let item of this.plateTempPropvalue){
-			// 	if(item==='All'){
-			// 		query.push(item)
-			// 	}
-			// }		
-			// if(query.length===0)query=this.plateTempPropvalue
-			// this.selectedUpid = upid!==undefined ? "UPID " + upid : "UPID"
-			// let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
-			// this.diagnosisData=diagnosisData
-			// await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-			// 	this.$refs.wheelering.paintChart(diagnosisData,Response.data)
-			// })
+			this.paintUnderCharts(upid)
 		},
 		async changeTime() {
-			// // this.$message('这是一条消息提示');
-			await this.changeTimeBrush()
-			await this.scattlog()
-		},
-		cellStyle (rowData) {
-			if (rowData.columnIndex === 2) {
-				return {
-					backgroundImage: 'url(./background.png)',
-					backgroundSize: `${rowData.row.value.score * 100}% 100%`,
-					backgroundRepeat: 'no-repeat'
-				}
-			}
-		},
-		toggleSelection(rows) {
-			if (rows) {
-				rows.forEach((item, index) => {
-					if (index < 6) {
-						this.$refs.multipleTable.toggleRowSelection(item, true);
-					}
-				});
-			} else {
-				this.$refs.multipleTable.clearSelection();
-			}
-		},
-		setStartEndDate([start, end]) {
-			if(start)this.startDate = new Date(+new Date(start) - 1000 * 60 * 60 * this.interval)
-			if(end)this.endDate = new Date(end)
+			await this.getTimeBrushData();
+			await this.getAlgorithmData()
+			this.getHttpData()
 		},
 		async getHttpData() {
-			console.log(this.brushData)
 			this.jsonData = myJsonData
 			this.mergeflag()
 			this.jsonData = this.jsonData.filter(d => {
@@ -463,10 +375,7 @@ export default {
 			})
 			this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
 			return
-
-			// this.clearAllChart()
 			this.plateTempPropvalue=['All']
-			this.isSearch = true
 			this.loadingDataLoading = true
 			let startDate = this.startDateString;
 			let endDate = this.endDateString;
@@ -507,40 +416,22 @@ export default {
 
 			// paint
 			this.loadingDataLoading = false
-			this.scatterLoading = false
-			this.isSearch = false
 			this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
 			this.jsonData = this.jsonData.filter(d => {
 				return this.brushUpid.includes(d.upid)
 			})
-			if(this.scatterlogdata.length!==0)this.mergeflag()
+			if(this.scatterData.length!==0)this.mergeflag()
 			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
 
 			// clear
 			this.selectedTrainData = [];
-			this.scatterLoading = false
-			this.isSearch = false
-		},
-		deepCopy(obj){
-			if(typeof obj!=='object') return obj;
-			var newObj=obj instanceof Array ? [] :{};
-			for (let key in obj){
-				if(obj.hasOwnProperty(key)){
-					if(obj[key]===null){
-						newObj[key]===null;
-					}
-					newObj[key]=typeof obj[key] ? this.deepCopy(obj[key]) : obj[key];
-				}
-			}
-			return newObj
 		},
 		mergeflag(){
-			// let mergedata=this.scatterlogdata
 			let mergedata=[]
-			for (let item in this.scatterlogdata){
-				let toc=new Date(this.scatterlogdata[item].toc)
+			for (let item in this.scatterData){
+				let toc=new Date(this.scatterData[item].toc)
 				if(toc<this.endDate&&toc>this.startDate)
-					mergedata.push(this.scatterlogdata[item])
+					mergedata.push(this.scatterData[item])
 			}
 			mergedata.map(item=>{				
 				this.jsonData.map(json=>{
@@ -551,22 +442,11 @@ export default {
 				})
 			})
 		},
-		// clearAllChart() {
-		//   this.$refs.mareyChart.paintMareyChart([], {}, "conditionData")
-		//   this.$refs.scatterChart.paintScatter({})
-		//   this.$refs.myRiverLikeChart.paint([], '')
-		//   this.$refs.outOfGau.paint({}, '')
-		//   this.$refs.PCA.paint({}, {}, '')
-		//   for (let item of Object.keys(this.processData)) {
-		//     this.$refs[item][0].paint([], '')
-		//   }
-
-		// },
 
 		// 获取诊断视图数据
-		getDiagnosisData(choseUpid, widthGap, lengthGap, thicknessGap,platetype) {
+		getDiagnosisData(upid, widthGap, lengthGap, thicknessGap,platetype) {
 			return steel.getDiagnosis({
-				'upid': choseUpid,
+				'upid': upid,
 				'width': widthGap,
 				'length': lengthGap, 
 				'thickness': thicknessGap,
@@ -575,19 +455,17 @@ export default {
 		},
 
 		getDetailProcess(upid, process, width, length, thickness,platetype,deviation) {
-					return baogangPlotAxios('/baogangapi/v1.0/model/Visualization', {
-					'upid': upid,
-					'process':process,
-					'width': width,
-					'length': length, 
-					'thickness': thickness,
-					'platetype':JSON.stringify(platetype),
-					'deviation':deviation
+			return steel.getVisualization({
+				'upid': upid,
+				'process':process,
+				'width': width,
+				'length': length, 
+				'thickness': thickness,
+				'platetype':JSON.stringify(platetype),
+				'deviation':deviation
 				}).catch(error=>{
-					if(!this.errorflag){
-						// this.getNotification("缺乏工序数据，请重新选择钢板或工序\n或钢板量少，请修改Tabular Parameters参数")
-					}this.errorflag=false
-		})
+					this.getNotification("缺乏工序数据，请重新选择钢板或工序\n或钢板量少，请修改Tabular Parameters参数")
+				})
 		},
 		async getplatetype() {
 			return baogangAxios(`/baogangapi/v1.0/model/VisualizationPlatetypes/`).
@@ -651,50 +529,33 @@ export default {
 				})
 		},
 		changeColor(){
+			this.isSwitchClass = !this.isSwitchClass
 			this.changeLabelColor()
-			// this.isSwitch = !this.isSwitch
 			this.switchChange(this.isSwitch)
 		},
 		switchChange(bool) {
 			let selectcolor=this.$refs.mareyChart.changeTrainColor(bool)
 			console.log(selectcolor)
 			if(selectcolor)(this.selectedTrainColor=selectcolor)
-			this.$refs.scatterloging.setTrainColor();
+			this.$refs.scatterCate.setTrainColor();
 			// // this.selectedTrainColor
 			// let seletcolor=this.$refs.mareyChart.setTrainColor(bool) 
 			// // this.changeScatterColor();
 			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
-			
-			// this.selectedTrainData !== undefined && this.paintSwitchUnderCharts(this.selectedTrainData); 
-		},
-		async getAlgorithmData() {
-			await this.scattlog();
-			this.scatterLoading = false
-			this.isSearch = false
 		},
 
 		async trainClick(value) {
-			if(value.list.length == 0)value.list.push(...value.upidSelect)
-			this.selectedTrainData = value.list;
-			this.selectedTrainColor = value.color;
-			console.log(value)
-			this.chooseList = value.list
-			await this.paintUnderCharts(this.chooseList[0]);
-			while(true){
-				if(value.upidSelect.length !==0)break
-				await this.paintUnderCharts(value.upidSelect.shift());
-				if(this.diagnosisData["result"].length === 0) continue
-				break
-			}
 			this.upidSelect = []
-			value.upidSelect = [...new Set(value.upidSelect)]
-			this.upidSelect = value.upidSelect
-			console.log(this.upidSelect)
+			if(value.type !== "group"){
+				value.upidSelect.unshift(value.list[value.list.length - 1])
+			}
+			this.upidSelect = [...new Set(value.upidSelect)]
 
 			for(let item of value.upidSelect){
 				await this.paintScatterList(item)
 			}
 			this.corrdata = []
+			await this.paintUnderCharts(this.upidSelect[0]);
 		},
 		async paintScatterList(upid){
 			this.$nextTick(function() {this.$refs[upid][0].init()})
@@ -710,12 +571,9 @@ export default {
 			// if(diagnosisData["result"].length === 0){
 			// 	return false
 			// }
-			console.log(upid)
 			var diagnosisData = this.upidData.get(upid)[0]
-			console.log(diagnosisData)
-			Vue.set(this.sampleCss, upid, "solid 0.25px " + this.trainBorder(diagnosisData))
+			// Vue.set(this.sampleCss, upid, "solid 0.05px " + this.trainBorder(diagnosisData))
 			if(this.corrdata.length !== 0) {
-				console.log(this.sampleCss)
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
 				return false
 			}
@@ -743,7 +601,7 @@ export default {
 			this.setCurveSize(this.curvesize)
 		},
 		trainMouse(value){
-			this.$refs.scatterloging.mouse(value)
+			this.$refs.scatterCate.mouse(value)
 			this.$refs.parallel.mouse(value)
 		},
 		scatterMouse(value){
@@ -751,34 +609,16 @@ export default {
 			this.$refs.parallel.mouse(value)
 		},
 		parallMouse(value){
-			this.$refs.scatterloging.mouse(value)
+			this.$refs.scatterCate.mouse(value)
 			this.$refs.mareyChart.mouse(value)
 		},
 		paintUnderCharts(upid) {
 			// diagnosisData
-			this.paintRiverLike();
-			this.platetype(this.selectedTrainData[this.selectedTrainData.length-1]);
-
-		},
-		paintSwitchUnderCharts(upid){
-			this.platetype(this.selectedTrainData[this.selectedTrainData.length-1]);
-			let diagnosisData=this.diagnosisData
-			let diagnosisSinData = diagnosisData.result
-			let diagnosisGauData = diagnosisData.outOfGau
-			let diagnosisT2Data = diagnosisData.PCAT2
-			let diagnosisSPEData = diagnosisData.PCASPE
-			this.$refs.myRiverLikeChart.paint(diagnosisSinData, this.selectedTrainColor, false)
-			this.$refs.outOfGau.paint(diagnosisGauData, this.selectedTrainColor, false)
-			this.$refs.PCA.paint(diagnosisT2Data, diagnosisSPEData, this.selectedTrainColor)
-			this.orderchange()
+			this.paintRiverLike(upid);
+			this.platetype(upid);
 		},
 
-		async paintSimilarity() {
-			let similar = (await baogangAxios(`/baogangapi/v1.0/model/Temperature2DAndFQCpictureSimilarity/${this.selectedTrainData.slice(-1)[0]}/`)).data.Similarity;
-			this.$refs.similarGauge.paint(similar);
-		},
-
-		async paintRiverLike() {
+		async paintRiverLike(upid) {
 			// let query=[]
 			// for (let item of this.plateTempPropvalue){
 			// 	if(item==='All'){
@@ -786,11 +626,14 @@ export default {
 			// 	}
 			// }		
 			// if(query.length===0)query=this.plateTempPropvalue
-			this.selectedUpid = this.selectedTrainData[this.selectedTrainData.length-1]!==undefined ? "UPID " + this.selectedTrainData[this.selectedTrainData.length-1] : "UPID"
+
+			this.selectedUpid =  "UPID " + upid
 			// let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
-			var diagnosisData = this.upidData.get(this.selectedTrainData[this.selectedTrainData.length-1])[0]
+			var diagnosisData = this.upidData.get(upid)[0]
+			this.sampleCss = {}
+			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
 			var processData = []
-			this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
+			this.upidSelect.map(d => processData.push(this.upidData.get(d)[0]))
 			this.diagnosisData = diagnosisData
 			// let processDetail = []
 			// for(let item of this.processArray){
@@ -895,41 +738,16 @@ export default {
 				}
 			})
 		},
-		indicatorChange(value) {
-			this.indicators = value;
-		},
 		async getTimeBrushData() {
-			// var s1 = this.dateselect[0].getTime(),s2 = this.dateselect[1].getTime();
-			// var total = (s2 - s1)/1000;
-			// var day = parseInt(total / (24*60*60));//计算整数天数
-			// end.setMonth(end.getMonth() + 1)
-			// let endDate = util.timeFormat(end);
-			// .then(Response => {
-			//       }).catch(function(error) {
-			//     // 处理 getJSON 和 前一个回调函数运行时发生的错误
-			//     console.log('发生错误！', error);
-			//       })
-			// this.timeBrushData = (await baogangAxios(`/baogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${startDate}/${endDate}/`)).data;
 			await baogangAxios(`/baogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${this.selectDateStart}/${this.selectDateEnd}/`)
 			.then(Response => {
 				this.timeBrushData=Response.data
-					}).catch(function(error) {
-				// 处理 getJSON 和 前一个回调函数运行时发生的错误
-				console.log('发生错误！', error);
+			}).catch(function(error) {
 				this.getNotification('时间线渲染错误，请选择合适的时间区间')
-					})
-			// 时间改为灵活
+			})
 			// this.timeBrushData = (await baogangAxios(`/baogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${startDate}/${endDate}/`)).data;
 
-			this.isSearch = false 
-			let keys = ["endTimeOutput", "good_flag", "bad_flag"]
-			// this.$refs.timeBrush.paint({
-			// 	paintData: this.timeBrushData,
-			// 	color: util.labelColor,
-			// 	starttime:this.startDateString
-			// });
 			this.$refs.brushSlider.paintChart(this.timeBrushData)
-			// this.$refs.scatterloging.paintChart(this.scatterlogdata,[this.startDate, this.endDate])
 		},
 		day(){
 			var now = new Date();
@@ -954,23 +772,12 @@ export default {
 			this.startDate=this.dateselect[0]
 			this.endDate=this.dateselect[1]
 		},
-		processclick(value){
-			this.processTurn=value
-			let dom=document.getElementsByClassName("heatclass")
-			for (let item of dom){
-				item.style.border='none'
-			}
-			let heat=dom[value]
-			heat.style.border='solid 1.5px #606266'
-			// this.paintProcess(value)
-			this.paintRiverLike()
-		},
-		async scattlog() {
+		async getAlgorithmData() {
 			await baogangAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-				this.scatterlogdata=Response.data
-				this.$refs.scatterloging.paintChart(this.scatterlogdata)
-				this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
-				this.$refs.parallel.paintChart(Object.values(this.scatterlogdata), this.startDate, this.endDate)
+				this.scatterData=Response.data
+				this.$refs.scatterCate.paintChart(this.scatterData)
+				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
+				this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 			})
 		},
 	},
@@ -978,26 +785,35 @@ export default {
 		// console.log(this.startmonth.getMonth())
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
-		// this.paintScatterList("")
+		this.trainClick({
+    "list": [
+        "18B05337000",
+        "18B05338000",
+        "18B05339000",
+        "18B05341000",
+        "18B05342000",
+        "18B05343000",
+        "18B05334000"
+    ],
+    "color": "#94a7b7",
+    "upidSelect": [
+        "18B05337000",
+        "18B05338000",
+        "18B05339000",
+        "18B05341000",
+        "18B05342000",
+        "18B05343000",
+        "18B05334000"
+    ],
+    "type": "group"
+})
 		this.getplatetype()
-		// this.isSearch = false
-		// this.getHttpData()
 		this.changeTime()
 	},
 	watch: {
-		minconflict:  {
-			handler(val){
-				// console.log(val)
-				// console.log(this.isSwitch)
-			},
-			deep: true,
-			immediate: false,
-		},
-		minrange:  function(val, oldVal){
-			// console.log(val)
-		},
 		startDate:function(){
-			this.$refs.scatterloging.paintArc([this.startDate, this.endDate])
+			if(this.scatterData.length == 0)return
+			this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
 			this.getHttpData()
 		}
 	}
@@ -1196,11 +1012,11 @@ export default {
 .my-slider >>> .el-slider__runway {
 		margin: 10px 0;
 }
-.el-button--info.is-plain:focus, .el-button--info.is-plain:hover {
-    background: #dddedf !important;
-    border-color: #909399;
-    color: #FFF;
-}
+// .el-button--info.is-plain:focus, .el-button--info.is-plain:hover {
+//     background: #dddedf !important;
+//     border-color: #909399;
+//     color: #FFF;
+// }
 .el-button--mini, .el-button--mini.is-round {
     padding: 5px 15px !important;
 }
@@ -1306,6 +1122,30 @@ export default {
 }
 .el-icon-search{
 	transform: translate(-5px, 0px);
+}
+.activeStyle{
+	.el-button--info.is-plain{
+		background: #e5e5e5;
+		border-color: #909399;
+		color: #FFF;
+	}
+	.el-button--info.is-plain:focus, .el-button--info.is-plain:hover {
+		background: #e5e5e5;
+		border-color: #909399;
+		color: #FFF;
+	}
+}
+.deActiveStyle{
+	.el-button--info.is-plain{
+		background: #FFF;
+		border-color: #909399;
+		color: #FFF;
+	}
+	.el-button--info.is-plain:focus, .el-button--info.is-plain:hover {
+		background: #FFF;
+		border-color: #909399;
+		color: #FFF;
+	}
 }
 </style>
 

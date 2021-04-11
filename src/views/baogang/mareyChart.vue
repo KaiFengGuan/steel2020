@@ -11,14 +11,12 @@ export default {
 	data() {
 		return {
 			menuId: 'marey',
-			trainGroup: undefined,
 			categoryColors: util.categoryColor,
 			labelColors: util.labelColor, // [bad, good]
 			labelColorsFunc: util.labelColorFunc,
 			svg: undefined,
 			trainSelectedList: [],
 			trainGroupStyle: undefined,
-			showColor: util.categoryColor,
 			changeColor: true,
 			data: undefined,
 			station: undefined,
@@ -103,8 +101,7 @@ export default {
 		}),
 		timebins = stopsTime[0].map((d, i) => {
 			return d3.bin().thresholds(20)(d3.map(stopsTime, (e,f) => e[i]))
-		}),
-		timeMaxRange = timebins.map(d => [d[d3.maxIndex(d, e => e.length)].x0, d[d3.maxIndex(d, e => e.length)].x1]);
+		});
 		const brushUCL = d3.group(brushData, d => d.upid),
 			dataUCL = d3.group(alldata, d => d.upid),
 			allupid = d3.map(alldata, d => d.upid),	//total upid
@@ -137,7 +134,7 @@ export default {
 				bad : d3.min(allDetail, d => d.bad),
 				percent : d3.min(allDetail, d => d.good/d.num)
 			},
-			rectlength = 40 ,	//tag length
+			rectlength = 40,	//tag length
 			allScale = {	//total scale
 				width : d3.scaleLinear().domain([allminxen.width , allmaxxen.width]).range([0, rectlength]),
 				length : d3.scaleLinear().domain([allminxen.length , allmaxxen.length]).range([0, rectlength]),
@@ -160,7 +157,6 @@ export default {
 		var statname = d3.map(stations, d => d.name)
 
 		// chart
-		// var height = 2400;
 		var defaultStrokeWidth = d3.scaleLinear()
 			.domain([0.006, 0.16])
 			.range([0.5, 1.2])
@@ -169,15 +165,15 @@ export default {
 		let margin = ({ top: 50, right: 70, bottom: 0, left: 100 }),
 			mareylength = width - 7.6 * margin.right,
 			mareyEntry = 2.6 * margin.left,
+			coreX = mareyEntry * 0.55,
 			mareyDistance = 1.8 * margin.top;
-		// margin.right = this.isMerge ? 90 : 50;
 		var x = d3.scaleLinear()
 			.domain(d3.extent(stations, d => d.distance))
 			.range([ mareyEntry , mareylength ])
 
 		// zpj 2019-4-15 20:02:15
-		var minDate = data[0].stops[0].time;
-		var maxDate = data.slice(-1)[0].stops.slice(-1)[0].time;
+		var minDate = data[0].stops[0].time,
+			maxDate = data.slice(-1)[0].stops.slice(-1)[0].time;
 		var unitHeight = 300;
 		var unitPerTime = 3.5;
 		const timeHeightScale = unitHeight / (60 * 60 * 1000 * unitPerTime) // 单位高度 时间跨度x小时
@@ -187,7 +183,6 @@ export default {
 		var y = d3.scaleTime()
 			.domain([new Date(minDate), new Date(maxDate)])
 			.range([mareyDistance, height - margin.bottom])
-		var yDate = d => new Date(d.stops.slice(0, 1)[0].time)
 		var yScale = d => y(new Date(d.stops.slice(-1)[0].time))
 
 		var line = d3.line()
@@ -197,9 +192,6 @@ export default {
 		var voronoi = Delaunay
 			.from(stops, d => x(d.stop.station.distance), d => y(new Date(d.stop.time)))
 			.voronoi([mareyEntry, mareyDistance, mareylength, mareyDistance + height])
-
-		var tooltipColors = this.categoryColors
-		var tooltiplabelColors = this.labelColorsFunc
 
 		const zoomer = d3.zoom()
 			.on("zoom", null);
@@ -213,6 +205,102 @@ export default {
 			.call(zoomer);
 		const svg = this.svg;
 
+		//init()
+		timebins = timebins.map(d => {
+			let arr1 = [], arr2 = [];
+			if(d.length === 1) {
+				d[0].length = 0
+				arr1.x0 = 1,arr1.x1 = 1;
+				d.push(arr1)
+			}else{
+				arr1.x0 = 0,arr1.x1 = 0;
+				arr2.x0 = d[d.length - 1].x1, arr2.x1 = d[d.length - 1].x1
+				d.unshift(arr1)
+				d.push(arr2)
+			}
+			return d
+		})
+		const labellength =  mareylength - (mareyEntry),
+				timelength = labellength / (stations.length - 1),
+				labelRect = (timelength) / 1.2,
+				rectDistance = (timelength - labelRect)/2,
+				binxScale = timebins.map(d => 
+					d3.scaleLinear()
+					.domain([d[0].x0, d[d.length - 1].x1])
+					.range([5, labelRect - 5])
+				),
+				binYScale = timebins.map(d => 
+					d3.scaleLinear()
+					.domain([0, d3.max(d, e => e.length)])
+					.range([0, mareyDistance - margin.top - 10])
+				),
+				labelwidth = (labelRect) / 1.414,
+				rectwidth = 60,
+				polygonlength = (width - 1.5 * margin.right - (mareyEntry))/1.414  +  labelwidth + 3,
+				axisG = svg.append("g").attr("class", "axisG");
+		var timedistance = g => g
+				.selectAll("g")
+				.data(stations.slice(0, -1))
+				.join("g")
+				.attr("transform", d => `translate(${[x(d.distance) + rectDistance, mareyDistance - 1]})`)
+				.call(g => g.append("rect")
+						.attr("y", margin.top - mareyDistance)
+						.attr("fill", (d,i) => d3.color(i < 6 ? stationcolor [0] : ( i> stations.length - 5 ? stationcolor [2] : stationcolor [1])))
+						.attr("opacity", 0.6)
+						.attr("stroke", (d,i) => d3.color(i < 6 ? stationcolor [0] : ( i> stations.length - 5 ? stationcolor [2] : stationcolor [1])))
+						.attr("stroke-width", 1)
+						.attr("width", labelRect)
+						.attr("height", mareyDistance - margin.top)
+						.attr("filter","url(#shadow-card)"))
+		var xAxis = g => g
+				.style("font", "13px DIN")
+				.selectAll("g")
+				.data(stations.filter((d,i) => i !== stations.length - 4))
+				.join("g")
+				.attr("transform", (d, i) => i < stations.length - 4 ? `translate(${x(d.distance)+labelwidth + rectDistance},-2)` : `translate(${x(d.distance - 40)+labelwidth + rectDistance},-2)`)
+				.call(g => g.append("polygon")
+					.attr("transform", `translate(${-labelwidth} , ${margin.top + 0}) rotate(-45)`)
+					.attr("points", `0, 0  ${labelwidth},${labelwidth}  110 , ${labelwidth}  ${110 - labelwidth}, 0`)// .attr("points", "0, 0  17, 17  110 , 17  93, 0")
+					.attr("fill", (d,i) => statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1]))
+					.attr("id", d => "polygon" + d.name)
+					.attr("stroke" , "none"))
+				.call(g => g.append("text")
+					.attr("transform", `translate(-4 ,${margin.top -1.5}) rotate(-45)`)
+					.attr("id", d => "station"+d.name)
+					.attr("x", 8)
+					.attr("dy", "0.25em")
+					.attr("font-family" , "DIN")
+					.attr("fill", "white")
+					.text(d => d.name.replace(/harging/, "harge").replace(/Cc/, "C").replace(/ing/, "").replace(/MPass/, "MP")
+						.replace(/arge/, "").replace(/MPStart/, "RMStart").replace(/CDQ/, "DQ").replace(/CAC/, "AC")))
+					.on("mouseover", statOver)
+					.on("mouseout", statOut);
+		var xRect = g => g.append("polygon")
+				.attr("transform", `translate(${mareyEntry - labelwidth/2 - 6} ,${margin.top -1.5}) rotate(-45)`)
+				.attr("id", "rectxLine")
+				.attr("points", `0, 0  ${polygonlength},${polygonlength} ${112 - labelwidth + polygonlength}, ${polygonlength}  ${112 - labelwidth}, 0`)
+				.attr("fill", "none")
+				.attr("stroke", "#c4c4c4")
+				.attr("stroke-width", 0.15)
+				.attr("filter","url(#shadow-rect)")
+		axisG.append("g")
+				.call(xRect)
+				.call(xAxis);
+		axisG.append("g")
+			.call(timedistance);
+		for(let bin in  stations.slice(0, -1)){
+			axisG.append("g")
+				.attr("transform", `translate(${[x(stations[bin].distance), mareyDistance - 1]})`)
+				.selectAll(".binRect").data(timebins[bin]).join("rect")
+					.attr("class", `binRect${bin}`)
+					.attr("x", d => binxScale[bin](d.x0) + 1)
+					.attr("fill", "#b9c6cd")
+					.attr("stroke", "#aaa")
+					.attr("stroke-width", 0.25)
+					.attr("width", d =>  binxScale[bin](d.x1) - binxScale[bin](d.x0))
+					.attr("y", d => - binYScale[bin](d.length))
+					.attr("height", d => binYScale[bin](d.length))
+		}
 		function statOver (e,m){
 			var i = d3.select(this).attr("i")
 			d3.select("#polygon" + m.name).attr("fill", (d,i) => d3.color(statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(0.2))
@@ -252,12 +340,7 @@ export default {
 			const line3 = text.append("tspan")
 				.attr("x", 0)
 				.attr("y", "2.2em");
-			let toopcolor
-			if(!vm.changeColor){
-				toopcolor=tooltipColors(upiddata.productcategory)
-			}else{
-				toopcolor=tooltiplabelColors(upiddata.flag)
-			}
+			let toopcolor = vm.trainGroupStyle(upiddata)
 			tooltip
 				.style("display", null)
 				.attr("fill", "white");
@@ -337,38 +420,13 @@ export default {
 			// svg.selectAll(".mergeG").attr("opacity", 0.4)
 			svg.selectAll(`#mergeG${item}`).attr("opacity", 1)
 		}
-		// var train = this.svg.append("g")
-		// 	.attr("fill", "white")
-		// 	.selectAll("g")
-		// 	.data(data)
-		// 	.join("g")
-		// 	.style("color", this.trainGroupStyle)
-		// 	.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
-		// 	.attr("id", d => ("id" + d.upid))
-
-		// this.trainGroup = train;
-
-		// var train = this.svg.append("g")
-		// 	.attr("fill", "white")
-		// 	.selectAll("g")
-		// 	.data(data)
-		// 	.join("g")
-		// 	.style("color", this.trainGroupStyle)
-		// 	.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
-		// 	.attr("id", d => ("id" + d.upid))
-		// 	.call(g => g.append("path")
-		// 		.attr("fill", "none")
-		// 		.attr("stroke", "currentColor")
-		// 		.attr("d", d => line(d.stops)))
-		// 	.call(g => g.append("g")
-		// 		.attr("stroke", "none")
-		// 		.selectAll("circle")
-		// 		.data(d => d.stops)
-		// 		.join("circle")
-		// 		.attr("transform", d => `translate(${x(d.station.distance)},${y(new Date(d.time))})`)
-		// 		.attr("r", d => d.station.name === "FuCharging" ? 3 :
-		// 		(d.station.name === "FuDischarging" ? 1.5 : 0.5)
-		// 		))
+		function flatdata(array1, array2, array3){
+			for (let i in array1){
+				for(let j in array2){
+					array3[array2[j]].push(brushUCL.get(array1[i].upid)[0][array2[j]])
+				}
+			}
+		}
 
 		var mergeresult = this.merge(data , stations)
 		var filterdata = this.deepCopy(data)
@@ -382,101 +440,11 @@ export default {
 		var filter = d3.filter(merge , d => select.indexOf(d) === -1 )
 		var indexname = ["fuTotalTimeAfter" , "mtotalTime" , "ccTotalTime"]
 
-		var renderG = this.svg.append("g").attr("class", "renderg")
+		var renderG = this.svg.append("g")
 		function render(){
 			renderG !== undefined && renderG.remove()
-			renderG = vm.svg.append("g").attr("class", "renderg")
-			//add Axis
-			timebins = timebins.map(d => {
-				let arr1 = [], arr2 = [];
-				if(d.length === 1) {
-					d[0].length = 0
-					arr1.x0 = 1,arr1.x1 = 1;
-					d.push(arr1)
-				}else{
-					arr1.x0 = 0,arr1.x1 = 0;
-					arr2.x0 = d[d.length - 1].x1, arr2.x1 = d[d.length - 1].x1
-					d.unshift(arr1)
-					d.push(arr2)
-				}
-				return d
-			})
-			const labellength =  mareylength - (mareyEntry),
-				timelength = labellength / (stations.length - 1),
-				labelRect = (timelength) / 1.2,
-				rectDistance = (timelength - labelRect)/2,
-				binxScale = timebins.map(d => 
-					d3.scaleLinear()
-					.domain([d[0].x0, d[d.length - 1].x1])
-					.range([5, labelRect - 5])
-				),
-				binYScale = timebins.map(d => 
-					d3.scaleLinear()
-					.domain([0, d3.max(d, e => e.length)])
-					.range([0, mareyDistance - margin.top - 10])
-				),
-				labelwidth = (labelRect) / 1.414,
-				circledot = mareyEntry * 0.55,
-				rectwidth = 60;
-			var timedistance = g => g
-				.selectAll("g")
-				.data(stations.slice(0, -1))
-				.join("g")
-				.attr("transform", d => `translate(${[x(d.distance) + rectDistance, mareyDistance - 1]})`)
-				.call(g => g.append("rect")
-						.attr("y", margin.top - mareyDistance)
-						.attr("fill", (d,i) => d3.color(i < 6 ? stationcolor [0] : ( i> stations.length - 5 ? stationcolor [2] : stationcolor [1])))
-						.attr("opacity", 0.6)
-						.attr("stroke", (d,i) => d3.color(i < 6 ? stationcolor [0] : ( i> stations.length - 5 ? stationcolor [2] : stationcolor [1])))
-						.attr("stroke-width", 1)
-						.attr("width", labelRect)
-						.attr("height", mareyDistance - margin.top)
-						.attr("filter","url(#shadow-card)"))
-				// .call(g => g.append("path")
-				// 		.attr("fill", "none")
-				// 		.attr("stroke", (d,i) => d3.color(i <6 ? stationcolor [0] : ( i> stations.length - 4 ? stationcolor [2] : stationcolor [1])).darker(0.5))
-				// 		.attr("d", (d, i) =>d3.line()
-				// 			.x(e => binxScale[i]((e.x0 + e.x1)/2))
-				// 			.y(e => e.length === 0 ? -5 : -binYScale[i](e.length))
-				// 			.curve(d3.curveLinear)(timebins[i])))
-
-			var xAxis = g => g
-				.style("font", "13px DIN")
-				.selectAll("g")
-				.data(stations.filter((d,i) => i !== stations.length - 4))
-				.join("g")
-				.attr("i", (d, i) => i)
-				.attr("transform", (d, i) => i < stations.length - 4 ? `translate(${x(d.distance)+labelwidth + rectDistance},-2)` : `translate(${x(d.distance - 40)+labelwidth + rectDistance},-2)`)
-				.call(g => g.append("polygon")
-					.attr("transform", `translate(${-labelwidth} , ${margin.top + 0}) rotate(-45)`)
-					.attr("points", `0, 0  ${labelwidth},${labelwidth}  110 , ${labelwidth}  ${110 - labelwidth}, 0`)
-					// .attr("points", "0, 0  17, 17  110 , 17  93, 0")
-					.attr("fill", (d,i) => statname.indexOf(d.name) <6 ? stationcolor [0] : ( statname.indexOf(d.name) > stations.length - 4 ? stationcolor [2] : stationcolor [1]))
-					.attr("id", d => "polygon" + d.name)
-					.attr("stroke" , "none"))
-				.call(g => g.append("text")
-					.attr("transform", `translate(-4 ,${margin.top -1.5}) rotate(-45)`)
-					.attr("id", d => "station"+d.name)
-					.attr("x", 8)
-					.attr("dy", "0.25em")
-					.attr("font-family" , "DIN")
-					.attr("fill", "white")
-					.text(d => d.name.replace(/harging/, "harge").replace(/Cc/, "C").replace(/ing/, "").replace(/MPass/, "MP")
-						.replace(/arge/, "").replace(/MPStart/, "RMStart").replace(/CDQ/, "DQ").replace(/CAC/, "AC")))
-					.on("mouseover", statOver)
-					.on("mouseout", statOut)
-			var polygonlength = (width - 1.5 * margin.right - (mareyEntry))/1.414  +  labelwidth + 3
-			var xRect = g => g.append("polygon")
-					.attr("transform", `translate(${mareyEntry - labelwidth/2 - 6} ,${margin.top -1.5}) rotate(-45)`)
-					.attr("id", "rectxLine")
-					.attr("points", `0, 0  ${polygonlength},${polygonlength} ${112 - labelwidth + polygonlength}, ${polygonlength}  ${112 - labelwidth}, 0`)
-					.attr("fill", "none")
-					.attr("stroke", "#c4c4c4")
-					.attr("stroke-width", 0.15)
-					.attr("filter","url(#shadow-card)")
-			
-			// var xGroup = renderG.append("g")
-			// 	.call(xAxis);
+			renderG = vm.svg.append("g")
+			//add Axis			
 			const defs = renderG.append("defs");
 			const filtershadow =defs.append("filter").attr("id", "shadow-rect")
 			filtershadow.append("feDropShadow")
@@ -490,7 +458,6 @@ export default {
 				.attr("dy", 0)
 				.attr("stdDeviation", 5)
 				.attr("flood-color", "#ededed")
-			const filterlabel =defs.append("filter").attr("id", "label-rect")
 			filtershadow.append("feDropShadow")
 				.attr("dx",0)
 				.attr("dy", 0)
@@ -500,19 +467,17 @@ export default {
 			renderG.append("g")
 				.call(g => g.append("rect")
 					.attr("x" , mareyEntry - labelwidth + 10)
-					.attr("y", mareyDistance)
+					.attr("y", margin.top)
 					.style("fill","white")
 					.attr("width", mareylength- mareyEntry + 8 + labelwidth)
-					.attr("height", height - mareyDistance - margin.bottom))
+					.attr("height", height - margin.top - margin.bottom))
 				.call(g => g.append("rect")
 					.attr("x" , mareyEntry - labelwidth + 10)
 					.attr("class", "shadow_rect")
-					.attr("y", mareyDistance)
+					.attr("y", margin.top)
 					.style("fill","none")
-					// .attr("stroke", "#aaa")
-					// .attr("stroke-width",0.25)
 					.attr("width", mareylength- mareyEntry + 8 + labelwidth)
-					.attr("height", height - mareyDistance - margin.bottom))
+					.attr("height", height - margin.top - margin.bottom))
 					.attr("filter","url(#shadow-card)")
 			renderG.append("g")
 				.call(g => g.append("rect")
@@ -529,22 +494,21 @@ export default {
 					.attr("width", 420)
 					.attr("height", height - mareyDistance - margin.bottom))
 					.attr("filter","url(#shadow-card)")
-			// renderG.append("g")
-			// 	.call(g => g.append("rect")
-			// 		.attr("x" , circledot - 1.8 * 65)
-			// 		// .attr("y", mareyDistance)
-			// 		.style("fill","white")
-			// 		.attr("width", 65  * 3)
-			// 		// .attr("height", height - mareyDistance - margin.bottom))
-			// 		.attr("height", height  - margin.bottom))
-			// 	.call(g => g.append("rect")
-			// 		.attr("x" , circledot - 1.8 * 65)
-			// 		.attr("class", "shadow_rect")
-			// 		// .attr("y", mareyDistance)
-			// 		.style("fill","none")
-			// 		.attr("width", 65 + circledot - 20)
-			// 		.attr("height", height - margin.bottom))
-			// 		.attr("filter","url(#shadow-card)")
+			renderG.append("g")
+				.call(g => g.append("rect")
+					.attr("x" , coreX - 1.8 * 65)
+					// .attr("y", mareyDistance)
+					.style("fill","white")
+					.attr("width", 65  * 3)
+					// .attr("height", height - mareyDistance - margin.bottom))
+					.attr("height", height  - margin.bottom))
+				.call(g => g.append("rect")
+					.attr("x" , coreX - 1.8 * 65)
+					.attr("class", "shadow_rect")
+					.style("fill","none")
+					.attr("width", 65 + coreX - 20)
+					.attr("height", height - margin.bottom))
+					.attr("filter","url(#shadow-card)")
 			renderG.append("g")
 				.attr("class", "axisrect")
 				.call(g => g.append("rect")
@@ -606,7 +570,6 @@ export default {
 
 			var mergeClickValue = [];	//Click List
 			for (let item in mergeresult){
-				// var qualityData = [];
 				var mergeG = renderG.append("g")
 					.attr("class", `mergeG`)
 					.attr("id", `mergeG${item}`)
@@ -665,7 +628,7 @@ export default {
 					lineposition = [],
 					lineScale = [],
 					circleRy = (y((new Date(mergeItem[mergeItem.length - 1].stops[0].time))) + y((new Date(mergeItem[0].stops[0].time)))) /2,
-					position = [ circledot , circleRy],
+					position = [ coreX , circleRy],
 					badupid = d3.map(d3.filter(mergeItem, d => d.flag === 0), d => d.upid),
 					newPosition
 					// selectId
@@ -673,17 +636,17 @@ export default {
 					// Array.from(new Set(array))
 					if(circleRy - rectwidth >=-20 && circleRy + rectwidth < 650){
 						if(positionData.length === 0){
-							newPosition = Math.abs(70 + 10 + rectwidth - circleRy) < 15 ? [circledot, 70 + 10 + rectwidth] : position
+							newPosition = Math.abs(70 + 10 + rectwidth - circleRy) < 15 ? [coreX, 70 + 10 + rectwidth] : position
 						}else{
 							var prev = positionData[positionData.length - 1][1][1]
 							if(prev - rectwidth >= -20 && prev + rectwidth < 650){
-								newPosition = [circledot, positionData[positionData.length - 1][1][1] + 2 * rectwidth + 14 ]
+								newPosition = [coreX, positionData[positionData.length - 1][1][1] + 2 * rectwidth + 14 ]
 							}else{
-								newPosition = Math.abs(70 + 10 + rectwidth - circleRy) < 15 ? [circledot, 70 + 14 + rectwidth] : position
+								newPosition = Math.abs(70 + 10 + rectwidth - circleRy) < 15 ? [coreX, 70 + 14 + rectwidth] : position
 							}
 						}
 						if(positionData.length !== 0){
-							newPosition = [circledot, newPosition[1] - rectwidth < positionData[positionData.length - 1][1][1]  + rectwidth + 5 ?  positionData[positionData.length - 1][1][1] + 2 * rectwidth + 14 : newPosition[1]]
+							newPosition = [coreX, newPosition[1] - rectwidth < positionData[positionData.length - 1][1][1]  + rectwidth + 5 ?  positionData[positionData.length - 1][1][1] + 2 * rectwidth + 14 : newPosition[1]]
 						}
 					}else{
 						var newPosition = position
@@ -704,7 +667,8 @@ export default {
 							vm.$emit("trainClick",{list: vm.trainSelectedList, 
 								color: vm.trainGroupStyle(mergeSelect.slice(-1)[0]),
 								upidSelect: [...badupid, ...selectId],
-								type: "group"})
+								type: "group",
+								batch: mergeId})
 						}
 					})
 					.on("mouseout",pathOut)
@@ -839,7 +803,6 @@ export default {
 					let linedata = d3.map(categorysdata , d => d[indexname[i]]).sort()
 					let meandata = d3.mean(d3.map(mergeItem , d => d[indexname[i]]).sort())
 					
-					// if(d3.mean(linedata) === 0) continue
 					
 					var sortdata = [] , maxmin = d3.extent(linedata);
 					var linelength = (maxmin[1]*1.01 - maxmin[0]) / 3;
@@ -861,10 +824,10 @@ export default {
 						.range([0, xaxlength]);
 					const link = [d3.quantile(linedata, 0.1), d3.quantile(linedata, 0.9)]
 					const text = ["H", "R", "C"][i];
-					rectG.append("g").selectAll(".translatesfas")
+					rectG.append("g").selectAll(".processPath")
 						.data(link).join("g")
 						.attr("transform", `rotate(${(+i - 1)*120 - 30} ,${position}) `)
-						.attr("class", "translatesfas")
+						.attr("class", "processPath")
 						.call(g => g.append("line")
 							.attr("stroke", d3.color(stationcolor[i]).darker(0.5))
 							.attr("transform", (d, i) =>`translate( ${[ position[0] + xline(d) + (i === 0 ? -5 : 5), position[1] ]})`  )
@@ -873,7 +836,7 @@ export default {
 							.attr("y2", 3))
 						rectG.append("g")
 						.attr("transform", `rotate(${(+i - 1)*120 - 30} ,${position}) `)
-						.attr("class", "translatesfas")
+						.attr("class", "processPath")
 						.call(g => g.append("line")
 							.attr("stroke", d3.color(stationcolor[i]).darker(0.5))
 							.attr("transform", `translate( ${position })`  )
@@ -1434,17 +1397,6 @@ export default {
 			var T2Scale = d3.scaleLinear()
 					.domain( [-1 , T2UCLMax])
 					.range([0, 65]);
-			// var remainRange = d3.map(remainId, d => {
-			// 	let arr = d3.pairs(dataUCL.get(d)[0].stops, (a,b) => new Date(b.realTime).getTime() - new Date(a.realTime).getTime())
-			// 	let j = 0
-			// 	arr.map((d, i) => {
-			// 		if( d <= timeMaxRange[i][1] && timeMaxRange[i][0] <= d) j++
-			// 	})
-			// 	return j
-			// })
-			// var outRange = d3.scaleLinear()		//time out limit
-			// 		.domain( [0 , 16])
-			// 		.range([minHeight*3 , minHeight]);
 			plateG.append("g").selectAll(".remainUpid").data(remainId).join("g")
 				.attr("class", "remainUpid")
 				.attr("transform", (d, i) => `translate(${[mareylength + 120, yScale(dataUCL.get(d)[0])]})`)
@@ -1476,23 +1428,10 @@ export default {
 					d.merge.map(e => e.mergeSearch = i)
 					if(mareyDistance - 15 <= positionData[i][0][1] && positionData[i][0][1] <= mainHeight + 15)return true
 				}).map(d => d.merge).flat() : []
-				function flatdata(array1, array2, array3){
-					for (let i in array1){
-						for(let j in array2){
-							array3[array2[j]].push(brushUCL.get(array1[i].upid)[0][array2[j]])
-						}
-					}
-				}
 				var monitorData = [
 					// ...mergeRemain,
 					...processRemain];
-				// flatdata(data, processindex, scaleData)
-				// flatdata(monitorData, processindex, processdata)
-				for (let item in data){
-					for(let index in processindex){
-						scaleData[processindex[index]].push(brushUCL.get(data[item].upid)[0][processindex[index]])
-					}
-				}
+				flatdata(data, processindex, scaleData)
 				var monitorId = d3.map(monitorData, d => d.upid)
 				var badlength = 160,goodlength = 50, disrect = 30, startRect = 160, 
 					underUCL = d3.scaleLinear()
@@ -1585,25 +1524,19 @@ export default {
 						tooltip.style("display", "none");
 						if(vm.trainSelectedList.includes(d.train.upid))return
 						mouseoutLine(d.train.upid)
+						mouseOutPath()
 					})
 
 					.on("mouseover", (event, d) => {
 						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return
 						vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 0});
-						let toopcolor
-							if(!vm.changeColor){toopcolor=tooltipColors(d.train.productcategory)}
-							else{toopcolor=tooltiplabelColors(d.train.flag)}
-						// d3.select(currentIdSearch)
-						// .attr("stroke-width", highLightStrokeWidth)
-						// .selectAll("rect")
-						// .attr("stroke", "black");
+						let toopcolor = vm.trainGroupStyle(d.train)
 						mouseoverLine(d.train.upid)
 						mouseOverRect(d.train.upid)
 						tooltip
 						.style("display", null)
 						.attr("fill", "white");
 						line1.text(`upid: ${d.train.upid}`);
-						// line2.text(d.stop.station.name);productcategory
 						line2.text(`category: ${d.train.productcategory}`);
 						line3.text(`time: ${d.stop.realTime.toLocaleString(undefined, { hour: "numeric", minute: "numeric" })}`);
 						path
@@ -1627,85 +1560,42 @@ export default {
 
 					.on("click", function (event, d) {
 						if (vm.trainSelectedList.includes(d.train.upid)) {
-						// 取消选中
-						vm.trainSelectedList = vm.trainSelectedList.filter(v => v !== d.train.upid)
-						let currentIdSearch = "#id" + d.train.upid;
-						d3.select(currentIdSearch).attr("fill", "white")
-						d3.select(currentIdSearch)
-						.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
-						.selectAll("rect")
-						.attr("stroke", "none");
+							vm.trainSelectedList = vm.trainSelectedList.filter(v => v !== d.train.upid)
+							mouseoutLine(d.train.upid) // 取消选中
 						} else {
 						// 选中
-						if(vm.trainSelectedList.length !==0){
-							d3.select("#id"+ vm.trainSelectedList[vm.trainSelectedList.length-1])
-								.attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
-								.selectAll("rect")
-								.attr("stroke", "none");
-						}
-						vm.trainSelectedList.push(d.train.upid);
-						let currentIdSearch = "#id" + d.train.upid;
-						d3.select(currentIdSearch).attr("fill", "grey")
-						d3.select(currentIdSearch)
-						.attr("stroke-width", highLightStrokeWidth)
-						.selectAll("rect")
-						.attr("stroke", "black");
+							if(vm.trainSelectedList.length !==0){
+								mouseoutLine(vm.trainSelectedList[vm.trainSelectedList.length-1])
+								mouseOutPath()
+							}
+							vm.trainSelectedList.push(d.train.upid);
+							mouseoverLine(d.train.upid)
+							mouseOverRect(d.train.upid)
 						}
 						let upidSelect = d3.map(d3.filter(data.slice(allupid.indexOf(d.train.upid)), d => d.flag === 0), d => d.upid)
-						vm.$emit("trainClick", {list: vm.trainSelectedList, upidSelect: upidSelect, type: "single"});
+						vm.$emit("trainClick", {list: vm.trainSelectedList, upidSelect: upidSelect, type: "single",batch: upidSelect});
 					})
-			});
+				});
 			d3.select(".axisrect").raise()
-			d3.selectAll(".translatesfas").raise()
-			var xGroup = renderG.append("g")
-				.call(xRect).call(xAxis);
-			renderG.append("g").call(timedistance);
-			// renderG
-			d3.select(".shadow_rect").raise()
+			d3.selectAll(".processPath").raise()
+			d3.selectAll(".shadow_rect").raise()
 			d3.selectAll(".processline").raise()
 			d3.selectAll(".monitorPath").raise()
-			for(let bin in  stations.slice(0, -1)){
-				renderG.append("g")
-					.attr("transform", `translate(${[x(stations[bin].distance), mareyDistance - 1]})`)
-					.selectAll(".binRect").data(timebins[bin]).join("g")
-						.call(g => g.append("rect")
-							.attr("class", `binRect${bin}`)
-							.attr("x", d => binxScale[bin](d.x0) + 1)
-							.attr("fill", "#b9c6cd")
-							.attr("stroke", "#aaa")
-							.attr("stroke-width", 0.25)
-							.attr("width", d =>  binxScale[bin](d.x1) - binxScale[bin](d.x0))
-							.attr("y", d => - binYScale[bin](d.length))
-							.attr("height", d => binYScale[bin](d.length)))
-			}
+			d3.select(".axisG").raise()
 			// var yGroup = renderG.append("g")
 			// 	.call(yAxis);
-			// d3.select(".xAxisLabel").raise()
 		}
 		// render()
 		const miniDistance = d3.min(d3.pairs(d3.map(data, d => new Date(d.stops[0].time)), (a, b) => b.getTime() -a.getTime()))
 		var miniMargin = { top: 115, right: 15, bottom: -35, left: 35 },
-
 			miniheight =  mainHeight - miniMargin.top - miniMargin.bottom,
 			miniwidth = 75,
 			miniXScale = d3.scaleTime()
 				.domain([new Date(minDate), new Date(maxDate)])
 				.range([0, miniheight - miniMargin.bottom - miniMargin.top]),
-			// miniYScale = d3.scaleLinear()
-			// 	.domain(d3.extent(stations, d => d.distance))
-			// 	.range([0 , miniwidth - miniMargin.right - miniMargin.left ]),
-			// mainXScale = d3.scaleTime()
-			// 	.domain([new Date(minDate), new Date(maxDate)])
-			// 	.range([margin.top, height - margin.bottom]),
-			// mainYScale = d3.scaleLinear()
-			// 	.domain(d3.extent(stations, d => d.distance))
-			// 	.range([mareyEntry, width - 1.5 * margin.right ]),
 			mainXZoom = d3.scaleLinear()
 				.range([mareyDistance, mainHeight - margin.bottom])
 				.domain([0, miniheight]),
-			// miniline = d3.line()
-			// 	.x(d => miniYScale(d.station.distance))
-			// 	.y(d => miniXScale(new Date(d.time))),
 			BrushSelectHeight = miniXScale(new Date(50 * miniDistance + new Date(data[0].stops[0].time).getTime())),
 			// data.length > 50 ? (this.isMerge ? miniXScale(new Date(data[50].stops[0].time)) : miniXScale(new Date(data[65].stops[0].time))) : (this.isMerge ? 0.5 * unitHeight : 0.3 * unitHeight),
 			// miniXScale(new Date(data[65].stops[0].time.slice(0, 19))),
@@ -1767,7 +1657,6 @@ export default {
 					range = miniXScale.range(),
 					x0 = d3.min(range),
 					x1 = d3.max(range),
-					// dx = -d3.event.deltaX,
 					dx = event.deltaX,
 					topSection;
 
@@ -1832,7 +1721,7 @@ export default {
 						.attr("id", d => "miniBar" + d.upid)
 						.attr("height", d => stellheight(d.tgtplatethickness2))
 						.attr('width', miniwidth - miniMargin.right - miniMargin.left)
-						.attr("fill", d=>  this.trainGroupStyle(d))
+						.attr("fill", vm.trainGroupStyle)
 						.attr("opacity", d=> miniXScale(new Date(d.stops[0].time))>initialBrushXSelection[0] && miniXScale(new Date(d.stops[0].time))<initialBrushXSelection[1] ? 0.8 : 0.7))
 				.call(g => g.selectAll(".mergePath")
 					.data(vm.isMerge ? mergeresult : [])
@@ -1854,7 +1743,7 @@ export default {
 						.attr("y1", miniMargin.top + initialBrushXSelection[0])
 						.attr("class", "miniLine1")
 						.style("stroke","#c9cbcc")
-						.attr("x2", mareylength + 250)
+						.attr("x2", mareylength + 455)
 						.attr("y2", mareyDistance)
 						.style("stroke-width", 0.75))
 			.call(g => g.append("line")
@@ -1862,7 +1751,7 @@ export default {
 						.attr("x1", brushXPosition)
 						.attr("y1", miniMargin.top + initialBrushXSelection[1])
 						.style("stroke","#c9cbcc")
-						.attr("x2", mareylength + 250)
+						.attr("x2", mareylength + 455)
 						.attr("y2", mainHeight)
 						.style("stroke-width", 0.75))
 		var miniAxis = d3.axisLeft(miniXScale)

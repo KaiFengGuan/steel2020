@@ -53,18 +53,18 @@
 				<el-row>
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
-							<el-col :span="15"><span>Condition View</span></el-col>
-							<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">MinRange</el-col>
-							<el-col :span="1">
+							<el-col :span="16"><span>Condition View</span></el-col>
+							<el-col :span="1" style="font-size: 12px;margin:2px 0px;padding-left:0px">MinRange</el-col>
+							<el-col :span="2">
 								<el-slider v-model="minrange" :step="1" :min="5" :max="40" class="my-slider"
-									style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate"></el-slider>
+									style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="mareyUpdate"></el-slider>
 							</el-col>
-							<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">MinMerge</el-col>
+							<el-col :span="1" style="font-size: 12px;margin:2px 0px;">MinMerge</el-col>
 							<el-col :span="2">
 								<el-slider v-model="minconflict" :step="1" :min="1" :max="10" class="my-slider"
-									style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="mareyUpdate"></el-slider>
+									style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="mareyUpdate"></el-slider>
 							</el-col>
-							<el-col :span="1" :class="{activeStyle: isSwitchClass, deActiveStyle : !isSwitchClass}">
+							<el-col :span="1" :class="{activeStyle: isSwitch, deActiveStyle : !isSwitch}">
 								<el-button size="mini" round style="height:25px;width: 45px;margin:-2px;padding:0px;"  type="info" plain @click="changeColor">
 									<img src="../../assets/images/color.svg" style="height:16px;width:16px;transform: translate(0px, -2px)"></el-button>
 							</el-col>
@@ -84,23 +84,23 @@
 							<el-card class="myel-card">
 								<div class="my-card-title" slot="header">
 									<el-col :span="14"><span>Diagnosis View</span></el-col>
-									<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">CurveSize</el-col>
-									<el-col :span="1">
+									<el-col :span="1" style="font-size: 12px;margin:2px 0px">CurveSize</el-col>
+									<el-col :span="2">
 										<el-slider v-model="curvesize" :step="0.01" :min="0" :max="1" class="my-slider"
-											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="curveUpdate"></el-slider>
+											style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="curveUpdate"></el-slider>
 									</el-col>
-									<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">MultiPara</el-col>
-									<el-col :span="1">
+									<el-col :span="1" style="font-size: 12px;margin:2px 0px">MultiPara</el-col>
+									<el-col :span="2">
 										<el-slider v-model="multisize" :step="1" :min="10" :max="40" class="my-slider"
-											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="multiUpdate"></el-slider>
+											style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="multiUpdate"></el-slider>
 									</el-col>
-									<el-col :span="2" style="font-size: 12px;margin:2px 0px;padding-left:40px">CorrConfig</el-col>
-									<el-col :span="1">
+									<el-col :span="1" style="font-size: 12px;margin:2px 0px;">CorrConfig</el-col>
+									<el-col :span="2">
 										<el-slider v-model="corrsize" :step="0.1" :min="0" :max="1" class="my-slider"
-											style="margin:0px 0;color:#999a9d;width: 75px;margin-top:-8px;" input-size="mini" @change="corrUpdate"></el-slider>
+											style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="corrUpdate"></el-slider>
 									</el-col>
 									<el-col :span="1">
-										<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;float:right">
+										<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;padding:25px">
 										<el-row class="toltip">
 											<el-row :gutter="8">
 												<el-col :span="8" style="font-size: 13px;">
@@ -253,9 +253,7 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			isSwitch: true,
 			startmonth: new Date(2018, 10, 1, 0, 0),
-			isSwitchClass: true,
 			time: undefined,
 			radarIndicatorOptions: [],
 			temperatureData: {},
@@ -290,22 +288,16 @@ export default {
 			radio: 0,
 			chooseList: [],
 			processTurn: null, 
-			kindRef: {
-				length: 0.5,
-				width: 0.5,
-				thickness: 0.5
-			},
-			scatterResponse: null,
 			upidSelect: ["", "  "],
 			corrsize: 0.5,
-			multisize: 15,
+			multisize: 20,
 			curvesize: 0.5,
 			sampleCss:{}
 		}
 	},
 	computed: {
 		...mapGetters([
-			// "isSwitch",
+			"isSwitch",
 			"trainBorder",
 			"startDate",
 			"endDate",
@@ -529,7 +521,6 @@ export default {
 				})
 		},
 		changeColor(){
-			this.isSwitchClass = !this.isSwitchClass
 			this.changeLabelColor()
 			this.switchChange(this.isSwitch)
 		},
@@ -546,6 +537,7 @@ export default {
 
 		async trainClick(value) {
 			this.upidSelect = []
+			this.chooseList = value.batch;
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
 			}
@@ -633,7 +625,7 @@ export default {
 			this.sampleCss = {}
 			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
 			var processData = []
-			this.upidSelect.map(d => processData.push(this.upidData.get(d)[0]))
+			this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
 			this.diagnosisData = diagnosisData
 			// let processDetail = []
 			// for(let item of this.processArray){
@@ -785,28 +777,6 @@ export default {
 		// console.log(this.startmonth.getMonth())
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
-		this.trainClick({
-    "list": [
-        "18B05337000",
-        "18B05338000",
-        "18B05339000",
-        "18B05341000",
-        "18B05342000",
-        "18B05343000",
-        "18B05334000"
-    ],
-    "color": "#94a7b7",
-    "upidSelect": [
-        "18B05337000",
-        "18B05338000",
-        "18B05339000",
-        "18B05341000",
-        "18B05342000",
-        "18B05343000",
-        "18B05334000"
-    ],
-    "type": "group"
-})
 		this.getplatetype()
 		this.changeTime()
 	},

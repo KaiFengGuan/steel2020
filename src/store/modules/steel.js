@@ -9,7 +9,7 @@ let state = {
     endDate: new Date('2018-11-06 04:00:00'),
     brushSelectColor: "#c6cacc",
     corrSize: 0.5,
-    multiPara: 15,
+    multiPara: 20,
     curveSize: 0.5
 }
 

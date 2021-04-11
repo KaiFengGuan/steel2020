@@ -31,12 +31,13 @@ export default {
 			data:[],
             jsondata: undefined,
             chorddata: undefined,
+            batchData: undefined,
             upid: undefined
 		}
 	},
 	methods: {
-	paintChart(jsondata,chorddata, batchData) {
-        this.jsondata = jsondata, this.chorddata = chorddata;
+	paintChart(jsondata, chorddata, batchData) {
+        this.jsondata = jsondata, this.chorddata = chorddata, this.batchData = batchData;
         const wheeldata = [] , labels = []
         const menuId = this.menuId
         this.upid = jsondata.upid
@@ -758,20 +759,17 @@ export default {
                                 s.h = d.u[i],
                                 s.l = d.l[i],
                                 s.value = d.value[i],
-                                s.max = Math.max(s.h, s.l, s.value)
+                                s.max = Math.max(s.h, s.l, s.value),
+                                s.min = Math.min(s.h, s.l, s.value)
                                 return s
                             })
                         let xScale = d3.scaleBand()
                                 .range([0, RectWidth])
                                 .domain(d3.map(batch, (d,i)=> i))
                                 .padding(0.5),
-                            xrectdata = [4,5],
                             yScale =  d3.scaleLinear()
                                     .range([ 5, 20 ])
-                                    .domain(d3.extent(d3.map(batch, d => d.max))),
-                            xRect =  d3.scaleLinear()
-                                    .range([ 0, 30 ])
-                                    .domain([0, 10]),
+                                    .domain([d3.min(d3.map(batch, d => d.min)), d3.max(d3.map(batch, d => d.max))]),
                             t2Rect = d3.scaleLinear()
                                     .range([ 0, 10 ])
                                     .domain([0, d3.max(d3.map(batch, d => d.T2))]),
@@ -783,41 +781,30 @@ export default {
                                 .x((d, i) => xScale(i))
                                 .y0(d => 0)
                                 .y1(d => -yScale(d.h));
+                        var rectAttr = g => g.append("rect")
+                            .attr("fill", d3.color(lc[+processnumber]))
+                            .attr("stroke", d3.color(lc[+processnumber]).darker(1))
+                            .attr("width", xScale.bandwidth())
+                            .attr("x", d => xScale(d) - xScale.bandwidth()/2)
+                            .attr("stroke-width", 0.5)
+                            .attr("stroke-opacity", 1)
                         this._g.append("g")   
                         .attr("class", "rect_doct")
                         .attr("transform", `translate(${[r.outer+r.bubble*3.60, (this._height - 50)/indexs * (item-0.5)- (this._height - 50)/2+45]})`)
                             .call(g => g.append("g").selectAll("#" +menuId + " .rect_fill").data(d3.map(batch, (d,i)=> i)).join("g")
                                 .attr("class", "rect_fill")
                                 .attr("transform", `translate(${[30,0]})`)
-                                .call(g => g.append("rect")
+                                .call(g => rectAttr(g)
                                     .attr("transform", `translate(${[0,35]})`)
-                                    .attr("fill", d3.color(lc[+processnumber]))
-                                    .attr("stroke", d3.color(lc[+processnumber]).darker(1))
-                                    .attr("width", 6)
-                                    .attr("x", d => xScale(d))
                                     .attr("y", d => -speRect(batch[d].Q))
-                                    .attr("height", d => speRect(batch[d].Q))
-                                    .attr("stroke-width", 0.5)
-                                    .attr("stroke-opacity", 1))
-                                .call(g => g.append("rect")
+                                    .attr("height", d => speRect(batch[d].Q)))
+                                .call(g => rectAttr(g)
                                     .attr("transform", `translate(${[0,35]})`)
-                                    .attr("fill", d3.color(lc[+processnumber]))
-                                    .attr("stroke", d3.color(lc[+processnumber]).darker(1))
-                                    .attr("width", 6)
-                                    .attr("x", d => xScale(d))
-                                    .attr("height", d => t2Rect(batch[d].T2))
-                                    .attr("stroke-width", 0.5)
-                                    .attr("stroke-opacity", 1))
-                                .call(g => g.append("rect")
+                                    .attr("height", d => t2Rect(batch[d].T2)))
+                                .call(g => rectAttr(g)
                                     .attr("transform", `translate(${[0, 15]})`)
-                                    .attr("fill", d3.color(lc[+processnumber]))
-                                    .attr("stroke", d3.color(lc[+processnumber]).darker(1))
-                                    .attr("width",  xScale.bandwidth())
-                                    .attr("x", d => xScale(d) - xScale.bandwidth()/2)
                                     .attr("y", d => -yScale(batch[d].value))
-                                    .attr("height", d => yScale(batch[d].value))
-                                    .attr("stroke-width", 0.5)
-                                    .attr("stroke-opacity", 1)))
+                                    .attr("height", d => yScale(batch[d].value))))
                             // .call(g => g.append("path")
                             //     .datum(batch)
                             //     .attr("class", "DUGUDU")
@@ -825,18 +812,6 @@ export default {
                             //     .attr("fill",d3.color(lc[+processnumber]).darker(0))
                             //     .attr("opacity", 0.5)
                             //     .attr("d", areaValue))
-                            // .call(g => g.append("rect")
-                            //         .attr("transform", `translate(${[RectWidth + 30, 9.5]})`)
-                            //         .attr("fill", util.labelColor[1])
-                            //         .attr("stroke", "none")
-                            //         .attr("width", xRect(xrectdata[0]))
-                            //         .attr("height", 11))
-                            // .call(g => g.append("rect")
-                            //         .attr("transform", `translate(${[RectWidth + 30 + xRect(xrectdata[0]),  9.5]})`)
-                            //         .attr("fill", util.labelColor[0])
-                            //         .attr("stroke", "none")
-                            //         .attr("width", xRect(xrectdata[1]))
-                            //         .attr("height", 11))
                     }
                     // var processData = []
                     // for(let item in processDetail){
@@ -990,7 +965,8 @@ export default {
                         if(this._processindex[item.month] == key) {
                             processdata.push(item)
                         }
-                    }                 
+                    }
+                    if(processdata.length === 0) continue                 
                     const area = d3.areaRadial()
                         // .curve(d3.curveBasis)
                         .curve(d3.curveCardinal)
@@ -1716,9 +1692,11 @@ export default {
                         // .details(details)
                         .render();
 	},
+        renderChart(){
+            this.paintChart(this.jsondata, this.chorddata, this.batchData)
+        }
 	},
 	mounted() {
-        // this.paintChart()
 	},
     computed:{
         ...mapGetters([
@@ -1729,19 +1707,13 @@ export default {
 	},
     watch:{
         corrSize:function(){
-            if(this.jsondata !== undefined){
-                this.paintChart(this.jsondata, this.chorddata)
-            }
+            this.renderChart()
 		},
         multiPara:function(){
-            if(this.jsondata !== undefined){
-                this.paintChart(this.jsondata, this.chorddata)
-            }
+            this.renderChart()
         },
         curveSize:function(){
-            if(this.jsondata !== undefined){
-                this.paintChart(this.jsondata, this.chorddata)
-            }
+            this.renderChart()
         }
     }
 }

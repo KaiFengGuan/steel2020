@@ -564,6 +564,7 @@ export default {
 			// 	return false
 			// }
 			var diagnosisData = this.upidData.get(upid)[0]
+			console.log(diagnosisData)
 			// Vue.set(this.sampleCss, upid, "solid 0.05px " + this.trainBorder(diagnosisData))
 			if(this.corrdata.length !== 0) {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
@@ -611,13 +612,13 @@ export default {
 		},
 
 		async paintRiverLike(upid) {
-			// let query=[]
-			// for (let item of this.plateTempPropvalue){
-			// 	if(item==='All'){
-			// 		query.push(item)
-			// 	}
-			// }		
-			// if(query.length===0)query=this.plateTempPropvalue
+			let query=[]
+			for (let item of this.plateTempPropvalue){
+				if(item==='All'){
+					query.push(item)
+				}
+			}		
+			if(query.length===0)query=this.plateTempPropvalue
 
 			this.selectedUpid =  "UPID " + upid
 			// let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data

@@ -505,21 +505,22 @@ export default {
                     wm=this,
                     colorLinear1=[],
                     colorLinear2=[];
-                    var SPE=d3.map(this._chartData,d=>d.precipitation),
-                        T2=d3.map(this._chartData,d=>d.humidity);
+                    var speSort = d3.sort(this._chartData,d=> d.precipitation),
+                        T2Sort = d3.sort(this._chartData,d=> d.humidity);
+                    // var SPE=d3.map(d3.sort(this._chartData,d=> -d.precipitation), d => d.dateStr),
+                    //     T2=d3.map(d3.sort(this._chartData,d=> -d.humidity), d => d.dateStr);
                     this._g.attr("class","wheelg")
                     var sortdata = this._chartData.filter(d =>{
-                        return (SPE.indexOf(d.precipitation)<= vm.multiPara || T2.indexOf(d.humidity)<= vm.multiPara) && d.deviation !==0
+                        return (d3.map(speSort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara || d3.map(T2Sort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara) && d.deviation !==0
                     })
-                    // console.log(sortdata.length)
-                    var SPE=d3.sort(sortdata,d=>d.precipitation),
-                        T2=d3.sort(sortdata,d=>d.humidity),
-                        res=d3.sort(sortdata,d=>d.deviation);
+                    var SPE=d3.sort(sortdata,d=> -d.precipitation),
+                        T2=d3.sort(sortdata,d=> -d.humidity),
+                        res=d3.sort(sortdata,d=> -d.deviation);
                     for (let item in SPE){
                         let query=SPE[item].dateStr                     
                         SPE[item].order=+item+1+(+T2.findIndex((value)=> value.dateStr===query))+1+(+res.findIndex((value)=> value.dateStr===query))+1
                     }
-                    const sample=d3.sort(SPE,d=>d.order);
+                    const sample=d3.sort(SPE,d=> d.order);
                     var sampleId = d3.map(sample, d => d.dateStr),
                     outrate = (item1 , item2) => {
                         return d => (sampleId.indexOf(d.dateStr) !== -1) ? item1 : item2
@@ -629,7 +630,7 @@ export default {
                                 .attr("stroke",d => (sampleId.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorlinear2(d.humidity)+2) : daker)
                                 .attr("opacity", 1)
                             d3.selectAll("#" +menuId + " .lead"+key )
-                                .attr("stroke-width", outrate(limit,0.5))
+                                .attr("stroke-width", outrate(2,0.5))
                                 .attr("opacity", 0.4)
                             d3.selectAll("#" +menuId + " .linestart")
                                 .attr("y1", d => (sampleId.indexOf(d.dateStr) !== -1) ? this._y(d.avg)+3.5: this._y(d.avg)+2)
@@ -744,7 +745,8 @@ export default {
 
                     for (let item in processdata){
                         const pindex=processdata[item];
-                        if(pindex.humidity<limit&&pindex.precipitation<limit)continue
+                        if(sampleId.indexOf(pindex.dateStr) === -1)continue
+                        // if(pindex.humidity<limit&&pindex.precipitation<limit)continue
                         const thisangel=(xpad[key](pindex.date) + v) * 180 / Math.PI - 180;
                         
                         const pie = d3.pie()
@@ -1038,7 +1040,7 @@ export default {
                             .attr("y2", d =>  wm._y(d.avg)-3.5)
                         d3.selectAll("#" +menuId + " #name" + name)
                             .attr("font-weight", "normal")
-                            .style("visibility", d => d.humidity>limit|d.precipitation>limit ? "visible" : "hidden")
+                            .style("visibility", d => (sampleId.indexOf(d.dateStr) !== -1) ? "visible" : "hidden")
                         d3.selectAll("#" +menuId + " .pie"+ name)
                             .style('stroke-width', 0.25)
                         d3.selectAll("#" +menuId + " #arctext"+name)
@@ -1261,7 +1263,20 @@ export default {
     },
     init(){
         this.svg !== undefined && this.svg.remove()
-    }
+    },
+    deepCopy(obj){
+        if(typeof obj!=='object') return obj;
+        var newObj=obj instanceof Array ? [] :{};
+        for (let key in obj){
+            if(obj.hasOwnProperty(key)){
+                if(obj[key]===null){
+                    newObj[key]===null;
+                }
+                newObj[key]=typeof obj[key] ? this.deepCopy(obj[key]) : obj[key];
+            }
+        }
+        return newObj
+    },
 	},
 	mounted() {
 	},

@@ -100,7 +100,6 @@ export default {
 
                 this._width = 640;
                 this._height = 640;
-                this._half = { width: 0, height: 0 };
                 this._radius = {
                     inner: 125,
                     outer: 0,
@@ -141,8 +140,6 @@ export default {
 
                 this._labels=null;
                 this._details=null;
-                this._tempUnit = "°F";
-                this._precUnit = "in";
                 this._currMonth = 0;
                 this._yearStat = true;
                 this._highlight = null;
@@ -204,9 +201,8 @@ export default {
                     // 2:'#b3cee2'
                 };
                 this._padAngle=[];
-                this._categoryLimit=[1, 1, 0.6],
                 this._linespace=6;
-                this._merge = false;
+                this._merge = true;
                 this._indexdata = {};
                 this._indexInfo = [];
                 this._indexlength = 6;
@@ -249,13 +245,6 @@ export default {
                 }
             }
 
-            temperatureUnit(_) {
-                return arguments.length ? (this._tempUnit = _, this) : this._tempUnit;
-            }
-
-            precipitationUnit(_) {
-                return arguments.length ? (this._precUnit = _, this) : this._precUnit;
-            }
             size(_) {
                 return arguments.length ? (this._width = _[0], this._height = _[1], this) : [this._width, this._height];
             }
@@ -265,20 +254,13 @@ export default {
                 // this._process();
                 // this._fliterdata();
                 // this._merge ? this._fliterdata() : this._process();
-                this._g = this._container.append("g").attr("transform", "translate(10,0)");
+                this._g = this._container.append("g").attr("transform", "translate(-50,0)");
                 this._renderMerge()
                 // this._initGradients();
-                // this._renderMiniBar();
-                // this._renderMainWheel();
-                
-                // this._initDynamicParts();
-                // this._renderMainWheel();
-                // this._showStatistics(this._chartData, this._year);
                 return this;
             }
             _renderBar(){
                 this._fliterdata();
-                this._renderMiniBar();
                 this._renderMainWheel();
                 this._renderMainBar();
             }
@@ -289,7 +271,7 @@ export default {
             }
             _renderMerge(){
                 this._g.remove();
-                this._g = this._container.append("g").attr("transform", "translate(10,0)");
+                this._g = this._container.append("g").attr("transform", "translate(-50,0)");
                 this._merge ? this._renderBar() : this._renderWheel();
             }
             _renderComponents(){
@@ -298,7 +280,7 @@ export default {
                             .attr("class", "mergeIcon")
                             .attr("width", "25px")
                             .attr("height","25px")
-                            .attr("transform", `translate(${[-12.5, -12.5]})`)
+                            .attr("transform", `translate(${[-45, -12.5]})`)
                             .attr("href", mergeLabel))
                     .on("click", (e,d) => {
                         this._merge = !this._merge
@@ -309,7 +291,7 @@ export default {
             _init() {
                 const r = this._radius;
                 
-                r.max = Math.min(this._width, this._height) / 2.4;
+                r.max = Math.min(this._width, this._height) / 2.5;
                 r.inner = r.max * 0.40;
                 r.bubble = r.max * 0.2;
                 r.outer = r.max - r.bubble *1.1 - r.label;
@@ -318,9 +300,7 @@ export default {
                 fs.range([8, 36]);
                 this._fontSize.center = fs(r.max);
                 fs.range([4, 18]);
-                this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);
-                
-                this._half = { width: this._width / 2, height: this._height / 2 };              
+                this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
 
             }
             _process() {
@@ -415,16 +395,15 @@ export default {
                 // }
                 // const sample=d3.sort(SPE,d=> -d.order).filter(d => (d.humidity > limit| d.precipitation >limit) ? true : false);
                 // this._chartData = sample
-                var SPE=d3.map(this._chartData,d=>d.precipitation),
-                        T2=d3.map(this._chartData,d=>d.humidity);
+                var speSort = d3.sort(this._chartData,d=> d.precipitation),
+                        T2Sort = d3.sort(this._chartData,d=> d.humidity);
                     this._g.attr("class","wheelg")
                     var sortdata = this._chartData.filter(d =>{
-                        return (SPE.indexOf(d.precipitation)<= vm.multiPara || T2.indexOf(d.humidity)<= vm.multiPara) && d.deviation !==0
+                        return (d3.map(speSort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara || d3.map(T2Sort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara) && d.deviation !==0
                     })
-                    console.log(sortdata.length)
-                    var SPE=d3.sort(sortdata,d=>d.precipitation),
-                        T2=d3.sort(sortdata,d=>d.humidity),
-                        res=d3.sort(sortdata,d=>d.deviation);
+                    var SPE=d3.sort(sortdata,d=> -d.precipitation),
+                        T2=d3.sort(sortdata,d=> -d.humidity),
+                        res=d3.sort(sortdata,d=> -d.deviation);
                     for (let item in SPE){
                         let query=SPE[item].dateStr                     
                         SPE[item].order=+item+1+(+T2.findIndex((value)=> value.dateStr===query))+1+(+res.findIndex((value)=> value.dateStr===query))+1
@@ -442,14 +421,15 @@ export default {
                     return datum;
                 });
                 this._indexdata = this._chartData.slice(0);
-                const mergeLength = this._indexdata.length > 50 ? this._indexdata.length :50,
+                const mergeLength = this._indexdata.length > 25 ? this._indexdata.length :25,
                     pad = 0,
-                    angle = (Math.PI - 3 * pad )/mergeLength;
-                this._dayRadian = (Math.PI- 3 * pad) / mergeLength + Math.PI;
+                    startAngle = Math.PI/6,
+                    angle = (Math.PI - 2 * startAngle - 3 * pad )/mergeLength;
+                this._dayRadian = (Math.PI - 2 * startAngle - 3 * pad) / mergeLength + Math.PI;
                 const diverangle = (mergeLength - this._indexdata.length) * angle / 2
-                const a = angle * this._padprocess[0].length + diverangle, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
+                const a = angle * this._padprocess[0].length + diverangle + Math.PI/6, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
                 this._padAngle=[
-                    [diverangle, a ],
+                    [diverangle + Math.PI/6, a ],
                     [a +pad, a + b + pad ],
                     [a + b + 2 * pad, a + b + c + 2 * pad],
                 ]
@@ -525,71 +505,6 @@ export default {
                     .call(g => g.append("stop").attr("stop-color", d.color).attr("stop-opacity", 0.0).attr("offset", 1))
                 );
             }
-            _initDynamicParts() {
-                const r = this._radius, half = this._half;
-
-                this._highlight = this._g.append("g")
-                    .attr("opacity", 0)
-                    .call(g => g.append("path")
-                        .attr("class", "highlight")
-                        .attr("opacity", 0)
-                        // .attr("fill", "grey")
-                        .attr("fill", "none")
-                        .attr("d", d => this._line(r.inner, r.max - r.label)));
-
-                this._statistics = this._g.append("g")
-                    .attr("text-anchor", "middle")            
-                    .attr("transform", `translate(${half.width - r.inner - half.width},${half.height - r.inner - half.height})`)
-                    .call(g => g.append("circle")
-                        .attr("fill", "white")
-                        .attr("opacity", 0)
-                        .attr("cx", r.inner).attr("cy", r.inner)
-                        .attr("r", r.inner))
-                    .call(g => g.append("text")
-                        .attr("class", "label")
-                        .attr("font-size", this._fontSize.center)
-                        .attr("fill", "#aaa")
-                        .attr("transform", `translate(${r.inner},${r.inner})`)
-                        .text(this._year))
-                    .on("click", () => {
-                        this._yearStat = !this._yearStat;
-                        if (this._yearStat)
-                            this._showStatistics(this._chartData, this._year);
-                        else
-                            this._showStatistics(this._getMonthData(this._currMonth), this._months[this._currMonth]);
-                    });
-
-                const t = this._texts, c = this._colors;
-                this._dailyInfo = this._g.append("g")
-                    .style("visibility", "hidden")
-                    .attr("class","dailyInfo")
-                    .attr("font-size", this._fontSize.info+1 + "pt")
-                    .style("font-family", "DIN")
-                    // .call(g => t.icon = g.append("image")
-                    //     .attr("width", r.inner / 2)
-                    //     .attr("opacity", 0.35)
-                    //     .attr("transform", `translate(${-r.inner / 1.3},${-r.inner / 4})`))
-                    .attr("transform", `translate(${r.max/2},0)`)
-                    .call(g => g.append("rect")
-                            .attr("x" , -15)
-                            .attr("y" , -15)
-                            .attr("rx" , 5)
-                            .attr("ry", 5)
-                            .style("fill","pink")
-                            .attr("stroke", "grey")
-                            .attr("stroke-width",1)
-                            .attr("width", 150)
-                            .attr("height", 75))
-                    .call(g => g.append("g")                       
-                        .call(g => t.date = g.append("text").attr("fill", "black").text("Date: "))
-                        // .call(g =>  g.append("line").attr("fill", "black").text("Date: "))
-                        .call(g => t.high = g.append("text").attr("y", "1.1em").attr("fill", "black").text("High: "))
-                        .call(g => t.low = g.append("text").attr("y", "2.2em").attr("fill", "black").text("Low: "))
-                        .call(g => t.avg = g.append("text").attr("y", "3.3em").attr("fill", "black").text("Avg: "))
-                        .call(g => t.prec = g.append("text").attr("y", "4.4em").attr("fill", "black").text("Prec.: "))
-                        .call(g => t.humidity = g.append("text").attr("y", "5.5em").attr("fill", "black").text("Humidity: ")))
-                        .call(g => t.deviation = g.append("text").attr("y", "6.6em").attr("fill", "black").text("Deviation: "));
-            }
             _renderMainWheel() {
                 this._renderPre();
                 this._renderWheelContent();
@@ -624,145 +539,153 @@ export default {
                     .attr("in", "SourceGraphic")
                     .attr("mode","normal"))
             }
-            _renderMiniBar(){
-                const r = this._radius,
-                    c = this._colors,
-                    lc =this._labelcolor,
-                    a = this._padAngle,
-                    xpad = this._xpad,
-                    v = (this._dayRadian-Math.PI)/2,
-                    icon = [heaticon , rollicon , coolicon],
-                    piearc = d3.arc()
-                        .innerRadius(0)
-                        .outerRadius(r.bubble * 0.12),
-                    indexs = this._indexlength;
-                    this._indexInfo = this._indexdata.slice(0,indexs);
-                    for (let item in this._indexdata){
-                        const pindex = this._indexdata[item];
-                        const xkey = +this._processindex[this._indexdata[item].month];
-                        if(item >= indexs) continue
-                        const R = r.outer+r.bubble*1.05,
-                                angle = (xpad[xkey](pindex.date) + v) * 180 / Math.PI - 180 ;
-                            let d = this._indexdata[item]
-                                d.path = [];
-                                d.index = item;
-                                let startX = R * (Math.sin(xpad[xkey](pindex.date)+ v)), startY = -R * Math.cos(Math.abs(xpad[xkey](pindex.date)+ v)),
-                                    endX = r.outer+r.bubble*3.60, 
-                                    endY = (this._height - 50)/indexs * (item -0.25)- (this._height - 50)/2+42.5;
-                                d.path.push([startX, startY])
-                                d.path.push([endX, endY])
-                            const line = d3.line()
-                                    .x(d => d[0])
-                                    .y(d => d[1])
-                                    .curve(d3.curveLinear)
-                                this._g.append("path")
-                                .attr("class", "gfhegiehfi")
-                                    .attr("d", line(d.path))
-                                    .attr("stroke", d3.color(lc[xkey]).darker(0.5))
-                                    .attr("opacity", 0.6)
-                                    .attr("stroke-width", 3.5)
-                                    .attr("fill", "none").on("mouseover", function(e,d){
-                                        console.log(angle)
-                                    })
-                                // this._g.append("path")
-                                // .attr("class", "gfhegiehfi")
-                                //     .attr("d", d3.linkHorizontal()({
-                                //         source: d.path[0],
-                                //         target: d.path[1]
-                                //         }))
-                                //     .attr("stroke", d3.color(lc[xkey]).darker(0.5))
-                                //     .attr("opacity", 0.6)
-                                //     .attr("stroke-width", 3.5)
-                                //     .attr("fill", "none").on("mouseover", function(e,d){
-                                //         console.log(angle)
-                                //     })
-                    }
-            }
             _renderMainBar(){
+                this._indexInfo = this._indexdata.slice(0);
                 const r = this._radius,
-                    c = this._colors,
                     lc =this._labelcolor,
                     a = this._padAngle,
                     limit = 0.3,
                     xpad = this._xpad,
                     v = (this._dayRadian-Math.PI)/2,
-                    indexs = this._indexlength,
                     RectWidth = 280,
-                    piearc = d3.arc()
-                        .innerRadius(0)
-                        .outerRadius(r.bubble * 0.12),
+                    square = 15,    //rect_doct square width and length
+                    rectX = r.outer+r.bubble* 4.8,  //rect_doct x
+                    maxBarHeight = 20,
+                    rectNum = Math.floor((this._height - 50)/29),
+                    selectInfo = this._indexInfo.slice(0, this._indexInfo.length > rectNum ? rectNum : this._indexInfo.length),
+                    rectY = this._indexInfo.length > rectNum ? i => (this._height - 50)/rectNum * (i + 0.5) + 10  : i => (this._height - 50)/this._indexInfo.length * (i + 0.5) + 10,
                     fillcolor = d => d3.color(lc[+this._processindex[d.month]]).darker(0.2),
-                    bordercolor = d => d3.color(lc[+this._processindex[d.month]]).darker(1);
+                    bordercolor = d => d3.color(lc[+this._processindex[d.month]]).darker(1),
+                    borderAttr = g => g.append("rect")
+                        .attr("fill", "none")
+                        .attr("stroke", bordercolor)
+                        .attr("stroke-width", 0.5);
                     this._g.append("g")
-                        .call(g => g.selectAll("#" +menuId + " .rect_doct").data(this._indexInfo).join("g")      
+                        .call(g => g.selectAll(".rect_doct").data(selectInfo).join("g")      
                         .attr("class", "rect_doct")
-                        .attr("transform", (d, i) => `translate(${[r.outer+r.bubble*3.60, (this._height - 50)/indexs * (i-0.5)- (this._height - 50)/2+45]})`)
-                            .call(g => g.append("rect")
-                                .attr("fill", "none")
-                                .attr("stroke", bordercolor)
+                        .attr("transform", (d, i) => `translate(${[rectX, rectY(i) - this._height/2 + square]})`)
+                            .call(g => borderAttr(g)
                                 .attr("width", RectWidth)
-                                .attr("height", 60)
-                                .attr("x", 30)
-                                .attr("y", -10)
-                                .attr("stroke-width", 0.5)
-                                .attr("stroke-opacity", 1))
-                            .call(g => g.append("rect")
-                                .attr("fill", d => d.precipitation > limit ? fillcolor(d) : "none")
-                                .attr("stroke", bordercolor)
-                                .attr("width", 15)
-                                .attr("y", 15)
-                                .attr("x", 15)
-                                .attr("height", 15)
-                                .attr("stroke-width", 0.5)
-                                .attr("stroke-opacity", 1))
-                            .call(g => g.append("rect")
-                                .attr("fill", d => d.humidity > limit ? fillcolor(d) : "none")
-                                .attr("stroke", bordercolor)
-                                .attr("y", 15)
-                                .attr("width", 15)
-                                .attr("height", 15)
-                                .attr("stroke-width", 0.5)
-                                .attr("stroke-opacity", 1))
-                            .call(g => g.append("rect")
-                                .attr("fill",d =>  d.avg>d.low&d.high>d.avg ? "none" : fillcolor(d) )
-                                .attr("stroke", d => d3.color(lc[+this._processindex[d.month]]).darker(1))
-                                .attr("width", 30)
-                                .attr("height", 15)
-                                .attr("stroke-width", 0.5)
-                                .attr("stroke-opacity", 1))
+                                .attr("height", maxBarHeight + 5)
+                                .attr("x", 2 * square)
+                                .attr("y", -(maxBarHeight + 5)/2))
+                            .call(g => borderAttr(g)
+                                .attr("width", RectWidth)
+                                .attr("height", maxBarHeight + 5)
+                                .attr("x", RectWidth + 80)
+                                .attr("y", -(maxBarHeight + 5)/2))
                             .call(g => g.append("line")
-                                .attr("fill",d => fillcolor(d) )
-                                .attr("stroke", d => d3.color(lc[+this._processindex[d.month]]).darker(1))
-                                .attr("x1", 30)
-                                .attr("y1", 15)
-                                .attr("y2", 15)
-                                .attr("x2", RectWidth + 30)
-                                .attr("stroke-width", 1)
-                                .attr("stroke-opacity", 1))
-                            .call(g => g.append("line")
-                                .attr("transform", `translate(${[30,35]})`)
+                                .attr("transform", `translate(${[ RectWidth + 80, 0]})`)
                                 .attr("stroke", d => d3.color(lc[+this._processindex[d.month]]).darker(0.6))
-                                .attr("x1", 0)
                                 .attr("x2", RectWidth)
                                 .attr("stroke-width", 0.5)
-                                .attr("stroke-dasharray", "2,1,2,1")
-                                .attr("stroke-opacity", 1)))
+                                .attr("stroke-dasharray", "2,1,2,1")))
+                    const xpadSort = d3.sort(selectInfo, d => xpad[+this._processindex[d.month]](d.date)),
+                        pieAngle = d3.pie()
+                            .value(d => d.angle)
+                            .startAngle(0.5* Math.PI)
+                            .endAngle(2.5 * Math.PI),
+                        piearc = d3.arc()
+                            .innerRadius(0)
+                            .outerRadius(r.bubble * 0.16),
+                        lineG = this._g.append("g").attr("class", "lineG");
                     for(let item in this._indexInfo){
-                        var name = this._indexInfo[item].dateStr,
-                            processnumber = this._processindex[this._indexInfo[item].month],
+                        if(item > selectInfo.length - 1)break
+                        const pindex = this._indexInfo[item],
+                            xkey = +this._processindex[this._indexInfo[item].month],
+                            R = r.outer+r.bubble*1.05,
+                            angle = (xpad[xkey](pindex.date) + v) * 180 / Math.PI - 180 ;
+                            let d = this._indexInfo[item]
+                                d.path1 = [],
+                                d.path2 = [];
+                                d.index = item;
+                            let startX = R * (Math.sin(xpad[xkey](pindex.date)+ v)), startY = -R * Math.cos(Math.abs(xpad[xkey](pindex.date)+ v)),
+                                endX = rectX, 
+                                endY = rectY(+item - 1)- this._height/2 + 3 * square,
+                                centerY = startY + 25/startX * startY;
+                                d.path1.push([startX, startY])
+                                d.path1.push([startX + 25, centerY])
+                                d.path1.push([endX - 105, centerY])
+                                d.path2.push([endX - 45, centerY])
+                                d.path2.push([endX - 30, centerY])
+                                d.path2.push([endX + 2 * square, endY])
+                            const line = d3.line()
+                                    .x(e => e[0])
+                                    .y(e => e[1])
+                                    .curve(d3.curveLinear)
+                            lineG
+                                .call(g => g.append("path")
+                                    .attr("class", "lineToRect")
+                                    .attr("d", line(d.path1))
+                                    .attr("stroke", d3.color(lc[xkey]).darker(0.5))
+                                    .attr("opacity", 0.6)
+                                    .attr("stroke-width", 1)
+                                    .attr("fill", "none"))
+                                .call(g => g.append("path")
+                                    .attr("class", "lineToRect")
+                                    .attr("d", line(d.path2))
+                                    .attr("stroke", d3.color(lc[xkey]).darker(0.5))
+                                    .attr("opacity", 0.6)
+                                    .attr("stroke-width", 1)
+                                    .attr("fill", "none"))
+                            let piedata = pieAngle(pindex.property)
+                            let g = lineG.selectAll(" .pie"+pindex.date)
+                                .data(piedata).enter()
+                                .append("g")
+                                .attr("transform", `translate(${[endX - 105, centerY]})`);
+                            g.append("path")
+                                .attr("class", `arcpie`+xkey +' pie'+ pindex.date)
+                                .attr("d", piearc)
+                                .attr("fill", (d,i) => ((+d.data.value)>limit? lc[xkey] : "white"))
+                                .style("stroke", d3.color(lc[xkey]).darker(2))
+                                .style('stroke-width', 0.25)
+                                .attr("opacity", 1)
+                            lineG.append("text")
+                                .attr("font-size", "8px")
+                                .attr("class", `arctext${xkey}`)
+                                .attr("id", `arctext${pindex.date}`)
+                                .attr("fill", d3.color(lc[xkey]).darker(0.5))
+                                .attr("font-family", "DIN")
+                                .attr("text-anchor", "middle")
+                                .text(d.dateStr.replace(/thickness/, "").replace(/temp_uniformity_/, "").replace(/wedge/, "").slice(0, 8))
+                                .attr("transform", `translate(${[endX - 75, centerY + 2]})`)
+							lineG.append("text")
+                                .attr("font-size", "8px")
+                                .attr("fill", "#fff")
+                                .attr("font-family", "DIN")
+                                .attr("text-anchor", "middle")
+                                .text(item)
+                                .attr("transform", `translate(${[endX - 45, centerY + 2.5]})`)
+                            lineG.append("circle")
+                                .attr("fill", lc[xkey])
+                                .attr("r", r.bubble * 0.16)
+								.attr("stroke", d3.color(lc[xkey]).darker(0.5))
+                                .attr("transform", `translate(${[endX - 45, centerY]})`).lower()
+                    }
+                    var renderSlider= (RectWidth)=>{
+                        // d3.selectAll(".rect_doct").remove();
+                        for (let item in selectInfo){
+                        // const pindex = selectInfo[item],
+                        //     xkey = +this._processindex[selectInfo[item].month];
+                        let d = selectInfo[item]
+                            d.index = item;
+                        var name = selectInfo[item].dateStr,
+                            processnumber = this._processindex[selectInfo[item].month],
                             batch = batchData.map(d => {
                                 let s = {},
                                 i = d.INDEX.indexOf(name);
                                 s.Q = d.CONTQ[i],
                                 s.T2 = d.CONTJ[i],
-                                s.self = d.upid === vm.upid ? true : false ,
+                                s.self = d.upid == vm.upid ? true : false ,
                                 s.h = d.u[i],
                                 s.l = d.l[i],
+                                s.upid = d.upid, 
                                 s.value = d.value[i],
                                 s.max = Math.max(s.h, s.l, s.value),
                                 s.min = Math.min(s.h, s.l, s.value)
                                 return s
                             })
+                        console.log(batch)
                         let xScale = d3.scaleBand()
                                 .range([0, RectWidth])
                                 .domain(d3.map(batch, (d,i)=> i))
@@ -771,47 +694,165 @@ export default {
                                     .range([ 5, 20 ])
                                     .domain([d3.min(d3.map(batch, d => d.min)), d3.max(d3.map(batch, d => d.max))]),
                             t2Rect = d3.scaleLinear()
-                                    .range([ 0, 10 ])
+                                    .range([ 0, maxBarHeight ])
                                     .domain([0, d3.max(d3.map(batch, d => d.T2))]),
                             speRect = d3.scaleLinear()
-                                    .range([ 0, 10 ])
+                                    .range([ 0, maxBarHeight ])
                                     .domain([0, d3.max(d3.map(batch, d => d.Q))]),
                             areaValue = d3.area()
                                 .curve(d3.curveLinear)
                                 .x((d, i) => xScale(i))
-                                .y0(d => 0)
+                                .y0(d => -yScale(d.l))
                                 .y1(d => -yScale(d.h));
                         var rectAttr = g => g.append("rect")
-                            .attr("fill", d3.color(lc[+processnumber]))
-                            .attr("stroke", d3.color(lc[+processnumber]).darker(1))
+                            .attr("fill", d => batch[d].self ? vm.trainBorder(batchData[d])  : d3.color(lc[+processnumber]))
+                            .attr("stroke", d3.color(lc[+processnumber]))
                             .attr("width", xScale.bandwidth())
                             .attr("x", d => xScale(d) - xScale.bandwidth()/2)
-                            .attr("stroke-width", 0.5)
-                            .attr("stroke-opacity", 1)
-                        this._g.append("g")   
+                            .attr("stroke-width", 1.75)
+                            .attr("stroke-opacity", 0.5);
+                        sliderG.append("g")   
                         .attr("class", "rect_doct")
-                        .attr("transform", `translate(${[r.outer+r.bubble*3.60, (this._height - 50)/indexs * (item-0.5)- (this._height - 50)/2+45]})`)
-                            .call(g => g.append("g").selectAll("#" +menuId + " .rect_fill").data(d3.map(batch, (d,i)=> i)).join("g")
+                        .attr("id", `rect_doct${item}`)
+                        .attr("transform", `translate(${[rectX + 2 * square, rectY(+item) - this._height/2 + square + (maxBarHeight + 5)/2]})`)
+                            .call(g => g.append("g").selectAll(" .rect_fill").data(d3.map(batch, (d,i)=> i)).join("g")
                                 .attr("class", "rect_fill")
-                                .attr("transform", `translate(${[30,0]})`)
                                 .call(g => rectAttr(g)
-                                    .attr("transform", `translate(${[0,35]})`)
                                     .attr("y", d => -speRect(batch[d].Q))
                                     .attr("height", d => speRect(batch[d].Q)))
                                 .call(g => rectAttr(g)
-                                    .attr("transform", `translate(${[0,35]})`)
+                                    .attr("y", d => -t2Rect(batch[d].T2))
                                     .attr("height", d => t2Rect(batch[d].T2)))
                                 .call(g => rectAttr(g)
-                                    .attr("transform", `translate(${[0, 15]})`)
+                                    .attr("transform", `translate(${[RectWidth + 50, 0]})`)
                                     .attr("y", d => -yScale(batch[d].value))
                                     .attr("height", d => yScale(batch[d].value))))
                             // .call(g => g.append("path")
                             //     .datum(batch)
                             //     .attr("class", "DUGUDU")
-                            //     .attr("transform", `translate(${[30,15]})`)
                             //     .attr("fill",d3.color(lc[+processnumber]).darker(0))
                             //     .attr("opacity", 0.5)
                             //     .attr("d", areaValue))
+                    }
+                    }
+                    var sliderG = this._g.append("g")
+                        .attr("class", "sliderG")
+                        .attr("transform", `translate(${[rectX + 2 * square, 0]})`)
+                    var maxLength = 3,  //batch numbers
+                        minRect = RectWidth/ (maxLength + 0.5),
+                        rectArray = new Array(maxLength).fill(minRect).map((d, i) => Math.ceil(maxLength/2) == i + 1 ? 1.5 * d : d),   //batch position
+                        rectPosition = Array.from(d3.cumsum(rectArray));
+                    sliderG.append("g")		//area drag
+                        .selectAll("g")
+                        .data(Object.keys(rectPosition).map(d => +d).slice(0, -1)).join("g")
+                        .attr("class", "dragTransition")
+                        .attr("transform", d => `translate(${[rectPosition[d], 0]})`)
+                        .call(g => g
+                            .call(g => g.selectAll("g")
+                                .data(Object.keys(selectInfo))
+                                .join("g")
+                                .attr("transform", (d, i) => `translate(${[-2 , rectY(i) - this._height/2 + square + (maxBarHeight + 5)/2]})`)
+                                .call(g => g.append('rect')
+                                    .attr("width", 3)
+                                    .attr("y", - (maxBarHeight + 5))
+                                    .attr("height", maxBarHeight + 5)
+                                    .style('fill', '#cccccc')))
+                            .call(d3.drag()
+                                .on('drag', drag)
+                            ));
+                    var sliderData = d3.map(selectInfo, (d, f) => {
+                        d.index = f;
+                        var name = d.dateStr,
+                        batch = batchData.map(e => {
+                            let s = {},
+                            i = e.INDEX.indexOf(name);
+                            s.Q = e.CONTQ[i],
+                            s.T2 = e.CONTJ[i],
+                            s.self = e.upid == vm.upid ? true : false ,
+                            s.h = e.u[i],
+                            s.l = e.l[i],
+                            s.upid = e.upid, 
+                            s.value = e.value[i],
+                            s.max = Math.max(s.h, s.l, s.value),
+                            s.min = Math.min(s.h, s.l, s.value),
+                            s.d = f
+                            return s
+                        })
+                        return batch
+                    })
+                    var sliderEX = (new Array(maxLength).fill(0)).map((d, i) => deepCopy(sliderData).map(e => e.map(f => {f.i = i; return f})));
+					var areaParameter = (array, data) => {	//area function
+						let xBatch = array.map((d, i) => {
+							let l = array[i],
+								scale = d3.scaleLinear()
+									.range([5, l * 1.1])
+									.domain(d3.extent(data[i], (e, f)=> f))
+									.nice()
+							return scale
+						});
+						let yBatch = d3.scaleLinear()
+							.range([ 0, 20 ])
+							.domain([0, 1]);
+						let mergeArea = d3.area()
+							.x((d, i) => xBatch[d.i](i))
+							.y0((d, i) => -yBatch(d.min))
+							.y1((d, i) => -yBatch(d.max));
+						return mergeArea
+					}
+					var mergeArea = areaParameter(rectArray, sliderEX)
+                    sliderG.selectAll(".batchG").data(rectPosition)
+                            .join("g")
+                            .attr("class", "batchG")
+                            .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
+                            .call(g => g.selectAll("path")
+                                .data((d, i) => sliderEX[i])
+                                .join("path")
+								.attr("fill", (d, i) => lc[+this._processindex[selectInfo[i].month]])
+								.attr("stroke", (d, i) => d3.color(lc[+this._processindex[selectInfo[i].month]]).darker(1))
+                                .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 + square + (maxBarHeight + 5)/2]})`)
+                                .datum(d => d)
+                                .attr("class", "sampleBatch")
+                                .attr("d", mergeArea)
+                                .attr("opacity" , 0.4))
+                    function deepCopy(obj){
+                        if(typeof obj!=='object') return obj;
+                        var newObj=obj instanceof Array ? [] :{};
+                        for (let key in obj){
+                            if(obj.hasOwnProperty(key)){
+                                if(obj[key]===null){
+                                    newObj[key]===null;
+                                }
+                                newObj[key]=typeof obj[key] ? deepCopy(obj[key]) : obj[key];
+                            }
+                        }
+                        return newObj
+                    };
+                    function drag(e, d){    //update batch
+                        rectPosition[d] = e.x
+                        rectPosition = Array.from(rectPosition);
+                        rectPosition.unshift(0);
+                        var rectlength = d3.pairs(rectPosition, (a, b) => b -a).filter((d, i) => i + 1 !== Math.ceil(maxLength/2));
+                        if(!rectlength.every(d => d>15)){
+                            minRect = 20
+                        }else{
+                            minRect = (minRect ==  d3.min(rectlength)) ? d3.max(rectlength) : d3.min(rectlength);
+                        }
+                        if( RectWidth - (maxLength - 1) * minRect < 30)minRect = (RectWidth -30)/(maxLength - 1)
+                        rectArray = new Array(maxLength).fill(minRect).map((d, i) => Math.ceil(maxLength/2) == i + 1 ? RectWidth - (maxLength - 1) * minRect : d);   
+                        rectPosition = d3.cumsum(rectArray)
+                        d3.selectAll(".dragTransition")
+                            .transition()
+                            .duration(200)
+                            .ease(d3.easeLinear)
+                            .attr("transform", d => `translate(${[rectPosition[d], 0]})`)
+                        let mergeArea = areaParameter(rectArray, sliderEX)
+                        sliderG.selectAll(".batchG")
+                            .transition(d3.transition()
+                                .duration(200)
+                                .ease(d3.easeLinear))
+                            .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
+							.selectAll("path")
+							.attr("d", mergeArea)
                     }
                     // var processData = []
                     // for(let item in processDetail){
@@ -926,30 +967,26 @@ export default {
                     piearc = d3.arc()
                         .innerRadius(0)
                         .outerRadius(r.bubble * 0.12),
-                    // outrate = (item1 , item2) => {
-                    //     return d => (d.humidity>limit|d.precipitation>limit) ? item1 : item2
-                    // },
                     titleinfo = [ "cate", "p_thick", "p_wid", "p_len"],
                     titleicon=[categoryicon,thickicon,widthicon,lengthicon],
                     graph={nodes:[],links:[]},
                     wm=this,
                     colorLinear1=[],
                     colorLinear2=[];
-                    var SPE=d3.map(this._chartData,d=>d.precipitation),
-                        T2=d3.map(this._chartData,d=>d.humidity);
-                    this._g.attr("class","wheelg")
+                    var speSort = d3.sort(this._chartData,d=> d.precipitation),
+                        T2Sort = d3.sort(this._chartData,d=> d.humidity);
                     var sortdata = this._chartData.filter(d =>{
-                        return (SPE.indexOf(d.precipitation)<= vm.multiPara || T2.indexOf(d.humidity)<= vm.multiPara) && d.deviation !==0
+                        return (d3.map(speSort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara || d3.map(T2Sort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara) && d.deviation !==0
                     })
-                    var SPE=d3.sort(sortdata,d=>d.precipitation),
-                        T2=d3.sort(sortdata,d=>d.humidity),
-                        res=d3.sort(sortdata,d=>d.deviation);
+                    var SPE=d3.sort(sortdata,d=> -d.precipitation),
+                        T2=d3.sort(sortdata,d=> -d.humidity),
+                        res=d3.sort(sortdata,d=> -d.deviation);
                     this._g.attr("class","wheelg")
                     for (let item in SPE){
                         let query=SPE[item].dateStr                     
                         SPE[item].order=+item+1+(+T2.findIndex((value)=> value.dateStr===query))+1+(+res.findIndex((value)=> value.dateStr===query))+1
                     }
-                    const sample=d3.sort(SPE,d=>d.order);
+                    const sample=d3.sort(SPE,d=> d.order);
                     var sampleId = d3.map(sample, d => d.dateStr),
                     outrate = (item1 , item2) => {
                         return d => (sampleId.indexOf(d.dateStr) !== -1) ? item1 : item2
@@ -1273,11 +1310,8 @@ export default {
                     }
                     graph.nodes.push({'id':id,'group': this._months.indexOf(sample[item].month),'targets':targets})
                 }
-                const radius = r.outer*1.115,
-                    colornone = "#ccc",
-                    colorout = "#f00",
-                    colorin = "#00f";
-                const svg=d3.select("#" +menuId + " .wheelg").append("g")
+                const colornone = "#ccc";
+                const svg=this._g.append("g")
                         .attr("transform",`rotate(${-60})`);
                     const tree = d3.cluster()
                         .size([2 * Math.PI, r.inner*0.8])
@@ -1503,7 +1537,7 @@ export default {
                             d3.selectAll("#" +menuId + " .arcpie"+i)
                                 .attr("opacity", 1)
                             d3.selectAll("#" +menuId + " .arctext"+i)
-                                .attr("opacity", 0.5)
+                                .attr("opacity", 1)
                             d3.selectAll("#" +menuId + " #process"+i)
                                 .attr("opacity" , 0.6)
                             d3.selectAll("#" +menuId + " .river1"+i)
@@ -1627,13 +1661,6 @@ export default {
                     .startAngle(Math.PI)
                     .endAngle(this._dayRadian)();
             }
-            _category(d){
-                let flag=0;
-                d.humidity>this._categoryLimit[0] ? flag+=1 : flag;
-                d.precipitation>this._categoryLimit[1] ? flag+=1 :flag;
-                (d.avg-d.low>d.high-d.avg ? d.avg-d.low : d.high-d.avg) >this._categoryLimit[2]*0.6 ? flag+=1 :flag;
-                return flag
-            }
             _linepad(y1, y2) {
                 return d3.arc()
                     .innerRadius(y1)
@@ -1702,7 +1729,8 @@ export default {
         ...mapGetters([
             "corrSize",
             "multiPara",
-            "curveSize"
+            "curveSize",
+            "trainBorder"
         ])
 	},
     watch:{

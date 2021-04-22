@@ -349,7 +349,6 @@ export default {
 				line2.text(`category: ${upiddata.productcategory}`);
 				// line3.text(`time: ${upiddata.toc.toLocaleString(undefined, { hour: "numeric", minute: "numeric" })}`);
 				path
-				.attr("stroke", "none")
 				.attr("fill", toopcolor);
 				//.attr("opacity", 0.96);
 				const box = text.node().getBBox();
@@ -516,7 +515,6 @@ export default {
 					.attr("y", 0)
 					.attr("x", mareyEntry - 15)
 					.style("fill","white")
-					.attr("stroke", "none")
 					.attr("width", width - mareyEntry + 15)
 					.attr("height", mareyDistance))
 
@@ -566,7 +564,6 @@ export default {
 					.attr("d", d => line(d.stops)))
 			var qualityData = [],
 				positionData = [];
-				positionData.labels = 0
 
 			var mergeClickValue = [];	//Click List
 			for (let item in mergeresult){
@@ -580,7 +577,7 @@ export default {
 					mergeSelect = mergeresult[item]["select"],	//select Plate
 					mergeId = d3.map(mergeItem, d => d.upid),
 					selectId = d3.map(mergeSelect, d => d.upid);
-				var index = mergeresult[item]["data"]
+				// var mergeindex = mergeresult[item]["data"]
 
 				var quality = d3.sort(d3.groups(mergeItem, d => d.flag), d=> d[1].length),
 					mergeArea = d3.area()
@@ -855,7 +852,6 @@ export default {
 								.attr("transform", `translate(${xaxlength - (+i !== 0 ? 9 : 0)}, 0)`)
 								.append("text")
 								.attr("transform", `rotate( ${ -(i- 1) * 120  + 45} )`)
-								.attr("stroke", "none")
 								.style("font-family", "DIN")
 								.attr("fill", d3.color(stationcolor[i]).darker(0.6))
 								.attr("font-size", "9px")
@@ -931,9 +927,10 @@ export default {
 				// 	.x1(40)
 				// 	.x0((d, i) => T2Scale(d))
 				// 	.y((d,i) => +y(pathdata["time"][i]));
+				var monitorWidth = 360;
 				var monitorG = mergeG.append("g")
 				monitorG.append("g")
-					.attr("transform", `translate(${[mareylength + 120, 0]})`)
+					.attr("transform", `translate(${[mareylength + monitorWidth/3, 0]})`)
 					.call(g => g.selectAll(".startline").data(pathdata.T2).join("g")
 						.attr("class", (d, i) => "startline" + mergeItem[i].upid)
 						.attr("transform", (d, i) =>  `translate(${[0, y(pathdata["time"][i])]})`)
@@ -956,7 +953,6 @@ export default {
 								.attr("width", (d, i)  => QScale(pathdata.QUCL[i]))
 								.attr("fill", pathColor)
 								.attr("opacity", 0.4)
-								.attr("stroke", "none")
 								.attr("upid", (d, i) => mergeItem[i].upid))
 							.call(g => g.append("circle")
 								.attr("class", (d, i) => "Qcircle" + mergeItem[i].upid)
@@ -986,7 +982,7 @@ export default {
 							// .on("mouseover", mouseoverUCL)
 							// .on("mouseout", mouseoutUCL)
 				monitorG.append("g")
-					.attr("transform", `translate(${[mareylength + 360, 0]})`)	//95
+					.attr("transform", `translate(${[mareylength + monitorWidth/3 + 10, 0]})`)	//95
 					.call(g => g.selectAll(".T2circle").data(pathdata.T2).join("g")
 							.call(g => g.append("circle")
 								.attr("class", (d, i) => "T2circle" + mergeItem[i].upid)
@@ -1004,7 +1000,6 @@ export default {
 									.attr("width", (d, i) => T2Scale(pathdata.T2UCL1[i]))
 									.attr("fill", pathColor)
 									.attr("opacity", 0.4)
-									.attr("stroke", "none")
 									.attr("upid", (d, i) => mergeItem[i].upid)))
 					.call(g => g.append("path")
 						.attr("fill", "none")
@@ -1020,6 +1015,11 @@ export default {
 							.attr("stroke-width", 1)
 							.attr("opacity", 0.8)
 							.attr("d", T2line(pathdata.T2)))
+				monitorG.append("rect")
+					.attr("fill", "#cccccc")
+					.attr("transform", `translate(${[mareylength + monitorWidth*2/3 , yScale(mergeItem[0])]})`)
+					.attr("width", 100)
+					.attr("height", yScale(mergeItem[mergeItem.length - 1]) - yScale(mergeItem[0]))
 				const platearc = d3.arc().innerRadius(15).outerRadius(18),
 					platedata = [mergemixen.bad, mergemixen.good],
 					platepie = d3.pie()
@@ -1056,66 +1056,62 @@ export default {
 				// // 	d.merge.map(e => e.mergeSearch = i)
 				// // 	if(mareyDistance - 15 <= positionData[i][0][1] && positionData[i][0][1] <= mainHeight + 15)return true
 				// // }).map(d => d.merge).flat()
-				for (let item in data){
-					for(let index in processindex){
-						scaleData[processindex[index]].push(brushUCL.get(data[item].upid)[0][processindex[index]])
-					}
-				}
-				if(mareyDistance - 15 <= circleRy && circleRy <= mainHeight + 15){
-					// for (let item in mergeItem){
-					// 	for(let index in processindex){
-					// 		scaleData[processindex[index]].push(brushUCL.get(mergeItem[item].upid)[0][processindex[index]])
-					// 	}
-					// }
-					var badlength = 160,goodlength = 50, disrect = 30, startRect = 160, 
-						underUCL = d3.scaleLinear()
-							.domain( [0, 1])
-							.range([startRect + badlength + goodlength + disrect, startRect + badlength + disrect]),
-						divisionFunc = (arr1, arr2) => d3.map(arr1, (d,i) => arr2[i] == 0 ?( arr1[i] == 0 ? 0.5 : 1.5) : arr1[i]/arr2[i]),
-						division = d3.map(new Array(6), (d,i) => divisionFunc(scaleData[processindex[2*i]], scaleData[processindex[2*i + 1]])),
-						UclScale = d3.map(division, (d,i) => {
-							return d3.scaleLinear()
-								.domain( [1, d3.max(division[i]) > 1 ? d3.max(division[i]) : 2])
-								.range([startRect + badlength, startRect])
-						});
-					var monitorline = (d, i) => {
-						var arr = [];
-						arr.push([mareylength + 120, yScale(d)])
-						for(let j = 0; j < 3; j++){
-							arr.push([arr[arr.length - 1][0] + (j == 0 ? 45 : 30), division[2 * j][i] > 1 ? UclScale[2 * j](division[2 * j][i]) : underUCL(division[2 * j][i])])
-							arr.push([arr[arr.length - 1][0] + 30, arr[arr.length - 1][1]])
-						}
-						arr.push([arr[arr.length - 1][0] + 45, yScale(d)])
-						return arr
-					}
-					var monitorPosition = mergeItem.map(monitorline)
-					monitorG
-						.append("path")
-						.attr("fill", pathColor)
-						.attr("opacity", 0.4)
-						.attr("class", "monitorPath")
-						.datum(d3.map(monitorPosition[0], d => d[0]))
-						// .attr("stroke-width", 1)
-						.attr("d", d3.area()
-                                .curve(d3.curveLinear)
-                                .x((d, i) => d)
-                                .y0((d, i) => d3.min(d3.map(monitorPosition, e => e[i][1])))
-                                .y1((d, i) => d3.max(d3.map(monitorPosition, e => e[i][1]))))
-						// .selectAll("monitorLine")
-						// .data(monitorId).join("g")
-						// 	.call(g => g.append("path")
-						// 		.attr("fill", "none")
-						// 		.attr("class", "monitorLine")
-						// 		.attr("stroke", d => vm.trainGroupStyle(dataUCL.get(d)[0]))
-						// 		.attr("stroke-width", 1)
-						// 		.attr("stroke-opacity", 0.4)
-						// 		.attr("d", (d, i) => d3.line()
-						// 			.x(e => e[0])
-						// 			.y(e => e[1])
-						// 			.curve(d3.curveLinear)(monitorline(d, i))
-						// 			)
-						// 		)
-				}
+				// flatdata(mergeItem, processindex, scaleData)
+				// if(mareyDistance - 15 <= circleRy && circleRy <= mainHeight + 15){
+				// 	// for (let item in mergeItem){
+				// 	// 	for(let index in processindex){
+				// 	// 		scaleData[processindex[index]].push(brushUCL.get(mergeItem[item].upid)[0][processindex[index]])
+				// 	// 	}
+				// 	// }
+				// 	var badlength = 160,goodlength = 50, disrect = 30, startRect = 160, 
+				// 		underUCL = d3.scaleLinear()
+				// 			.domain( [0, 1])
+				// 			.range([startRect + badlength + goodlength + disrect, startRect + badlength + disrect]),
+				// 		divisionFunc = (arr1, arr2) => d3.map(arr1, (d,i) => arr2[i] == 0 ?( arr1[i] == 0 ? 0.5 : 1.5) : arr1[i]/arr2[i]),
+				// 		division = d3.map(new Array(6), (d,i) => divisionFunc(scaleData[processindex[2*i]], scaleData[processindex[2*i + 1]])),
+				// 		UclScale = d3.map(division, (d,i) => {
+				// 			return d3.scaleLinear()
+				// 				.domain( [1, d3.max(division[i]) > 1 ? d3.max(division[i]) : 2])
+				// 				.range([startRect + badlength, startRect])
+				// 		});
+				// 	var monitorline = (d, i) => {
+				// 		var arr = [];
+				// 		arr.push([mareylength + 120, yScale(d)])
+				// 		for(let j = 0; j < 3; j++){
+				// 			arr.push([arr[arr.length - 1][0] + (j == 0 ? 45 : 30), division[2 * j][i] > 1 ? UclScale[2 * j](division[2 * j][i]) : underUCL(division[2 * j][i])])
+				// 			arr.push([arr[arr.length - 1][0] + 30, arr[arr.length - 1][1]])
+				// 		}
+				// 		arr.push([arr[arr.length - 1][0] + 45, yScale(d)])
+				// 		return arr
+				// 	}
+				// 	var monitorPosition = mergeItem.map(monitorline)
+				// 	monitorG
+				// 		.append("path")
+				// 		.attr("fill", pathColor)
+				// 		.attr("opacity", 0.4)
+				// 		.attr("class", "monitorPath")
+				// 		.datum(d3.map(monitorPosition[0], d => d[0]))
+				// 		// .attr("stroke-width", 1)
+				// 		.attr("d", d3.area()
+                //                 .curve(d3.curveLinear)
+                //                 .x((d, i) => d)
+                //                 .y0((d, i) => d3.min(d3.map(monitorPosition, e => e[i][1])))
+                //                 .y1((d, i) => d3.max(d3.map(monitorPosition, e => e[i][1]))))
+				// 		// .selectAll("monitorLine")
+				// 		// .data(monitorId).join("g")
+				// 		// 	.call(g => g.append("path")
+				// 		// 		.attr("fill", "none")
+				// 		// 		.attr("class", "monitorLine")
+				// 		// 		.attr("stroke", d => vm.trainGroupStyle(dataUCL.get(d)[0]))
+				// 		// 		.attr("stroke-width", 1)
+				// 		// 		.attr("stroke-opacity", 0.4)
+				// 		// 		.attr("d", (d, i) => d3.line()
+				// 		// 			.x(e => e[0])
+				// 		// 			.y(e => e[1])
+				// 		// 			.curve(d3.curveLinear)(monitorline(d, i))
+				// 		// 			)
+				// 		// 		)
+				// }
 				// var monitorData = [
 				// 	// ...mergeRemain,
 				// 	...processRemain];
@@ -1206,13 +1202,16 @@ export default {
 						// console.log((f * 1 /3 -1/6+ ( i- 1 + 2*i /(piedata[f].length - 1))/(piedata[f].length - 1)/3 ) * 180)
 						// return (f * 1 /3 +1/6+ ( i- 2 + 4*i /(piedata[f].length - 1))/(piedata[f].length - 1)/3 ) * 2 * Math.PI}))
 						return (f * 1 /3 -1/6+ ( i)/(piedata[f].length - 1)/3 ) * 2 * Math.PI}))
+				var circleG = g => g.append("circle")
+					.attr("fill", "none")	
+					.attr("stroke", "#c9cbcc")
+					.attr("stroke-width", 1)
 				rectG
 				.append("g")
 				.attr("transform", ` translate( ${position})`)
 				.call(g => g.append("path")      // radar 
 					.attr("fill", pathColor)
 					.attr("opacity", 0.4)
-					.attr("stroke", "none")
 					.attr("d", meanLine
 						.radius((d , i)=> lineScale[i](d))
 						(lineposition)))
@@ -1228,13 +1227,10 @@ export default {
 					.call(g => g.append("path")
 						.attr("fill", (d , i) => stationcolor [i] )
 						.attr("d",  (e , f) => piearea[f]
-							// .innerRadius( xaxlength)
-							// .outerRadius( xaxlength + 25)
 							.innerRadius( d => d>=0 ? circleLength - 0.5 : circleLength - 0.5 - scRadius(d))
 							.outerRadius(d => d>0 ? circleLength + 0.5 + pcRadius(d) : circleLength + 0.5)(piedata[f])))
 					.call(g => g.append("path")      // radar stroke
 						.attr("fill", "none")
-						.attr("class", "fuudauj")
 						.attr("stroke", (d , i) => i == 2 ? stationcolor[0] :stationcolor[i + 1])
 						.attr("stroke-width", 2)
 						.attr("d", (d , i) => 
@@ -1243,17 +1239,9 @@ export default {
 							.angle((e , f) => (angleArray.filter((m,n) => n !==i))[f])
 							.radius((e , f)=> (lineScale.filter((m,n) => n !==i))[f](e))
 							(lineposition.filter((m,n) => n !==i)))))
-				.call(g => g.append("circle")      // radar 1
-					.attr("fill", "none")	
-					.attr("stroke", "#c9cbcc")
-					.attr("stroke-width", 1)
+				.call(g => circleG(g)	//radar 1
 					.attr("r", xaxlength))
-				.call(g => g.append("circle")      // radar 2
-					.attr("fill", "none")
-					.attr("stroke", "#c9cbcc")
-					.attr("stroke-width", 1)
-					.attr("cx", 0)
-					.attr("cy", 0)
+				.call(g => circleG(g) 	//radar 2
 					.attr("r", circleLength))
 				rectG.lower()
 			}
@@ -1336,25 +1324,26 @@ export default {
 				plateScale = d3.map(platemax, d => d3.scaleLinear().domain( [-platemax[1] , d]).range([0, 60])),
 				minHeight = d3.min(d3.pairs(d3.map(data, yScale), (a, b) => b - a))  - 2;
 				minHeight = minHeight <= 0 ? 2 : minHeight;
-			var plateG = renderG.append("g").attr("class", "plateNum");
-			// plateG.append("g").selectAll(".plateNum").data(data).join("g")
-			// 	.attr("transform", `translate(${[mareylength + 240, 0]})`)
-			// 	.call(g => g.append("rect")
-			// 		.attr("class", "plateNum")
-			// 		.attr("transform", (d, i) => `translate(${[0, yScale(d)]})`)
-			// 		.attr("x", (d, i) => - plateScale[0](platedata.bad_plate_num[i]))
-			// 		.attr("width", (d, i) => plateScale[0](platedata.bad_plate_num[i]))
-			// 		.style("visibility", (d, i) => vm.isMerge ? (merge.indexOf(d.upid)  === -1 ? "visible" :  "hidden") : "visible")
-			// 		.attr("height", minHeight)
-			// 		.attr("fill", util.delabelColor[0]))
-			// 	.call(g => g.append("rect")
-			// 		.attr("class", "plateNum")
-			// 		.attr("transform", (d, i) => `translate(${[0, yScale(d)]})`)
-			// 		.style("visibility", (d, i) => vm.isMerge ? (merge.indexOf(d.upid)  === -1 ? "visible" :  "hidden") : "visible" )
-			// 		.attr("x", 1)
-			// 		.attr("width", (d, i) => plateScale[0](platedata.same_cate_plate_num[i]))
-			// 		.attr("height", minHeight)
-			// 		.attr("fill", util.delabelColor[1]))
+			var plateG = renderG.append("g").attr("class", "plateNum"),
+				visualbility = (d, i) => vm.isMerge ? (merge.indexOf(d.upid)  === -1 ? "visible" :  "hidden") : "visible";
+			plateG.append("g").selectAll(".plateNum").data(data).join("g")
+				.attr("transform", `translate(${[mareylength + 240, 0]})`)
+				.call(g => g.append("rect")
+					.attr("class", "plateNum")
+					.attr("transform", (d, i) => `translate(${[0, yScale(d)]})`)
+					.attr("x", (d, i) => - plateScale[0](platedata.bad_plate_num[i]))
+					.attr("width", (d, i) => plateScale[0](platedata.bad_plate_num[i]))
+					.style("visibility", vm.isMerge ? "hidden" : "visible")
+					.attr("height", minHeight)
+					.attr("fill", util.delabelColor[0]))
+				.call(g => g.append("rect")
+					.attr("class", "plateNum")
+					.attr("transform", (d, i) => `translate(${[0, yScale(d)]})`)
+					.style("visibility", vm.isMerge ? "hidden" : "visible" )
+					.attr("x", 1)
+					.attr("width", (d, i) => plateScale[0](platedata.same_cate_plate_num[i]))
+					.attr("height", minHeight)
+					.attr("fill", util.delabelColor[1]))
 			var pathindex = ["Q", "QUCL", "T2", "T2UCL1"],
 			pathdata = { Q: [], QUCL: [], T2: [], T2UCL1: [], time: []};
 			for (let item in data){
@@ -1455,26 +1444,26 @@ export default {
 					return arr
 				}
 					
-				renderG.append("g")
-					.attr("transform", `translate(${[mareylength + 120, startRect]})`)	//95
-					.selectAll(".monitorRect")
-					.data(division.filter((d, i) => (i % 2) ==0)).join("g")
-						.attr("class", "monitorRect")
-						.attr("transform", (d, i) => `translate(${[60 * (i + 1), 0]})`)
-						.call(g => g.append("rect")
-							.attr("stroke", util.labelColor[0])
-							// .attr("stroke-width", 2.5)
-							.attr("x", -15)
-							.attr("width", 30)
-							.attr("fill", "none")
-							.attr("height", badlength))
-						.call(g => g.append("rect")
-							.attr("stroke", util.labelColor[1])
-							.attr("y", badlength + disrect)
-							.attr("width", 30)
-							.attr("x", -15)
-							.attr("fill", "none")
-							.attr("height", goodlength))
+				// renderG.append("g")
+				// 	.attr("transform", `translate(${[mareylength + 120, startRect]})`)	//95
+				// 	.selectAll(".monitorRect")
+				// 	.data(division.filter((d, i) => (i % 2) ==0)).join("g")
+				// 		.attr("class", "monitorRect")
+				// 		.attr("transform", (d, i) => `translate(${[60 * (i + 1), 0]})`)
+				// 		.call(g => g.append("rect")
+				// 			.attr("stroke", util.labelColor[0])
+				// 			// .attr("stroke-width", 2.5)
+				// 			.attr("x", -15)
+				// 			.attr("width", 30)
+				// 			.attr("fill", "none")
+				// 			.attr("height", badlength))
+				// 		.call(g => g.append("rect")
+				// 			.attr("stroke", util.labelColor[1])
+				// 			.attr("y", badlength + disrect)
+				// 			.attr("width", 30)
+				// 			.attr("x", -15)
+				// 			.attr("fill", "none")
+				// 			.attr("height", goodlength))
 				renderG.append("g")
 					.selectAll("monitorLine")
 					.data(monitorId).join("g")
@@ -1540,7 +1529,6 @@ export default {
 						line2.text(`category: ${d.train.productcategory}`);
 						line3.text(`time: ${d.stop.realTime.toLocaleString(undefined, { hour: "numeric", minute: "numeric" })}`);
 						path
-						.attr("stroke", "none")
 						.attr("fill", toopcolor);
 						//.attr("opacity", 0.96);
 						const box = text.node().getBBox();

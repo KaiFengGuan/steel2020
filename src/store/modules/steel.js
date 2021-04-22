@@ -22,7 +22,7 @@ let getters = {
         return state.isSwitch ? (d => +d.label === 0 ? utils.labelColor[0] : utils.labelColor[1]) : (d => utils.categoryColor(d.productcategory))
     },
     trainBorder: state => {
-        return state.isSwitch ? (d => +d.fqc_label === 0 ? utils.labelColor[0] : utils.labelColor[1]) : (d => utils.categoryColor(d.platedata[0][2]))
+        return state.isSwitch ? (d => +d.fqc_label == 0 ? utils.labelColor[0] : utils.labelColor[1]) : (d => utils.categoryColor(d.platedata[0][2]))
     },
     deGroupStyle: state => {
         return state.isSwitch ? (d => +d.label === 0 ? utils.delabelColor[0] : utils.delabelColor[1]) : (d => utils.categoryColor(d.productcategory))

@@ -40,16 +40,16 @@ export default {
         for(let item in jsondata['INDEX']){
             labels.push(jsondata['INDEX'][item])
             wheeldata.push({
-                name:jsondata['INDEX'][item],
-                PCASPE:jsondata['CONTQ'][item],
-                PCAT2:jsondata['CONTJ'][item],
-                result_value:jsondata['value'][item],
-                result_low:jsondata['l'][item],
-                result_high:jsondata['u'][item]
+                name: jsondata['INDEX'][item],
+                PCASPE: jsondata['CONTQ'][item],
+                PCAT2: jsondata['CONTJ'][item],
+                result_value: jsondata['value'][item],
+                result_low: jsondata['l'][item],
+                result_high: jsondata['u'][item],
+                result_extre_high: jsondata['extremum_u'][item],
+                result_extre_low: jsondata['extremum_l'][item]
             })
         }
-        // console.log(labels)
-        // return
         // for(let item in jsondata['PCASPE']['xData']){
         //     labels.push(jsondata['PCASPE']['xData'][item])
         //     wheeldata.push({
@@ -120,6 +120,8 @@ export default {
                     date: "name",
                     low: "result_low",
                     high: "result_high",
+                    elow: "result_extre_low",
+                    ehigh: "result_extre_high",
                     avg: "result_value",
                     precipitation: "PCASPE",
                     humidity: "PCAT2",
@@ -303,6 +305,8 @@ export default {
                         month: wm.getProcess(d[field.date]),
                         low: d[field.low],
                         high: d[field.high],
+                        elow: d[field.elow],
+                        ehigh: d[field.ehigh],
                         avg: d[field.avg],
                         precipitation: d[field.precipitation],
                         humidity: d[field.humidity],
@@ -318,8 +322,8 @@ export default {
                     datum.deviation=deviation;
                     wm._padprocess[wm._processindex[wm.getProcess(d[field.date])]].push(d[field.date])
                     labels.push(datum.dateStr)
-                    lows.push(datum.low);
-                    highs.push(datum.high);
+                    lows.push(datum.low, datum.elow);
+                    highs.push(datum.high, datum.ehigh);
                     precs.push(datum.precipitation);
                     humis.push(datum.humidity);
                     return datum;
@@ -553,16 +557,16 @@ export default {
                             .attr("class" , "river1"+key)
                             .attr("fill-opacity", 0.4)
                             .attr("d", area
-                                .innerRadius(d => this._y(d.low*0.90))
-                                .outerRadius(d => this._y(d.high*1.10))
+                                .innerRadius(d => this._y(d.low))
+                                .outerRadius(d => this._y(d.high))
                             (processdata)))
                     .call(g => g.append("path")     //河流图外层
                         .attr("fill", lck)
                         .attr("class" , "river2"+key)
                         .attr("fill-opacity", 0.8)
                         .attr("d", area
-                            .innerRadius(d => this._y(d.low))
-                            .outerRadius(d => this._y(d.high))
+                            .innerRadius(d => this._y(d.elow))
+                            .outerRadius(d => this._y(d.ehigh))
                             (processdata)))
                     .call(g => g.append("path")      //河流线
                         .attr("fill", "none")

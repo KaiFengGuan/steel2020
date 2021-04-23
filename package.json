@@ -19,6 +19,7 @@
     "echarts-stat": "^1.1.1",
     "element-ui": "^2.4.11",
     "muse-ui": "^3.0.1",
+    "semver": "^7.3.5",
     "stompjs": "^2.3.3",
     "vue": "^2.5.17",
     "vue-codemirror": "^4.0.6",

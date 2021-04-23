@@ -605,7 +605,7 @@ export default {
                                 centerY = startY + 25/startX * startY;
                                 d.path1.push([startX, startY])
                                 d.path1.push([startX + 25, centerY])
-                                d.path1.push([endX - 105, centerY])
+                                d.path1.push([endX - 80, centerY])
                                 d.path2.push([endX - 45, centerY])
                                 d.path2.push([endX - 30, centerY])
                                 d.path2.push([endX + 2 * square, endY])
@@ -648,19 +648,19 @@ export default {
                                 .attr("font-family", "DIN")
                                 .attr("text-anchor", "middle")
                                 .text(d.dateStr.replace(/thickness/, "").replace(/temp_uniformity_/, "").replace(/wedge/, "").slice(0, 8))
-                                .attr("transform", `translate(${[endX - 75, centerY + 2]})`)
+                                .attr("transform", `translate(${[endX - 60, centerY + 2]})`)
 							lineG.append("text")
                                 .attr("font-size", "8px")
                                 .attr("fill", "#fff")
                                 .attr("font-family", "DIN")
                                 .attr("text-anchor", "middle")
                                 .text(item)
-                                .attr("transform", `translate(${[endX - 45, centerY + 2.5]})`)
+                                .attr("transform", `translate(${[endX - 88, centerY + 2.5]})`)
                             lineG.append("circle")
                                 .attr("fill", lc[xkey])
                                 .attr("r", r.bubble * 0.16)
 								.attr("stroke", d3.color(lc[xkey]).darker(0.5))
-                                .attr("transform", `translate(${[endX - 45, centerY]})`).lower()
+                                .attr("transform", `translate(${[endX - 88, centerY]})`).lower()
                     }
                     var renderSlider= (RectWidth)=>{
                         // d3.selectAll(".rect_doct").remove();
@@ -1188,14 +1188,7 @@ export default {
                             .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 5.8})`)
                             .style("visibility", processdata.length === 0 ? "hidden" : "visible")
                             .attr("y",-r.inner*0.97)
-                            .attr("href", icon[key]))
-                    // if(+key === 2){
-                    //     d3.select("#" +menuId + " #icon"+key)
-                    //         .attr("width", "30px")
-                    //         .attr("height","30px")
-                    //         .attr("transform", (d , i) => `rotate(${(this._padAngle[key][0] + this._padAngle[key][1])/2 * 180 / Math.PI - 13.8})`)
-                    //         .attr("y", "-6.1em")
-                    // }                        
+                            .attr("href", icon[key]))                        
 
                     for (let item in processdata){
                         if(wm._merge) break
@@ -1286,17 +1279,6 @@ export default {
                                 initcss()
                                 axisout(d.dateStr,key,lck,daker,true);
                             });
-                    // const seriesdata=processdata.filter(outrate(true,false))
-                    // for (let item in seriesdata){
-                    //     let index = chorddata['label'].indexOf(seriesdata[item].dateStr),targets=[],id=seriesdata[item].dateStr;
-                    //     for (let target =item+1;target < seriesdata.length ;target++){
-                    //         if(chorddata['corr'][item][target]<1&&chorddata['corr'][item][target]>0){
-                    //             targets.push(seriesdata[target].dateStr)
-                    //             graph.links.push({'source':id,'target':seriesdata[target].dateStr,value:1})
-                    //         }
-                    //     }
-                    //     graph.nodes.push({'id':id,'group':key,'targets':targets})
-                    // }
                 }
                 for (let item in sample){
                     let index = chorddata['label'].indexOf(sample[item].dateStr),targets=[],id=sample[item].dateStr;
@@ -1316,8 +1298,7 @@ export default {
                     const tree = d3.cluster()
                         .size([2 * Math.PI, r.inner*0.8])
                     const line = d3.lineRadial()
-                        .curve(d3.curveBundle.beta(vm.curveSize))
-                        // .curve(d3.curveNatural)
+                        .curve(d3.curveBundle.beta(vm.curveSize))   //d3.curveNatural
                         .radius(d => d.y)
                         .angle(d => d.x)
 
@@ -1359,19 +1340,6 @@ export default {
                                 d.x=xpad[+d.data.group](d.data.id) + v +1/3*(Math.PI);
                                 return `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y},0)`
                                 })
-                        // .append("text")
-                        //     .attr("dy", "0.11em")
-                        //     .attr("x", d => d.x < Math.PI ? 6 : -6)
-                        //     .attr("text-anchor", d => d.x < Math.PI ? "start" : "end")
-                        //     .attr("transform", d => d.x >= Math.PI ? "rotate(180)" : null)
-                        //     // .text(d => d.data.id)
-                        //     .text('1')
-                        //     .each(function(d) { d.text = this; })
-                        //     .on("mouseover", overed)
-                        //     .on("mouseout", outed)
-                        //     .call(text => text.append("title").text(d => `${d.data.id}
-                        // ${d.outgoing.length} outgoing
-                        // ${d.incoming.length} incoming`));
                         .call(g =>g.append("path")
                             .attr("transform", d => `translate(${-d.y},0)  rotate(${-90-v* 180 / Math.PI})`)
                             .attr("fill", "white")
@@ -1412,9 +1380,7 @@ export default {
                         // link.style("mix-blend-mode", null);
                         d3.select(this).attr("font-weight", "bold");
                         d3.selectAll(d.incoming.map(d => d.path)).attr("stroke", highlightcolor).raise();
-                        // d3.selectAll(d.incoming.map(([d]) => d.text)).attr("fill", colorin).attr("font-weight", "bold");
                         d3.selectAll(d.outgoing.map(d => d.path)).attr("stroke", highlightcolor).raise();
-                        // d3.selectAll(d.outgoing.map(([, d]) => d.text)).attr("fill", colorout).attr("font-weight", "bold");
                     }
 
                     function outed(event, d) {
@@ -1428,9 +1394,7 @@ export default {
                         // link.style("mix-blend-mode", "multiply");
                         d3.select(this).attr("font-weight", null);
                         d3.selectAll(d.incoming.map(d => d.path)).attr("stroke", labelcolor);
-                        // d3.selectAll(d.incoming.map(([d]) => d.text)).attr("fill", null).attr("font-weight", null);
                         d3.selectAll(d.outgoing.map(d => d.path)).attr("stroke", labelcolor);
-                        // d3.selectAll(d.outgoing.map(([, d]) => d.text)).attr("fill", null).attr("font-weight", null);
                     }
                     function multiplyaxis(name){
                         var target=[]

@@ -1,6 +1,5 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import controlView from 'views/baogang/control.vue'
 import visualView from 'views/baogang/marey.vue'
 import test from 'views/baogang/test.vue'
 import layout from 'components/layout/index.vue'
@@ -8,12 +7,6 @@ import routerView from './routerView.vue'
 
 Vue.use(Router)
 const routerMap =  [
-    {
-        path: '/control',
-        name: '控制面板',
-        component: controlView,
-        icon: 'el-icon-s-marketing'
-    },
     {
         path: '/visual',
         name: '可视化',

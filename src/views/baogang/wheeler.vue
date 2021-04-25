@@ -21,7 +21,6 @@ import lengthicon from "../../assets/images/wheel/length.svg";
 import upidicon from "../../assets/images/wheel/upid.svg";
 import categoryicon from "../../assets/images/wheel/category.svg";
 import util from './util.js';
-import processDetail from "./sampledata/processDetail"
 import {mapGetters} from "vuex"
 export default {
 	data() {
@@ -37,6 +36,7 @@ export default {
 	},
 	methods: {
 	paintChart(jsondata, chorddata, batchData) {
+        var horizonView = false;
         this.jsondata = jsondata, this.chorddata = chorddata, this.batchData = batchData;
         const wheeldata = [] , labels = []
         const menuId = this.menuId
@@ -364,7 +364,6 @@ export default {
                 ]
                 this._label=labels
                 this._initScales(labels, lows, highs, precs, humis);
-                
             }
             _fliterdata(){
                 const wm=this,limit = 0.5;
@@ -773,6 +772,8 @@ export default {
                             s.self = e.upid == vm.upid ? true : false ,
                             s.h = e.u[i],
                             s.l = e.l[i],
+                            s.exh = e.extremum_u[i],
+                            s.exl = e.extremum_l[i],
                             s.upid = e.upid, 
                             s.value = e.value[i],
                             s.max = Math.max(s.h, s.l, s.value),
@@ -780,9 +781,29 @@ export default {
                             s.d = f
                             return s
                         })
+                        batch.d = f;
                         return batch
                     })
-                    var sliderEX = (new Array(maxLength).fill(0)).map((d, i) => deepCopy(sliderData).map(e => e.map(f => {f.i = i; return f})));
+                    var sliderEX = (new Array(maxLength).fill(0)).map((d, i) => deepCopy(sliderData).map(e => e.map(f => {f.i = i; return f}))),
+                        horizenEX = (new Array(maxLength).fill(0))
+                        .map((d, i) => deepCopy(sliderData).map((e, f) =>{ 
+                                var temp = e.map(f => {
+                                    f.i = i;
+                                    f.over = f.h >= f.value && f.value >= f.l ? 0 : (f.h >= f.value ? f.value - f.l : f.h - f.value);
+                                    return f
+                                })
+                                temp.i = i;
+                                temp.d = f;
+                                return temp
+                            }
+                        )),
+                        overlap = 3,    //horizen layer
+                        overlaps = Array.from({length: overlap * 2} , (_, i) => Object.assign({index: i < overlap ? -i - 1: i - overlap})),     //horizen layer index
+                        overlapNum = [-1, -2, -3, 0, 1, 2],
+                        horizenColor = i => {
+                            return ["#e34649", "#f7a8a9", "#fcdcdc", "#f7f7f7", "#fcdcdc","#f7a8a9", "#e34649"][i + (i >= 0) + overlap]
+                        };
+                        //https://observablehq.com/d/d503153fbfd48b03
 					var areaParameter = (array, data) => {	//area function
 						let xBatch = array.map((d, i) => {
 							let l = array[i],
@@ -793,7 +814,7 @@ export default {
 							return scale
 						});
 						let yBatch = d3.scaleLinear()
-							.range([ 0, 20 ])
+							.range([ 0, maxBarHeight ])
 							.domain([0, 1]);
 						let mergeArea = d3.area()
 							.x((d, i) => xBatch[d.i](i))
@@ -801,21 +822,74 @@ export default {
 							.y1((d, i) => -yBatch(d.max));
 						return mergeArea
 					}
-					var mergeArea = areaParameter(rectArray, sliderEX)
-                    sliderG.selectAll(".batchG").data(rectPosition)
+                    var horizenParameter = (array, data) => {	//horizen function
+                        let xBatch = array.map((d, i) => {
+                                let l = array[i],
+                                    scale = d3.scaleLinear()
+                                        .range([0, l - 2.5])
+                                        .domain(d3.extent(data[i][0], (e, f)=> f))
+                                        .nice()
+                                return scale
+                            }),
+                            yBatch = d3.scaleLinear()
+                                .range([ - (maxBarHeight + 5) * overlap , (maxBarHeight + 5) * overlap ])
+                                .domain([-1, 1]),
+                            horizenArea = d3.area()
+                                .curve(d3.curveBasis)
+                                .x((d, i) => xBatch[d.i](i))
+                                .y0(0)
+                                .y1((d, i) => -yBatch(d.over));
+						return horizenArea
+					}
+                    if(horizonView){
+                        var mergeArea = areaParameter(rectArray, sliderEX)
+                        sliderG.selectAll(".batchG").data(rectPosition)
                             .join("g")
                             .attr("class", "batchG")
                             .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
                             .call(g => g.selectAll("path")
                                 .data((d, i) => sliderEX[i])
                                 .join("path")
-								.attr("fill", (d, i) => lc[+this._processindex[selectInfo[i].month]])
-								.attr("stroke", (d, i) => d3.color(lc[+this._processindex[selectInfo[i].month]]).darker(1))
+                                .attr("fill", (d, i) => lc[+this._processindex[selectInfo[i].month]])
+                                .attr("stroke", (d, i) => d3.color(lc[+this._processindex[selectInfo[i].month]]).darker(1))
                                 .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 + square + (maxBarHeight + 5)/2]})`)
                                 .datum(d => d)
                                 .attr("class", "sampleBatch")
                                 .attr("d", mergeArea)
                                 .attr("opacity" , 0.4))
+                    }else{
+                        var horizenArea = horizenParameter(rectArray, horizenEX)
+                        console.log(horizenEX)
+                        sliderG.selectAll(".horizenG").data(rectPosition)
+                        .join("g")
+                            .attr("class", "horizenG")
+                            .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
+                            .call(g => g.selectAll("g")
+                                .data((d, i) => horizenEX[i])
+                                .join("g")
+                                .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 + square - (maxBarHeight + 5)/2 ]})`)
+                                    .call(g => g.append("clipPath")
+                                        .attr("id", d => `${d.i}clipy${d.d}`)
+                                        .append("rect")
+                                            .attr("width", d => rectArray[d.i])
+                                            .attr("class", "clipRect")
+                                            .attr("height", (maxBarHeight + 5)))
+                                    .call(g => g.append("defs").append("path")
+                                            .attr("opacity", 0.5)
+                                        .attr("class", "allpath")
+                                        .attr("id", d => `${d.i}path-def${d.d}`)
+                                            .datum(d => d)
+                                            .attr("d", horizenArea))
+                                    .call(g => g.append("g")
+                                        .attr("clip-path", d => `url(#${d.i}clipy${d.d})`)
+                                        .selectAll("use")
+                                            .data(d => new Array(overlap).fill(d))
+                                            .enter()
+                                            .append("use")
+                                            .attr("fill", (d, i) => horizenColor(overlapNum[i]))
+                                            .attr("transform", (d, i) => `translate(0,${(overlapNum[i] + 1) * (maxBarHeight + 5)})`)
+                                            .attr("href", d => `#${d.i}path-def${d.d}`)))
+                    }
                     function deepCopy(obj){
                         if(typeof obj!=='object') return obj;
                         var newObj=obj instanceof Array ? [] :{};
@@ -847,114 +921,31 @@ export default {
                                 .duration(200)
                                 .ease(d3.easeLinear))
                             .attr("transform", d => `translate(${[rectPosition[d], 0]})`)
-                        let mergeArea = areaParameter(rectArray, sliderEX)
-                        sliderG.selectAll(".batchG")
-                            .transition(d3.transition()
-                                .duration(200)
+                        if(horizonView){
+                            let mergeArea = areaParameter(rectArray, sliderEX)
+                            sliderG.selectAll(".batchG")
+                                .transition(d3.transition()
+                                    .duration(200)
+                                    .ease(d3.easeLinear))
+                                .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
+                                .selectAll("path")
+                                .attr("d", mergeArea)                               
+                        }else{
+                            var horizenArea = horizenParameter(rectArray, horizenEX)
+                            sliderG.selectAll(".horizenG")
+                                .transition(d3.transition()
+                                    .duration(150)
+                                    .ease(d3.easeLinear))
+                                .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
+                                .selectAll("path")
+                                .attr("d", horizenArea)
+                            sliderG.selectAll(".clipRect")
+                                .transition(d3.transition()
+                                .duration(50)
                                 .ease(d3.easeLinear))
-                            .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
-							.selectAll("path")
-							.attr("d", mergeArea)
+                                .attr("width", d => rectArray[d.i])
+                        }
                     }
-                    // var processData = []
-                    // for(let item in processDetail){
-                    //     for(let index in processDetail[item]){
-                    //         processData.push({
-                    //             month : +item,
-                    //             date : index,
-                    //             low : processDetail[item][index]["min"],
-                    //             high : processDetail[item][index]["max"],
-                    //             value : processDetail[item][index]["sample"],
-                    //             range : processDetail[item][index]["range"]
-                    //         })
-                    //     }
-                    // }
-                    // for(let item in processData){
-                    //     // const proitem = processData[item]
-                    //     let order = 0;
-                    //     for (let index in processData[item]["value"]){
-                    //         if(isNaN(processData[item]["value"][index]) || typeof(processData[item]["value"][index]) !== "number"){
-                    //             processData[item]["value"][index] = 0
-                    //         }else if(processData[item]["value"][index] >=  processData[item]["high"][index]){
-                    //             order ++;
-                    //             processData[item]["value"][index] = +processData[item]["value"] -  processData[item]["high"][index]
-                    //         }else if(processData[item]["value"][index] <  processData[item]["low"][index]){
-                    //             order ++;
-                    //             processData[item]["value"][index] = +processData[item]["value"][index] -  processData[item]["low"][index]
-                    //         }else{
-                    //             processData[item]["value"][index] = 0
-                    //         }
-                    //         processData[item]["order"] =order
-                    //     }
-                    //     processData = d3.sort(processData, d => -d["order"])
-                    // }
-                    // console.log(processData)
-                    // console.log(processDetail)
-                    // for(let item in processData){
-                    //     let overlap = 3,
-                    //         h = (this._height - 50)/processData.length,
-                    //         step = h,
-                    //         horizenWidth = 290,
-                    //         overlaps = Array.from({length: overlap * 2} , (_, i) => Object.assign({index: i < overlap ? -i - 1: i - overlap})),
-                    //         xHorizon = d3.scaleLinear()
-                    //             .range([0, horizenWidth])
-                    //             .domain(processData[item]["value"].map((d,i) => i)),
-                    //         color = i => {
-                    //             return ["#e34649", "#f7a8a9", "#fcdcdc", "#f7f7f7", "#fcdcdc","#f7a8a9", "#e34649"][i + (i >= 0) + overlap]
-                    //         },
-                    //         max = d3.max(processData[item]["value"], d => Math.abs(d)),
-                    //         yHorizon = d3.scaleLinear()
-                    //                 .range([ h * overlap, -overlap * h ])
-                    //                 .domain([-max, +max]),
-                    //         dataarea = d3.area()
-                    //             .curve(d3.curveBasis)
-                    //             .x((d,i) => xHorizon(i))
-                    //             .y0(0)
-                    //             .y1(d => yHorizon(d));
-                        // this._g.append("g")   
-                        // .attr("class", "rect_horizon")
-                        // .attr("transform", `translate(${[r.outer+r.bubble*3.60, h * (item-0.5)- (this._height)/2+ 15]})`)
-                        //     .call(g => g.append("g")
-                        //         .attr("transform", `translate(${[RectWidth + 150,0]})`)
-                        //         .call(g => g.append("rect")
-                        //                 .attr("stroke-width", 0.5)
-                        //                 .attr("stroke", lc[processData[item].month])
-                        //                 .attr("fill", "none")
-                        //                 .attr("width", horizenWidth)
-                        //                 .attr("height", h))
-                        //         .call(g => g.append("clipPath")
-                        //             .attr("id", `clipy${item}`)
-                        //                 .append("rect")
-                        //                 .attr("stroke", 1)
-                        //                 .attr("width", horizenWidth)
-                        //                 .attr("height", h))
-                        //         .call(g => g
-                        //         .append("defs")
-                        //             .append("path")
-                        //             .attr("id", `path-def${item}`)
-                        //             .datum(processData[item]["value"])
-                        //             .attr("d", dataarea)
-                        //             )
-                        //         .call(g => g.append("g")
-                        //             .attr("clip-path", `url(#clipy${item})`)
-                        //             .selectAll("use")
-                        //             .data(overlaps)
-                        //                 .enter().append("use")
-                        //                 .attr("fill", d => color(d.index))
-                        //                 .attr("transform", d => `translate(0,${(d.index + 1) * step})`)
-                        //                 .attr("href", "#path-def" + item))
-                        //         // .append("path")
-                        //         //     .attr("d", d3.linkHorizontal()({
-                        //         //         source: [-70, 15],
-                        //         //         target: [0, h/2]
-                        //         //         }))
-                        //         //     .attr("stroke", d3.color(lc[+this._processindex[processData[item].month]]).darker(0.5))
-                        //         //     .attr("opacity", 0.6)
-                        //         //     .attr("stroke-width", 2.5)
-                        //         //     .attr("fill", "none")
-                        //                 )
-                    // }
-                    
             }
             _renderWheelContent() {
                 const r = this._radius,

@@ -1870,7 +1870,6 @@ export default {
 			const mergecategorys = []	// merge categorys
 			const minrange = this.minrange
 			const minconflict = this.minconflict
-			const mergedata = {}
 			const mergeIndex = {}	// merge station maxlength
 			const mergeresult = [] ;
 			// mpass = /MPass/ ;

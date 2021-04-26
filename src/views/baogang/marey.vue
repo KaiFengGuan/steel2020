@@ -250,8 +250,6 @@ export default {
 			plateTempPropvalue:['All'],
 			startmonth: new Date(2018, 10, 1, 0, 0),
 			time: undefined,
-			radarIndicatorOptions: [],
-			temperatureData: {},
 			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
@@ -338,7 +336,6 @@ export default {
 		]),
 		getNotification(notice){
 			const h = this.$createElement;
-
 			this.$notify({
 				title: '消息通知',
 				message: h('i', { style: 'color: teal'}, notice)
@@ -371,7 +368,6 @@ export default {
 			// let stationsResponse = this.getStationsData(startDate, endDate);
 			// let jsonResponse = this.getJsonData(startDate, endDate);
 			// let conditionResponse = this.getConditionData(startDate, endDate);
-			// let temperatureResponse = this.getTemperatureData();
 
 			// response
 			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
@@ -492,9 +488,6 @@ export default {
 		paintProcess(value) {
 			this.processTurn = value
 			this.paintDetailPro(value)
-		},
-		paintPlate(){
-			this.paintDetailPro(this.radio)
 		},
 
 		switchSort() {
@@ -649,7 +642,7 @@ export default {
 			if(this.plateTempPropvalue.length===0){
 				// this.getNotification("未选择合适的钢板类型进行分析，将默认为你选取所有钢板") 
 				this.plateTempPropvalue=['All'];
-				this.paintPlate()}
+				}
 			let query=[]
 			for (let item of this.plateTempPropvalue){
 				if(item==='All'){

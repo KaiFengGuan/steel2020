@@ -207,11 +207,9 @@
 
 import * as d3 from 'd3';
 import util from './util.js';
-import scatter from './scatter.vue';
 import mareyChart from './mareyChart.vue';
 import scatterlog from './scatterlog.vue';
 import timeBrush from './timeBrush.vue';
-import threeBar from './threeBar.vue';
 import wheeler from './wheeler.vue';
 import smallWheel from './smallWheel.vue';
 import slider from './slider.vue'
@@ -224,7 +222,7 @@ import sampledata from "./sampledata/index.js"
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
 export default {
-	components: { mareyChart, scatter, timeBrush, brushableParallel, threeBar, scatterlog, wheeler , smallWheel, slider},
+	components: { mareyChart, timeBrush, brushableParallel, scatterlog, wheeler , smallWheel, slider},
 	data() {
 		return {
 			isMerge: true,
@@ -234,7 +232,6 @@ export default {
 			linesize:0.25,
 			diagnosisData:[],
 			processName:'',
-			myScatterChart: {},
 			plateoptions:[{
 					value: 'All',
 					label: 'All'
@@ -331,7 +328,6 @@ export default {
 		isSwitchActive: vm => !vm.isSwitch
 	},
 	created() {
-		// this.day()
 	},
 	methods: {
 		...mapMutations([
@@ -739,29 +735,6 @@ export default {
 			// this.timeBrushData = (await baogangAxios(`/baogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${startDate}/${endDate}/`)).data;
 
 			this.$refs.brushSlider.paintChart(this.timeBrushData)
-		},
-		day(){
-			var now = new Date();
-			var year = now.getFullYear(); //得到年份
-			var month = now.getMonth();//得到月份
-			var date = now.getDate();//得到日期
-
-			let entry=this.selectDateStart
-			entry = entry.replace(/-/g,"/");
-			
-			let dateend = new Date(entry.valueOf());
-			dateend.setMonth(month)
-			dateend.setDate(1)
-			dateend.setYear(year)
-			this.dateselect[1].setYear(year)
-			this.dateselect[0]=dateend
-			var startTime = new Date(this.dateselect[0]).getTime();
-			var diff = 45*86400*1000;
-			var endTime = startTime + diff;
-			var d = new Date(endTime);
-			this.dateselect[1]=d
-			this.startDate=this.dateselect[0]
-			this.endDate=this.dateselect[1]
 		},
 		async getAlgorithmData() {
 			await baogangAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {

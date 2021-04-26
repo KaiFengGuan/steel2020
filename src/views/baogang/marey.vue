@@ -40,7 +40,7 @@
 							<span style="margin-left:5px">Tabular View</span>
 						</div>
 						<div class="my-card-body" style="padding-top:5px">
-							<brushableParallel ref="parallel" style="height:506px;width:100%" @parallMouse="parallMouse"></brushableParallel>
+							<brushableParallel ref="parallel" style="height:500px;width:100%" @parallMouse="parallMouse"></brushableParallel>
 						</div>
 					</el-card>
 				</el-row>
@@ -146,7 +146,7 @@
 								<el-col :span="4">
 									<!-- <div style="float:left;margin-top: 30px;position:relative;left: 25px;width: 1px;height: 450px; background: #c9c9c9;"></div> -->
 									<el-row>
-										<div style="overflow-y:scroll;height:510px">
+										<div style="overflow-y:scroll;height:500px">
 										<el-row v-for="item of upidSelect" :key = item>
 											<el-card class="myel-card myel-tab" :style="{border: sampleCss[item]}">
 												<div slot="header">
@@ -166,15 +166,15 @@
 								</el-col>
 									<el-col :span="20">
 										<el-card class="myel-card myelTab myel-upid">
-											<div slot="header">
+											<!-- <div slot="header">
 												<el-row>
 													<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
 													<span class="upidtext">{{selectedUpid}}</span></el-col>
 													<el-col :span="16" style="background-color:white"></el-col>
 												</el-row>
-											</div>
+											</div> -->
 											<div class="my-card-body" >
-												<wheeler ref="wheelering" style="height:476px"></wheeler>
+												<wheeler ref="wheelering" style="height:490px"></wheeler>
 											</div>
 										</el-card>
 									</el-col>

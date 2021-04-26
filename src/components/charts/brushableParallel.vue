@@ -77,7 +77,7 @@ export default {
             // console.log(brushdata)
             this.brushdata = brushdata
             // return
-            var margin = {top: 60, right: 20, bottom: 40, left: 20},
+            var margin = {top: 40, right: 20, bottom: 40, left: 20},
                 brushHeight = 10,
                 vm = this,
                 deselectedColor = "#eeeeee",
@@ -104,7 +104,7 @@ export default {
                     .outerRadius(8)
                     .startAngle(0)
                     .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
-                height = keys.length * 105,
+                height = keys.length * 100,
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
                 // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1]), [margin.left, width - margin.right])])),
                 // x = new Map(Array.from(keys, key => [key, d3.scaleLinear(d3.extent(brushdata, d => d[key]), [margin.left, width - margin.right])])),
@@ -220,7 +220,7 @@ export default {
                 })
                 .call(g => g.append("text")
                     .attr("x", width - margin.left)
-                    .attr("y", -50)
+                    .attr("y", - 40)
                     .attr("text-anchor", "end")
                     .attr("fill", "#2c3e50")
                     .attr("font-family", "DIN")

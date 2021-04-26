@@ -36,7 +36,6 @@ export default {
 	},
 	methods: {
 	paintChart(jsondata, chorddata, batchData) {
-        var horizonView = false;
         this.jsondata = jsondata, this.chorddata = chorddata, this.batchData = batchData;
         const wheeldata = [] , labels = []
         const menuId = this.menuId
@@ -208,6 +207,7 @@ export default {
                 this._padAngle=[];
                 this._linespace=6;
                 this._merge = true;
+                this._horizonView = false;
                 this._indexdata = {};
                 this._indexInfo = [];
                 this._indexlength = 6;
@@ -267,6 +267,7 @@ export default {
             _renderBar(){
                 this._fliterdata();
                 this._renderMainWheel();
+                this._renderSwitch();
                 this._renderMainBar();
             }
             _renderWheel(){
@@ -537,9 +538,23 @@ export default {
                     .attr("in", "SourceGraphic")
                     .attr("mode","normal"))
             }
+            _renderSwitch(){
+                const switchG = this._g.append("g").attr("class", "switchG");
+                switchG.append("rect")
+                    .attr("transform", `translate(${[280, - this._height/2 + 20]})`)
+                    .attr("fill", "black")
+                    .attr("height", 50)
+                    .attr("width", 20)
+                    // .on("click", (e, d) =>{
+
+                    // })
+                // RectWidth
+                // this._horizonView = true
+            }
             _renderMainBar(){
                 this._indexInfo = this._indexdata.slice(0);
                 const r = this._radius,
+                    wm = this,
                     lc =this._labelcolor,
                     a = this._padAngle,
                     limit = 0.3,
@@ -841,7 +856,7 @@ export default {
                                 .y1((d, i) => -yBatch(d.over));
 						return horizenArea
 					}
-                    if(horizonView){
+                    if(wm._horizonView){
                         var mergeArea = areaParameter(rectArray, sliderEX)
                         sliderG.selectAll(".batchG").data(rectPosition)
                             .join("g")
@@ -921,7 +936,7 @@ export default {
                                 .duration(200)
                                 .ease(d3.easeLinear))
                             .attr("transform", d => `translate(${[rectPosition[d], 0]})`)
-                        if(horizonView){
+                        if(wm._horizonView){
                             let mergeArea = areaParameter(rectArray, sliderEX)
                             sliderG.selectAll(".batchG")
                                 .transition(d3.transition()

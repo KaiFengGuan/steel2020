@@ -214,9 +214,7 @@ import timeBrush from './timeBrush.vue';
 import threeBar from './threeBar.vue';
 import wheeler from './wheeler.vue';
 import smallWheel from './smallWheel.vue';
-import riverLike from "./riverLike.vue";
 import slider from './slider.vue'
-import scatterAxis from "./scatterAxis.vue"
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import myJsonData from "./sampledata/jsondata.json"
@@ -226,7 +224,7 @@ import sampledata from "./sampledata/index.js"
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
 export default {
-	components: { mareyChart, scatter, timeBrush, brushableParallel, riverLike, scatterAxis, threeBar, scatterlog, wheeler , smallWheel, slider},
+	components: { mareyChart, scatter, timeBrush, brushableParallel, threeBar, scatterlog, wheeler , smallWheel, slider},
 	data() {
 		return {
 			isMerge: true,

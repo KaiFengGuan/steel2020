@@ -82,7 +82,9 @@ export default {
 							.attr("y", "2.2em");
 						const label=d;
 						d3.selectAll("circle.dot").style("opacity", 0.1);
-						d3.select("#scatter"+label.upid).attr("r",2).style("opacity", 1);				
+						d3.select("#scatter"+label.upid).attr("r",2).style("opacity", 1)
+							.attr("stroke", "#666666")
+							.attr("stroke-width", 1).raise();				
 						tooltip
 							.style("display", null)
 							.attr("fill", "white");

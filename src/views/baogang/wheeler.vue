@@ -7,7 +7,6 @@
 <script>
 import * as d3 from 'd3';
 import heaticon from "../../assets/images/heatwheel.svg";
-import steelicon from "../../assets/images/steel.svg";
 import heatwhite from "../../assets/images/heatwhite.svg";
 import coolicon from "../../assets/images/coolwheel.svg";
 import coolwhite from "../../assets/images/coolwhite.svg";
@@ -35,7 +34,6 @@ export default {
         const wheeldata = [] , labels = []
         const menuId = this.menuId
         this.upid = jsondata.upid
-        console.log(jsondata)
         for(let item in jsondata['INDEX']){
             labels.push(jsondata['INDEX'][item])
             wheeldata.push({
@@ -62,7 +60,6 @@ export default {
         //         result_original_l:jsondata['result'][item]['original_l'],
         //     })
         // }
-        // const details=jsondata['Steel']
 		const vm=this		
         const diameter = document.getElementById(this.menuId).offsetHeight;	
         const width = document.getElementById(this.menuId).offsetWidth;	
@@ -78,13 +75,6 @@ export default {
                 this._g = null;
 
                 this._months = ["heat", "roll", "cool"];
-                this._condColors = [
-                    { id: "Clear", color: "#fff3b0", icon: "" },
-                    { id: "Partially_cloudy", color: "#e7d8c9", icon: "" },
-                    { id: "Overcast", color: "#ddd", icon: "" },
-                    { id: "Rain", color: "#98c1d9", icon: "" },
-                    { id: "Snow", color: "#c2dfe3", icon: "" }
-                ];
                 this._colors = {
                     low: "#118ab2", // blue
                     mid: "#ffd166", // yellow
@@ -138,9 +128,6 @@ export default {
                 this._dayRadian = 0; // one-day radian
 
                 this._labels=null;
-                this._yearStat = true;
-                this._highlight = null;
-                this._statistics = null;
                 this._dailyInfo = null;
                 this._texts = {
                     date: null,
@@ -166,8 +153,7 @@ export default {
                         'devcrownbody','devcrowntotal','devthicknesscentertotal','devthicknessclosetotal',
                         'devwedgebody','devwedgetotal','maxcrownbody','maxcrowntotal','maxthicknesscentertotal',
                         'maxthicknessclosetotal','maxwedgebody','maxwedgetotal','mincrownbody','mincrowntotal',
-                        'minthicknesscentertotal','minthicknessclosebody',
-                        'minthicknessclosehead','minthicknessclosetotal',
+                        'minthicknesscentertotal','minthicknessclosebody','minthicknessclosehead','minthicknessclosetotal',
                         'minwedgetotal','ratiolpls','thicknesscenterbody','thicknesscenterhead','thicknesscentertotal',
                         'thicknessclosebody','thicknessclosehead','thicknessclosetotal','wedgebody','wedgetotal'
                     ],
@@ -187,7 +173,6 @@ export default {
                 };
                 this._labelcolor={
                     index:'steelblue',
-                    steelline:'rgb(250, 85, 143)',
                     nodes:["rgb(127, 141, 245)", "rgb(250, 85, 143)"],
                     0:'#fcd8a9',
                     1:'#cce9c7',
@@ -224,30 +209,12 @@ export default {
                 return arguments.length ? (this._field = _, this) : this._field;
             }
 
-            icon(_) {
-                if (arguments.length) {
-                    this._condColors[0].icon = _.clear;
-                    this._condColors[1].icon = _.cloudy;
-                    this._condColors[2].icon = _.overcast;
-                    this._condColors[3].icon = _.rain;
-                    this._condColors[4].icon = _.snow;
-                    return this;
-                }
-                else {
-                    return this._condColors.map(d => d.icon);
-                }
-            }
-
             size(_) {
                 return arguments.length ? (this._width = _[0], this._height = _[1], this) : [this._width, this._height];
             }
             render() {
                 this._init();
                 this._renderComponents()
-                // this._process();
-                // this._fliterdata();
-                // this._merge ? this._fliterdata() : this._process();
-                this._g = this._container.append("g").attr("transform", "translate(-50,0)");
                 this._renderMerge()
                 return this;
             }
@@ -263,7 +230,7 @@ export default {
                 this._g.attr("transform", "translate(300,0)")
             }
             _renderMerge(){
-                this._g.remove();
+                this._g == null ? undefined : this._g.remove();
                 this._g = this._container.append("g").attr("transform", "translate(-50,0)");
                 this._merge ? this._renderBar() : this._renderWheel();
             }
@@ -297,13 +264,6 @@ export default {
 
             }
             _process() {
-                // let getIndex = cond => {
-                //     for (let i = 0; i < this._condColors.length; i++) {
-                //         const c = this._condColors[i];
-                //         if (c.id === cond) return i;
-                //     }
-                //     return -1;
-                // }
                 const wm=this
                 const labels=[],lows = [], highs = [], precs = [], humis = [];
                 const field = this._field;
@@ -338,8 +298,6 @@ export default {
                     humis.push(datum.humidity);
                     return datum;
                 });
-
-
 
                 const pad = 0;
                 const angle = (Math.PI * 2 - 3 * pad )/this._data.length
@@ -381,21 +339,7 @@ export default {
                     datum.deviation=deviation;
                     return datum;
                 });
-                var speSort = d3.sort(this._chartData,d=> d.precipitation),
-                        T2Sort = d3.sort(this._chartData,d=> d.humidity);
-                this._g.attr("class","wheelg")
-                var sortdata = this._chartData.filter(d =>{
-                    return (d3.map(speSort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara || d3.map(T2Sort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara) && d.deviation !==0
-                })
-                var SPE=d3.sort(sortdata,d=> -d.precipitation),
-                    T2=d3.sort(sortdata,d=> -d.humidity),
-                    res=d3.sort(sortdata,d=> -d.deviation);
-                for (let item in SPE){
-                    let query=SPE[item].dateStr                     
-                    SPE[item].order=+item+1+(+T2.findIndex((value)=> value.dateStr===query))+1+(+res.findIndex((value)=> value.dateStr===query))+1
-                }
-                this._chartData = d3.sort(SPE,d=>d.order);
-                console.log(this._chartData)
+                this._chartData = this._sort(this._chartData);
                 this._padprocess=[[],[],[]];
                 this._chartData.map(datum => {
                     wm._padprocess[wm._processindex[wm.getIndex(datum.dateStr)]].push(datum.dateStr)
@@ -546,7 +490,7 @@ export default {
             }
             _renderMainBar(){
                 this._indexInfo = this._indexdata.slice(0);
-                const r = this._radius,
+                var r = this._radius,
                     wm = this,
                     lc =this._labelcolor,
                     limit = 0.3,
@@ -570,11 +514,6 @@ export default {
                         .call(g => g.selectAll(".rect_doct").data(selectInfo).join("g")      
                         .attr("class", "rect_doct")
                         .attr("transform", (d, i) => `translate(${[rectX, rectY(i) - this._height/2]})`)
-                            // .call(g => g.append("line")
-                            //     .attr("transform", `translate(${[0, maxHeight/2]})`)
-                            //     .attr("x2", RectWidth)
-                            //     .attr("stroke", d => d3.color(lc[+this._processindex[d.month]]).darker(0.6))
-                            //     .attr("stroke-width", 0.5))
                             .call(g => borderAttr(g)
                                 .attr("width", RectWidth)
                                 .attr("height", maxHeight)
@@ -586,8 +525,7 @@ export default {
                                 .attr("x2", RectWidth)
                                 .attr("stroke-width", 0.5)
                                 .attr("stroke-dasharray", "2,1,2,1")))
-                    const xpadSort = d3.sort(selectInfo, d => xpad[+this._processindex[d.month]](d.date)),
-                        pieAngle = d3.pie()
+                    const pieAngle = d3.pie()
                             .value(d => d.angle)
                             .startAngle(0.5* Math.PI)
                             .endAngle(2.5 * Math.PI),
@@ -859,7 +797,6 @@ export default {
                                 .data((d, i) => sliderEX[i])
                                 .join("path")
                                 .attr("fill", (d, i) => lc[+this._processindex[selectInfo[i].month]])
-                                // .attr("stroke", (d, i) => d3.color(lc[+this._processindex[selectInfo[i].month]]).darker(1))
                                 .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 + maxHeight/2]})`)
                                 .datum(d => d)
                                 .attr("class", "sampleBatch")
@@ -971,20 +908,7 @@ export default {
                     wm=this,
                     colorLinear1=[],
                     colorLinear2=[];
-                    var speSort = d3.sort(this._chartData,d=> d.precipitation),
-                        T2Sort = d3.sort(this._chartData,d=> d.humidity);
-                    var sortdata = this._chartData.filter(d =>{
-                        return (d3.map(speSort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara || d3.map(T2Sort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara) && d.deviation !==0
-                    })
-                    var SPE=d3.sort(sortdata,d=> -d.precipitation),
-                        T2=d3.sort(sortdata,d=> -d.humidity),
-                        res=d3.sort(sortdata,d=> -d.deviation);
-                    this._g.attr("class","wheelg")
-                    for (let item in SPE){
-                        let query=SPE[item].dateStr                     
-                        SPE[item].order=+item+1+(+T2.findIndex((value)=> value.dateStr===query))+1+(+res.findIndex((value)=> value.dateStr===query))+1
-                    }
-                    const sample=d3.sort(SPE,d=> d.order);
+                    const sample = this._sort(this._chartData)
                     this._allIndex = d3.map(sample, d => d.dateStr);
                     var outrate = (item1 , item2) => {
                         return d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? item1 : item2
@@ -993,9 +917,9 @@ export default {
                 for (let key in xpad){
                     const processdata = [], 
                     lck = lc[key],
-                    daker=d3.color(lck).darker(0.6),
-                    darkerborder=d3.color(lck).darker(2),
-                    line_stroke=outrate(d3.color(lck).darker(2),daker);
+                    daker = d3.color(lck).darker(0.6),
+                    darkerborder = d3.color(lck).darker(2),
+                    line_stroke = outrate(darkerborder,daker);
                     for (let item of this._chartData){
                         if(this._processindex[item.month] == key) {
                             processdata.push(item)
@@ -1353,7 +1277,6 @@ export default {
                         .selectAll("path")
                         .data(linedata)
                         .join("path")
-                            // .style("mix-blend-mode", "multiply")
                             .attr("d", ([i, o]) => line(i.path(o)))
                             .each(function(d) { d.path = this; })
                             .attr("class",d=>{
@@ -1376,9 +1299,6 @@ export default {
                             axisenter(index,key,lck,daker,false);
                         }
                         insertInfo(e,lck,data);
-                        // link.style("mix-blend-mode", null);
-                        // d3.selectAll(d.incoming.map(d => d.path)).attr("stroke", highlightcolor).raise();
-                        // d3.selectAll(d.outgoing.map(d => d.path)).attr("stroke", highlightcolor).raise();
                     }
 
                     function outed(event, d) {
@@ -1389,9 +1309,6 @@ export default {
                         for (let index of rlines){
                             axisout(index,key,lck,daker,false);
                         }
-                        // link.style("mix-blend-mode", "multiply");
-                        // d3.selectAll(d.incoming.map(d => d.path)).attr("stroke", labelcolor);
-                        // d3.selectAll(d.outgoing.map(d => d.path)).attr("stroke", labelcolor);
                     }
                     function multiplyaxis(name){
                         var target=[]
@@ -1625,6 +1542,21 @@ export default {
                 }
             }
 
+            _sort(data){
+                let speSort = d3.sort(data,d=> d.precipitation),
+                    T2Sort = d3.sort(data,d=> d.humidity);
+                var sortdata = data.filter(d =>{
+                    return (d3.map(speSort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara || d3.map(T2Sort, e=> e.dateStr).indexOf(d.dateStr)<= vm.multiPara) && d.deviation !==0
+                })
+                var SPE=d3.sort(sortdata,d=> -d.precipitation),
+                    T2=d3.sort(sortdata,d=> -d.humidity),
+                    res=d3.sort(sortdata,d=> -d.deviation);
+                for (let item in SPE){
+                    let query=SPE[item].dateStr                     
+                    SPE[item].order=+item+1+(+T2.findIndex((value)=> value.dateStr===query))+1+(+res.findIndex((value)=> value.dateStr===query))+1
+                }
+                return d3.sort(SPE,d=> d.order);
+            }
             _line(y1, y2) {
                 return d3.arc()
                     .innerRadius(y1)
@@ -1659,22 +1591,6 @@ export default {
                     .attr("r", d => typeof r === "function" ? r(d) : r);
             }
 
-            _pack(data) {
-                const counts = [], w = this._radius.inner * 2;
-                const grouped = d3.group(data, d => d.conditionIndex);
-                grouped.forEach((value, key) => counts.push({
-                    cond: key,
-                    count: value.length,
-                    color: this._condColors[key].color
-                }));
-
-                return d3.pack()
-                    .size([w, w])
-                    .padding(1)(
-                        d3.hierarchy({ children: counts })
-                            .sum(d => d.count)
-                    );
-            }
 
             _getMonthData(month) {
                 return this._chartData.filter(d => d.month === month);
@@ -1723,9 +1639,5 @@ g > text {
     stroke: white;
     fill:none;
 
-}
-text > title {
-    stroke: black;
-    fill:black;
 }
 </style>

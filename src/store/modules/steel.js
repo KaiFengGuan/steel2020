@@ -10,7 +10,8 @@ let state = {
     brushSelectColor: "#c6cacc",
     corrSize: 0.5,
     multiPara: 20,
-    curveSize: 0.5
+    curveSize: 0.5,
+    hightlightGroup: [],
 }
 
 let getters = {
@@ -33,7 +34,8 @@ let getters = {
     brushSelectColor: state => state.brushSelectColor,
     corrSize: state => state.corrSize,
     multiPara: state => state.multiPara,
-    curveSize: state => state.curveSize
+    curveSize: state => state.curveSize,
+    hightlightGroup: state => state.hightlightGroup
 }
 
 let actions = {
@@ -63,6 +65,9 @@ let mutations = {
     },
     setCurveSize(state,size){
         state.curveSize = size
+    },
+    hightLight(state, array){
+        state.hightlightGroup = array
     }
 }
 

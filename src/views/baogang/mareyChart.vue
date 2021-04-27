@@ -7,6 +7,7 @@
 import * as d3 from 'd3';
 import { Delaunay } from 'd3-delaunay';
 import util from './util.js';
+import { mapGetters, mapMutations} from 'vuex'
 export default {
 	data() {
 		return {
@@ -31,6 +32,9 @@ export default {
 		}
 	},
 	methods: {
+		...mapMutations([
+			"hightLight"
+		]),
 		paintPre(alldata, stationsData, changeColor, brushData){
 			alldata  = this.deepCopy(alldata);
 			stationsData = this.deepCopy(stationsData);
@@ -661,11 +665,9 @@ export default {
 								mergeClickValue = []
 							}
 							mergeClickValue.push(item)
-							vm.$emit("trainClick",{list: vm.trainSelectedList, 
-								color: vm.trainGroupStyle(mergeSelect.slice(-1)[0]),
-								upidSelect: [...badupid, ...selectId],
-								type: "group",
-								batch: mergeId})
+							vm.$emit("trainClick",{list: vm.trainSelectedList, color: vm.trainGroupStyle(mergeSelect.slice(-1)[0]), 
+								upidSelect: [...badupid, ...selectId], type: "group", batch: mergeId})
+							vm.hightlight()
 						}
 					})
 					.on("mouseout",pathOut)
@@ -2072,6 +2074,11 @@ export default {
 	},
 	mounted() {
 	},
+	computed:{
+        ...mapGetters([
+            "hightlightGroup"
+        ])
+	}
 }
 </script>
 

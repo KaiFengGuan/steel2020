@@ -31,7 +31,8 @@ export default {
             "brushSelection",
             "brushSelectColor",
             "startDate",
-			"endDate"
+			"endDate",
+            "hightlightGroup"
 		]),
         paralleldata: vm => {
             if(vm.brushdata == undefined)return undefined
@@ -50,6 +51,9 @@ export default {
             if(this.plData !== undefined){
                 this.paintChart(this.plData, this.startDate, this.endDate)
             }
+		},
+		hightlightGroup:function(){
+			this.resetPath()
 		}
 	},
     methods: {
@@ -67,16 +71,13 @@ export default {
 			return newObj
 		},
         paintChart(plData, startTime, endTime) {
-            // console.log(this)
             plData = this.deepCopy(plData)
             this.plData = plData
             var brushdata = plData.map( d => {
                 d.slab_thickness = d.slab_thickness/100;
                 return d
             })
-            // console.log(brushdata)
             this.brushdata = brushdata
-            // return
             var margin = {top: 40, right: 20, bottom: 40, left: 20},
                 brushHeight = 10,
                 vm = this,
@@ -139,19 +140,12 @@ export default {
                     svg.selectAll("#parallel .tick text").attr("font-family", "DIN").attr("stroke", "none").attr("fill", "#2c3e50")
                 }
 
-            // const 
-            // const height = document.getElementById(this.menuId).offsetHeight;
-            // const height = 22;
-            // const width = 350;
             this.svg !== undefined && this.svg.remove()
             this.svg=d3.select("#"+vm.menuId)
                 .append("svg")
                 .attr("width", width)
                 .attr("height", height);
             var svg = this.svg.attr("id", "parallel")
-            // const svg = d3.create("svg")
-            //     .attr("id", "parallel")
-            //     .attr("viewBox", [0, 0, width, height]);
 
             const brush = d3.brushX()
                 .extent([
@@ -243,8 +237,6 @@ export default {
                 // svg.selectAll("text").attr("font-family", "DIN").attr("stroke", "none").style("fill", "#2c3e50")
                 
             function pathover(event,d){
-                // d3.select(this).attr("stroke-width", 5)
-                // console.log(d)
                 const tooltip = vm.svg.append("g")
                     .attr("class", "tooltip")
                     .style("font", "12px DIN");
@@ -276,7 +268,6 @@ export default {
                     .attr("stroke", "none")
                     .attr("fill", vm.deGroupStyle(d));
                 const box = text.node().getBBox();
-                // console.log(event)
                 let x = event.offsetX - 78,
                     y = event.offsetY + 10;					
                 path.attr("d", `
@@ -292,14 +283,12 @@ export default {
                 vm.svg.selectAll(`.pathColor`)
                 .attr("stroke-opacity", 0.01)
                 .attr("stroke-width", 0.25)
-                // .style("visibility", "hidden")
 					vm.svg.select(`#paraPath${d.upid}`)
 						.attr("stroke-opacity", 0.6)
                         .attr("stroke-width", 1.75)
                 vm.$emit("parallMouse", {upid: [d.upid],  mouse: 0});
             }
             function pathout(e,d){
-                // d3.select(this).attr("stroke-width", 5)
                 vm.svg.selectAll(`.pathColor`)
                     .attr("stroke-opacity", 0.6)
                     .attr("stroke-width", 1)
@@ -312,14 +301,12 @@ export default {
                 else selections.set(key, selection.map(x.get(key).invert));
                 const selected = [];
                 path.each(function(d) {
-                const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
-                d3.select(this).attr("stroke", active ? vm.deGroupStyle : "none");
-                // .attr("visibility", active ? "visible" : "hidden");
-                // .style("stroke", active ? vm.deGroupStyle(d) : "none");
-                if (active) {
-                    d3.select(this).raise();
-                    selected.push(d);
-                }
+                    const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
+                    d3.select(this).attr("stroke", active ? vm.deGroupStyle : "none");
+                    if (active) {
+                        d3.select(this).raise();
+                        selected.push(d);
+                    }
                 });
                 if (selection === null){
                     d3.selectAll(".rect" + keys.indexOf(key))
@@ -343,38 +330,50 @@ export default {
             }
         },
         mouse(value){
-			// console.log(value)
-			const vm=this
 			this.mouseList = value
+            this.clear();
+			if(value.mouse===0){
+				this.changePath(value.upid)
+                this.changePath(this.hightlightGroup)
+			}else{
+                this.init()
+                if(this.hightlightGroup.length !== 0){
+                    this.clear()
+                    this.changePath(this.hightlightGroup)
+                }
+			}
+		},
+        resetPath(){    //reset Style before highlight
+			if(this.mouseList !==undefined){
+                this.mouse(this.mouseList)
+            }else{
+                if(this.hightlightGroup.length !== 0){
+                    this.clear()
+                    this.changePath(this.hightlightGroup)
+                }
+            }
+        },
+        clear(){    //clear Style
             this.svg.selectAll(`.pathColor`)
-                // .attr("stroke-opacity", 0.05)
                 .attr("stroke-width", 1)
                 .style("visibility", "hidden")
-			if(value.mouse===0){
-				for(let item in value.upid){
-					this.svg.select(`#paraPath${value.upid[item]}`)
-                        .style("visibility", "visible")
-						// .attr("stroke-opacity", 0.6)
-                        .attr("stroke-width", 1.75)
-				}
-
-			}else{
-                this.svg.selectAll(`.pathColor`)
+        },
+        init(){     //init Style
+            this.svg.selectAll(`.pathColor`)
+                .style("visibility", "visible")
+                .attr("stroke-width", 1)
+        },
+        changePath(array){	//change Style
+            if(array.length === 0)return;
+            for(let item in array){
+				this.svg.select(`#paraPath${array[item]}`)
                     .style("visibility", "visible")
-                    .attr("stroke-width", 1)
-                // .attr("stroke-opacity", 0.6)
+                    .attr("stroke-width", 1.75).raise()
 			}
-			
 		},
     },
     mounted(){
-    },
-    // computed:{
-    //     ...mapGetters([
-    //         "brushMouseId",
-    //         "brushSelection"])
-    // }
-
+    }
 }
 </script>
 

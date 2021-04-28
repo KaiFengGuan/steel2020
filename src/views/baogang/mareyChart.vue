@@ -569,7 +569,8 @@ export default {
 			var qualityData = [],
 				positionData = [];
 
-			var mergeClickValue = [];	//Click List
+			var mergeClickValue = [],	//Click List
+				mergeClickIndex = undefined;
 			for (let item in mergeresult){
 				var mergeG = renderG.append("g")
 					.attr("class", `mergeG`)
@@ -657,19 +658,7 @@ export default {
 				const rectG = mergeG
 					.append("g")
 					.attr("index", item)
-					.on("click",(e,d) => {
-						if(mergeClickValue.includes(item)){
-							mergeClickValue.splice(mergeClickValue.indexOf(item), 1)
-						}else{
-							if(mergeClickValue.length !== 0){
-								mergeClickValue = []
-							}
-							mergeClickValue.push(item)
-							vm.$emit("trainClick",{list: vm.trainSelectedList, color: vm.trainGroupStyle(mergeSelect.slice(-1)[0]), 
-								upidSelect: [...badupid, ...selectId], type: "group", batch: mergeId})
-							vm.hightlight()
-						}
-					})
+					.on("click", pathClick)
 					.on("mouseout",pathOut)
 					.on("mouseover",pathOver)
 				var LinkG = rectG.append("g"),		//Rect LineTo Merge
@@ -1251,14 +1240,14 @@ export default {
 				var i = d3.select(this).attr("index")
 				initMerge()
 				mouseOutPath()
-				vm.$emit("trainMouse", {upid: d3.map(mergeresult[i]["merge"], d => d.upid),  mouse: 1})
+				if(i !== mergeClickIndex)vm.$emit("trainMouse", {upid: d3.map(mergeresult[i]["merge"], d => d.upid),  mouse: 1})
 				if(mergeClickValue.length !== 0){
 					// svg.selectAll(".mergerect").attr("opacity", 0.1)
 					svg.selectAll(".mergeG").attr("opacity", 0.4)
 					for(let j in mergeClickValue){
 						mouseMerge(mergeClickValue[j])
-						mouseOverPath(j)
-						vm.$emit("trainMouse", {upid: d3.map(mergeresult[j]["merge"], d => d.upid),  mouse: 0})
+						mouseOverPath(mergeClickValue[j])
+						// vm.$emit("trainMouse", {upid: d3.map(mergeresult[mergeClickValue[j]]["merge"], d => d.upid),  mouse: 0})
 					}
 				}
 			}
@@ -1271,9 +1260,24 @@ export default {
 				// svg.selectAll(".mergerect").attr("opacity", 0.1)
 				mouseMerge(i)
 				mouseOverPath(i)
-				vm.$emit("trainMouse", {upid: d3.map(mergeresult[i]["merge"], d => d.upid),  mouse: 0});
+				if(i !== mergeClickIndex)vm.$emit("trainMouse", {upid: d3.map(mergeresult[i]["merge"], d => d.upid),  mouse: 0});
 			}
 			function pathClick(e,d){
+				var i = d3.select(this).attr("index"),
+					mergeClickIndex = i;
+				if(mergeClickValue.includes(i)){
+					mergeClickValue.splice(mergeClickValue.indexOf(i), 1)
+					vm.hightLight([])
+				}else{
+					if(mergeClickValue.length !== 0){
+						mergeClickValue = []
+					}
+					mergeClickValue.push(i)
+					vm.$emit("trainClick",{list: vm.trainSelectedList, color: vm.trainGroupStyle(mergeSelect.slice(-1)[0]), 
+						upidSelect: [... d3.map(d3.filter(mergeresult[i]["merge"], d => d.flag === 0), d => d.upid),
+						...d3.map(mergeresult[i]["select"], d => d.upid)], type: "group", batch: d3.map(mergeresult[i]["merge"], d => d.upid)})
+					vm.hightLight(d3.map(mergeresult[i]["merge"], d => d.upid))
+				}
 			}
 			function mouseOverRect(upid){
 				var distanceData = d3.pairs(dataUCL.get(upid)[0].stops, (a, b) => (new Date(b.realTime)).getTime()- (new Date(a.realTime)).getTime())
@@ -1510,7 +1514,8 @@ export default {
 						.attr("d", (d, i) => voronoi.renderCell(i))
 
 					.on("mouseout", (event, d) => {
-						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return
+						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return;
+						console.log({upid: [d.train.upid],  mouse: 1})
 						vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 1});
 						tooltip.style("display", "none");
 						if(vm.trainSelectedList.includes(d.train.upid))return
@@ -1519,7 +1524,8 @@ export default {
 					})
 
 					.on("mouseover", (event, d) => {
-						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return
+						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return;
+						console.log({upid: [d.train.upid],  mouse: 0})
 						vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 0});
 						let toopcolor = vm.trainGroupStyle(d.train)
 						mouseoverLine(d.train.upid)

@@ -7,7 +7,7 @@
 <script>
 import * as d3 from 'd3';
 import util from './util.js';
-import {mapGetters, mapMutations} from "vuex"
+import {mapGetters} from "vuex"
 export default {
 	data() {
 		return {
@@ -21,10 +21,9 @@ export default {
 			labelColors: util.labelColor, // [bad, good]
 			labelColorsFunc: util.labelColorFunc,
 			property:["ave_temp_dis","avg_p5","crowntotal","finishtemptotal","tgtplatelength2","tgtplatethickness2","tgtwidth","wedgetotal"],
-			scaleX:undefined,
-			scaleY:undefined,
 			GaleArray:[],
-			colorScale:[],
+			mouseAttrs:{"color": "#666666", "r": 3, "stroke": 0.5},
+			clickAttrs:{"color": "#666666", "r": 4, "stroke": 1.25},
 			mouseList: undefined
 		}
 	},
@@ -43,8 +42,6 @@ export default {
 			const scatterdata=this.scatterdata
 			const scaleX = d3.scaleLinear().range([marginW, w-marginW]).domain(d3.extent(scatterdata, d => d.x));
 			const scaleY = d3.scaleLinear().range([h-marginH, h -w + marginH]).domain(d3.extent(scatterdata, d => d.y));
-			this.scaleX=scaleX;
-			this.scaleY=scaleY;
 			var scattertooltip = g => {
 				g.call(g =>g.append("g").attr("class" , "scatter")
 					.selectAll("circle.dot")
@@ -80,11 +77,7 @@ export default {
 						const line3 = text.append("tspan")
 							.attr("x", 0)
 							.attr("y", "2.2em");
-						const label=d;
-						d3.selectAll("circle.dot").style("opacity", 0.1);
-						d3.select("#scatter"+label.upid).attr("r",2).style("opacity", 1)
-							.attr("stroke", "#666666")
-							.attr("stroke-width", 1).raise();				
+						const label=d;				
 						tooltip
 							.style("display", null)
 							.attr("fill", "white");
@@ -95,11 +88,8 @@ export default {
 							.attr("stroke", "none")
 							.attr("fill", vm.tooltipColor(label));
 						const box = text.node().getBBox();
-						// console.log(event)
 						let x = event.offsetX - 78,
 							y = event.offsetY ;
-						// const x=vm.scaleX(d.x)-75
-						// let y=vm.scaleY(d.y)+12
 						if(y+box.height + 30>h-8*marginH){					
 						path.attr("d", `
 							M${box.x - 10},${box.y - 10}
@@ -123,19 +113,14 @@ export default {
 						text.attr("transform", `translate(${[box.x+5,box.y+10]})`);
 						}
 						tooltip.attr("transform", `translate(${[x,y]})`);
+						d3.selectAll("circle.dot").style("opacity", 0.1);
+						d3.select(`#scatter${label.upid}`).style("opacity", 1);
+						vm.changeDot([label.upid], this.mouseAttrs)
 						vm.$emit("scatterMouse", {upid: [d.upid],  mouse: 0});
 					})
-					.on("mouseout", (event, d)=> {
-						// d3.select("#scatter"+d.upid).style("opacity", 1)
-						// let toc=new Date(d.toc)
-						// console.log(this.GaleArray)
-						// if(toc<this.GaleArray[1]&&toc>this.GaleArray[0]){
-						// 	d3.select("#scatter"+d.upid).attr("r",2).style("opacity",1)
-						// }else{
-						// 	d3.select("#scatter"+d.upid).attr("r",1).style("opacity",0.1)
-						// }					
+					.on("mouseout", (event, d)=> {					
 						this.paintArc(this.GaleArray)
-						this.mouseList !==undefined ? this.mouse(this.mouseList) : false
+						this.resetDot()
 						d3.selectAll(".scattertooltip").remove();
 						vm.$emit("scatterMouse", {upid: [d.upid],  mouse: 1});
 					}))
@@ -149,82 +134,79 @@ export default {
 			function zoomed({transform}) {
 				d3.select(".scatter").attr("transform", transform);
 			}
-			// console.log('paint completed')
 		},
 		paintArc([dateStart,dateEnd]){
 			this.GaleArray=[dateStart,dateEnd];
 			const vm=this;
-			// console.log(this.scatterdata.length)
 			var data=this.scatterdata.filter(item=>{
 				let toc=new Date(item.toc)
 				return toc<dateEnd&&toc>dateStart
 			})
-			// console.log(data.length)
 			d3.selectAll(".dot")
 				.attr("r",1)
 				.style("opacity",0.1)
 				.attr("fill" , vm.tooltipColor);
 			for (let item in data){
 					d3.select("#scatter"+data[item].upid)
-					// .attr("r",2)
 					.style("opacity",1);
 			}
-			// console.log('select completed')
 		},
 		mouse(value){
-			// console.log(value)
 			const vm=this
 			this.mouseList = value
 			if(value.mouse===0){
-				for(let item in value.upid){
-					d3.select(`#scatter${value.upid[item]}`)
-						// .attr('fill',"black")
-						.attr("r", 4)
-						// .attr("stroke", "black")
-						.attr("stroke", "#666666")
-						.attr("stroke-width", 1).raise()
-				}
-
+				this.changeDot(value.upid, this.mouseAttrs)
 			}else{
-				d3.selectAll(".dot")
-				// .attr("fill",vm.tooltipColor)
+				this.init();
+				this.changeDot(this.hightlightGroup, this.clickAttrs);
+			}
+		},
+		changeDot(array, Attrs){	//change Style
+			if(array.length === 0)return;
+			for(let item in array){
+				this.svg.select(`#scatter${array[item]}`)
+					.attr("r", Attrs.r)
+					.attr("stroke", Attrs.color)
+					.attr("stroke-width", Attrs.stroke).raise()
+			}
+		},
+		resetDot(){		//reset Style before highlight
+			this.mouseList !==undefined ? this.mouse(this.mouseList) : this.changeDot(this.hightlightGroup, this.clickAttrs)
+		},
+		init(){		//init Style
+			const vm=this;
+			this.svg.selectAll(".dot")
 				.attr("r",1)
+				.attr("fill", vm.tooltipColor)
 				.attr("stroke", vm.tooltipColor)
 				.attr("stroke-width", 0.25)
-			}
-			
 		},
 		setTrainColor(){
-			const vm=this;
 			this.changeColor=!this.changeColor;
-			d3.selectAll("circle.dot").attr("fill",vm.tooltipColor).attr("stroke", vm.tooltipColor)
-					.attr("stroke-width", 0.25)
-			this.mouseList !==undefined ? this.mouse(this.mouseList) : false
+			this.init()
+			this.resetDot()
 		}
 	},
 	mounted() {
 	},
 	computed:{
 		tooltipColor:function (){
-			if (this.changeColor){
-				return (d=> this.categoryColors(d.productcategory))
-			}else{
-				return (d=> this.labelColorsFunc(+d.label))
-			}
+			return this.changeColor ? d => this.categoryColors(d.productcategory) : d=> this.labelColorsFunc(+d.label)
 		},
-		hightLightColor:function (){
-			if (this.changeColor){
-				return (d=> d3.color(this.categoryColors(d.productcategory)).darker(0.25))
-			}else{
-				return (d=> d3.color(this.labelColorsFunc(+d.label)).darker(0.25))
-			}
+		...mapGetters([
+            "hightlightGroup"
+        ])
+	},
+	watch:{
+		hightlightGroup:function(){
+			this.changeDot(this.hightlightGroup, this.clickAttrs)
 		}
 	}
 }
 </script>
 
 <style>
-g .tick{
+/* g .tick{
 	opacity: 0.3;
-}
+} */
 </style>

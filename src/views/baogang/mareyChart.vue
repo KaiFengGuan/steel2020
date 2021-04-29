@@ -1514,7 +1514,6 @@ export default {
 
 					.on("mouseout", (event, d) => {
 						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return;
-						console.log({upid: [d.train.upid],  mouse: 1})
 						vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 1});
 						tooltip.style("display", "none");
 						if(vm.trainSelectedList.includes(d.train.upid))return
@@ -1525,7 +1524,6 @@ export default {
 
 					.on("mouseover", (event, d) => {
 						if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return;
-						console.log({upid: [d.train.upid],  mouse: 0})
 						vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 0});
 						let toopcolor = vm.trainGroupStyle(d.train)
 						mouseoverLine(d.train.upid)

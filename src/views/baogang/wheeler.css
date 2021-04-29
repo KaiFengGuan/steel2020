@@ -1,0 +1,36 @@
+.switchG text{
+    font-size: 9px;
+    font-family: "DIN";
+    text-anchor: middle;
+}
+.lineG text{
+    font-family: "DIN";
+    text-anchor: middle;
+}
+.sortIndex{
+    font-size: 8px;
+    fill:#fff;
+    font-family: "DIN";
+    text-anchor: middle;
+}
+.dragG{
+    cursor: move;
+}
+.dragG rect{
+    fill:#cccccc
+}
+.batchG path{
+    opacity: 0.6;
+}
+.icon{
+    width: 13px;
+    height: 13px;
+}
+.vis path{
+    opacity: 1;
+    stroke-width: 0.5;
+}
+.visoverlay{
+    fill:white;
+    opacity: 0;
+}

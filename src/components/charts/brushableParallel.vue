@@ -53,7 +53,11 @@ export default {
             }
 		},
 		hightlightGroup:function(){
-			this.resetPath()
+            if(this.hightlightGroup.length === 0){
+                this.init()
+            }else{
+                this.resetPath()
+            }
 		}
 	},
     methods: {
@@ -313,7 +317,6 @@ export default {
                     .attr("opacity", 0.5)
                 }else{
                     let brushRange = d3.map(selection, x.get(key).invert)
-                    // let [min, max] = [Math.floor((brushRange[0] - Range[0])/path), Math.floor((brushRange[1] - Range[0])/path)]
                     d3.selectAll(".rect" + keys.indexOf(key))
                         // .attr("fill", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? selectedColor : deselectedColor)
                         .attr("opacity", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? 0.5 : 0.05)

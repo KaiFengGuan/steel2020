@@ -158,7 +158,8 @@ export default {
 		const mainHeight = document.getElementById(this.menuId).offsetHeight;
 		var stations = stationsData
 		var stops = d3.merge(data.map(d => d.stops.map(s => ({ train: d, stop: s }))))
-		var statname = d3.map(stations, d => d.name)
+		var statname = d3.map(stations, d => d.name),
+			flagSort = arr => d3.sort(d3.map(arr, d => d.upid), d => -dataUCL.get(d)[0].flag);
 
 		// chart
 		var defaultStrokeWidth = d3.scaleLinear()
@@ -444,6 +445,7 @@ export default {
 		var indexname = ["fuTotalTimeAfter" , "mtotalTime" , "ccTotalTime"]
 
 		var renderG = this.svg.append("g")
+		var mergeClickValue = [];	//Click List
 		function render(){
 			renderG !== undefined && renderG.remove()
 			renderG = vm.svg.append("g")
@@ -569,8 +571,7 @@ export default {
 			var qualityData = [],
 				positionData = [];
 
-			var mergeClickValue = [],	//Click List
-				mergeClickIndex = undefined;
+
 			for (let item in mergeresult){
 				var mergeG = renderG.append("g")
 					.attr("class", `mergeG`)
@@ -1235,36 +1236,34 @@ export default {
 				.call(g => circleG(g) 	//radar 2
 					.attr("r", circleLength))
 				rectG.lower()
+				mergeGopacity()
 			}
 			function pathOut(e,d){
 				var i = d3.select(this).attr("index")
 				initMerge()
 				mouseOutPath()
-				if(i !== mergeClickIndex)vm.$emit("trainMouse", {upid: d3.map(mergeresult[i]["merge"], d => d.upid),  mouse: 1})
+				if(mergeClickValue.indexOf(i) == -1)vm.$emit("trainMouse", {upid: d3.map(mergeresult[i]["merge"], d => d.upid),  mouse: 1})
+				mergeGopacity()
+			}
+			function mergeGopacity(){	//brush变更后 copy mergeG state
 				if(mergeClickValue.length !== 0){
-					// svg.selectAll(".mergerect").attr("opacity", 0.1)
 					svg.selectAll(".mergeG").attr("opacity", 0.4)
 					for(let j in mergeClickValue){
 						mouseMerge(mergeClickValue[j])
 						mouseOverPath(mergeClickValue[j])
-						// vm.$emit("trainMouse", {upid: d3.map(mergeresult[mergeClickValue[j]]["merge"], d => d.upid),  mouse: 0})
 					}
 				}
 			}
 			function pathOver(e,d){
 				var i = d3.select(this).attr("index")
-				// svg.selectAll(".mergeG").attr("opacity", 0.4)
-				// svg.selectAll(`#mergeG${i}`).attr("opacity", 1)
 				initMerge()
 				svg.selectAll(".mergeG").attr("opacity", 0.4)
-				// svg.selectAll(".mergerect").attr("opacity", 0.1)
 				mouseMerge(i)
 				mouseOverPath(i)
-				if(i !== mergeClickIndex)vm.$emit("trainMouse", {upid: d3.map(mergeresult[i]["merge"], d => d.upid),  mouse: 0});
+				if(mergeClickValue.indexOf(i) == -1)vm.$emit("trainMouse", {upid: d3.map(mergeresult[i]["merge"], d => d.upid),  mouse: 0});
 			}
 			function pathClick(e,d){
-				var i = d3.select(this).attr("index"),
-					mergeClickIndex = i;
+				var i = d3.select(this).attr("index");
 				if(mergeClickValue.includes(i)){
 					mergeClickValue.splice(mergeClickValue.indexOf(i), 1)
 					vm.hightLight([])
@@ -1276,7 +1275,7 @@ export default {
 					vm.$emit("trainClick",{list: vm.trainSelectedList, color: vm.trainGroupStyle(mergeSelect.slice(-1)[0]), 
 						upidSelect: [... d3.map(d3.filter(mergeresult[i]["merge"], d => d.flag === 0), d => d.upid),
 						...d3.map(mergeresult[i]["select"], d => d.upid)], type: "group", batch: d3.map(mergeresult[i]["merge"], d => d.upid)})
-					vm.hightLight(d3.map(mergeresult[i]["merge"], d => d.upid))
+					vm.hightLight(flagSort(mergeresult[i]["merge"]))
 				}
 			}
 			function mouseOverRect(upid){
@@ -1521,6 +1520,7 @@ export default {
 						if(vm.trainSelectedList.includes(d.train.upid))return
 						mouseoutLine(d.train.upid)
 						mouseOutPath()
+						mergeGopacity()
 					})
 
 					.on("mouseover", (event, d) => {
@@ -1858,6 +1858,7 @@ export default {
 			this.changeColor = ! this.changeColor
 			if(this.data !== undefined && this.station !== undefined){
 				this.paintMareyChart(this.data,this.station, this.changeColor, this.brushData)
+				this.hightLight([])
 			}
 		},
 		deepCopy(obj){
@@ -2073,6 +2074,7 @@ export default {
 				this.minconflict  =  value3
 				if(this.data !== undefined && this.station !== undefined){
 					this.paintMareyChart(this.data,this.station, this.changeColor, this.brushData)
+					this.hightLight([])
 				}
 			})
 

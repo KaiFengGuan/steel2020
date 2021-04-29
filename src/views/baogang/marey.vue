@@ -208,7 +208,7 @@
 import * as d3 from 'd3';
 import util from './util.js';
 import mareyChart from './mareyChart.vue';
-import scatterlog from './scatterlog.vue';
+import scatterlog from 'components/charts/scatterlog.vue';
 import timeBrush from './timeBrush.vue';
 import wheeler from './wheeler.vue';
 import smallWheel from './smallWheel.vue';

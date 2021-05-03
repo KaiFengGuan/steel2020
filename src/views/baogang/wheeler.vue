@@ -170,6 +170,7 @@ export default {
                 this._indexlength = 6;
                 this._allIndex = [];    //index name
                 this._rectArray = null;
+                this._indexScale = undefined;
             }
             getIndex(_){
                 for (let item in this._process){
@@ -201,11 +202,11 @@ export default {
             _renderBar(){
                 this._fliterdata();
                 this._renderMainWheel();
-                this._renderSwitch();
+                // this._renderSwitch();
                 this._renderMainBar();
             }
             _renderWheel(){
-                this._process();
+                this._initdata();
                 this._renderMainWheel();
                 this._g.attr("transform", "translate(300,0)")
             }
@@ -243,7 +244,7 @@ export default {
                 this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
 
             }
-            _process() {
+            _initdata() {
                 const wm=this
                 const labels=[],lows = [], highs = [], precs = [], humis = [];
                 const field = this._field;
@@ -421,9 +422,6 @@ export default {
                 const switchG = this._g.append("g").attr("class", "switchG"),
                     r = this._radius,
                     text = ["Horizon", "River"],
-                    t = d3.transition()
-                        .duration(200)
-                        .ease(d3.easeLinear),
                     tabColor = "#678fba",
                     transfrom = (v1, v2) => d => this._horizonView == Boolean(d) ? v1 : v2;
                 switchG.selectAll("g").data([1, 0]).join("g")
@@ -474,11 +472,14 @@ export default {
                     maxHeight = maxBarHeight + 5,   //rect max height
                     rectNum = Math.floor((this._height - 50)/maxHeight),
                     selectInfo = this._indexInfo.slice(0, this._indexInfo.length > rectNum ? rectNum : this._indexInfo.length),
-                    rectY = this._indexInfo.length > rectNum ? i => (this._height - 50)/rectNum * (i + 0.5) + 25  : i => (this._height - 50)/this._indexInfo.length * (i + 0.5) + 25,
+                    indexArray = d3.map(selectInfo, (d, i) => i),
+                    indexSort = d3.map(selectInfo, d => d.dateStr),
+                    indexScale = d3.scaleOrdinal().domain(indexArray).range(indexArray),
+                    rectY = this._indexInfo.length > rectNum ? i => (this._height - 50)/rectNum * (indexScale(i) + 0.5) + 25  : i => (this._height - 50)/this._indexInfo.length * (indexScale(i) + 0.5) + 25,
                     mainG = this._g.append("g").attr("class", "mainG"),
                     startXY = d => [R * (Math.sin(xpad[d.month](d.date)+ v)), -R * Math.cos(Math.abs(xpad[d.month](d.date)+ v))],
                     centerScaleY = d => startXY(d)[1] + 25/startXY(d)[0] * startXY(d)[1];
-                    const pieAngle = d3.pie()
+                    var pieAngle = d3.pie()
                             .value(d => d.angle)
                             .startAngle(0.5* Math.PI)
                             .endAngle(2.5 * Math.PI),
@@ -527,14 +528,13 @@ export default {
                             .text(d => d.dateStr.replace(/thickness/, "").replace(/temp_uniformity_/, "").replace(/wedge/, "").slice(0, 8))
                             .attr("transform", d => `translate(${[rectX - 90, centerScaleY(d) + 2]})`))
                         .call(g => g.append("path")
+                            .attr("class", "lineToRect")
                             .attr("stroke", d => d3.color(lc[d.month]).darker(0.5))
-                            .datum(lineToRect)
-                            .attr("d", d => line(d))
+                            .attr("d", (d, i) => line(lineToRect(d, i)))
                             .attr("opacity", 0.6)
                             .attr("stroke-width", 1)
                             .attr("fill", "none"))
                     for(let item in selectInfo){
-                        // if(item > selectInfo.length - 1)break
                         const pindex = selectInfo[item],
                             xkey = pindex.month;
                             let startX = R * (Math.sin(xpad[xkey](pindex.date)+ v)), startY = -R * Math.cos(Math.abs(xpad[xkey](pindex.date)+ v)),
@@ -584,30 +584,8 @@ export default {
                             .call(d3.drag()
                                 .on('drag', drag)
                             ))
-                    var sliderData = d3.map(selectInfo, (d, f) => {
-                        d.index = f;
-                        var name = d.dateStr,
-                        batch = batchData.map(e => {
-                            let s = {},
-                            i = e.INDEX.indexOf(name);
-                            s.Q = e.CONTQ[i],
-                            s.T2 = e.CONTJ[i],
-                            s.self = e.upid == vm.upid ? true : false ,
-                            s.h = e.u[i],
-                            s.l = e.l[i],
-                            s.exh = e.extremum_u[i],
-                            s.exl = e.extremum_l[i],
-                            s.upid = e.upid, 
-                            s.value = e.value[i],
-                            s.max = Math.max(s.h, s.l, s.value),
-                            s.min = Math.min(s.h, s.l, s.value),
-                            s.d = f
-                            return s
-                        })
-                        batch.d = f;
-                        return batch
-                    })
-                    var sliderEX = (new Array(maxLength).fill(0)).map((d, i) => wm._deepCopy(sliderData).map(e => e.map(f => {f.i = i; return f}))),
+                    var sliderData = this._sliderArray(selectInfo),
+                        sliderEX = (new Array(maxLength).fill(0)).map((d, i) => wm._deepCopy(sliderData).map(e => e.map(f => {f.i = i; return f}))),
                         horizenEX = (new Array(maxLength).fill(0))
                         .map((d, i) => wm._deepCopy(sliderData).map((e, f) =>{ 
                                 var temp = e.map(f => {
@@ -650,7 +628,6 @@ export default {
                                     scale = d3.scaleLinear()
                                         .range([0, l])
                                         .domain(d3.extent(data[i][0], (e, f)=> f))
-                                        .nice()
                                 return scale
                             }),
                             yBatch = d3.scaleLinear()
@@ -673,6 +650,7 @@ export default {
                                 .data((d, i) => sliderEX[i])
                                 .join("path")
                                 .attr("fill", (d, i) => lc[selectInfo[i].month])
+                                .attr("class", "selectG")
                                 .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 + maxHeight/2]})`)
                                 .datum(d => d)
                                 .attr("d", mergeArea))
@@ -686,6 +664,7 @@ export default {
                             .call(g => g.selectAll("g")
                                 .data((d, i) => horizenEX[i])
                                 .join("g")
+                                .attr("class", "hozenG")
                                 .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 - maxHeight/2 ]})`)
                                     .call(g => g.append("clipPath")
                                         .attr("id", d => `${d.i}clipy${d.d}`)
@@ -753,6 +732,105 @@ export default {
                         }
                         wm._rectArray = rectArray;
                     }
+                    let tempsort = d3.map(d3.sort(selectInfo, d => d.humidity), d => d.dateStr),
+                        sortArray = d3.map(indexSort, d => tempsort.indexOf(d));
+                    var scaleArray = [indexScale, d3.scaleOrdinal().domain(indexArray).range(sortArray)];
+                    let sortG = mainG.append("g")
+                            .attr("class", "sortG"),
+                        sortColor = "#678fba",
+                        sortChange = (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1: value2,
+                        sortText = ["Total" ,"Limit"];
+                    sortG.selectAll("g").data([1, 0]).join("g")
+                        .attr("transform", d => `translate(${[rectX + RectWidth - 50 -  60 * (1 - d), -this._height/2 + 2.5]})`)
+                        .call(g => g.append("rect")
+                            .attr("fill",  sortChange(sortColor, "#fff"))
+                            .attr("rx", 5)
+                            .attr("ry", 5)
+                            .attr("stroke", sortColor)
+                            .attr("stroke-width", 0.5)
+                            .attr("height", 20)
+                            .attr("width", 45))
+                        .call(g => g.append("text")
+                            .attr("fill", sortChange("#fff", sortColor))
+                            .attr("x", 22.5)
+                            .attr("y", 12.5)
+                            .text(d => sortText[d]))
+                        .on("click", (e, d) =>{
+                            indexScale = scaleArray[d];
+                            this._indexScale = d;
+                            rectY =  i => (this._height - 50)/selectInfo.length * (indexScale(i) + 0.5) + 25;
+                            lineToRect = (d, i) =>{
+                                let centerY = centerScaleY(d),
+                                    endY = rectY(+i)- this._height/2 + maxHeight/2;
+                                return [[rectX - 75, centerY],[rectX - 60, centerY],[rectX , endY],[rectX + RectWidth, endY]]
+                            };
+                            lineG.selectAll(".lineToRect")
+                                .transition(d3.transition()
+                                .duration(100)
+                                .ease(d3.easeLinear))
+                                .attr("d", (d, i) => line(lineToRect(d, i)))
+                            if(wm._horizonView){ 
+                                sliderG.selectAll(".selectG")
+                                    .transition(d3.transition()
+                                        .duration(100)
+                                        .ease(d3.easeLinear))
+                                    .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 + maxHeight/2]})`)                           
+                            }else{
+                                sliderG.selectAll(".hozenG")
+                                    .transition(d3.transition()
+                                        .duration(100)
+                                        .ease(d3.easeLinear))
+                                    .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 - maxHeight/2 ]})`)
+                            }
+                            sortG.selectAll("rect")
+                                .transition(d3.transition()
+                                    .duration(300)
+                                    .ease(d3.easeLinear))
+                                .attr("fill", sortChange(sortColor, "#fff"));
+                            sortG.selectAll("text")
+                                .transition(d3.transition()
+                                    .duration(300)
+                                    .ease(d3.easeLinear))
+                                .attr("fill", sortChange("#fff", sortColor));
+                        })
+                    const switchG = mainG.append("g").attr("class", "switchG"),
+                        text = ["Horizon", "River"],
+                        tabColor = "#678fba",
+                        transfrom = (v1, v2) => d => this._horizonView == Boolean(d) ? v1 : v2;
+                    switchG.selectAll("g").data([1, 0]).join("g")
+                        .attr("transform", d => `translate(${[rectX +  60 * (1 - d), - this._height/2 + 2.5]})`)//280  - 100
+                        .call(g => g.append("rect")
+                            .attr("fill", transfrom(tabColor, "#fff"))
+                            .attr("rx", 5)
+                            .attr("ry", 5)
+                            .attr("stroke", tabColor)
+                            .attr("stroke-width", 0.5)
+                            .attr("height", 20)
+                            .attr("width", 45))
+                        .call(g => g.append("text")
+                            .attr("fill", transfrom("#fff", tabColor))
+                            .attr("x", 22.5)
+                            .attr("y", 12.5)
+                            .text(d => text[d]))
+                        .on("click", (e, d) =>{
+                            if(this._horizonView !== Boolean(d)){
+                                this._horizonView = Boolean(d);
+                                switchG.selectAll("rect")
+                                    .transition(d3.transition()
+                                        .duration(300)
+                                        .ease(d3.easeLinear))
+                                    .attr("fill", transfrom(tabColor, "#fff"));
+                                switchG.selectAll("text")
+                                    .transition(d3.transition()
+                                        .duration(300)
+                                        .ease(d3.easeLinear))
+                                    .attr("fill", transfrom("#fff", tabColor));
+                                this._container.select(".mainG").remove()
+                                this._renderMainBar()
+                            }
+                        })
+
+                    
             }
             _renderWheelContent() {
                 const r = this._radius,
@@ -1453,7 +1531,31 @@ export default {
                     .attr("r", d => typeof r === "function" ? r(d) : r);
             }
 
-
+            _sliderArray(arr){
+                return d3.map(arr, (d, f) => {
+                    d.index = f;
+                    var name = d.dateStr,
+                    batch = batchData.map(e => {
+                        let s = {},
+                        i = e.INDEX.indexOf(name);
+                        s.Q = e.CONTQ[i],
+                        s.T2 = e.CONTJ[i],
+                        s.self = e.upid == vm.upid ? true : false ,
+                        s.h = e.u[i],
+                        s.l = e.l[i],
+                        s.exh = e.extremum_u[i],
+                        s.exl = e.extremum_l[i],
+                        s.upid = e.upid, 
+                        s.value = e.value[i],
+                        s.max = Math.max(s.h, s.l, s.value),
+                        s.min = Math.min(s.h, s.l, s.value),
+                        s.d = f
+                        return s
+                    })
+                    batch.d = f;
+                    return batch
+                })
+            }
             _getMonthData(month) {
                 return this._chartData.filter(d => d.month === month);
             }

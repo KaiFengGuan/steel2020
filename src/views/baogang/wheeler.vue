@@ -750,6 +750,7 @@ export default {
                             .attr("fill", "black")
                     sliderG.on("mousemove", (e, d) => {
                         let mouseDis = e.offsetX - rectX;//mouse distance
+                        if(mouseDis <= 0)return
                         sliderG.select(".mouseG")
                             .attr("transform", (d, i) =>`translate(${[mouseDis, 0]})`)
                             .attr("stroke", "grey")
@@ -771,8 +772,8 @@ export default {
                         rectPosition = Array.from(rectPosition);
                         rectPosition.unshift(0);
                         var rectlength = d3.pairs(rectPosition, (a, b) => b -a).filter((d, i) => i + 1 !== Math.ceil(maxLength/2));
-                        if(!rectlength.every(d => d > RectWidth/ maxLength/2 - 5)){
-                            minRect = RectWidth/ maxLength/2
+                        if(!rectlength.every(d => d > maxBarHeight)){   //RectWidth/ maxLength/2
+                            minRect = maxBarHeight + 5
                         }else{
                             minRect = (minRect ==  d3.min(rectlength)) ? d3.max(rectlength) : d3.min(rectlength);
                         }
@@ -839,6 +840,30 @@ export default {
                                 })
                         }
                         wm._rectArray = rectArray;
+                        if(minRect !== maxBarHeight + 5)return;
+                        sliderG.selectAll(".rectG").data(Object.keys(rectPosition).filter((d, i) => i !== Math.ceil(maxLength/2) - 1))
+                            .join("g")
+                            .attr("transform", d =>`translate(${[d == 0 ? 0 : rectPosition[+d -1 ], 0]})`)
+                            .attr("class", "rectG")
+                            .call(g => g.selectAll("g")
+                                .data(d => sliderEX[+d])
+                                .join("g")
+                                .attr("transform", (d, i) =>`translate(${[0, rectY(i) - wm._height/2 - maxHeight/2]})`)
+                                .call(g => g.append("rect")
+                                    .attr("height", maxHeight)
+                                    .attr("width", maxHeight)
+                                    .attr("fill", "grey")
+                                    .attr("opacity", 0))
+                                .call(g => g.append("rect")
+                                    .attr("x", 2)
+                                    .attr("y", 2)
+                                    .attr("height", maxHeight - 4)
+                                    .attr("width", maxHeight - 4)
+                                    .attr("fill", "grey"))
+                                )
+                            .on("mousemove", (e, d) => {
+                                e.stopPropagation()
+                            })
                     }
                     let tempsort = d3.map(d3.sort(selectInfo, d => d.humidity), d => d.dateStr),
                         sortArray = d3.map(indexSort, d => tempsort.indexOf(d));
@@ -872,40 +897,31 @@ export default {
                                     endY = rectY(+i)- this._height/2 + maxHeight/2;
                                 return [[rectX - 75, centerY],[rectX - 60, centerY],[rectX , endY],[rectX + RectWidth, endY]]
                             };
+                            const t = d3.transition()
+                                    .duration(300)
+                                    .ease(d3.easeLinear);
                             lineG.selectAll(".lineToRect")
-                                .transition(d3.transition()
-                                .duration(100)
-                                .ease(d3.easeLinear))
+                                .transition(t)
                                 .attr("d", (d, i) => line(lineToRect(d, i)))
                             if(wm._horizonView){ 
                                 sliderG.selectAll(".selectG")
-                                    .transition(d3.transition()
-                                        .duration(100)
-                                        .ease(d3.easeLinear))
+                                    .transition(t)
                                     .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 + maxHeight/2]})`)                           
                             }else{
                                 sliderG.selectAll(".hozenG")
-                                    .transition(d3.transition()
-                                        .duration(100)
-                                        .ease(d3.easeLinear))
+                                    .transition(t)
                                     .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 - maxHeight/2 ]})`)
                             }
                             sortG.selectAll("rect")
-                                .transition(d3.transition()
-                                    .duration(300)
-                                    .ease(d3.easeLinear))
+                                .transition(t)
                                 .attr("fill", sortChange(sortColor, "#fff"));
                             sortG.selectAll("text")
-                                .transition(d3.transition()
-                                    .duration(300)
-                                    .ease(d3.easeLinear))
+                                .transition(t)
                                 .attr("fill", sortChange("#fff", sortColor));
                             if(this._mouseDis !== undefined){
                                 var mouseInfo = mouseLocation(this._mouseDis);
                                 sliderG.selectAll(".textG")
-                                    .transition(d3.transition()
-                                        .duration(300)
-                                        .ease(d3.easeLinear))
+                                    .transition(t)
                                     .attr("transform", d =>`translate(${[this._mouseDis - 10, rectY(d) - this._height/2 ]})`)
                                     .text(d => (+mouseInfo[d]).toFixed(2))
                             }
@@ -932,15 +948,14 @@ export default {
                         .on("click", (e, d) =>{
                             if(this._horizonView !== Boolean(d)){
                                 this._horizonView = Boolean(d);
-                                switchG.selectAll("rect")
-                                    .transition(d3.transition()
+                                let t = d3.transition()
                                         .duration(300)
-                                        .ease(d3.easeLinear))
+                                        .ease(d3.easeLinear);
+                                switchG.selectAll("rect")
+                                    .transition(t)
                                     .attr("fill", transfrom(tabColor, "#fff"));
                                 switchG.selectAll("text")
-                                    .transition(d3.transition()
-                                        .duration(300)
-                                        .ease(d3.easeLinear))
+                                    .transition(t)
                                     .attr("fill", transfrom("#fff", tabColor));
                                 this._container.select(".mainG").remove()
                                 this._renderMainBar()

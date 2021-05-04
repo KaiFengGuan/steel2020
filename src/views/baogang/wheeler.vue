@@ -171,6 +171,7 @@ export default {
                 this._allIndex = [];    //index name
                 this._rectArray = null;
                 this._indexScale = undefined;
+                this._mouseDis  = undefined;
             }
             getIndex(_){
                 for (let item in this._process){
@@ -466,7 +467,7 @@ export default {
                     limit = 0.3,
                     xpad = this._xpad,
                     v = (this._dayRadian-Math.PI)/2,
-                    RectWidth = 310,
+                    RectWidth = 340,
                     rectX = r.outer+r.bubble* 4.8 + 30,  //rect_doct x
                     maxBarHeight = 20,  // river max height
                     maxHeight = maxBarHeight + 5,   //rect max height
@@ -478,7 +479,8 @@ export default {
                     rectY = this._indexInfo.length > rectNum ? i => (this._height - 50)/rectNum * (indexScale(i) + 0.5) + 25  : i => (this._height - 50)/this._indexInfo.length * (indexScale(i) + 0.5) + 25,
                     mainG = this._g.append("g").attr("class", "mainG"),
                     startXY = d => [R * (Math.sin(xpad[d.month](d.date)+ v)), -R * Math.cos(Math.abs(xpad[d.month](d.date)+ v))],
-                    centerScaleY = d => startXY(d)[1] + 25/startXY(d)[0] * startXY(d)[1];
+                    centerScaleY = d => startXY(d)[1] + 25/startXY(d)[0] * startXY(d)[1],
+                    lastY = rectY(indexArray[indexArray.length - 1]) - this._height/2 + maxHeight/2;
                     var pieAngle = d3.pie()
                             .value(d => d.angle)
                             .startAngle(0.5* Math.PI)
@@ -603,31 +605,38 @@ export default {
                         overlapNum = [-1, -2, -3, 0, 1, 2],
                         horizenColor = i => {
                             return ["#e34649", "#f7a8a9", "#fcdcdc", "#f7f7f7", "#fcdcdc","#f7a8a9", "#e34649"][i + (i >= 0) + overlap]
-                        };
+                        },
+                        timeScale;
                         //https://observablehq.com/d/d503153fbfd48b03
+                        // console.log(sliderData)
+                        // console.log(selectInfo)
+                        // console.log(sliderEX)
+                        // console.log(horizenEX)
 					var areaParameter = (array, data) => {	//area function
 						let xBatch = array.map((d, i) => {
 							let l = array[i],
 								scale = d3.scaleLinear()
 									.range([0, l])
-									.domain(d3.extent(data[i][0], (e, f)=> f));
+									// .domain(d3.extent(data[i][0], (e, f)=> f));
+                                    .domain(d3.extent(data[i][0], (e, f)=> e.time));
 							return scale
 						});
 						let yBatch = d3.scaleLinear()
 							.range([ 0, maxBarHeight ])
 							.domain([0, 1]);
 						let mergeArea = d3.area()
-							.x((d, i) => xBatch[d.i](i))
+							.x(d => xBatch[d.i](d.time))
 							.y0((d, i) => -yBatch(d.min))
 							.y1((d, i) => -yBatch(d.max));
-						return mergeArea
+						return [xBatch, mergeArea]
 					}
                     var horizenParameter = (array, data) => {	//horizen function
                         let xBatch = array.map((d, i) => {
                                 let l = array[i],
-                                    scale = d3.scaleLinear()
+                                    scale = d3.scaleTime()
                                         .range([0, l])
-                                        .domain(d3.extent(data[i][0], (e, f)=> f))
+                                        // .domain(d3.extent(data[i][0], (e, f)=> f))
+                                        .domain(d3.extent(data[i][0], (e, f)=> e.time));
                                 return scale
                             }),
                             yBatch = d3.scaleLinear()
@@ -635,13 +644,14 @@ export default {
                                 .domain([-1, 1]),
                             horizenArea = d3.area()
                                 .curve(d3.curveBasis)
-                                .x((d, i) => xBatch[d.i](i))
+                                .x(d => xBatch[d.i](d.time))
                                 .y0(0)
                                 .y1((d, i) => -yBatch(d.over));
-						return horizenArea
+						return [xBatch, horizenArea]
 					}
                     if(wm._horizonView){
-                        var mergeArea = areaParameter(rectArray, sliderEX)
+                        var [batchTimeScale, mergeArea] = areaParameter(rectArray, sliderEX);
+                        timeScale = batchTimeScale;
                         sliderG.selectAll(".batchG").data(rectPosition)
                             .join("g")
                             .attr("class", "batchG")
@@ -653,10 +663,29 @@ export default {
                                 .attr("class", "selectG")
                                 .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 + maxHeight/2]})`)
                                 .datum(d => d)
-                                .attr("d", mergeArea))
+                                .attr("d", mergeArea));
+                        sliderG.selectAll(".axisG").data(rectPosition)
+                            .join("g")
+                            .attr("class", "axisG")
+                            .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], lastY]})`)
+                            .call(g =>g
+                                .style("font", "6px DIN")
+                                .style("font-weight", "normal")
+                                .style("color", "grey")
+                                .each(function(d,i) {
+                                    d3.select(this)
+                                    .call(d3.axisBottom(batchTimeScale[i])
+                                        .ticks(rectArray[i] < 60 ? 1 : 3)
+                                        .tickFormat((d, i) => i === 0 ? d3.timeFormat("%d %H:%M")(d) : d3.timeFormat("%d %H:%M")(d))
+                                        .tickSize(2)
+                                        .tickPadding(2.5)
+                                    )
+                                })
+                            )
+                            // .call(g => g.select(".domain").remove()))
                     }else{
-                        var horizenArea = horizenParameter(rectArray, horizenEX)
-                        console.log(horizenEX)
+                        var [batchTimeScale, horizenArea] = horizenParameter(rectArray, horizenEX)
+                        timeScale = batchTimeScale;
                         sliderG.selectAll(".horizenG").data(rectPosition)
                         .join("g")
                             .attr("class", "horizenG")
@@ -687,6 +716,55 @@ export default {
                                             .attr("fill", (d, i) => horizenColor(overlapNum[i]))
                                             .attr("transform", (d, i) => `translate(0,${(overlapNum[i] + 1) * maxHeight})`)
                                             .attr("href", d => `#${d.i}path-def${d.d}`)))
+                        sliderG.selectAll(".axisG").data(rectPosition)
+                            .join("g")
+                            .attr("class", "axisG")
+                            .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], lastY]})`)
+                            .call(g =>g
+                                .style("font", "6px DIN")
+                                .style("font-weight", "normal")
+                                .style("color", "grey")
+                                .each(function(d,i) {
+                                    d3.select(this)
+                                    .call(d3.axisBottom(batchTimeScale[i])
+                                        .ticks(rectArray[i] < 60 ? 1 : 3)
+                                        .tickFormat((d, i) => i === 0 ? d3.timeFormat("%d %H:%M")(d) : d3.timeFormat("%d %H:%M")(d))
+                                        .tickSize(2)
+                                        .tickPadding(2.5)
+                                    )
+                                })
+                            )
+                    }
+                    var mouseInfo = this._mouseDis !== undefined ? mouseLocation(this._mouseDis) : undefined;
+                    sliderG.append("line")
+                        .attr("class", "mouseG")
+                        .attr("y1", rectY(0)- this._height/2 - maxHeight/2)
+                        .attr("y2", lastY)
+                        .attr("transform", (d, i) =>`translate(${[mouseInfo !==undefined ? this._mouseDis : 0, 0]})`)
+                        .attr("stroke", mouseInfo !==undefined ? "grey" : "none")
+                        .attr("stroke-dasharray", "2,2")
+                    sliderG.selectAll("textG").data(Object.keys(selectInfo)).join("text")
+                        .attr("class", "textG")
+                        .attr("transform", d =>`translate(${[mouseInfo !==undefined ? this._mouseDis - 10 : 0, rectY(d) - this._height/2 ]})`)
+                            .text(d => mouseInfo !==undefined ? (+mouseInfo[d]).toFixed(2) : "")
+                            .attr("fill", "black")
+                    sliderG.on("mousemove", (e, d) => {
+                        let mouseDis = e.offsetX - rectX;//mouse distance
+                        sliderG.select(".mouseG")
+                            .attr("transform", (d, i) =>`translate(${[mouseDis, 0]})`)
+                            .attr("stroke", "grey")
+                        var mouseInfo = mouseLocation(mouseDis);
+                        sliderG.selectAll(".textG")
+                            .attr("transform", d =>`translate(${[mouseDis - 10, rectY(d) - this._height/2 ]})`)
+                            .text(d => (+mouseInfo[d]).toFixed(2))
+                        this._mouseDis = mouseDis;
+                    })
+                    function mouseLocation(dis){
+                        let sumsearch = d3.leastIndex(rectPosition, d => dis > d),
+                            indexsearch = sumsearch === 0 ? dis : dis - rectPosition[sumsearch],
+                            mouseDate = new Date(timeScale[sumsearch].invert(indexsearch)),
+                            mouseInfo = (wm._horizonView ? sliderEX : horizenEX)[sumsearch].map(d => d3.least(d, e => mouseDate > e.time)[wm._horizonView ? "value" : "over"]);
+                        return mouseInfo
                     }
                     function drag(e, d){    //update batch
                         rectPosition[d] = e.x
@@ -707,16 +785,32 @@ export default {
                                 .ease(d3.easeLinear))
                             .attr("transform", d => `translate(${[rectPosition[d], 0]})`)
                         if(wm._horizonView){
-                            let mergeArea = areaParameter(rectArray, sliderEX)
+                            let [batchTimeScale, mergeArea] = areaParameter(rectArray, sliderEX);
+                            timeScale = batchTimeScale;
                             sliderG.selectAll(".batchG")
                                 .transition(d3.transition()
                                     .duration(200)
                                     .ease(d3.easeLinear))
                                 .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
                                 .selectAll("path")
-                                .attr("d", mergeArea)                               
+                                .attr("d", mergeArea);
+                            sliderG.selectAll(".axisG")
+                                .transition(d3.transition()
+                                    .duration(200)
+                                    .ease(d3.easeLinear))
+                                .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], lastY]})`)
+                                .each(function(d,i) {
+                                    d3.select(this)
+                                    .call(d3.axisBottom(batchTimeScale[i])
+                                        .ticks(rectArray[i] < 60 ? 1 : 3)
+                                        .tickFormat((d, i) => i === 0 ? d3.timeFormat("%d %H:%M")(d) : d3.timeFormat("%d %H:%M")(d))
+                                        .tickSize(2)
+                                        .tickPadding(2.5)
+                                    )
+                                })                            
                         }else{
-                            var horizenArea = horizenParameter(rectArray, horizenEX)
+                            var [batchTimeScale, horizenArea] = horizenParameter(rectArray, horizenEX)
+                            timeScale = batchTimeScale;
                             sliderG.selectAll(".horizenG")
                                 .transition(d3.transition()
                                     .duration(150)
@@ -729,6 +823,20 @@ export default {
                                 .duration(50)
                                 .ease(d3.easeLinear))
                                 .attr("width", d => rectArray[d.i])
+                            sliderG.selectAll(".axisG")
+                                .transition(d3.transition()
+                                    .duration(200)
+                                    .ease(d3.easeLinear))
+                                .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], lastY]})`)
+                                .each(function(d,i) {
+                                    d3.select(this)
+                                    .call(d3.axisBottom(batchTimeScale[i])
+                                        .ticks(rectArray[i] < 60 ? 1 : 3)
+                                        .tickFormat((d, i) => i === 0 ? d3.timeFormat("%d %H:%M")(d) : d3.timeFormat("%d %H:%M")(d))
+                                        .tickSize(2)
+                                        // .tickPadding(2.5)
+                                    )
+                                })
                         }
                         wm._rectArray = rectArray;
                     }
@@ -792,6 +900,15 @@ export default {
                                     .duration(300)
                                     .ease(d3.easeLinear))
                                 .attr("fill", sortChange("#fff", sortColor));
+                            if(this._mouseDis !== undefined){
+                                var mouseInfo = mouseLocation(this._mouseDis);
+                                sliderG.selectAll(".textG")
+                                    .transition(d3.transition()
+                                        .duration(300)
+                                        .ease(d3.easeLinear))
+                                    .attr("transform", d =>`translate(${[this._mouseDis - 10, rectY(d) - this._height/2 ]})`)
+                                    .text(d => (+mouseInfo[d]).toFixed(2))
+                            }
                         })
                     const switchG = mainG.append("g").attr("class", "switchG"),
                         text = ["Horizon", "River"],
@@ -829,8 +946,6 @@ export default {
                                 this._renderMainBar()
                             }
                         })
-
-                    
             }
             _renderWheelContent() {
                 const r = this._radius,
@@ -1485,6 +1600,7 @@ export default {
             }
 
             _deepCopy(obj){
+                if(obj instanceof Date) return obj;
                 if(typeof obj!=='object') return obj;
                 var newObj=obj instanceof Array ? [] :{};
                 for (let key in obj){
@@ -1538,6 +1654,7 @@ export default {
                     batch = batchData.map(e => {
                         let s = {},
                         i = e.INDEX.indexOf(name);
+                        s.time = new Date(e.toc),
                         s.Q = e.CONTQ[i],
                         s.T2 = e.CONTJ[i],
                         s.self = e.upid == vm.upid ? true : false ,

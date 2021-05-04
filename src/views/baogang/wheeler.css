@@ -13,6 +13,11 @@
     font-family: "DIN";
     text-anchor: middle;
 }
+.sliderG .textG{
+    font-family: "DIN";
+    text-anchor: end;
+    font-size: 8px;
+}
 .dragG{
     cursor: move;
 }

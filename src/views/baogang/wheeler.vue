@@ -539,14 +539,13 @@ export default {
                     for(let item in selectInfo){
                         const pindex = selectInfo[item],
                             xkey = pindex.month;
-                            let startX = R * (Math.sin(xpad[xkey](pindex.date)+ v)), startY = -R * Math.cos(Math.abs(xpad[xkey](pindex.date)+ v)),
-                                endX = rectX, 
+                            let [startX, startY] = startXY(pindex),
                                 centerY = startY + 25/startX * startY;
                             let piedata = pieAngle(pindex.property)
                             let g = lineG.selectAll(" .pie"+pindex.date)
                                 .data(piedata).enter()
                                 .append("g")
-                                .attr("transform", `translate(${[endX - 125, centerY]})`);
+                                .attr("transform", `translate(${[rectX - 125, centerY]})`);
                             g.append("path")
                                 .attr("class", `arcpie`+xkey +' pie'+ pindex.date)
                                 .attr("d", piearc)
@@ -608,16 +607,11 @@ export default {
                         },
                         timeScale;
                         //https://observablehq.com/d/d503153fbfd48b03
-                        // console.log(sliderData)
-                        // console.log(selectInfo)
-                        // console.log(sliderEX)
-                        // console.log(horizenEX)
 					var areaParameter = (array, data) => {	//area function
 						let xBatch = array.map((d, i) => {
 							let l = array[i],
 								scale = d3.scaleLinear()
 									.range([0, l])
-									// .domain(d3.extent(data[i][0], (e, f)=> f));
                                     .domain(d3.extent(data[i][0], (e, f)=> e.time));
 							return scale
 						});
@@ -635,7 +629,6 @@ export default {
                                 let l = array[i],
                                     scale = d3.scaleTime()
                                         .range([0, l])
-                                        // .domain(d3.extent(data[i][0], (e, f)=> f))
                                         .domain(d3.extent(data[i][0], (e, f)=> e.time));
                                 return scale
                             }),
@@ -760,6 +753,9 @@ export default {
                             .text(d => (+mouseInfo[d]).toFixed(2))
                         this._mouseDis = mouseDis;
                     })
+                    if(this._rectArray.some(d => d === maxBarHeight + 5)){
+                        renderRectG()
+                    }
                     function mouseLocation(dis){
                         let sumsearch = d3.leastIndex(rectPosition, d => dis > d),
                             indexsearch = sumsearch === 0 ? dis : dis - rectPosition[sumsearch],
@@ -840,7 +836,14 @@ export default {
                                 })
                         }
                         wm._rectArray = rectArray;
-                        if(minRect !== maxBarHeight + 5)return;
+                        if(minRect !== maxBarHeight + 5){
+                            sliderG.selectAll(".rectG").remove()
+                            return;
+                        }else{
+                            renderRectG()
+                        }
+                    }
+                    function renderRectG(){
                         sliderG.selectAll(".rectG").data(Object.keys(rectPosition).filter((d, i) => i !== Math.ceil(maxLength/2) - 1))
                             .join("g")
                             .attr("transform", d =>`translate(${[d == 0 ? 0 : rectPosition[+d -1 ], 0]})`)
@@ -848,6 +851,7 @@ export default {
                             .call(g => g.selectAll("g")
                                 .data(d => sliderEX[+d])
                                 .join("g")
+                                .attr("class", "rectg")
                                 .attr("transform", (d, i) =>`translate(${[0, rectY(i) - wm._height/2 - maxHeight/2]})`)
                                 .call(g => g.append("rect")
                                     .attr("height", maxHeight)
@@ -859,13 +863,24 @@ export default {
                                     .attr("y", 2)
                                     .attr("height", maxHeight - 4)
                                     .attr("width", maxHeight - 4)
-                                    .attr("fill", "grey"))
+                                    .attr("fill", d => wm._horizonColor(d))
+                                    .attr("stroke",function(d){
+                                        return d3.color(d3.select(this).attr("fill")).darker(1)
+                                    }))
+                                .call(g => g.append("polygon")
+                                    .attr("transform", `translate(${[maxHeight/2, maxHeight/2]})`)
+                                    .attr("points", d => wm._horizonPoint(d, maxHeight/2, true))
+                                    .attr("fill", "#ff4749"))
+                                .call(g => g.append("polygon")
+                                    .attr("transform", `translate(${[maxHeight/2, maxHeight/2]})`)
+                                    .attr("points", d => wm._horizonPoint(d, maxHeight/2, false))
+                                    .attr("fill", "#ff4749"))
                                 )
                             .on("mousemove", (e, d) => {
                                 e.stopPropagation()
                             })
                     }
-                    let tempsort = d3.map(d3.sort(selectInfo, d => d.humidity), d => d.dateStr),
+                    let tempsort = d3.map(d3.sort(selectInfo, d => -d.humidity), d => d.dateStr),
                         sortArray = d3.map(indexSort, d => tempsort.indexOf(d));
                     var scaleArray = [indexScale, d3.scaleOrdinal().domain(indexArray).range(sortArray)];
                     let sortG = mainG.append("g")
@@ -912,6 +927,9 @@ export default {
                                     .transition(t)
                                     .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 - maxHeight/2 ]})`)
                             }
+                            sliderG.selectAll(".rectg")
+                                .transition(t)
+                                .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 - maxHeight/2 ]})`)
                             sortG.selectAll("rect")
                                 .transition(t)
                                 .attr("fill", sortChange(sortColor, "#fff"));
@@ -1627,6 +1645,22 @@ export default {
                     }
                 }
                 return newObj
+            }
+
+            _horizonColor(arr){
+                let len = arr.filter(d => d.value > d.high || d.l > d.value).length;
+                return d3.scaleLinear()
+                    .domain([0, arr.length])
+                    .range(["#efa1e1", "#f48f90"])
+                    .interpolate(d3.interpolateRgb.gamma(2.2))(len)
+            }
+            
+            _horizonPoint(arr, len, flag){
+                let scale = d3.scaleLinear()
+                    .domain([0, arr.length])
+                    .range([len/2, len]),
+                    L = scale(arr.filter(d => flag ? d.Q > vm.corrSize : d.T2 > vm.corrSize).length);
+                    return flag ? `${-L/2}, -${L/2} ${L/2}, ${-L/2} ${-L/2}, ${L/2}` : `${L/2}, ${L/2} ${-L/2}, ${L/2} ${L/2}, ${-L/2}`
             }
             _line(y1, y2) {
                 return d3.arc()

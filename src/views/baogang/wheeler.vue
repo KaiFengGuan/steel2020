@@ -468,7 +468,7 @@ export default {
                     xpad = this._xpad,
                     v = (this._dayRadian-Math.PI)/2,
                     RectWidth = 340,
-                    rectX = r.outer+r.bubble* 4.8 + 30,  //rect_doct x
+                    rectX = r.outer+r.bubble* 5.4,  //rect_doct x
                     maxBarHeight = 20,  // river max height
                     maxHeight = maxBarHeight + 5,   //rect max height
                     rectNum = Math.floor((this._height - 50)/maxHeight),
@@ -500,7 +500,7 @@ export default {
                         lineToRect = (d, i) =>{
                             let centerY = centerScaleY(d),
                                 endY = rectY(+i)- this._height/2 + maxHeight/2;
-                            return [[rectX - 75, centerY],[rectX - 60, centerY],[rectX , endY],[rectX + RectWidth, endY]]
+                            return [[rectX - 75, centerY],[rectX - 60, centerY], [rectX - maxHeight, endY], [rectX , endY], [rectX + RectWidth, endY]]
                         },
                         lineG = mainG.append("g").attr("class", "lineG");
                     lineG.selectAll("g").data(selectInfo).join("g")
@@ -728,6 +728,23 @@ export default {
                                 })
                             )
                     }
+                    var pathG = mainG.append("g").attr("class", "pathG");
+                    pathG
+                        .attr("transform", `translate(${[rectX- maxHeight, 0]})`)
+                        .selectAll("g").data(selectInfo).join("g")
+                        .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 - maxHeight/2]})`)
+                        .call(g => g.append("rect")
+                            .attr("height", maxHeight)
+                            .attr("width", maxHeight)
+                            .attr("stroke", "grey")
+                            .attr("fill", "none")
+                            .attr("stroke-width", 0.5))
+                        .call(g => g.append("path")
+                            .attr("fill", "#b9c6cd")
+                            .attr("d", (d, i) => infoArea(d, i, true)))
+                        .call(g => g.append("path")
+                            .attr("fill", "#94a7b7")
+                            .attr("d", (d, i) => infoArea(d, i, false)))
                     var mouseInfo = this._mouseDis !== undefined ? mouseLocation(this._mouseDis) : undefined;
                     sliderG.append("line")
                         .attr("class", "mouseG")
@@ -753,15 +770,26 @@ export default {
                             .text(d => (+mouseInfo[d]).toFixed(2))
                         this._mouseDis = mouseDis;
                     })
-                    if(this._rectArray.some(d => d === maxBarHeight + 5)){
-                        renderRectG()
-                    }
+                    if(this._rectArray.some(d => d === maxBarHeight + 5))renderRectG()
                     function mouseLocation(dis){
                         let sumsearch = d3.leastIndex(rectPosition, d => dis > d),
                             indexsearch = sumsearch === 0 ? dis : dis - rectPosition[sumsearch],
                             mouseDate = new Date(timeScale[sumsearch].invert(indexsearch)),
                             mouseInfo = (wm._horizonView ? sliderEX : horizenEX)[sumsearch].map(d => d3.least(d, e => mouseDate > e.time)[wm._horizonView ? "value" : "over"]);
                         return mouseInfo
+                    }
+                    function infoArea(arr, index, flag){
+                        let data = sliderEX.map(d => d[index]).flat().map(d => d.value),
+                            bin = d3.bin().thresholds(4)(data),
+                            y = d3.scaleLinear().domain([bin[0].x0, bin[bin.length - 1].x1]).range([2, maxHeight - 2]),
+                            bin2 = d3.bin().thresholds(4)(sliderEX.slice(Math.ceil(maxLength / 2)- 1, Math.ceil(maxLength / 2)).map(d => d[index]).flat().map(d => d.value)),
+                            x = d3.scaleLinear().domain([0, d3.max(bin, d => d.length)]).range([0, maxHeight - 2]),
+                            area = d3.area()
+                                .x0(d => maxHeight - 2 -x(d.length))
+                                .x1(maxHeight)
+                                .y(d => y((d.x0 + d.x1)/2));
+                        console.log(bin2)
+                        return flag ? area(bin) : area(bin2) 
                     }
                     function drag(e, d){    //update batch
                         rectPosition[d] = e.x
@@ -874,8 +902,7 @@ export default {
                                 .call(g => g.append("polygon")
                                     .attr("transform", `translate(${[maxHeight/2, maxHeight/2]})`)
                                     .attr("points", d => wm._horizonPoint(d, maxHeight/2, false))
-                                    .attr("fill", "#ff4749"))
-                                )
+                                    .attr("fill", "#ff4749")))
                             .on("mousemove", (e, d) => {
                                 e.stopPropagation()
                             })
@@ -910,7 +937,7 @@ export default {
                             lineToRect = (d, i) =>{
                                 let centerY = centerScaleY(d),
                                     endY = rectY(+i)- this._height/2 + maxHeight/2;
-                                return [[rectX - 75, centerY],[rectX - 60, centerY],[rectX , endY],[rectX + RectWidth, endY]]
+                                return [[rectX - 75, centerY],[rectX - 60, centerY], [rectX - maxHeight, endY], [rectX , endY], [rectX + RectWidth, endY]]
                             };
                             const t = d3.transition()
                                     .duration(300)
@@ -930,6 +957,9 @@ export default {
                             sliderG.selectAll(".rectg")
                                 .transition(t)
                                 .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 - maxHeight/2 ]})`)
+                            pathG.selectAll("g")
+                                .transition(t)
+                                .attr("transform", (d, i) =>`translate(${[0, rectY(i) - this._height/2 - maxHeight/2]})`)
                             sortG.selectAll("rect")
                                 .transition(t)
                                 .attr("fill", sortChange(sortColor, "#fff"));

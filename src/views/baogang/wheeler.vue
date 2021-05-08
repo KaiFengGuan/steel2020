@@ -512,7 +512,7 @@ export default {
                             .attr("stroke", d => d3.color(lc[d.month]).darker(0.5))
                             .datum(lineToCircle)
                             .attr("d", d => line(d))
-                            .attr("opacity", 0.6)
+                            // .attr("opacity", 0.6)
                             .attr("stroke-width", 1)
                             .attr("fill", "none"))
                         .call(g => g.append("circle")
@@ -537,7 +537,7 @@ export default {
                             .attr("class", "lineToRect")
                             .attr("stroke", d => d3.color(lc[d.month]).darker(0.5))
                             .attr("d", (d, i) => line(lineToRect(d, i)))
-                            .attr("opacity", 0.6)
+                            // .attr("opacity", 0.6)
                             .attr("stroke-width", 1)
                             .attr("fill", "none"))
                     for(let item in selectInfo){
@@ -684,34 +684,14 @@ export default {
                                         .attr("fill", (d, i) => lc[selectInfo[d.d].month])
                                         .attr("stroke", (d, i) => d3.color(lc[selectInfo[d.d].month]).darker(1))
                                         .attr("stroke-width", 0.25)
-                                        .attr("r", 2))
-                                )
-                            // .call(g => g.selectAll("path")
-                            //     .data((d, i) => horizenEX[i])
-                            //     .join("path")
-                            //     .attr("fill", (d, i) => lc[selectInfo[i].month])
-                            //     .attr("opacity", 0.8)
-                            //     .attr("class", "selectG")
-                            //     .attr("transform", (d, i) =>`translate(${[0, rectY(i) + maxHeight/2]})`)
-                            //     .datum(d => d)
-                            //     .attr("d", mergeArea))
-                            // .call(g => g.selectAll(".mergeLine")
-                            //     .data((d, i) => horizenEX[i])
-                            //     .join("path")
-                            //     .attr("stroke-width", 1)
-                            //     .attr("stroke", (d, i) => d3.color(lc[selectInfo[i].month]).darker(1))
-                            //     .attr("fill", "none")
-                            //     .attr("class", "selectG")
-                            //     .attr("transform", (d, i) =>`translate(${[0, rectY(i) + maxHeight/2]})`)
-                            //     .attr("d", d => mergeLine(d))
-                            //     )
+                                        .attr("r", 2)))
                                 ;
                         sliderG.selectAll(".axisG").data(rectPosition)
                             .join("g")
                             .attr("class", "axisG")
                             .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], lastY]})`)
                             .call(g =>g
-                                .style("font", "6px DIN")
+                                .style("font", "6px")
                                 .style("font-weight", "normal")
                                 .style("color", "grey")
                                 .each(function(d,i) {
@@ -763,7 +743,7 @@ export default {
                             .attr("class", "axisG")
                             .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], lastY]})`)
                             .call(g =>g
-                                .style("font", "6px DIN")
+                                .style("font", "6px")
                                 .style("font-weight", "normal")
                                 .style("color", "grey")
                                 .each(function(d,i) {
@@ -785,7 +765,8 @@ export default {
                         .call(g => g.append("rect")
                             .attr("height", maxHeight)
                             .attr("width", maxHeight)
-                            .attr("stroke", "grey")
+                            // .attr("stroke", "grey")
+                            .attr("stroke", (d, i) => lc[selectInfo[i].month])
                             .attr("fill", "none")
                             .attr("stroke-width", 0.5))
                         .call(g => g.append("path")
@@ -840,9 +821,9 @@ export default {
                     }
                     function infoArea(arr, index, flag){
                         let data = horizenEX.map(d => d[index]).flat().map(d => d.value),
-                            bin = d3.bin().thresholds(4)(data),
+                            bin = d3.bin().thresholds(30)(data),
                             y = d3.scaleLinear().domain([bin[0].x0, bin[bin.length - 1].x1]).range([2, maxHeight - 2]),
-                            bin2 = d3.bin().thresholds(4)(horizenEX.slice(Math.ceil(maxLength / 2)- 1, Math.ceil(maxLength / 2)).map(d => d[index]).flat().map(d => d.value)),
+                            bin2 = d3.bin().thresholds(30)(horizenEX.slice(Math.ceil(maxLength / 2)- 1, Math.ceil(maxLength / 2)).map(d => d[index]).flat().map(d => d.value)),
                             x = d3.scaleLinear().domain([0, d3.max(bin, d => d.length)]).range([0, maxHeight - 2]),
                             area = d3.area()
                                 .x0(d => maxHeight - 2 -x(d.length))

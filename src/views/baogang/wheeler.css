@@ -1,22 +1,25 @@
 .switchG text{
     font-size: 9px;
-    font-family: "DIN";
+    font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
     text-anchor: middle;
 }
 .lineG text{
-    font-family: "DIN";
+    font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
     text-anchor: middle;
 }
 .sortIndex{
     font-size: 8px;
     fill:#fff;
-    font-family: "DIN";
+    font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
     text-anchor: middle;
 }
 .sliderG .textG{
-    font-family: "DIN";
+    font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
     text-anchor: end;
     font-size: 8px;
+}
+.axisG text{
+    font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
 }
 .dragG{
     cursor: move;
@@ -29,7 +32,7 @@
 }
 .sortG text{
     font-size: 9px;
-    font-family: "DIN";
+    font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
     text-anchor: middle;
 }
 .icon{

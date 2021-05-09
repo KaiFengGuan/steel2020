@@ -284,7 +284,7 @@ export default {
           //     .text((d, i) => i === 0 ? (bad/ (bad + good)*100).toFixed(0) : 100 - (bad/ (bad + good)*100).toFixed(0)))
         }
         d3.select(this).call(brushHandle, selection)
-        svg.select('.selection').attr('fill-opacity', 1).attr('fill', '#b9c6cd')
+        svg.select('.selection').attr('fill-opacity', 1).attr('fill', '#b9c6cd').attr('stroke', '#b5c1c7')
         svg.select('.overlay').attr('stroke', '#bbbbbb').attr('stroke-width', 1).attr('fill', '#eeeeee').attr('rx', 8).attr('ry', 8)
         svg.select('.overlay').attr('stroke', '#b9c6cd').attr('stroke-width', 1).attr('fill', '#eeeeee').attr('rx', 8).attr('ry', 8)
 

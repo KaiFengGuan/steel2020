@@ -470,7 +470,7 @@ export default {
                     limit = 0.3,
                     xpad = this._xpad,
                     v = (this._dayRadian-Math.PI)/2,
-                    RectWidth = 600,
+                    RectWidth = 400,
                     rectX = r.outer+r.bubble* 5.4,  //rect_doct x
                     maxBarHeight = 20,  // river max height
                     maxHeight = maxBarHeight + 5,   //rect max height
@@ -817,6 +817,7 @@ export default {
                             indexsearch = sumsearch === 0 ? dis : dis - rectPosition[sumsearch],
                             mouseDate = new Date(timeScale[sumsearch].invert(indexsearch)),
                             mouseInfo = horizenEX[sumsearch].map(d => d3.least(d, e => mouseDate > e.time)[wm._horizonView ? "ovalue" : "ovalue"]);
+                            console.log(mouseInfo)
                         return mouseInfo
                     }
                     function infoArea(arr, index, flag){
@@ -1369,7 +1370,7 @@ export default {
                 for (let item in sample){
                     let index = chorddata['label'].indexOf(sample[item].dateStr),targets=[],id=sample[item].dateStr;
                     for (let target =item+1;target < sample.length ;target++){
-                        if(chorddata['corr'][item][target] < vm.corrSize&&chorddata['corr'][item][target]>0){
+                        if(chorddata['corr'][item][target] > vm.corrSize&&chorddata['corr'][item][target]>0){
                             if(sample[item].month == sample[target].month){
                                 targets.push(sample[target].dateStr)
                                 graph.links.push({'source':id,'target':sample[target].dateStr,value:1})

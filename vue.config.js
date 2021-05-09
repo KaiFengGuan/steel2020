@@ -9,12 +9,6 @@ module.exports = {
     devServer: {
         port: 8889,
         proxy: {
-            '/api': {
-                // target: 'http://localhost:5003',
-                target: 'http://219.216.80.18:5000',
-                changeOrigin: true
-            },
-            
             '/baogangapi': {
                 target: 'http://localhost:5000',
                 // target: 'http://219.216.81.96:7201',
@@ -23,17 +17,6 @@ module.exports = {
                     '^/baogangapi': '/api'
                 }
             },
-            'myf': {
-                // target: 'http://219.216.80.62:8088',
-                target: 'http://219.216.80.18:8088',
-                // target: 'http://202.118.21.236:7106',
-                // target: 'http://localhost:8080',
-                changeOrigin: true,
-                pathRewrite: {
-                    // '^/myf': 'web-ssm/myf'
-                    '^/myf': '/myf'
-                }
-            }
 
             // '/api': {
             //     target: 'http://node-serve:8002',
@@ -45,14 +28,6 @@ module.exports = {
             //     changeOrigin: true,
             //     pathRewrite: {
             //         '^/baogangapi': 'api'
-            //     }
-            // },
-            // 'myf': {
-            //     // target: 'http://219.216.81.86:8088',
-            //     target: 'http://java-serve:8080',
-            //     changeOrigin: true,
-            //     pathRewrite: {
-            //         '^/myf': 'web-ssm/myf'
             //     }
             // }
         }

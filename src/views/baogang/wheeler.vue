@@ -236,11 +236,11 @@ export default {
                     r.bubble = r.max * 0.2;
                     r.outer = r.max - r.bubble *1.1 - r.label;
                     const fs = d3.scaleLinear().domain([4, 1024]).range([0, 28]);
-                    this._fontSize.info = fs(r.max);
+                    // this._fontSize.info = fs(r.max);
                     fs.range([8, 36]);
-                    this._fontSize.center = fs(r.max);
+                    // this._fontSize.center = fs(r.max);
                     fs.range([4, 18]);
-                    this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
+                    // this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
 
                 }
                 _initdata() {
@@ -1765,12 +1765,12 @@ export default {
                     return d.avg-d.low>d.high-d.avg?d.avg-d.low:d.high-d.avg
                 }
             }
-                const wheel = new wheelRound(this.svg)
-                                .size([diameter, diameter])
-                                .data(wheeldata)
-                                .labels(labels)
-                                .render();
-            },
+            const wheel = new wheelRound(this.svg)
+                            .size([diameter, diameter])
+                            .data(wheeldata)
+                            .labels(labels)
+                            .render();
+        },
         renderChart(){
             this.paintChart(this.jsondata, this.chorddata, this.batchData)
         }

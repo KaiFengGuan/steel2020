@@ -40,7 +40,7 @@
 							<span style="margin-left:5px">Tabular View</span>
 						</div>
 						<div class="my-card-body" style="padding-top:5px">
-							<brushableParallel ref="parallel" style="height:500px;width:100%" @parallMouse="parallMouse"></brushableParallel>
+							<brushableParallel ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse"></brushableParallel>
 						</div>
 					</el-card>
 				</el-row>
@@ -74,126 +74,124 @@
 							</el-col>
 						</div>
 						<div class="my-card-body">
-							<marey-chart style="text-align: center; height: 495px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
+							<marey-chart style="text-align: center; height: 1028px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
 						</div>
 					</el-card>
 				</el-row>
-				<el-row>
-					<el-row>
-						<div>
-							<el-card class="myel-card">
-								<div class="my-card-title" slot="header">
-									<el-col :span="14"><span>Diagnosis View</span></el-col>
-									<el-col :span="1" style="font-size: 12px;margin:2px 0px">CurveSize</el-col>
-									<el-col :span="2">
-										<el-slider v-model="curvesize" :step="0.01" :min="0" :max="1" class="my-slider"
-											style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="curveUpdate"></el-slider>
-									</el-col>
-									<el-col :span="1" style="font-size: 12px;margin:2px 0px">MultiPara</el-col>
-									<el-col :span="2">
-										<el-slider v-model="multisize" :step="1" :min="10" :max="40" class="my-slider"
-											style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="multiUpdate"></el-slider>
-									</el-col>
-									<el-col :span="1" style="font-size: 12px;margin:2px 0px;">CorrConfig</el-col>
-									<el-col :span="2">
-										<el-slider v-model="corrsize" :step="0.1" :min="0" :max="1" class="my-slider"
-											style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="corrUpdate"></el-slider>
-									</el-col>
-									<el-col :span="1">
-										<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;padding:25px">
-										<el-row class="toltip">
-											<el-row :gutter="8">
-												<el-col :span="8" style="font-size: 13px;">
-													<div style="height: 24px;padding-right:5px;margin:9px 0px 15px 0px" class="fontcolor">ThicknessGap </div>
-													<div style="height: 24px;padding-left:16px;margin:15px 0" class="fontcolor">WidthGap </div>
-													<div style="height: 24px;padding-left:12px;margin:15px 0" class="fontcolor">LengthGap </div>
-												</el-col>
-												<el-col :span="10" id="imput-line">
-													<el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" ></el-slider>
-													<el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
-													<el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
-												</el-col>
-												<el-col :span="4">
-													<div style="margin:5px 0px 21.5px 0px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
-													<div style="margin:21.5px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
-													<div style="margin:21.5px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
-												</el-col>
-											</el-row>
-											<el-form size="mini" label-width="100px" >
-												<el-form-item label="Category" style="padding-right: 10px;font-size:13px;padding-left:2px" class="abel">
-														<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
-														<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-													</el-select>
-												</el-form-item>
-											</el-form>
-										</el-row>
-										<el-row :gutter="8">
-											<el-col :span="8" style="font-size: 13px;">
-												<div style="height: 24px;padding-left:40px;margin:8px 0px" class="fontcolor">Range </div>                
-											</el-col>
-											<el-col :span="10" id="imput-line">
-												<el-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" style="margin:2.5px;color:#999a9d" ></el-slider>
-											</el-col>
-											<el-col :span="4">
-												<div style="margin:2px">{{plateTempProp.deviation}}%</div>
-											</el-col>
-										</el-row>
-											<img src="../../assets/images/config.svg" style="height:16px;width:16px;vertical-align: middle;line-height:1.5" slot="reference">
-										</el-popover>
-									</el-col>
-								</div>
-								<div style="padding-right:5px; padding-bottom : 5px">
-								<el-col :span="4">
-									<!-- <div style="float:left;margin-top: 30px;position:relative;left: 25px;width: 1px;height: 450px; background: #c9c9c9;"></div> -->
-									<el-row>
-										<div style="overflow-y:scroll;height:500px">
-										<el-row v-for="item of upidSelect" :key = item>
-											<el-card class="myel-card myel-tab" :style="{border: sampleCss[item]}">
-												<div slot="header">
-														<el-row style="height:25px"> 
-															<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
-															<span class="upidtext">UPID {{item}}</span></el-col>
-															<el-col :span="8"></el-col>
-														</el-row>
-													</div>
-												<div class="my-card-body" @click="changeUpid(item)">
-													<small-wheel :ref="item" style="height:223px"></small-wheel>
-												</div>
-											</el-card>
-										</el-row>
-										</div>
+				<transition name="diagnosis">
+				<el-row v-if="diagnosisVisible" class="diagnosis_view" style="height:540px;">
+					<el-card class="myel-card">
+						<div class="my-card-title" slot="header">
+							<el-col :span="14"><span>Diagnosis View</span></el-col>
+							<el-col :span="1" style="font-size: 12px;margin:2px 0px">CurveSize</el-col>
+							<el-col :span="2">
+								<el-slider v-model="curvesize" :step="0.01" :min="0" :max="1" class="my-slider"
+									style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="curveUpdate"></el-slider>
+							</el-col>
+							<el-col :span="1" style="font-size: 12px;margin:2px 0px">MultiPara</el-col>
+							<el-col :span="2">
+								<el-slider v-model="multisize" :step="1" :min="10" :max="40" class="my-slider"
+									style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="multiUpdate"></el-slider>
+							</el-col>
+							<el-col :span="1" style="font-size: 12px;margin:2px 0px;">CorrConfig</el-col>
+							<el-col :span="2">
+								<el-slider v-model="corrsize" :step="0.1" :min="0" :max="1" class="my-slider"
+									style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="corrUpdate"></el-slider>
+							</el-col>
+							<el-col :span="1">
+								<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;padding:25px">
+								<el-row class="toltip">
+									<el-row :gutter="8">
+										<el-col :span="8" style="font-size: 13px;">
+											<div style="height: 24px;padding-right:5px;margin:9px 0px 15px 0px" class="fontcolor">ThicknessGap </div>
+											<div style="height: 24px;padding-left:16px;margin:15px 0" class="fontcolor">WidthGap </div>
+											<div style="height: 24px;padding-left:12px;margin:15px 0" class="fontcolor">LengthGap </div>
+										</el-col>
+										<el-col :span="10" id="imput-line">
+											<el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" ></el-slider>
+											<el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
+											<el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
+										</el-col>
+										<el-col :span="4">
+											<div style="margin:5px 0px 21.5px 0px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
+											<div style="margin:21.5px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
+											<div style="margin:21.5px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
+										</el-col>
 									</el-row>
-								</el-col>
-									<el-col :span="20">
-										<el-card class="myel-card myelTab myel-upid">
-											<!-- <div slot="header">
-												<el-row>
-													<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
-													<span class="upidtext">{{selectedUpid}}</span></el-col>
-													<el-col :span="16" style="background-color:white"></el-col>
-												</el-row>
-											</div> -->
-											<div class="my-card-body" >
-												<wheeler ref="wheelering" style="height:490px"></wheeler>
-											</div>
-										</el-card>
+									<el-form size="mini" label-width="100px" >
+										<el-form-item label="Category" style="padding-right: 10px;font-size:13px;padding-left:2px" class="abel">
+												<el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
+												<el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+											</el-select>
+										</el-form-item>
+									</el-form>
+								</el-row>
+								<el-row :gutter="8">
+									<el-col :span="8" style="font-size: 13px;">
+										<div style="height: 24px;padding-left:40px;margin:8px 0px" class="fontcolor">Range </div>                
 									</el-col>
-								</div>
-							</el-card>		
+									<el-col :span="10" id="imput-line">
+										<el-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" style="margin:2.5px;color:#999a9d" ></el-slider>
+									</el-col>
+									<el-col :span="4">
+										<div style="margin:2px">{{plateTempProp.deviation}}%</div>
+									</el-col>
+								</el-row>
+									<img src="../../assets/images/config.svg" style="height:16px;width:16px;vertical-align: middle;line-height:1.5" slot="reference">
+								</el-popover>
+							</el-col>
 						</div>
-					</el-row>
-
-						<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
-							<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
-								<el-card class="my-card-body-detail">
-									<div class="my-card-title" style="height: 3px;font-size:10px;font-weight:150">{{item}}</div>
-									<div class="my-card-body-detail-some">
-										<three-bar :ref="item" style="height: 190px;" ></three-bar>
+						<div style="padding-right:5px; padding-bottom : 5px">
+						<el-col :span="4">
+							<!-- <div style="float:left;margin-top: 30px;position:relative;left: 25px;width: 1px;height: 450px; background: #c9c9c9;"></div> -->
+							<el-row>
+								<div style="overflow-y:scroll;height:500px">
+								<el-row v-for="item of upidSelect" :key = item>
+									<el-card class="myel-card myel-tab" :style="{border: sampleCss[item]}">
+										<div slot="header">
+												<el-row style="height:25px"> 
+													<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
+													<span class="upidtext">UPID {{item}}</span></el-col>
+													<el-col :span="8"></el-col>
+												</el-row>
+											</div>
+										<div class="my-card-body" @click="changeUpid(item)">
+											<small-wheel :ref="item" style="height:223px"></small-wheel>
+										</div>
+									</el-card>
+								</el-row>
+								</div>
+							</el-row>
+						</el-col>
+							<el-col :span="20">
+								<el-card class="myel-card myelTab myel-upid">
+									<!-- <div slot="header">
+										<el-row>
+											<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
+											<span class="upidtext">{{selectedUpid}}</span></el-col>
+											<el-col :span="16" style="background-color:white"></el-col>
+										</el-row>
+									</div> -->
+									<div class="my-card-body" >
+										<wheeler ref="wheelering" style="height:490px"></wheeler>
 									</div>
 								</el-card>
 							</el-col>
-						</el-row> -->
+						</div>
+					</el-card>		
 				</el-row>
+			</transition>
+			<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
+				<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
+					<el-card class="my-card-body-detail">
+						<div class="my-card-title" style="height: 3px;font-size:10px;font-weight:150">{{item}}</div>
+						<div class="my-card-body-detail-some">
+							<three-bar :ref="item" style="height: 190px;" ></three-bar>
+						</div>
+					</el-card>
+				</el-col>
+			</el-row> -->
+		<el-button circle class="diagnosis_button" icon="el-icon-more" @click="diagnosisVisible = ! diagnosisVisible"></el-button>
 			</el-col>
 		</el-row>
 
@@ -225,6 +223,7 @@ export default {
 	components: { mareyChart, timeBrush, brushableParallel, scatterlog, wheeler , smallWheel, slider},
 	data() {
 		return {
+			diagnosisVisible: false,
 			isMerge: true,
 			minrange: 10,
 			minconflict: 4,
@@ -523,6 +522,7 @@ export default {
 		},
 
 		async trainClick(value) {
+			this.diagnosisVisible = true;
 			this.upidSelect = []
 			this.chooseList = value.batch;
 			if(value.type !== "group"){
@@ -756,8 +756,8 @@ export default {
 }
 </script>
 
-<style>
-
+<style lang="scss" scoped>
+@import url("../../assets/marey/index.scss");
 </style>
 <style lang="scss">
 .panel-title {
@@ -785,6 +785,7 @@ export default {
 	background: white;
 	margin: -18px;
 	padding: 8px;
+	overflow: hidden;
 	.el-button--danger {
 		color: #FFF;
 		background-color: #337ab7;

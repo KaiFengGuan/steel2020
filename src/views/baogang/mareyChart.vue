@@ -1581,7 +1581,7 @@ export default {
 		}
 		// render()
 		const miniDistance = d3.min(d3.pairs(d3.map(data, d => new Date(d.stops[0].time)), (a, b) => b.getTime() -a.getTime()))
-		var miniMargin = { top: 115, right: 15, bottom: -35, left: 35 },
+		var miniMargin = { top: 115, right: 15, bottom: 200, left: 35 },
 			miniheight =  mainHeight - miniMargin.top - miniMargin.bottom,
 			miniwidth = 75,
 			miniXScale = d3.scaleTime()

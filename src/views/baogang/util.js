@@ -39,6 +39,63 @@ var labelColor = [ "#c65b24", "#94a7b7"] // red grey
 var delabelColor = ["#e3ad92",   "#b9c6cd"]
 var labelColor2 = [ '#e34649', '#5164f5']
 var processColor =['#fcd8a9','#cce9c7',"#c1c9ee"]; 
+
+
+var GillSans = "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif"
+var SegoeUI = "Segoe UI"
+function setAttr(family, color, size, weight, style) {
+  return {
+    fontFamily: family,
+    fontColor: color,
+    fontSize: size,
+    fontWeight: weight, // normal | bold | bolder | number
+    fontStyle: style    // normal | italic
+  }
+}
+// 标题字体属性
+var titleFirstAttr  = setAttr(SegoeUI, "#2c3e50", "19px", "bolder", "normal")
+var monthPickerAttr = setAttr(GillSans, "#6d7885", "14px", "bold", "normal")
+var cardTitletAttr  = setAttr(GillSans, "#6d7885", "14px", "500", "normal")
+// Embedding View
+var sliderTooltipAttr = {
+  line1: setAttr(GillSans, "#2c3e50", "11px", "bold", "normal"),
+  line2: setAttr(GillSans, labelColor[1], "11px", "normal", "normal"),
+  line3: setAttr(GillSans, labelColor[0], "11px", "normal", "normal")
+}
+var scatterTooltipAttr = {
+  line1: setAttr(GillSans, "white", "12px", "bold", "normal"),
+  line2: setAttr(GillSans, "white", "12px", "normal", "normal"),
+  line3: setAttr(GillSans, "white", "12px", "normal", "normal")
+}
+var selectionTextAttr = {
+  inOverlay: setAttr(GillSans, "white", "10px", "normal", "normal"),
+  outOverlayColor: "#717072"
+}
+var buttonTextAttr = {
+  baseTextAttr: setAttr(GillSans, labelColor[1], "10px", "normal", "normal"),
+  unactivated_color: "white"
+}
+// Babular View
+var tabularTooltipAttr = {
+  line1: setAttr(GillSans, "white", "12px", "bold", "normal"),
+  line2: setAttr(GillSans, "white", "12px", "normal", "normal"),
+  line3: setAttr(GillSans, "white", "12px", "normal", "normal")
+}
+var tabularAxisTextAttr = setAttr(GillSans, "#2c3e50", "12px", "normal", "normal")
+var tabularTipsTextAttr = setAttr(GillSans, "#2c3e50", "10px", "normal", "normal")
+// Condition View
+var conditionPolygonTextAttr = setAttr(GillSans, "white", "13px", "normal", "normal")
+var conditionMareyTooltipAttr = {
+  line1: setAttr(GillSans, "white", "15px", "bold", "normal"),
+  line2: setAttr(GillSans, "white", "15px", "normal", "normal"),
+  line3: setAttr(GillSans, "white", "15px", "normal", "normal")
+}
+var conditionRadiaTextAttr = setAttr(GillSans, "white", "9px", "normal", "normal")
+var conditionMiniYAxisTextAttr = setAttr(GillSans, "black", "7.5px", "bolder", "normal")
+// Diagnosis View
+var diagCardTitleTextAttr = setAttr(GillSans, "none", "10px", "normal", "normal")
+
+
 // var labelColor = ['#ff005a', '#3888fa', '#88fa38', '#fa3888', '#38faaa']   //多个颜色
 export default {
     // 除子节点
@@ -134,5 +191,25 @@ export default {
         }
         dateList.push(new Date(endDate))
         return dateList.map(item=>timeFormat(item))
-      }
+      },
+
+
+    monthPickerAttr: monthPickerAttr,
+    titleFirstAttr: titleFirstAttr,
+    cardTitletAttr: cardTitletAttr,
+
+    sliderTooltipAttr: sliderTooltipAttr,
+    scatterTooltipAttr: scatterTooltipAttr,
+    selectionTextAttr: selectionTextAttr,
+    buttonTextAttr: buttonTextAttr,
+
+    tabularTooltipAttr: tabularTooltipAttr,
+    tabularAxisTextAttr: tabularAxisTextAttr,
+    tabularTipsTextAttr: tabularTipsTextAttr,
+
+    conditionPolygonTextAttr: conditionPolygonTextAttr,
+    conditionMareyTooltipAttr: conditionMareyTooltipAttr,
+    conditionRadiaTextAttr: conditionRadiaTextAttr,
+    conditionMiniYAxisTextAttr: conditionMiniYAxisTextAttr,
+    diagCardTitleTextAttr: diagCardTitleTextAttr
 }

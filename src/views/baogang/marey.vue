@@ -1,6 +1,6 @@
 <template>
 	<div class="custom-marey" style="margin-top : -8px;margin-right:4px">
-		<el-row>
+		<el-row :style="cssVars">
 			<el-col :span="4" style="margin-top:8px">
 				<el-row>
 					<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
@@ -288,6 +288,37 @@ export default {
 		}
 	},
 	computed: {
+    cssVars() {
+      return {
+        // month picker attr
+        "--mp_family": util.monthPickerAttr.fontFamily,
+        "--mp_color":  util.monthPickerAttr.fontColor,
+        "--mp_size":   util.monthPickerAttr.fontSize,
+        "--mp_weight": util.monthPickerAttr.fontWeight,
+        "--mp_style":  util.monthPickerAttr.fontStyle,
+
+        // title first attr
+        "--tf_family": util.titleFirstAttr.fontFamily,
+        "--tf_color":  util.titleFirstAttr.fontColor,
+        "--tf_size":   util.titleFirstAttr.fontSize,
+        "--tf_weight": util.titleFirstAttr.fontWeight,
+        "--tf_style":  util.titleFirstAttr.fontStyle,
+
+        // card title attr
+        "--ct_family": util.cardTitletAttr.fontFamily,
+        "--ct_color":  util.cardTitletAttr.fontColor,
+        "--ct_size":   util.cardTitletAttr.fontSize,
+        "--ct_weight": util.cardTitletAttr.fontWeight,
+        "--ct_style":  util.cardTitletAttr.fontStyle,
+
+        // diagnosis title attr
+        "--dt_family": util.diagCardTitleTextAttr.fontFamily,
+        "--dt_color":  util.diagCardTitleTextAttr.fontColor,
+        "--dt_size":   util.diagCardTitleTextAttr.fontSize,
+        "--dt_weight": util.diagCardTitleTextAttr.fontWeight,
+        "--dt_style":  util.diagCardTitleTextAttr.fontStyle,
+      }
+    },
 		...mapGetters([
 			"isSwitch",
 			"trainBorder",
@@ -845,13 +876,17 @@ export default {
 		// box-shadow: 0 0 5px rgba(0, 0, 0, 0.1) !important;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04) !important;
 		.el-card__header {
-			font-family: futura !important;
+			// font-family: futura !important;
+      font-family: var(--ct_family) !important;
 			// font-family: Calibri;
 			background-color: #f7f7f7;
-			font-weight: 500;
+			// font-weight: 500;
+      font-weight: var(--ct_weight);
 			text-align: left;
-			font-size: 14px;
-			color: #6d7885;
+			// font-size: 14px;
+      font-size: var(--ct_size);
+      font-style: var(--ct_style);
+			color: var(--ct_color);
 			height: 30px;
 			padding: 4px 2px 2px 20px;
 			border-bottom: solid 0.25px #e0e0e0;
@@ -892,8 +927,13 @@ export default {
 		}
 
 		.upidtext{
-			font-size: 10px;
-			position:relative;top:-3px
+      font-family: var(--dt_family);
+			font-size: var(--dt_size);
+      font-weight: var(--dt_weight);
+      font-style: var(--dt_style);
+      color: var(--dt_color);
+			position: relative;
+      top: -3px
 		}
 	}
 	.myel-swtich{
@@ -937,6 +977,7 @@ export default {
 .el-select-dropdown__item span{
 		font-family : DIN !important;
 		color: #6d7885;
+    // color: red;
 }
 
 .el-slider__button{
@@ -984,12 +1025,13 @@ export default {
 	// }
 	.my-card-title {
 		// text-indent:20px;
-		font-family: Calibri;
+		font-family: var(--ct_family);
 		background-color: #f7f7f7;
-		font-weight: bold;
+		font-weight: var(--ct_weight);
 		text-align: left;
-		font-size: 14px;
-		color: #6d7885;
+		font-size: var(--ct_size);
+    font-style: var(--ct_style);
+		color: var(--ct_color);
 		height: 30px;
 		padding: 4px 2px 2px 20px;
 		border-bottom: solid 0.25px #e0e0e0;
@@ -997,12 +1039,14 @@ export default {
 }
 #month-data {
 	// text-indent:20px;
-	font-family: Calibri;
+  font-family: var(--mp_family);
 	// background-color: #f7f7f7;
-	font-weight: bold;
+	font-weight: var(--mp_weight);
 	text-align: center;
-	font-size: 14px;
-	color: #6d7885;
+	font-size: var(--mp_size);
+  font-style: var(--mp_style);
+	// color: #6d7885;
+  color: var(--mp_color);
 	// height: 30px;
 	padding: 15px 2px 2px 20px;
 	// position: absolute;
@@ -1047,10 +1091,11 @@ export default {
 	// margin: 6px;
 	// text-align: center;
 	// display: block;
-	font-size: 19px;
-	font-weight: bolder;
-	font-family: futura !important;
-	color: #2c3e50;
+	font-size: var(--tf_size);
+  font-style: var(--tf_style);
+	font-weight: var(--tf_weight);
+	font-family: var(--tf_family) !important;
+	color: var(--tf_color);
 	position: absolute;
 	left: 50%;
 	top: 50%;

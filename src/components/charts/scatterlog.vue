@@ -68,19 +68,31 @@ export default {
 						const line1 = text.append("tspan")
 							.attr("x", 0)
 							.attr("y", 0)
-							.style("font-weight", "bold");
+              .style('font-family', util.scatterTooltipAttr.line1.fontFamily)
+              .style('font-size', util.scatterTooltipAttr.line1.fontSize)
+              .style('font-weight', util.scatterTooltipAttr.line1.fontWeight)
+              .style('font-style', util.scatterTooltipAttr.line1.fontStyle)
 
 						const line2 = text.append("tspan")
 							.attr("x", 0)
-							.attr("y", "1.1em");
+							.attr("y", "1.1em")
+              .style('font-family', util.scatterTooltipAttr.line2.fontFamily)
+              .style('font-size', util.scatterTooltipAttr.line2.fontSize)
+              .style('font-weight', util.scatterTooltipAttr.line2.fontWeight)
+              .style('font-style', util.scatterTooltipAttr.line2.fontStyle)
 
 						const line3 = text.append("tspan")
 							.attr("x", 0)
-							.attr("y", "2.2em");
+              .attr("y", "2.2em")
+              .style('font-family', util.scatterTooltipAttr.line3.fontFamily)
+              .style('font-size', util.scatterTooltipAttr.line3.fontSize)
+              .style('font-weight', util.scatterTooltipAttr.line3.fontWeight)
+              .style('font-style', util.scatterTooltipAttr.line3.fontStyle)
+
 						const label=d;				
 						tooltip
 							.style("display", null)
-							.attr("fill", "white");
+							.attr("fill", util.scatterTooltipAttr.line1.fontColor);
 						line1.text(`upid:`+ d.upid);
 						line2.text(`category: `+d.productcategory);
 						line3.text(`time:`+d.toc);

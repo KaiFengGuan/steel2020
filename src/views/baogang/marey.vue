@@ -180,7 +180,8 @@
 						</div>
 					</el-card>		
 				</el-row>
-			</transition>
+				</transition>
+				<el-button circle class="diagnosis_button" icon="el-icon-more" @click="diagnosisVisible = ! diagnosisVisible"></el-button>
 			<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
 				<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
 					<el-card class="my-card-body-detail">
@@ -191,7 +192,6 @@
 					</el-card>
 				</el-col>
 			</el-row> -->
-		<el-button circle class="diagnosis_button" icon="el-icon-more" @click="diagnosisVisible = ! diagnosisVisible"></el-button>
 			</el-col>
 		</el-row>
 

@@ -1013,7 +1013,7 @@ export default {
                 }
                 _renderWheelContent() {
                     const r = this._radius,
-                        lc =this._labelcolor,
+                        lc = this._labelcolor,
                         limit = 0.5,
                         a = this._padAngle,
                         xpad = this._xpad,
@@ -1023,8 +1023,10 @@ export default {
                         piearc = d3.arc()
                             .innerRadius(0)
                             .outerRadius(r.bubble * 0.12),
-                        graph={nodes:[],links:[]},
-                        wm=this,
+                        graph = {nodes:[],links:[]},
+                        wm = this,
+                        wheel = this._container,
+                        processData = d3.group(this._chartData, d => d.month),
                         colorLinear1=[],
                         colorLinear2=[];
                         const sample = this._sort(this._chartData)
@@ -1034,15 +1036,12 @@ export default {
                         };
                     const vis = this._g.selectAll("#" +menuId + " .vis").data(this._chartData);
                     for (let key in xpad){
-                        const processdata = [], 
+                        const processdata = processData.get(key), 
                         lck = lc[key],
                         daker = d3.color(lck).darker(0.6),
                         darkerborder = d3.color(lck).darker(2),
                         line_stroke = outrate(darkerborder,daker);
-                        for (let item of this._chartData){
-                            if(item.month == key)processdata.push(item)
-                        }
-                        if(processdata.length === 0) continue                 
+                        if(processdata === undefined) continue                 
                         const area = d3.areaRadial()
                             // .curve(d3.curveBasis)
                             .curve(d3.curveCardinal)
@@ -1111,70 +1110,70 @@ export default {
                             .attr("opacity", 0.6)
                             .on("mouseover", (e, d) => {
                                 this._hightlightcss()
-                                d3.selectAll("#" +menuId +" .riline"+key)
+                                wheel.selectAll(".riline"+key)
                                     .attr("opacity",1)
-                                d3.selectAll("#" +menuId + " .clead"+key )
+                                wheel.selectAll(".clead"+key )
                                     .attr("opacity", 0.4)
-                                d3.selectAll("#" +menuId + " .river1"+key)
+                                wheel.selectAll(".river1"+key)
                                     .attr("opacity",0.4)
-                                d3.selectAll("#" +menuId + " .river2"+key)
+                                wheel.selectAll(".river2"+key)
                                     .attr("opacity",0.8)
-                                d3.selectAll("#" +menuId + " #process"+key)
+                                wheel.selectAll("#process"+key)
                                     .attr("fill",d3.color(lck).darker(0.2))
                                     .attr("opacity" , 0.6)
-                                d3.selectAll("#" +menuId + " #circle"+key)
+                                wheel.selectAll("#circle"+key)
                                     .attr("stroke" , "white")
-                                d3.selectAll("#" +menuId + " #icon"+key)
+                                wheel.selectAll("#icon"+key)
                                     .attr("href", iconwhite[key])
-                                d3.selectAll("#" +menuId + " .circle_color"+key)
+                                wheel.selectAll(".circle_color"+key)
                                     .attr("r",outrate (3.5 , 2))
                                     .attr("opacity", 1);
-                                d3.selectAll("#" +menuId + " .precipitation"+key)
+                                wheel.selectAll(".precipitation"+key)
                                     .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorlinear1(d.precipitation)+2) :daker)
                                     .attr("opacity", 1)
-                                d3.selectAll("#" +menuId + " .humidity"+key)
+                                wheel.selectAll(".humidity"+key)
                                     .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorlinear2(d.humidity)+2) :daker)
                                     .attr("opacity", 1)
-                                d3.selectAll("#" +menuId + " .lead"+key )
+                                wheel.selectAll(".lead"+key )
                                     .attr("stroke-width", outrate(1.5,0.5))
                                     .attr("opacity", 0.4)
-                                d3.selectAll("#" +menuId + " .linestart")
+                                wheel.selectAll(".linestart")
                                     .attr("y1", d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? this._y(d.avg)+3.5 : this._y(d.avg)+2)
-                                d3.selectAll("#" +menuId + " .linecurve")
+                                wheel.selectAll(".linecurve")
                                     .attr("y2", d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? this._y(d.avg)-3.5 : this._y(d.avg)-2)
-                                d3.selectAll("#" +menuId + " .arcpie"+key)
+                                wheel.selectAll(".arcpie"+key)
                                     .attr("opacity", 1)
                                     .style('stroke-width', 0.5)
-                                d3.selectAll("#" +menuId + " .arctext"+key)
+                                wheel.selectAll(".arctext"+key)
                                     .attr("opacity", 1)
                                     .attr("fill", d3.color(lck).darker(4))
                             })
                             .on("mouseleave", (e, d) => {
                                 this._initcss()
-                                d3.selectAll("#" +menuId + " #process"+key)
+                                wheel.selectAll("#process"+key)
                                     .attr("fill",lck)
-                                d3.selectAll("#" +menuId + " #circle"+key)
+                                wheel.selectAll("#circle"+key)
                                     .attr("stroke" , daker)
-                                d3.selectAll("#" +menuId + " #icon"+key)
+                                wheel.selectAll("#icon"+key)
                                     .attr("href", icon[key])
-                                d3.selectAll("#" +menuId + " .circle_color"+key)
+                                wheel.selectAll(".circle_color"+key)
                                         .attr("r",2);
-                                d3.selectAll("#" +menuId + " .precipitation"+key)
+                                wheel.selectAll(".precipitation"+key)
                                     .attr("stroke",daker)
-                                d3.selectAll("#" +menuId + " .humidity"+key)
+                                wheel.selectAll(".humidity"+key)
                                     .attr("stroke",daker)
-                                d3.selectAll("#" +menuId + " .lead"+key)
+                                wheel.selectAll(".lead"+key)
                                     .attr("stroke-width", outrate(1,0.5))
-                                d3.selectAll("#" +menuId + " .linestart")
+                                wheel.selectAll(".linestart")
                                     .attr("y1", d =>  this._y(d.avg)+2)
-                                d3.selectAll("#" +menuId + " .linecurve")
+                                wheel.selectAll(".linecurve")
                                     .attr("y2", d =>  this._y(d.avg)-2)
-                                d3.selectAll("#" +menuId + " .arcpie"+key)
+                                wheel.selectAll(".arcpie"+key)
                                     .style('stroke-width', 0.25)
-                                d3.selectAll("#" +menuId + " .arctext"+key)
+                                wheel.selectAll(".arctext"+key)
                                     .attr("fill", d3.color(lck).darker(1.5))
                             }))
-                        .call(g => g.selectAll("#" +menuId + " .circle_doct"+key).data(processdata).join("g")      
+                        .call(g => g.selectAll(" .circle_doct"+key).data(processdata).join("g")      
                             .attr("class", "circle_doct")
                             .attr("transform", d => `rotate(${(xpad[key](d.date) + v) * 180 / Math.PI - 180 })`)       ////河流图节点
                             .call(g => g.append("circle")
@@ -1241,7 +1240,7 @@ export default {
                                 // .startAngle(1.5* Math.PI-thisangel/180*Math.PI)
                                 // .endAngle(1.5* Math.PI-thisangel/180*Math.PI + 2* Math.PI);
                             let piedata=pie(pindex.property)
-                            let g=this._g.selectAll("#" +menuId + " .pie"+pindex.date)
+                            let g=this._g.selectAll(".pie"+pindex.date)
                                 .data(piedata).enter()
                                 .append("g")
                                 .attr("transform", `rotate(${(xpad[key](pindex.date) + v) * 180 / Math.PI - 180 }) translate(${[0,r.outer+r.bubble*1.30]})`);
@@ -1397,7 +1396,7 @@ export default {
                             const name=d.data.id,key=d.data.group,lck=lc[key],daker=d3.color(lck).darker(0.6);
                             const data=wm._chartData.filter(d => d.dateStr===name)[0];
                             wm._hightlightcss()
-                            d3.selectAll("#" +menuId + " .clead" + key)
+                            wheel.selectAll(".clead" + key)
                                 .attr("opacity", 0.1)
                             axisenter(name,key,lck,daker,true);
                             let rlines=multiplyaxis(name)
@@ -1432,77 +1431,77 @@ export default {
                         }
                         function axisenter(name,key,lck,daker,flag){
                             // hightlightcss()
-                            d3.selectAll("#" +menuId + " .riline"+key)
+                            wheel.selectAll(".riline"+key)
                                     .attr("opacity",1)
-                            d3.selectAll("#" +menuId + " .river1"+key)
+                            wheel.selectAll(".river1"+key)
                                     .attr("opacity",0.4)
-                            d3.selectAll("#" +menuId + " .river2"+key)
+                            wheel.selectAll(".river2"+key)
                                 .attr("opacity",0.8)
-                            d3.selectAll("#" +menuId + " #process" + key)
+                            wheel.selectAll("#process" + key)
                                     .attr("opacity" , 0.6)
-                            d3.select("#" +menuId + " #circle"+name)
+                            wheel.select("#circle"+name)
                                     .attr("r",3.5)
                                     .attr("opacity", 1);
-                            d3.select("#" +menuId + " #precipitation"+name)
+                            wheel.select("#precipitation"+name)
                                 .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorLinear1[key](d.precipitation)+2) :daker)
                                 .attr("opacity", 1)
-                            d3.select("#" +menuId + " #humidity"+name)
+                            wheel.select("#humidity"+name)
                                 .attr("stroke", d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorLinear2[key](d.humidity)+2) :daker)
                                 .attr("opacity", 1)
-                            d3.selectAll("#" +menuId + " .line"+name)
+                            wheel.selectAll(".line"+name)
                                 .attr("stroke",d3.color(lck).darker(4))
-                            d3.selectAll("#" +menuId + " .line" + name)
+                            wheel.selectAll(".line" + name)
                                 .attr("stroke-width", 1.5)
                                 .attr("opacity", 0.4)
-                            d3.selectAll("#" +menuId + " #textline" + name)
+                            wheel.selectAll("#textline" + name)
                                 .style("visibility", "visible")
                                 .attr("y2", outrate(r.outer+r.bubble*1.10,r.outer+r.bubble*1.20))
-                            d3.selectAll("#" +menuId + " #linestart"+ name)
+                            wheel.selectAll("#linestart"+ name)
                                 .attr("y1", d => wm._y(d.avg)+3.5 )
-                            d3.selectAll("#" +menuId + " #linecurve" + name)
+                            wheel.selectAll("#linecurve" + name)
                                 .attr("y2", d =>  wm._y(d.avg)-3.5)
-                            d3.selectAll("#" +menuId + " .pie"+ name)
+                            wheel.selectAll(".pie"+ name)
                                 .style('stroke-width', 0.5)
                                 .attr("opacity", 1)
-                            d3.selectAll("#" +menuId + " #arctext"+name)
+                            wheel.selectAll("#arctext"+name)
                                     .attr("opacity", 1)
                                     .attr("fill", d3.color(lck).darker(4))
                             if(flag){
-                                d3.selectAll("#" +menuId + " .clinein" + name)
+                                wheel.selectAll(".clinein" + name)
                                     .attr("opacity", 0.5)
-                                d3.selectAll("#" +menuId + " .clineout" + name)
+                                wheel.selectAll(".clineout" + name)
                                     .attr("opacity", 0.5)
                             }
                         }
                         function axisout(name,key,lck,daker,flag){
                             // initcss()
-                            d3.select("#" +menuId + " #circle"+name)
+                            wheel.select("#circle"+name)
                                         .attr("r",2);
-                            d3.select("#" +menuId + " #precipitation"+name)
+                            wheel.select("#precipitation"+name)
                                 .attr("stroke",daker)
-                            d3.select("#" +menuId + " #humidity"+name)
+                            wheel.select("#humidity"+name)
                                 .attr("stroke",daker)
-                            d3.selectAll("#" +menuId + " .line"+name)
+                            wheel.selectAll(".line"+name)
                                 .attr("stroke",daker)        
-                            d3.selectAll("#" +menuId + " .line" + name)
+                            wheel.selectAll(".line" + name)
                                 .attr("stroke-width", outrate(1,0.5))
-                            d3.selectAll("#" +menuId + " #textline" + name)
+                            wheel.selectAll("#textline" + name)
                                 .style("visibility", wm._merge ? "hidden" : outrate("visible" , "hidden" ))
                                 .attr("y2", r.outer+r.bubble*1.10)
-                            d3.selectAll("#" +menuId + " #linestart"+ name)
+                            wheel.selectAll("#linestart"+ name)
                                 .attr("y1", d =>  wm._y(d.avg)+2)
-                            d3.selectAll("#" +menuId + " #linecurve" + name)
+                            wheel.selectAll("#linecurve" + name)
                                 .attr("y2", d =>  wm._y(d.avg)-3.5)
-                            d3.selectAll("#" +menuId + " .pie"+ name)
+                            wheel.selectAll(".pie"+ name)
                                 .style('stroke-width', 0.25)
-                            d3.selectAll("#" +menuId + " #arctext"+name)
+                            wheel.selectAll("#arctext"+name)
                                 .attr("fill", d3.color(lck).darker(1.5))
-                            d3.selectAll("#" +menuId + " .dailyInfo").remove()
+                            wheel.selectAll(".dailyInfo").remove()
                             if(flag){
-                                d3.selectAll("#" +menuId + " .clineout" + name)
+                                wheel.selectAll(".clineout" + name)
                                     .attr("opacity",0.4)
                                     .attr("stroke", labelcolor).raise()
-                                d3.selectAll("#" +menuId + " .clinein" + name)
+                                wheel.selectAll(".clinein" + name)
                                         .attr("opacity",0.4)
                             }
                         }
@@ -1625,25 +1624,25 @@ export default {
                 _hightlightcss(){
                     const cG = this._container;
                     for (let i in [0,1,2]){
-                        cG.selectAll(".lead"+i )
+                        cG.selectAll(".lead" + i )
                             .attr("opacity", 0.1)
-                        cG.selectAll(".clead"+i )
+                        cG.selectAll(".clead" + i )
                             .attr("opacity", 0.1)
-                        cG.selectAll(".humidity"+i)
+                        cG.selectAll(".humidity" + i)
                             .attr("opacity", 0.5)
-                        cG.selectAll(".precipitation"+i)
+                        cG.selectAll(".precipitation" + i)
                             .attr("opacity", 0.5)
-                        cG.selectAll(".circle_color"+i)
+                        cG.selectAll(".circle_color" + i)
                             .attr("opacity", 0.5)
-                        cG.selectAll(".arcpie"+i)
+                        cG.selectAll(".arcpie" + i)
                             .attr("opacity", 0.5)
-                        cG.selectAll(".arctext"+i)
+                        cG.selectAll(".arctext" + i)
                             .attr("opacity", 0.5)
-                        cG.selectAll("#process"+i)
+                        cG.selectAll("#process" + i)
                             .attr("opacity" , 0.3)
-                        cG.selectAll(".river1"+i)
+                        cG.selectAll(".river1" + i)
                             .attr("opacity",0.1)
-                        cG.selectAll(".river2"+i)
+                        cG.selectAll(".river2" + i)
                             .attr("opacity",0.4)
                     }
                 }
@@ -1731,7 +1730,7 @@ export default {
                 _sliderArray(arr){
                     return d3.map(arr, (d, f) => {
                         d.index = f;
-                        console.log(batchData);
+                        // console.log(batchData);
                         var name = d.dateStr,
                         
                         batch = batchData.map(e => {

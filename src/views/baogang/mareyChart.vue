@@ -274,8 +274,11 @@ export default {
 					.attr("id", d => "station"+d.name)
 					.attr("x", 8)
 					.attr("dy", "0.25em")
-					.attr("font-family" , "DIN")
-					.attr("fill", "white")
+					.attr("font-family" , util.conditionPolygonTextAttr.fontFamily)
+          .attr("fill", util.conditionPolygonTextAttr.fontColor)
+          .style("font-size", util.conditionPolygonTextAttr.fontSize)
+          .attr("font-weight", util.conditionPolygonTextAttr.fontWeight)
+          .style("font-style", util.conditionPolygonTextAttr.fontStyle)
 					.text(d => d.name.replace(/harging/, "harge").replace(/Cc/, "C").replace(/ing/, "").replace(/MPass/, "MP")
 						.replace(/arge/, "").replace(/MPStart/, "RMStart").replace(/CDQ/, "DQ").replace(/CAC/, "AC")))
 					.on("mouseover", statOver)
@@ -844,9 +847,11 @@ export default {
 								.attr("transform", `translate(${xaxlength - (+i !== 0 ? 9 : 0)}, 0)`)
 								.append("text")
 								.attr("transform", `rotate( ${ -(i- 1) * 120  + 45} )`)
-								.style("font-family", "DIN")
+                .style("font-family", util.conditionRadiaTextAttr.fontFamily)
+                .style("font-weight", util.conditionRadiaTextAttr.fontWeight)
+                .style("font-style", util.conditionRadiaTextAttr.fontStyle)
+								.attr("font-size", util.conditionRadiaTextAttr.fontSize)
 								.attr("fill", d3.color(stationcolor[i]).darker(0.6))
-								.attr("font-size", "9px")
 								.text(text))
 					lineposition.push(meandata)
 					lineScale.push(xline)
@@ -1496,13 +1501,24 @@ export default {
 					const line1 = text.append("tspan")
 						.attr("x", 0)
 						.attr("y", 0)
-						.style("font-weight", "bold");
+            .style("font-family", util.conditionMareyTooltipAttr.line1.fontFamily)
+            .style("font-size", util.conditionMareyTooltipAttr.line1.fontSize)
+            .style("font-weight", util.conditionMareyTooltipAttr.line1.fontWeight)
+            .style("font-style", util.conditionMareyTooltipAttr.line1.fontStyle)
 					const line2 = text.append("tspan")
 						.attr("x", 0)
-						.attr("y", "1.1em");
+						.attr("y", "1.1em")
+            .style("font-family", util.conditionMareyTooltipAttr.line2.fontFamily)
+            .style("font-size", util.conditionMareyTooltipAttr.line2.fontSize)
+            .style("font-weight", util.conditionMareyTooltipAttr.line2.fontWeight)
+            .style("font-style", util.conditionMareyTooltipAttr.line2.fontStyle)
 					const line3 = text.append("tspan")
 						.attr("x", 0)
-						.attr("y", "2.2em");
+						.attr("y", "2.2em")
+            .style("font-family", util.conditionMareyTooltipAttr.line3.fontFamily)
+            .style("font-size", util.conditionMareyTooltipAttr.line3.fontSize)
+            .style("font-weight", util.conditionMareyTooltipAttr.line3.fontWeight)
+            .style("font-style", util.conditionMareyTooltipAttr.line3.fontStyle)
 
 					g.append("g")
 						.attr("fill", "none")
@@ -1530,7 +1546,7 @@ export default {
 						mouseOverRect(d.train.upid)
 						tooltip
 						.style("display", null)
-						.attr("fill", "white");
+						.attr("fill", util.conditionMareyTooltipAttr.line1.fontColor);
 						line1.text(`upid: ${d.train.upid}`);
 						line2.text(`category: ${d.train.productcategory}`);
 						line3.text(`time: ${d.stop.realTime.toLocaleString(undefined, { hour: "numeric", minute: "numeric" })}`);
@@ -1753,9 +1769,11 @@ export default {
 			// .ticks(5, d3.timeFormat("%b %d %H"))
 			.tickSize(0)
 		var miniyAxis = g => g
-			.style("font", "7.5px DIN")
-			.style("font-weight", "bolder")
-			.style("color", "black")
+      .style("font-family", util.conditionMiniYAxisTextAttr.fontFamily)
+      .style("font-size", util.conditionMiniYAxisTextAttr.fontSize)
+      .style("font-weight", util.conditionMiniYAxisTextAttr.fontWeight)
+      .style("font-style", util.conditionMiniYAxisTextAttr.fontStyle)
+			.style("color", util.conditionMiniYAxisTextAttr.fontColor)
 			.call(miniAxis
 				// .tickFormat(date => date.toLocaleString('en-GB', { timeZone: 'UTC' }))
 			// .tickFormat(date => date.toLocaleString(undefined, { hour: "numeric" }))

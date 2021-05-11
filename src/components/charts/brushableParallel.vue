@@ -6,6 +6,7 @@
 import * as d3 from 'd3'
 // import brushdata from "./chartdata/brushdata.json"
 import util from 'src/views/baogang/util.js';
+// import util from '../../views/baogang/util.js'
 import { mapGetters, mapMutations} from 'vuex'
 export default {
     data () {
@@ -141,7 +142,13 @@ export default {
                     svg.selectAll("#parallel .domain").remove()
                     svg.selectAll("#parallel .overlay").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
                     svg.selectAll("#parallel .selection").attr("rx", "5").attr("ry", "5").attr("stroke", "#aaa").attr("stroke-width", 1)
-                    svg.selectAll("#parallel .tick text").attr("font-family", "DIN").attr("stroke", "none").attr("fill", "#2c3e50")
+                    svg.selectAll("#parallel .tick text")
+                      .attr("stroke", "none")
+                      .style("font-family", util.tabularAxisTextAttr.fontFamily)
+                      .style("color", util.tabularAxisTextAttr.fontColor)
+                      .style("font-size", util.tabularAxisTextAttr.fontSize)
+                      .style("font-weight", util.tabularAxisTextAttr.fontWeight)
+                      .style("font-style", util.tabularAxisTextAttr.fontStyle)
                 }
 
             this.svg !== undefined && this.svg.remove()
@@ -220,10 +227,11 @@ export default {
                     .attr("x", width - margin.left)
                     .attr("y", - 40)
                     .attr("text-anchor", "end")
-                    .attr("fill", "#2c3e50")
-                    .attr("font-family", "DIN")
-                    .attr("font-size", "10px")
-                    .attr("font-weight", "normal")
+                    .attr("fill", util.tabularTipsTextAttr.fontColor)
+                    .attr("font-family", util.tabularTipsTextAttr.fontFamily)
+                    .attr("font-size", util.tabularTipsTextAttr.fontSize)
+                    .attr("font-weight", util.tabularTipsTextAttr.fontWeight)
+                    .attr("font-style", util.tabularTipsTextAttr.fontStyle)
                     .text(d => d.replace(/tgtwidth/, "tgt_width").replace(/tgtplatethickness2/, "tgt_thickness")
                         .replace(/tgtplatelength2/, "tgt_length").replace(/slab_thickness/, "slab_thickness").replace(/charging_temp_act/, "charging")))
                 .call(g => g.selectAll("text")
@@ -231,7 +239,7 @@ export default {
                     .attr("fill", "none")
                     .attr("stroke-width", 5)
                     .attr("stroke-linejoin", "round")
-                    .attr("font-family", "DIN")
+                    // .attr("font-family", "DIN")
                     // .attr("stroke", "white")
                     )
                 .call(g =>g.selectAll(".domain").remove())
@@ -253,18 +261,29 @@ export default {
                 const line1 = text.append("tspan")
                     .attr("x", 0)
                     .attr("y", 0)
-                    .style("font-weight", "bold");
+                    .style('font-family', util.tabularTooltipAttr.line1.fontFamily)
+                    .style('font-size', util.tabularTooltipAttr.line1.fontSize)
+                    .style('font-weight', util.tabularTooltipAttr.line1.fontWeight)
+                    .style('font-style', util.tabularTooltipAttr.line1.fontStyle)
 
                 const line2 = text.append("tspan")
                     .attr("x", 0)
-                    .attr("y", "1.1em");
+                    .attr("y", "1.1em")
+                    .style('font-family', util.tabularTooltipAttr.line2.fontFamily)
+                    .style('font-size', util.tabularTooltipAttr.line2.fontSize)
+                    .style('font-weight', util.tabularTooltipAttr.line2.fontWeight)
+                    .style('font-style', util.tabularTooltipAttr.line2.fontStyle)
 
                 const line3 = text.append("tspan")
                     .attr("x", 0)
-                    .attr("y", "2.2em");			
+                    .attr("y", "2.2em")
+                    .style('font-family', util.tabularTooltipAttr.line3.fontFamily)
+                    .style('font-size', util.tabularTooltipAttr.line3.fontSize)
+                    .style('font-weight', util.tabularTooltipAttr.line3.fontWeight)
+                    .style('font-style', util.tabularTooltipAttr.line3.fontStyle)		
                 tooltip
                     .style("display", null)
-                    .attr("fill", "white");
+                    .attr("fill", util.tabularTooltipAttr.line1.fontColor);
                 line1.text(`upid:`+ d.upid);
                 line2.text(`category: `+d.productcategory);
                 line3.text(`time:`+d.toc);

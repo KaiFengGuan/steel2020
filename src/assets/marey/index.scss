@@ -1,18 +1,19 @@
-.diagnosis_button{
+.diagnosis_button {
 	position: fixed;
 	z-index: 66666;
 	bottom: 50px;
 	right: 50px;
 }
-.diagnosis_view{
+.diagnosis_view {
 	position: fixed;
 	z-index: auto;
-	bottom: 540px;
-	right: 0px;
+	bottom: 10px;
+	right: 15px;
 	width: 1595px;
 }
-.diagnosis-enter-active, .diagnosis-leave-active {
-	transition: opacity .5s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+.diagnosis-enter-active,
+.diagnosis-leave-active {
+	transition: opacity 0.5s cubic-bezier(1, 0.5, 0.8, 1);
 }
 .diagnosis-enter, .diagnosis-leave-to /* .diagnosis-leave-active below version 2.1.8 */ {
 	opacity: 0;

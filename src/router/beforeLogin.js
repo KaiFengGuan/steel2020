@@ -1,6 +1,5 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import visualView from 'views/baogang/marey.vue'
 import layout from 'components/layout/index.vue'
 import routerView from './routerView.vue'
 
@@ -9,7 +8,7 @@ const routerMap =  [
     {
         path: '/visual',
         name: '可视化',
-        component: visualView,
+        component: () => import("views/baogang/marey.vue"),
         icon: 'fa fa-eye fa-lg'
     }
 ]

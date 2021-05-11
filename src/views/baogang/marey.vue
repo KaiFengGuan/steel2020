@@ -208,7 +208,7 @@ import util from './util.js';
 import mareyChart from './mareyChart.vue';
 import scatterlog from 'components/charts/scatterlog.vue';
 import timeBrush from './timeBrush.vue';
-import wheeler from './wheeler.vue';
+import wheeler from './wheel.vue';
 import smallWheel from './smallWheel.vue';
 import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"

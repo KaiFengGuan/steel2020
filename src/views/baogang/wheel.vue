@@ -6,15 +6,16 @@
 
 <script>
 import * as d3 from 'd3';
-import heaticon from "../../assets/images/heatwheel.svg";
-import heatwhite from "../../assets/images/heatwhite.svg";
-import coolicon from "../../assets/images/coolwheel.svg";
-import coolwhite from "../../assets/images/coolwhite.svg";
-import rollicon from "../../assets/images/rollwheel.svg";
-import rollwhite from "../../assets/images/rollwhite.svg";
-import mergeLabel from "../../assets/images/mergeLabel.svg";
-import deMergeLabel from "../../assets/images/deMergeLabel.svg"
+import heaticon from "@/assets/images/heatwheel.svg";
+import heatwhite from "@/assets/images/heatwhite.svg";
+import coolicon from "@/assets/images/coolwheel.svg";
+import coolwhite from "@/assets/images/coolwhite.svg";
+import rollicon from "@/assets/images/rollwheel.svg";
+import rollwhite from "@/assets/images/rollwhite.svg";
+import mergeLabel from "@/assets/images/mergeLabel.svg";
+import deMergeLabel from "@/assets/images/deMergeLabel.svg"
 import util from './util.js';
+import processJson from "@/assets/json/processJson.json"
 import {mapGetters} from "vuex"
 export default {
 	data() {
@@ -106,9 +107,8 @@ export default {
                     }
 
                     this._x = null; // date scale
-                    this._xpad=null; //pad scale
+                    this._xpad = null; //pad scale
                     this._y = null; // temperature scale
-                    this._ac = null;// avg color scale
                     this._h = null; // humidity scale
                     this._hb = null;// humidity border scale
                     this._dayRadian = 0; // one-day radian
@@ -125,40 +125,10 @@ export default {
                         humidity: null,
                     };
 
-                    this._process=[
-                        ["ave_temp_entry_pre","temp_uniformity_entry_pre", "sur_temp_entry_pre", 
-                            "center_temp_entry_pre", "skid_temp_entry_pre", "ave_temp_pre", "staying_time_pre", "ave_temp_entry_1",
-                            "temp_uniformity_entry_1", "sur_temp_entry_1", "center_temp_entry_1", "skid_temp_entry_1", "ave_temp_1",
-                            "staying_time_1", "ave_temp_entry_2", "temp_uniformity_entry_2", "sur_temp_entry_2", "center_temp_entry_2", 
-                            "skid_temp_entry_2", "ave_temp_2", "staying_time_2", "ave_temp_entry_soak", "temp_uniformity_entry_soak",
-                            "sur_temp_entry_soak", "center_temp_entry_soak", "skid_temp_entry_soak", "ave_temp_soak", "staying_time_soak",
-                            "ave_temp_dis", "temp_uniformity_dis", "sur_temp_dis", "center_temp_dis", "skid_temp_dis", "t_0", "t_1", "t_2", "t_3", "t_4", "t_5", "t_6"
-                        ],
-                        ['topwrplatecountfm','topwrplatecountrm','topbrplatecountfm','topbrplatecountrm','botbrplatecountfm',
-                            'botbrplatecountrm','botwrplatecountfm','botwrplatecountrm','crownbody','crowntotal',
-                            'devcrownbody','devcrowntotal','devthicknesscentertotal','devthicknessclosetotal',
-                            'devwedgebody','devwedgetotal','maxcrownbody','maxcrowntotal','maxthicknesscentertotal',
-                            'maxthicknessclosetotal','maxwedgebody','maxwedgetotal','mincrownbody','mincrowntotal',
-                            'minthicknesscentertotal','minthicknessclosebody','minthicknessclosehead','minthicknessclosetotal',
-                            'minwedgetotal','ratiolpls','thicknesscenterbody','thicknesscenterhead','thicknesscentertotal',
-                            'thicknessclosebody','thicknessclosehead','thicknessclosetotal','wedgebody','wedgetotal'
-                        ],
-                        ['avg_p1','std_p1','max_p1','min_p1','avg_p2','std_p2','max_p2','min_p2','avg_sct','std_sct',
-                            'max_sct','min_sct','avg_fct','std_fct','max_fct','min_fct','avg_p5','std_p5','max_p5','min_p5',
-                            'avg_cr_cal','std_cr_cal','max_cr_cal','min_cr_cal','avg_cr_act','std_cr_act','max_cr_act',
-                            'min_cr_act','avg_time_b','std_time_b','max_time_b','min_time_b','avg_time_w','std_time_w',
-                            'max_time_w','min_time_w','avg_time_a','std_time_a','max_time_a','min_time_a','speed_ratio',
-                            'last_water_temp','last_air_temp','fqc_label'
-                        ]
-                    ];
-                    this._padprocess=[[],[],[]];
-                    this._processindex=["heat", "roll", "cool"];
-                    this._labelcolor= [
-                        "#fcd8a9",
-                        "#cce9c7",
-                        "#c1c9ee",
-                        // 2:'#b3cee2'
-                    ];
+                    this._process=[];
+                    this._padprocess = [[],[],[]];
+                    this._processindex = ["heat", "roll", "cool"];
+                    this._labelcolor = ["#fcd8a9", "#cce9c7", "#c1c9ee"];
                     this._padAngle=[];
                     this._linespace=6;
                     this._merge = true;
@@ -183,6 +153,9 @@ export default {
                 }
                 labels(_){
                     return arguments.length ? (this._labels = _, this) : this._labels;
+                }
+                process(_){
+                    return arguments.length ? (this._process = _, this) : this._process;
                 }
 
                 field(_) {
@@ -214,8 +187,9 @@ export default {
                     this._merge ? this._renderBar() : this._renderWheel();
                 }
                 _renderComponents(){
-                    const b = this._container.append("g")
-                    b.call(g => g.append("image")
+                    this._container
+                        .append("g")
+                        .call(g => g.append("image")
                                 .attr("class", "mergeIcon")
                                 .attr("width", "25px")
                                 .attr("height","25px")
@@ -349,28 +323,20 @@ export default {
                     this._initScales(labels, lows, highs, precs, humis);
                 }
                 _initScales(labels, lows, highs, precs, humis) {
-                    const d = this._chartData, r = this._radius;
+                    const r = this._radius;
 
                     this._x = d3.scaleBand()
                         .domain(labels)
-                        .range([-0.3 * Math.PI, 1.66 * Math.PI ]); // whole circle - last day
-                        // .range([0, 2 * Math.PI - (2 * Math.PI / d.length)]); // whole circle - last day
+                        .range([-0.3 * Math.PI, 1.66 * Math.PI ]);
                     
-                    this._xpad=[];
-                    for (let item in this._padAngle){
-                        this._xpad.push(
+                    this._xpad = new Array(3).fill(3).map((d, i) => 
                             d3.scaleBand()
-                            .domain(this._padprocess[item])
-                            .range(this._padAngle[item])
-                        )
-                    }
+                            .domain(this._padprocess[i])
+                            .range(this._padAngle[i]))
+
                     this._y = d3.scaleRadial()
                         .domain([d3.min(lows), d3.max(highs)]).nice()
                         .range([r.inner+0.1*r.bubble, r.outer-0.15*r.bubble]);
-
-                    this._ac = d3.scaleLinear()
-                        .domain([0,d3.extent(this._chartData,d=>this._getover(d))[1]])
-                        .range(0,1);
 
                     const bext = d3.extent(precs)
                     this._hb = d3.scaleLinear()
@@ -1033,7 +999,6 @@ export default {
                         var outrate = (item1 , item2) => {
                             return d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? item1 : item2
                         };
-                    const vis = this._g.selectAll("#" +menuId + " .vis").data(this._chartData);
                     for (let key in xpad){
                         const processdata = processData.get(key), 
                         lck = lc[key],
@@ -1128,10 +1093,10 @@ export default {
                                     .attr("r",outrate (3.5 , 2))
                                     .attr("opacity", 1);
                                 wheel.selectAll(".precipitation"+key)
-                                    .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorlinear1(d.precipitation)+2) :daker)
+                                    .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(1.6) :daker)
                                     .attr("opacity", 1)
                                 wheel.selectAll(".humidity"+key)
-                                    .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorlinear2(d.humidity)+2) :daker)
+                                    .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(1.6) :daker)
                                     .attr("opacity", 1)
                                 wheel.selectAll(".lead"+key )
                                     .attr("stroke-width", outrate(1.5,0.5))
@@ -1266,28 +1231,23 @@ export default {
                                 .text(text))     
                         }
                         
-                        const colorlinear1=d3.scaleLinear()
-                            .domain(d3.extent(processdata,d=>d.precipitation))
-                            .range([0.25,0]);
-                        const colorlinear2=d3.scaleLinear()
-                            .domain(d3.extent(processdata,d=>d.humidity))
-                            .range([0.25,0]);
-                        colorLinear1.push(colorlinear1)
-                        colorLinear2.push(colorlinear2)
-                        const vis = this._g.selectAll("#" +menuId + " .vis"+key).data(processdata);
-                        vis.join("g")
+                        const visG = this._g.append("g")
+                            .attr("class", "visG")
+                            .selectAll(" .vis"+key)
+                            .data(processdata)
+                            .join("g")
                             .attr("class", "vis")
                             .attr("transform", d => `rotate(${xpad[key](d.date) * 180 / Math.PI - 180})`)
                             .call(g => g.append("path")
                             .attr("class", "humidity"+key)
                                 .attr('id',d=>'humidity'+d.dateStr)
-                                .attr("fill",d=> d3.color(lck).brighter(colorlinear2(d.humidity)))
+                                .attr("fill",d=> d3.color(lck).brighter(1.6))
                                 .attr("stroke", daker)
                                 .attr("d", d => this._linepad(r.outer, this._h(d.humidity))))
                             .call(g => g.append("path")
                                 .attr("class", "precipitation"+key)
                                 .attr('id',d=>'precipitation'+d.dateStr)
-                                .attr("fill",d=> d3.color(lck).brighter(colorlinear1(d.precipitation)))
+                                .attr("fill", lck)
                                 .attr("stroke", daker)
                                 .attr("d", d => this._linepad(r.outer+r.bubble*1.10-this._hb(d.precipitation) , r.outer+r.bubble*1.10)))
 
@@ -1373,7 +1333,7 @@ export default {
                             .attr("d", this._line(r.inner*0.8, r.max)))
                             .on("mouseenter", overed)
                             .on("mouseout", outed)
-                    const labelcolor=(d , i) => d3.color(lc[+d[0].data.group]).darker(2);
+                    const labelcol=(d , i) => d3.color(lc[+d[0].data.group]).darker(2);
                     const linedata=root.leaves().flatMap(leaf => leaf.outgoing);
                     const link = nodeG.append("g")
                         .attr("stroke", colornone)
@@ -1386,7 +1346,7 @@ export default {
                             .attr("class",d=>{
                                 return "clead"+ (+d[0].data.group) + " clinein"+d[0].data.id +" clineout"+d[1].data.id
                             })
-                            .attr("stroke",  labelcolor)
+                            .attr("stroke",  labelcol)
                             .attr("stroke-width",1)
                             .attr("opacity", 0.4)
                         d3.selectAll(".processPath").raise()
@@ -1442,10 +1402,10 @@ export default {
                                     .attr("r",3.5)
                                     .attr("opacity", 1);
                             wheel.select("#precipitation"+name)
-                                .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorLinear1[key](d.precipitation)+2) :daker)
+                                .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(1.6) :daker)
                                 .attr("opacity", 1)
                             wheel.select("#humidity"+name)
-                                .attr("stroke", d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorLinear2[key](d.humidity)+2) :daker)
+                                .attr("stroke", d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(1.6) :daker)
                                 .attr("opacity", 1)
                             wheel.selectAll(".line"+name)
                                 .attr("stroke",d3.color(lck).darker(4))
@@ -1499,7 +1459,7 @@ export default {
                             if(flag){
                                 wheel.selectAll(".clineout" + name)
                                     .attr("opacity",0.4)
-                                    .attr("stroke", labelcolor).raise()
+                                    .attr("stroke", labelcol).raise()
                                 wheel.selectAll(".clinein" + name)
                                         .attr("opacity",0.4)
                             }
@@ -1565,10 +1525,10 @@ export default {
                             .attr("r",3.5)
                             .attr("opacity", 1);
                     cG.select("#precipitation"+name)
-                        .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorLinear1[key](d.precipitation)+2) :daker)
+                        .attr("stroke",d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(1.6) :daker)
                         .attr("opacity", 1)
                     cG.select("#humidity"+name)
-                        .attr("stroke", d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(colorLinear2[key](d.humidity)+2) :daker)
+                        .attr("stroke", d => (wm._allIndex.indexOf(d.dateStr) !== -1) ? d3.color(lck).darker(1.6) :daker)
                         .attr("opacity", 1)
                     cG.selectAll(".line"+name)
                         .attr("stroke",d3.color(lck).darker(4))
@@ -1759,13 +1719,11 @@ export default {
                 _getMonthData(month) {
                     return this._chartData.filter(d => d.month === month);
                 }
-                _getover(d) {
-                    return d.avg-d.low>d.high-d.avg?d.avg-d.low:d.high-d.avg
-                }
             }
             const wheel = new wheelRound(this.svg)
                             .size([diameter, diameter])
                             .data(wheeldata)
+                            .process(processJson)
                             .labels(labels)
                             .render();
         },
@@ -1798,10 +1756,5 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-/* g > text {
-    stroke: white;
-    fill:none;
-
-} */
 @import url("../../assets/marey/wheel.scss");
 </style>

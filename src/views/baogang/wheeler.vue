@@ -153,13 +153,12 @@ export default {
                     ];
                     this._padprocess=[[],[],[]];
                     this._processindex=["heat", "roll", "cool"];
-                    this._labelcolor={
-                        index:'steelblue',
-                        0:'#fcd8a9',
-                        1:'#cce9c7',
-                        2: "#c1c9ee",
+                    this._labelcolor= [
+                        "#fcd8a9",
+                        "#cce9c7",
+                        "#c1c9ee",
                         // 2:'#b3cee2'
-                    };
+                    ];
                     this._padAngle=[];
                     this._linespace=6;
                     this._merge = true;

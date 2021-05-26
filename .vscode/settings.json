@@ -8,5 +8,6 @@
     "prettier.printWidth": 100,
     "prettier.useTabs": true,
     "prettier.trailingComma": "none",
-    "prettier.endOfLine": "crlf"
+    "prettier.endOfLine": "crlf",
+    "arrowParens": "avoid"
 }

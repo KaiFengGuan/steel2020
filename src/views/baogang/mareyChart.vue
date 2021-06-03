@@ -175,7 +175,7 @@ export default {
 		var x = d3.scaleLinear()
 			.domain(d3.extent(stations, d => d.distance))
 			.range([ mareyEntry , mareylength ])
-
+ 
 		// zpj 2019-4-15 20:02:15
 		var minDate = data[0].stops[0].time,
 			maxDate = data.slice(-1)[0].stops.slice(-1)[0].time;

@@ -95,7 +95,7 @@ export default {
                     this._data = null;
                     this._chartData = null;
                     this._field = {
-                        date: "name",
+                        name: "name",
                         low: "result_low",
                         high: "result_high",
                         elow: "result_extre_low",
@@ -103,7 +103,6 @@ export default {
                         avg: "result_value",
                         precipitation: "PCASPE",
                         humidity: "PCAT2",
-                        condition: "Conditions"
                     }
 
                     this._x = null; // date scale
@@ -116,7 +115,7 @@ export default {
                     this._labels=null;
                     this._dailyInfo = null;
                     this._texts = {
-                        date: null,
+                        name: null,
                         avg: null,
                         deviation:null,
                         high: null,
@@ -131,13 +130,10 @@ export default {
                     this._labelcolor = ["#fcd8a9", "#cce9c7", "#c1c9ee"];
                     this._padAngle=[];
                     this._linespace=6;
-                    this._merge = true;
+                    this._merge = false;
                     this._horizonView = true;
                     this._indexdata = [];
-                    this._indexInfo = [];
-                    this._indexlength = 6;
                     this._allIndex = [];    //index name
-                    this._rectArray = null;
                     this._indexScale = undefined;
                     this._mouseDis  = undefined;
                     this._barVis = true;
@@ -224,9 +220,9 @@ export default {
                     this._padprocess=[[],[],[]];
                     this._chartData = this._data.map(d => {
                         const datum = {
-                            indexName: d[field.date],
-                            date: d[field.date],
-                            month: wm.getIndex(d[field.date]),
+                            indexName: d[field.name],
+                            date: d[field.name],
+                            month: wm.getIndex(d[field.name]),
                             low: d[field.low],
                             high: d[field.high],
                             elow: d[field.elow],
@@ -244,7 +240,7 @@ export default {
                         datum.property[2].value=e.avg>e.low&e.high>e.avg? 0 : 1.6;
                         let deviation=e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg)/e.low : (e.avg-e.high)/e.high);
                         datum.deviation=deviation;
-                        wm._padprocess[wm.getIndex(d[field.date])].push(d[field.date])
+                        wm._padprocess[wm.getIndex(datum.indexName)].push(datum.indexName)
                         labels.push(datum.indexName)
                         lows.push(datum.low, datum.elow);
                         highs.push(datum.high, datum.ehigh);
@@ -271,9 +267,9 @@ export default {
                     const field = this._field;
                     this._chartData = this._data.map(d => {
                         const datum = {
-                            indexName: d[field.date],
-                            date: d[field.date],
-                            month: wm.getIndex(d[field.date]),
+                            indexName: d[field.name],
+                            date: d[field.name],
+                            month: wm.getIndex(d[field.name]),
                             low: d[field.low],
                             high: d[field.high],
                             elow: d[field.elow],
@@ -387,7 +383,6 @@ export default {
                         .attr("mode","normal"))
                 }
                 _renderMainBar(){
-                    this._indexInfo = this._indexdata;
                     const r = this._radius,
                         R = r.outer+r.bubble*1.05,
                         wm = this,
@@ -410,12 +405,12 @@ export default {
                         RectWidth = 400,
                         rectX = r.outer+r.bubble* 5.4,  //rect_doct x
                         maxHeight = 25,   //rect max height
-                        rectPadding = {left: 5, right: 5, top: 5, bottom: 5},
+                        rectPadding = {left: 5, right: 5, top: 5, bottom: 2},
                         indexSpace = 5,
                         iconWidth = 20,
-                        totalHeight = (this._barVis ? 2 : 1) * maxHeight,
-                        rectNum = Math.floor((this._height - 50)/(totalHeight + indexSpace)),
-                        selectInfo = this._indexInfo.slice(0, this._indexInfo.length > rectNum ? rectNum : this._indexInfo.length),
+                        rectNum =  null,
+                        opacityCache = null,
+                        selectInfo = this._indexdata,
                         barVisObject = Object.assign({}, ...selectInfo.map(d => {return {[d.indexName] : this._barVis}})),
                         indexArray = d3.map(selectInfo, (d, i) => i),
                         indexSort = d3.map(selectInfo, d => d.indexName),
@@ -428,26 +423,28 @@ export default {
                         lineToCircle = null,
                         lineToRect = null,
                         lastY = null;
-                        renderyAxis()
+                        renderyAxis();
+
                         var lineG = mainG.append("g").attr("class", "lineG"),
                             arcG = mainG.append("g").attr("class", "arcG");
                         initLineG();
                         initArcG();
+
                         var sliderG = mainG.append("g")
                             .attr("class", "sliderG")
                             .attr("transform", `translate(${[rectX, 0]})`),
                             maxLength = 3,  //batch numbers
                             minRect = RectWidth/ (maxLength + 0.5),
-                            rectArray = this._rectArray ? this._rectArray : new Array(maxLength).fill(minRect).map((d, i) => Math.ceil(maxLength/2) == i + 1 ? 1.5 * d : d),   //batch position
+                            rectArray = new Array(maxLength).fill(minRect).map((d, i) => Math.ceil(maxLength/2) == i + 1 ? 1.5 * d : d),   //batch position
                             rectPosition = Array.from(d3.cumsum(rectArray));
-                            this._rectArray = rectArray;
                         initDragG();
+                        
                         var sliderData = this._sliderArray(selectInfo),
                             horizenEX = (new Array(maxLength).fill(0))
                             .map((d, i) => wm._deepCopy(sliderData).map((e, f) =>{ 
-                                    var temp = e.map(f => {
-                                        f.i = i;
-                                        return f
+                                    var temp = e.map(g => {
+                                        g.i = i;
+                                        return g
                                     })
                                     temp.i = i;
                                     temp.d = f;
@@ -456,7 +453,7 @@ export default {
                             )),
                             overlap = 3,    //horizen layer
                             overlapNum = [-1, -2, -3, 0, 1, 2],
-                            overHeight = [-3 , -2 , -1, 1, 2 , 3].map(d => d * maxHeight),
+                            overHeight = [-3 , -2 , -1, 1, 2 , 3].map(d => d * (maxHeight - rectPadding.top - rectPadding.bottom)),
                             horizenColor = i => {
                                 return ["#e34649", "#f7a8a9", "#fcdcdc", "#f7f7f7", "#fcdcdc","#f7a8a9", "#e34649"][i + (i >= 0) + overlap]
                             },
@@ -464,17 +461,21 @@ export default {
                             //https://observablehq.com/d/d503153fbfd48b03
 
                         wm._horizonView ? initMergeArea() : initHorizenArea();
-                        if(this._rectArray.some(d => d === maxHeight))renderRectG()
+                        if(rectArray.some(d => d === maxHeight))renderRectG()
                         initAxisG(timeScale);
+
                         var triangleG = mainG.append("g")
                             .attr("class", "triangleG")
                             .attr("transform", `translate(${[rectX - iconWidth - 2.5, 0]})`),
                             trianIcon = d => barVisObject[d.indexName] ? "M-5,-2.5l10,0l-5,5l-5,-5zM-5,-2.5z" : "M-2.5,0l0,-5l5,5l-5,5zM-2.5,0z";
                         initIcon();
+
                         var barG = mainG.append("g").attr("class", "barG").attr("transform", `translate(${[rectX- maxHeight - iconWidth, 0]})`);
                         initBarG();
+
                         var mouseInfo = this._mouseDis !== undefined ? mouseText(this._mouseDis) : undefined;
                         initMouseG();
+
                         let tempsort = d3.map(d3.sort(selectInfo, d => -d.humidity), d => d.indexName),
                             sortArray = d3.map(indexSort, d => tempsort.indexOf(d)),
                             totalSort = d3.map(d3.sort(selectInfo, d => -Math.abs(d.over)), d => d.indexName),
@@ -487,20 +488,30 @@ export default {
                             sortChange = (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1: value2,
                             sortText = ["Single" ,"Limit", "Total"];
                         initSort();
+
                         const switchG = mainG.append("g").attr("class", "switchG"),
                             textColor = ["Horizon", "River"],
                             tabColor = "#678fba",
                             transfrom = (v1, v2) => d => this._horizonView == Boolean(d) ? v1 : v2;
                         initSwitch();
+
+                        const visG = mainG.append("g").attr("class", "visG");
+                        initVisG();
+
+                        initMapArea()
+                        sliderG.selectAll(".heatMapG").raise();
+
                         function renderyAxis(){
                             let invert = d3.scaleOrdinal().domain(indexScale.range()).range(indexScale.domain())
                             rectHeight = indexArray.map(d => (barVisObject[indexSort[invert(+d)]] ? 2 : 1 )* maxHeight + indexSpace)
                             rectHeight.unshift(0)   //定位第一个元素
                             yScaleCache = Array.from(d3.cumsum(rectHeight)).map(d => -wm._height/2 + 2 * maxHeight + d);
+                            rectNum = yScaleCache.filter(d => d < wm._height/2 - maxHeight ).length;
+                            opacityCache = (d, i) => indexScale(i) < rectNum ? 1 : 0;
                             yScale = i => yScaleCache[indexScale(i)];
                             startXY = d => [R * (Math.sin(xpad[d.month](d.date)+ v)), -R * Math.cos(Math.abs(xpad[d.month](d.date)+ v))];
                             centerScaleY = d => startXY(d)[1] + 25/startXY(d)[0] * startXY(d)[1];
-                            lastY = yScale(indexArray[indexArray.length - 1]);
+                            lastY = wm._height/2 - maxHeight;
                             lineToRect = (d, i) =>{
                                 let centerY = centerScaleY(d),
                                     endY = yScale(+i);
@@ -516,7 +527,14 @@ export default {
                             triangleG.selectAll("g")
                                 .data(selectInfo)
                                 .join("g")
+                                .attr("opacity", opacityCache)
                                 .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight ]})`)
+                                .call(g => g.append("rect")
+                                    .attr("fill", "none")
+                                    .attr("width", maxHeight)
+                                    .attr("stroke", d => lc[d.month])
+                                    .attr("stroke-width", 0.25)
+                                    .attr("height", maxHeight))
                                 .call(g => g.append("path")
                                     .attr("transform", `translate(${[maxHeight/2, maxHeight/2]})`)
                                     .attr("d", trianIcon)
@@ -529,17 +547,11 @@ export default {
                                     d3.select(this).attr("d", trianIcon).transition(t);
                                     renderyAxis();
                                     renderSort();
-                                    // d.collapse ? removeBar(d.index) : renderSingelBar(d.index);
                                 }))
-                        }
-                        function removeBar(){
-
-                        }
-                        function renderSingelBar(index){// render triangleG
-                            // const horizenEX.
                         }
                         function initLineG(){
                             lineG.selectAll("g").data(selectInfo).join("g")
+                                .attr("opacity", opacityCache)
                                 .call(g => g.append("path")
                                     .attr("stroke", d => d3.color(lc[d.month]).darker(0.5))
                                     .datum(lineToCircle)
@@ -553,7 +565,8 @@ export default {
                                         .attr("transform", d =>  `translate(${[rectX - 145, centerScaleY(d)]})`))
                                 .call(g => g.append("text")
                                         .attr("class", "sortIndex")
-                                        .text((d, i) => i + 1)
+                                        .text((d, i) => +indexScale(i) + 1)
+                                        // .text((d, i) => i + 1)
                                         .attr("transform", d => `translate(${[rectX - 145, centerScaleY(d) + 2.5]})`))
                                 .call(g => g.append("text")
                                     .attr("font-size", "8px")
@@ -573,6 +586,7 @@ export default {
                             arcG.selectAll("g").data(selectInfo)
                                 .join("g")
                                 .attr("transform", d => `translate(${[rectX - 125, centerScaleY(d)]})`)
+                                .attr("opacity", opacityCache)
                                 .call(g => g.selectAll("path").data(d => pieAngle(d.property))
                                     .join("path")
                                     .attr("d", piearc)
@@ -592,6 +606,7 @@ export default {
                                     .data(selectInfo)
                                     .join("g")
                                     .attr("class", "dragElement")
+                                    .attr("opacity", opacityCache)
                                     .attr("transform", (d, i) => `translate(${[0 , yScale(i)]})`)
                                     .call(g => g.append('rect')
                                         .attr("width", 0.5)
@@ -627,7 +642,6 @@ export default {
                                 .attr("transform", d => `translate(${[rectPosition[d], 0]})`)
                             updateArea();
                             renderAxisG(timeScale);
-                            wm._rectArray = rectArray;
                             minRect !== maxHeight ? sliderG.selectAll(".rectG").remove() : renderRectG();
                         }
                         function initSort(){//init sortG
@@ -669,27 +683,38 @@ export default {
                             const t = d3.transition()
                                         .duration(300)
                                         .ease(d3.easeLinear);
+                                lineG.selectAll("g")
+                                    .transition(t)
+                                    .attr("opacity", opacityCache)
+                                lineG.selectAll(".sortIndex")
+                                    .transition(t)
+                                    .text((d, i) => indexScale(i) + 1)
                                 lineG.selectAll(".lineToRect")
                                     .transition(t)
                                     .attr("d", (d, i) => line(lineToRect(d, i)))
                                 if(wm._horizonView){ 
-                                    sliderG.selectAll(".selectG")
+                                    sliderG.selectAll(".batchElement")
                                         .transition(t)
-                                        .attr("transform", (d, i) =>`translate(${[0, yScale(i)]})`)                           
+                                        .attr("transform", (d, i) =>`translate(${[0, yScale(i)]})`)
+                                        .attr("opacity", opacityCache)
                                 }else{
-                                    sliderG.selectAll(".hozenG")
+                                    sliderG.selectAll(".horizenElement")
                                         .transition(t)
-                                        .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight ]})`)
+                                        .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight +  rectPadding.top]})`)
+                                        .attr("opacity", opacityCache)
                                 }
                                 sliderG.selectAll(".dragElement")
                                     .transition(t)
                                     .attr("transform", (d, i) =>`translate(${[0, yScale(i)]})`)
-                                sliderG.selectAll(".rectg")
+                                    .attr("opacity", opacityCache)
+                                sliderG.selectAll(".rectElement")
                                     .transition(t)
                                     .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight ]})`)
+                                    .attr("opacity", opacityCache)
                                 barG.selectAll("g")
                                     .transition(t)
                                     .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight]})`)
+                                    .attr("opacity", opacityCache)
                                 sortG.selectAll("rect")
                                     .transition(t)
                                     .attr("fill", sortChange(sortColor, "#fff"));
@@ -699,46 +724,97 @@ export default {
                                 triangleG.selectAll("g")
                                     .transition(t)
                                     .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight ]})`)
+                                    .attr("opacity", opacityCache)
+                                        .selectAll("path")
+                                        .attr("d", trianIcon)
                                 if(wm._mouseDis !== undefined){
                                     var mouseInfo = mouseText(wm._mouseDis);
                                     sliderG.selectAll(".textG")
                                         .transition(t)
-                                        .attr("transform", d =>`translate(${[wm._mouseDis - 10, yScale(d) - maxHeight/2]})`)
-                                        .text(d => (+mouseInfo[d]).toFixed(2))
+                                        .attr("opacity", opacityCache)
+                                        .attr("transform", (d, i) =>`translate(${[wm._mouseDis - 10, yScale(i) - maxHeight/2]})`)
+                                        .text((d, i) => (+mouseInfo[i]).toFixed(2))
+                                    sliderG.select(".mouseG").raise()
+                                    sliderG.selectAll(".textG").raise()
                                 }
+                                sliderG.selectAll(".heatMapElement")
+                                    .transition(t)
+                                    .attr("opacity", (d, i) => barVisObject[d[0].indexName] ? opacityCache(d, i) : 0)
+                                    .attr("transform", (d, i) =>`translate(${[0, yScale(i) + maxHeight]})`)
+                                arcG.selectAll("g")
+                                    .transition(t)
+                                    .attr("opacity", opacityCache)
                         }
                         function initSwitch(){ //init switchG
                             switchG.selectAll("g").data([1, 0]).join("g")
-                            .attr("transform", d => `translate(${[rectX +  60 * (1 - d), - wm._height/2 + 2.5]})`)//280  - 100
-                            .call(g => g.append("rect")
-                                .attr("fill", transfrom(tabColor, "#fff"))
-                                .attr("rx", 5)
-                                .attr("ry", 5)
-                                .attr("stroke", tabColor)
-                                .attr("stroke-width", 0.5)
-                                .attr("height", 20)
-                                .attr("width", 45))
-                            .call(g => g.append("text")
-                                .attr("fill", transfrom("#fff", tabColor))
-                                .attr("x", 22.5)
-                                .attr("y", 12.5)
-                                .text(d => textColor[d]))
-                            .on("click", (e, d) =>{
-                                if(wm._horizonView !== Boolean(d)){
-                                    wm._horizonView = Boolean(d);
-                                    let t = d3.transition()
-                                            .duration(300)
-                                            .ease(d3.easeLinear);
-                                    switchG.selectAll("rect")
-                                        .transition(t)
-                                        .attr("fill", transfrom(tabColor, "#fff"));
-                                    switchG.selectAll("text")
-                                        .transition(t)
-                                        .attr("fill", transfrom("#fff", tabColor));
-                                    wm._container.select(".mainG").remove()
-                                    wm._renderMainBar()
-                                }
-                            })
+                                .attr("transform", d => `translate(${[rectX +  60 * (1 - d), - wm._height/2 + 2.5]})`)//280  - 100
+                                .call(g => g.append("rect")
+                                    .attr("fill", transfrom(tabColor, "#fff"))
+                                    .attr("rx", 5)
+                                    .attr("ry", 5)
+                                    .attr("stroke", tabColor)
+                                    .attr("stroke-width", 0.5)
+                                    .attr("height", 20)
+                                    .attr("width", 45))
+                                .call(g => g.append("text")
+                                    .attr("fill", transfrom("#fff", tabColor))
+                                    .attr("x", 22.5)
+                                    .attr("y", 12.5)
+                                    .text(d => textColor[d]))
+                                .on("click", (e, d) =>{
+                                    if(wm._horizonView !== Boolean(d)){
+                                        wm._horizonView = Boolean(d);
+                                        let t = d3.transition()
+                                                .duration(300)
+                                                .ease(d3.easeLinear);
+                                        switchG.selectAll("rect")
+                                            .transition(t)
+                                            .attr("fill", transfrom(tabColor, "#fff"));
+                                        switchG.selectAll("text")
+                                            .transition(t)
+                                            .attr("fill", transfrom("#fff", tabColor));
+                                        if(wm._horizonView){
+                                            sliderG.selectAll(".horizenG")
+                                            // .transition(d3.transition()
+                                            //     .duration(200)
+                                            //     .ease(d3.easeLinear))
+                                            .remove();
+                                            initMergeArea()
+                                        }else{
+                                            sliderG.selectAll(".batchG")
+                                            // .transition(d3.transition()
+                                            //     .duration(150)
+                                            //     .ease(d3.easeLinear))
+                                            .remove();
+                                            initHorizenArea()
+                                        }
+                                    }
+                                })
+                        }
+                        function initVisG(){
+                            visG
+                                .attr("transform", `translate(${[rectX +  RectWidth/3, - wm._height/2 + 2.5]})`)
+                            visG.append("rect")
+                                    .attr("fill", wm._barVis ? tabColor : "white")
+                                    .attr("rx", 5)
+                                    .attr("ry", 5)
+                                    .attr("stroke", tabColor)
+                                    .attr("stroke-width", 0.5)
+                                    .attr("height", 20)
+                                    .attr("width", 45)
+                            visG.append("text")
+                                    .attr("fill", wm._barVis ? "white" : tabColor)
+                                    .attr("x", 22.5)
+                                    .attr("y", 12.5)
+                                    .text("vis")
+                            visG.on("click", function(e, d){
+                                    wm._barVis = !wm._barVis;
+                                    d3.select(this).select("rect").attr("fill", wm._barVis ? tabColor : "white")
+                                    d3.select(this).select("text").attr("fill", wm._barVis ? "white" : tabColor)
+                                    barVisObject = Object.assign({}, ...selectInfo.map(d => {return {[d.indexName] : wm._barVis}}))
+                                    renderyAxis();
+                                    renderSort();
+                                })
                         }
                         function initAxisG(batchTimeScale){ //init timeTick
                             sliderG.selectAll(".axisG").data(rectPosition)
@@ -766,13 +842,14 @@ export default {
                         function initBarG(){  //init BarG
                             barG
                                 .selectAll("g").data(selectInfo).join("g")
+                                .attr("opacity", opacityCache)
                                 .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight]})`)
                                 .call(g => g.append("rect")
                                     .attr("height", maxHeight)
                                     .attr("width", maxHeight)
                                     .attr("stroke", (d, i) => lc[selectInfo[i].month])
                                     .attr("fill", "none")
-                                    .attr("stroke-width", 0.5))
+                                    .attr("stroke-width", 0.25))
                                 .call(g => g.append("path")
                                     .attr("fill", "#b9c6cd")
                                     .attr("opacity", 0.8)
@@ -790,10 +867,11 @@ export default {
                                 .attr("transform", (d, i) =>`translate(${[mouseInfo ? wm._mouseDis : 0, 0]})`)
                                 .attr("stroke", mouseInfo !==undefined ? "#bbbcbd" : "none")
                                 .attr("stroke-width", 0.25)
-                            sliderG.selectAll("textG").data(Object.keys(selectInfo)).join("text")
+                            sliderG.selectAll("textG").data(selectInfo).join("text")
                                 .attr("class", "textG")
-                                .attr("transform", d =>`translate(${[mouseInfo ?  wm._mouseDis - 10 : 0 , yScale(d) - maxHeight/2]})`)
-                                    .text(d => mouseInfo !==undefined ? (+mouseInfo[d]).toFixed(2) : "")
+                                .attr("opacity", opacityCache)
+                                .attr("transform", (d, i) =>`translate(${[mouseInfo ?  wm._mouseDis - 10 : 0 , yScale(i) - maxHeight/2]})`)
+                                    .text((d, i) => mouseInfo !==undefined ? (+mouseInfo[i]).toFixed(2) : "")
                                     .attr("fill", "black")
                             sliderG.on("mousemove", (e, d) => {
                                 let mouseDis = e.offsetX - rectX;//mouse distance
@@ -803,8 +881,8 @@ export default {
                                     .attr("stroke", "#bbbcbd")
                                 var mouseInfo = mouseText(mouseDis);
                                 sliderG.selectAll(".textG")
-                                    .attr("transform", d =>`translate(${[mouseDis - 10, yScale(d) -maxHeight/2]})`)
-                                    .text(d => (+mouseInfo[d]).toFixed(2))
+                                    .attr("transform", (d, i) =>`translate(${[mouseDis - 10, yScale(i) -maxHeight/2]})`)
+                                    .text((d, i) => (+mouseInfo[i]).toFixed(2))
                                 wm._mouseDis = mouseDis;
                             })
                         }
@@ -816,7 +894,7 @@ export default {
                                 .call(g => g.selectAll("g")
                                     .data(d => horizenEX[+d])
                                     .join("g")
-                                    .attr("class", "rectg")
+                                    .attr("class", "rectElement")
                                     .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight]})`)
                                     .call(g => g.append("rect")
                                         .attr("height", maxHeight)
@@ -888,7 +966,7 @@ export default {
                                 return scale
                             });
                             let yBatch = d3.scaleLinear()
-                                .range([ 0, maxHeight - rectPadding.top])
+                                .range([0, maxHeight - rectPadding.top])//有个BUG ，无法改成下面一行
                                 // .range([rectPadding.bootom, maxBarHeight -rectPadding.top])
                                 .domain([0, 1]);
                             let mergeArea = d3.area()
@@ -933,6 +1011,23 @@ export default {
                                     .ease(d3.easeLinear))
                                     .attr("width", d => rectArray[d.i])
                             }
+                            initMapArea()
+                            // var [xBatch,xLabelData ,qBatch, t2Batch] = heatMapParameter(rectArray, horizenEX)
+                            // sliderG.selectAll(".heatMapG")
+                            //         .transition(d3.transition()
+                            //             .duration(150)
+                            //             .ease(d3.easeLinear))
+                            //         .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
+                            //         .call(g => g.selectAll(".mapQ")
+                            //             .attr("y", d => -qBatch(d.Q))
+                            //             .attr("height", d => qBatch(d.Q))
+                            //             .attr("width", (d, i) => xLabelData[d.i][i])
+                            //             .attr("x", (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2))
+                            //         .call(g => g.selectAll(".mapT2")
+                            //             .attr("y", d => -t2Batch(d.T2) - maxHeight/2)
+                            //             .attr("height", d => t2Batch(d.T2))
+                            //             .attr("width", (d, i) => xLabelData[d.i][i])
+                            //             .attr("x", (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2))
                         }
                         function initMergeArea(){
                             let [mergeArea, mergeLine, mergeLocation] = areaParameter(rectArray, horizenEX);
@@ -943,7 +1038,8 @@ export default {
                                     .call( g => g.selectAll("g")
                                         .data((d, i) => horizenEX[i])
                                         .join("g")
-                                        .attr("class", "selectG")
+                                        .attr("class", "batchElement")
+                                        .attr("opacity", opacityCache)
                                         .attr("transform", (d, i) =>`translate(${[0, yScale(i)]})`)
                                             .call(g => g.append("path")
                                                 .attr("fill", (d, i) => lc[selectInfo[i].month])
@@ -1001,14 +1097,15 @@ export default {
                                     .call(g => g.selectAll("g")
                                         .data((d, i) => horizenEX[i])
                                         .join("g")
-                                        .attr("class", "hozenG")
-                                        .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight ]})`)
+                                        .attr("class", "horizenElement")
+                                        .attr("opacity", opacityCache)
+                                        .attr("transform", (d, i) =>`translate(${[0, yScale(i) - maxHeight +  rectPadding.top]})`)
                                             .call(g => g.append("clipPath")
                                                 .attr("id", d => `${d.i}clipy${d.d}`)
                                                 .append("rect")
                                                     .attr("width", d => rectArray[d.i])
                                                     .attr("class", "clipRect")
-                                                    .attr("height", maxHeight))
+                                                    .attr("height", maxHeight - rectPadding.top - rectPadding.bottom))
                                             .call(g => g.append("defs").append("path")
                                                     .attr("opacity", 0.8)
                                                 .attr("class", "allpath")
@@ -1022,9 +1119,68 @@ export default {
                                                     .enter()
                                                     .append("use")
                                                     .attr("fill", (d, i) => horizenColor(overlapNum[i]))
-                                                    .attr("transform", (d, i) => `translate(0,${(overlapNum[i] + 1) * maxHeight})`)
+                                                    .attr("transform", (d, i) => `translate(0,${(overlapNum[i] + 1) * (maxHeight - rectPadding.top - rectPadding.bottom)})`)
                                                     .attr("href", d => `#${d.i}path-def${d.d}`)))
                         }
+                        function heatMapParameter(array, data){
+                            let xBatch = array.map((d, i) => {
+                                let l = array[i],
+                                    scale = d3.scaleLinear()
+                                        .range([rectPadding.left, l - rectPadding.right])
+                                        .domain(d3.extent(data[i][0], (e, f)=> e.time));
+                                return scale
+                            });
+                            let xLabelData = array.map((d,i) =>{
+                                let temp = data[i][0].map(d => xBatch[i](d.time));
+                                temp.unshift(rectPadding.left)
+                                let subtemp = d3.pairs(temp, (a, b) => b -a);
+                                let key = 2.2;
+                                let padding = subtemp.map((d, i) => {
+                                    if(i !== temp.length - 1){
+                                        return subtemp[i] > subtemp[i + 1] ? subtemp[i+1]/key : subtemp[i]/key;
+                                    }
+                                    return subtemp[i]/key
+                                })
+                                return padding
+                            })
+                            let yBatch1 = d3.scaleLinear()
+                                .range([0, maxHeight/2 - rectPadding.top/2])
+                                .domain(d3.extent(d3.map(data, d => d3.map(d, e => d3.map(e, f => f.Q))).flat(2)));
+                            let yBatch2 = d3.scaleLinear()
+                                .range([0, maxHeight/2 - rectPadding.top/2])
+                                .domain(d3.extent(d3.map(data, d => d3.map(d, e => d3.map(e, f => f.T2))).flat(2)));
+                            return [xBatch,xLabelData ,yBatch1, yBatch2]
+                        }
+                        function initMapArea(){
+                            var [xBatch,xLabelData ,qBatch, t2Batch] = heatMapParameter(rectArray, horizenEX)
+                            sliderG.selectAll(".heatMapG").data(rectPosition)
+                                    .join("g")
+                                    .attr("class", "heatMapG")
+                                    .attr("transform", (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`)
+                                    .call( g => g.selectAll("g")
+                                        .data((d, i) => horizenEX[i])
+                                        .join("g")
+                                        .attr("opacity", (d, i) => barVisObject[d[0].indexName] ? opacityCache(d, i) : 0)
+                                        .attr("class", "heatMapElement")
+                                        .attr("transform", (d, i) =>`translate(${[0, yScale(i) + maxHeight]})`)
+                                            .call(g => g.selectAll(".mapQ")
+                                                .data(d => d).join("rect")
+                                                .attr("fill", d => lc[d.process])
+                                                .attr("class", "mapQ")
+                                                .attr("y", d => -qBatch(d.Q))
+                                                .attr("height", d => qBatch(d.Q))
+                                                .attr("width", (d, i) => xLabelData[d.i][i])
+                                                .attr("x", (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2))
+                                            .call(g => g.selectAll(".mapT2")
+                                                .data(d => d).join("rect")
+                                                .attr("fill", d => lc[d.process])
+                                                .attr("class", "mapT2")
+                                                .attr("y", d => -t2Batch(d.T2) - maxHeight/2)
+                                                .attr("height", d => t2Batch(d.T2))
+                                                .attr("width", (d, i) => xLabelData[d.i][i])
+                                                .attr("x", (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2)))
+                        }
+
                 }
                 _renderWheelContent() {
                     const r = this._radius,
@@ -1552,7 +1708,7 @@ export default {
                                         .attr("filter","url(#filter)")
                                         .attr("height", 95))
                                 .call(g => g.append("g")                       
-                                    .call(g => t.date = g.append("text").attr("fill", "black").text("Date: "))
+                                    .call(g => t.name = g.append("text").attr("fill", "black").text("Date: "))
                                     .call(g =>  g.append("line").attr("x1",-1).attr("x2", 130).style("stroke", d3.color(lck).darker(4)).attr("y1", 2).attr("y2", 2).style("stroke-width", 0.5))
                                     .call(g => t.avg = g.append("text").attr("y", "1.3em").attr("fill", "black").text("Avg: ")) 
                                     .call(g => t.deviation = g.append("text").attr("y", "2.6em").attr("fill", "black").text("Deviation: ")))
@@ -1563,7 +1719,7 @@ export default {
                                     .call(g => t.humidity = g.append("text").attr("y", "7.8em").attr("fill", "black").text("Humidity: "))
                                     // .call(g =>  g.append("line").attr("x1",-1).attr("x2", 135).style("stroke", d3.color(lck).darker(4)).attr("y1", 2+5*12.4).attr("y2", 2+5*12.4).style("stroke-width", 0.5))
                                     
-                            t.date.text(`Index: ${d.indexName}`);
+                            t.name.text(`Index: ${d.indexName}`);
                             t.avg.text(`Value: ${d.avg.toFixed(3)}`)
                             t.deviation.text(`Deviation: ${d.deviation.toFixed(3)}`)
                             t.high.text(`High: ${d.high.toFixed(3)}`);
@@ -1752,7 +1908,7 @@ export default {
                 _sliderArray(arr){
                     return d3.map(arr, (d, f) => {
                         d.index = f;
-                        console.log(batchData);
+                        // console.log(batchData);
                         var name = d.indexName,
                         
                         batch = batchData.map(e => {
@@ -1768,6 +1924,8 @@ export default {
                             s.exl = e.extremum_l[i],
                             s.upid = e.upid, 
                             s.value = e.value[i],
+                            s.indexName = name,
+                            s.process = this.getIndex(name),
                             s.ovalue = e.original_value[i],
                             s.max = Math.max(s.h, s.l, s.value),
                             s.min = Math.min(s.h, s.l, s.value),

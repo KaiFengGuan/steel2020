@@ -20,7 +20,7 @@ export default {
 
   mounted() {},
   computed: {
-    ...mapGetters(['labelColor', 'startDate', 'endDate', 'brushSelectColor'])
+    ...mapGetters(['labelColor', 'noflagColor', 'startDate', 'endDate', 'brushSelectColor'])
   },
   methods: {
     ...mapMutations(['setStartDate', 'setEndDate']),
@@ -41,7 +41,7 @@ export default {
       // y
       const miniYScale = d3
         .scaleLinear()
-        .domain([0, d3.max(brushData.good_flag, (d, i) => d + brushData.bad_flag[i])])
+        .domain([0, d3.max(brushData.good_flag, (d, i) => d + brushData.bad_flag[i] + brushData.no_flag[i])])
         .nice()
         .range([0, miniHeight * 0.75])
       var timeout = undefined
@@ -59,14 +59,14 @@ export default {
       const curve = d3.curveBundle.beta(1)
       const newDate = []
       const endTimeOutput1 = brushData.endTimeOutput
+      const no_flag1 = brushData.no_flag
       const good_flag1 = brushData.good_flag
       const bad_flag1 = brushData.bad_flag
 
-      endTimeOutput1.forEach((d, i) => newDate.push({ endTimeOutput: d, good_flag: good_flag1[i], bad_flag: bad_flag1[i] }))
-      // console.log(newDate)
-      const stack = d3.stack().keys(['good_flag', 'bad_flag']).order(d3.stackOrderNone).offset(d3.stackOffsetNone)
+      endTimeOutput1.forEach((d, i) => newDate.push({ endTimeOutput: d, no_flag: no_flag1[i], good_flag: good_flag1[i], bad_flag: bad_flag1[i] }))
+      const stack = d3.stack().keys(['no_flag', 'good_flag', 'bad_flag']).order(d3.stackOrderNone).offset(d3.stackOffsetNone)
       const series = stack(newDate)
-      // console.log(series)
+      console.log('series: ', series)
       const miniXScale1 = d3
         .scaleBand()
         .domain(brushData.endTimeOutput)
@@ -78,7 +78,8 @@ export default {
         .domain([0, d3.max(series, d => d3.max(d, d => d[1]))])
         .nice()
         .range([miniHeight - miniMargin.bottom, miniMargin.top])
-      const z = d3.scaleQuantize().domain([0, 1]).range(['#94a7b7', '#c65b24'])
+      // const z = d3.scaleBand().domain([0, 1, 2]).range()
+      const z = ['#71797E', '#94a7b7', '#c65b24']
 
       const area = d3
         .area()
@@ -86,16 +87,6 @@ export default {
         .x(d => miniXScale1(d.data.endTimeOutput))
         .y0(d => miniYScale1(d[0]))
         .y1(d => miniYScale1(d[1]))
-
-      // svg原始的
-      //   .append('g')
-      //   .attr('transform', `translate(${0},${13})`)
-      //   .selectAll('path')
-      //   .data(series)
-      //   .join('path')
-      //   .attr('d', area)
-      //   .attr('fill', (d, i) => z(i))
-      //   .attr('opacity', 0.4)
       mainG
         .append('g')
         .attr('class', 'AreaRiver')
@@ -104,48 +95,8 @@ export default {
         .data(series)
         .join('path')
         .attr('d', area)
-        .attr('fill', (d, i) => z(i))
-        .attr('opacity', 0.2)
-      /*  svg
-        .append('g')
-        .attr('transform', `translate(${0},${10})`)
-        .selectAll('path')
-        .data(series)
-        .enter()
-        .append('path')
-        .attr('d', area)
-        .attr('fill', (d, i) => z(i))
-        .attr('opacity', 0.4) */
-
-      // const miniBars = svg
-      //   .selectAll('.bar')
-      //   .data(keys)
-      //   .join('g')
-      //   .call(g =>
-      //     g
-      //       .append('rect')
-      //       .attr('class', 'goodbar')
-      //       .attr('x', d => miniXScale(brushData.endTimeOutput[d]))
-      //       .attr('y', d => miniHeight - miniYScale(brushData.good_flag[d]))
-      //       .attr('width', miniXScale.bandwidth())
-      //       .attr('height', d => miniYScale(brushData.good_flag[d]))
-      //       .attr('stroke', 'none')
-      //       .attr('fill', this.labelColor[1])
-      //   )
-      //   .call(g =>
-      //     g
-      //       .append('rect')
-      //       .attr('class', 'badbar')
-      //       .attr('x', d => miniXScale(brushData.endTimeOutput[d]))
-      //       .attr('y', d => miniHeight - miniYScale(brushData.good_flag[d]) - miniYScale(brushData.bad_flag[d]))
-      //       .attr('width', miniXScale.bandwidth())
-      //       .attr('height', d => miniYScale(brushData.bad_flag[d]))
-      //       .attr('stroke', 'none')
-      //       .attr('fill', this.labelColor[0])
-      //   )
-      //   .on('mouseover', mouseover)
-      //   .on('mouseout', mouseout)
-
+        .attr('fill', (d, i) => z[i])
+        .attr('opacity', 0.2) 
       const miniBars = svg
         .select('.mainG')
         .append('g')
@@ -156,9 +107,20 @@ export default {
         .call(g =>
           g
             .append('rect')
+            .attr('class', 'nobar')
+            .attr('x', d => miniXScale(brushData.endTimeOutput[d]))
+            .attr('y', d => miniHeight - miniYScale(brushData.no_flag[d]))
+            .attr('width', miniXScale.bandwidth())
+            .attr('height', d => miniYScale(brushData.no_flag[d]))
+            .attr('stroke', 'none')
+            .attr('fill', this.noflagColor)
+        )
+        .call(g =>
+          g
+            .append('rect')
             .attr('class', 'goodbar')
             .attr('x', d => miniXScale(brushData.endTimeOutput[d]))
-            .attr('y', d => miniHeight - miniYScale(brushData.good_flag[d]))
+            .attr('y', d => miniHeight - miniYScale(brushData.no_flag[d]) - miniYScale(brushData.good_flag[d]))
             .attr('width', miniXScale.bandwidth())
             .attr('height', d => miniYScale(brushData.good_flag[d]))
             .attr('stroke', 'none')
@@ -169,7 +131,7 @@ export default {
             .append('rect')
             .attr('class', 'badbar')
             .attr('x', d => miniXScale(brushData.endTimeOutput[d]))
-            .attr('y', d => miniHeight - miniYScale(brushData.good_flag[d]) - miniYScale(brushData.bad_flag[d]))
+            .attr('y', d => miniHeight - miniYScale(brushData.no_flag[d]) - miniYScale(brushData.good_flag[d]) - miniYScale(brushData.bad_flag[d]))
             .attr('width', miniXScale.bandwidth())
             .attr('height', d => miniYScale(brushData.bad_flag[d]))
             .attr('stroke', 'none')
@@ -232,6 +194,7 @@ export default {
 
         d3.selectAll('.goodbar').attr('opacity', (d, i) => (brushEnter[i] ? 1 : 0.2))
         d3.selectAll('.badbar').attr('opacity', (d, i) => (brushEnter[i] ? 1 : 0.2))
+        d3.selectAll('.nobar').attr('opacity', (d, i) => (brushEnter[i] ? 1 : 0.2))
         const textX = +d3.select('.selection').attr('x') + +d3.select('.selection').attr('width') / 2,
           textY = +d3.select('.selection').attr('y') + 11
         d3.select('.selectionText').remove()
@@ -302,12 +265,14 @@ export default {
           if (d) {
             upperData.push({
               endTimeOutput: brushData.endTimeOutput[i],
+              no_flag: brushData.no_flag[i],
               good_flag: brushData.good_flag[i],
               bad_flag: brushData.bad_flag[i]
+              // bad_flag: brushData.bad_flag[i]
             })
           }
         })
-
+        console.log('upperDate',upperData);
         const upperSeries = stack(upperData)
         // svg原始的
         mainG
@@ -318,7 +283,7 @@ export default {
           .data(upperSeries)
           .join('path')
           .attr('d', area)
-          .attr('fill', (d, i) => z(i))
+          .attr('fill', (d, i) => z[i])
           .attr('opacity', 0.6)
         //刷选河流图结束
         svg.selectAll('.barGroup').raise()
@@ -425,11 +390,10 @@ export default {
       d3.select('.areaChange').attr('cursor', 'pointer').on('click', switchArea)
       d3.select('.upperRiver').attr('opacity', 0)
       function switchBar(event, d) {
-        // const t = d3.transition().duration(750).ease(d3.easeLinear)
-        // console.log(event)
-        // d3.select('.upperRiver').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 0)
-        // d3.select('.AreaRiver').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 0)
-        // d3.select('.barGroup').selectAll('g').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 1)
+        const t = d3.transition().duration(750).ease(d3.easeLinear)
+        d3.select('.upperRiver').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 0)
+        d3.select('.AreaRiver').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 0)
+        d3.select('.barGroup').selectAll('g').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 1)
         flag = 0
         d3.select('.areaChange').select('rect').attr('fill', util.buttonTextAttr.unactivated_color)
         d3.select('.areaChange').select('text').attr('fill', util.buttonTextAttr.baseTextAttr.fontColor)
@@ -437,12 +401,11 @@ export default {
         d3.select('.barChange').select('text').attr('fill', util.buttonTextAttr.unactivated_color)
       }
       function switchArea() {
-        // const t = d3.transition().duration(2000).ease(d3.easeLinear)
+        const t = d3.transition().duration(2000).ease(d3.easeLinear)
         flag = 1
-        // d3.select('.upperRiver').transition(t).attr('opacity', 1)
-      /*   svg.select('.barChange')
+        d3.select('.upperRiver').transition(t).attr('opacity', 1)
+        svg.select('.barChange')
           .call(g => g.select('rect').attr('fill', 'white'))
-          .call(g => ) */
         d3.select('.AreaRiver').attr('opacity', 1)
         d3.select('.barGroup').selectAll('g').attr('opacity', 0)
         d3.select('.barChange').select('rect').attr('fill', util.buttonTextAttr.unactivated_color)
@@ -477,10 +440,17 @@ export default {
             .style('font-weight', util.sliderTooltipAttr.line3.fontWeight)
             .style('font-style', util.sliderTooltipAttr.line3.fontStyle)
 
+        const line4 = text.append('tspan').attr('x', 0).attr('y', '3.9em')
+            .style('font-family', util.sliderTooltipAttr.line4.fontFamily)
+            .style('font-size', util.sliderTooltipAttr.line4.fontSize)
+            .style('font-weight', util.sliderTooltipAttr.line4.fontWeight)
+            .style('font-style', util.sliderTooltipAttr.line4.fontStyle)
+
         tooltip.style('display', null).attr('fill', 'white')
         line1.text(`Time : ` + brushData.endTimeOutput[d]).attr('fill', '#2c3e50')
-        line2.text(`Good : ` + brushData.good_flag[d]).attr('fill', util.sliderTooltipAttr.line2.fontColor)
-        line3.text(`Bad  : ` + brushData.bad_flag[d]).attr('fill', util.sliderTooltipAttr.line3.fontColor)
+        line2.text(`No : ` + brushData.no_flag[d]).attr('fill', util.sliderTooltipAttr.line2.fontColor)
+        line3.text(`Good : ` + brushData.good_flag[d]).attr('fill', util.sliderTooltipAttr.line3.fontColor)
+        line4.text(`Bad  : ` + brushData.bad_flag[d]).attr('fill', util.sliderTooltipAttr.line4.fontColor)
         const box = text.node().getBBox()
         let x = event.offsetX,
           y = event.offsetY

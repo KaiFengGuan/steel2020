@@ -486,7 +486,8 @@ export default {
 					.style("fill","none")
 					.attr("width", mareylength- mareyEntry + 8 + labelwidth)
 					.attr("height", height - margin.top - margin.bottom))
-					.attr("filter","url(#shadow-card)")
+          .attr("filter","url(#shadow-card)")
+        // debugger
 			renderG.append("g")
 				.call(g => g.append("rect")
 					.attr("x" , mareylength + 35)

@@ -36,6 +36,7 @@ var categoryslabel = {
 // var labelColor = [ '#fa558f', '#7f8df5']    //颜色控制
 // var labelColor = [ "#e0978f" , "#8fa4ae"]   //blue red original
 var labelColor = [ "#c65b24", "#94a7b7"] // red grey  
+var noflagColor = '#71797E'
 var delabelColor = ["#e3ad92",   "#b9c6cd"]
 var labelColor2 = [ '#e34649', '#5164f5']
 var processColor =['#fcd8a9','#cce9c7',"#c1c9ee"]; 
@@ -59,8 +60,9 @@ var cardTitletAttr  = setAttr(GillSans, "#6d7885", "14px", "500", "normal")
 // Embedding View
 var sliderTooltipAttr = {
   line1: setAttr(GillSans, "#2c3e50", "11px", "bold", "normal"),
-  line2: setAttr(GillSans, labelColor[1], "11px", "normal", "normal"),
-  line3: setAttr(GillSans, labelColor[0], "11px", "normal", "normal")
+  line2: setAttr(GillSans, noflagColor, "11px", "normal", "normal"),
+  line3: setAttr(GillSans, labelColor[1], "11px", "normal", "normal"),
+  line4: setAttr(GillSans, labelColor[0], "11px", "normal", "normal")
 }
 var scatterTooltipAttr = {
   line1: setAttr(GillSans, "white", "12px", "bold", "normal"),

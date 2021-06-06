@@ -5,18 +5,29 @@ function resolve (dir) {
 }
 
 module.exports = {
+    configureWebpack: {
+      devtool: 'source-map'
+    },
     lintOnSave: false,
     devServer: {
         port: 8889,
         proxy: {
             '/baogangapi': {
-                target: 'http://localhost:5000',
+                target: 'http://localhost:5555',
                 // target: 'http://202.118.21.236:7205',
                 changeOrigin: true,
                 pathRewrite: {
                     '^/baogangapi': '/api'
                 }
             },
+            '/newbaogangapi': {
+              target: 'http://localhost:5000',
+              // target: 'http://202.118.21.236:7205',
+              changeOrigin: true,
+              pathRewrite: {
+                  '^/newbaogangapi': '/api'
+              }
+          },
 
             'myf': {
                 // target: 'http://219.216.80.62:8088',

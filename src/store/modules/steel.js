@@ -5,6 +5,7 @@ let state = {
     brushSelection: new Map(),
     isSwitch: true,
     labelColor: [ "#c65b24", "#94a7b7"], //bad good
+    noflagColor: '#71797E',
     startDate: new Date('2018-11-04 00:00:00'),
     endDate: new Date('2018-11-06 04:00:00'),
     brushSelectColor: "#c6cacc",
@@ -29,6 +30,7 @@ let getters = {
         return state.isSwitch ? (d => +d.label === 0 ? utils.delabelColor[0] : utils.delabelColor[1]) : (d => utils.categoryColor(d.productcategory))
     },
     labelColor : state => state.labelColor,
+    noflagColor : state => state.noflagColor,
     startDate: state => state.startDate,
     endDate: state => state.endDate,
     brushSelectColor: state => state.brushSelectColor,

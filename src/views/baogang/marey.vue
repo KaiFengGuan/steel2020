@@ -247,7 +247,7 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2018, 10, 1, 0, 0),
+			startmonth: new Date(2019, 2, 1, 0, 0),
 			time: undefined,
 			selectedTrainData: [],
 			corrdata:[],
@@ -343,8 +343,9 @@ export default {
 		selectDateStart: vm => util.timeFormat(vm.dateselect[0]),
 		selectDateEnd: vm => util.timeFormat(vm.dateselect[1]),
 		brushData : function(){
-			var start = new Date('2018-11-04 00:00:00'),
-				end = new Date('2018-11-06 04:00:00');
+			var start = new Date('2018-01-04 00:00:00'),
+        end = new Date('2018-01-06 04:00:00');
+      // console.log(this.monthdata);
 			return this.monthdata.filter(d =>{
 				var toc = new Date(d.toc);
 				
@@ -381,13 +382,13 @@ export default {
 			this.getHttpData()
 		},
 		async getHttpData() {
-			this.jsonData = myJsonData
-			this.mergeflag()
-			this.jsonData = this.jsonData.filter(d => {
-				return this.brushUpid.includes(d.upid)
-			})
-			this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
-			return
+			// this.jsonData = myJsonData
+			// this.mergeflag()
+			// this.jsonData = this.jsonData.filter(d => {
+			// 	return this.brushUpid.includes(d.upid)
+			// })
+			// this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
+			// return
 			this.plateTempPropvalue=['All']
 			this.loadingDataLoading = true
 			let startDate = this.startDateString;
@@ -432,7 +433,8 @@ export default {
 			this.jsonData = this.jsonData.filter(d => {
 				return this.brushUpid.includes(d.upid)
 			})
-			if(this.scatterData.length!==0)this.mergeflag()
+      if(this.scatterData.length!==0)this.mergeflag()
+      // console.log("jsonData: ", this.jsonData);
 			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
 
 			// clear
@@ -525,14 +527,24 @@ export default {
 		},
 
 		getJsonData(startDate, endDate) {
-			return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoDataDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/50/`)
-		.catch(error => {
-				this.getNotification("getJsonData:"+error)
-			})
+			// return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoDataDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/50/`)
+      //   .catch(error => {
+      //       this.getNotification("getJsonData:"+error)
+      //     })
+      return baogangPlotAxios(`/newbaogangapi/v1.0/getMareyTimesDataApi/all/${startDate}/${endDate}/100`,
+        {"steelspec": "all", "tgtplatethickness": '["all"]'})
+        .catch(error => {
+          this.getNotification("getJsonData:"+error)
+        })
 		},
 
 		getStationsData(startDate, endDate) {
-			return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoStationDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/`)
+			// return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoStationDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/`)
+			// 	.catch(function(error){
+			// 		this.getNotification("getStationsData:"+error)
+      // 	})
+      return baogangPlotAxios(`/newbaogangapi/v1.0/getMareyStationsDataApi/all/${startDate}/${endDate}/`,
+        {"steelspec": "all", "tgtplatethickness": '["all"]'})
 				.catch(function(error){
 					this.getNotification("getStationsData:"+error)
 				})
@@ -750,7 +762,7 @@ export default {
 			})
 		},
 		async getTimeBrushData() {
-			await baogangAxios(`/baogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${this.selectDateStart}/${this.selectDateEnd}/`)
+			await baogangAxios(`/newbaogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${this.selectDateStart}/${this.selectDateEnd}/`)
 			.then(Response => {
 				this.timeBrushData=Response.data
 			}).catch(function(error) {

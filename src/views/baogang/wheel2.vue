@@ -17,6 +17,7 @@ import deMergeLabel from "assets/images/deMergeLabel.svg";
 import util from './util.js';
 import processJson from "@/assets/json/processJson.json"
 import {mapGetters} from "vuex"
+import { init } from 'echarts';
 export default {
 	data() {
 		return {
@@ -137,11 +138,27 @@ export default {
                     this._indexScale = undefined;
                     this._mouseDis  = undefined;
                     this._barVis = true;
+                    this._labelLimit = 0.5;
+
+                    //Style 
+                    this._cleadStyle = {
+                        "opacity": 0.4,
+                        "stroke-width": 1
+                    }
+                    this._leadlineStyle = {
+                        opacity: 0.4,
+                        original_strwidth: 0.5,
+                        highlight_strwidth: 1
+                    }
+                    this._circleStyle ={
+                        original_r: 2,
+                        highlight_r: 3.5
+                    }
                 }
                 getIndex(_){
                     for (let item in this._process){
                         if(this._process[item].indexOf(_)!==-1){
-                            return item
+                            return +item
                         }
                     }
                 }
@@ -237,6 +254,9 @@ export default {
                             ]
                         };
                         const e=datum;
+                        datum.property.map(m => {
+                            m.process = +datum.month
+                        });
                         datum.property[2].value=e.avg>e.low&e.high>e.avg? 0 : 1.6;
                         let deviation=e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg)/e.low : (e.avg-e.high)/e.high);
                         datum.deviation=deviation;
@@ -262,7 +282,7 @@ export default {
                     this._initScales(labels, lows, highs, precs, humis);
                 }
                 _fliterdata(){
-                    const wm=this,limit = 0.5;
+                    const wm=this,limit = this._labelLimit;
                     const labels=[],lows = [], highs = [], precs = [], humis = [];
                     const field = this._field;
                     this._chartData = this._data.map(d => {
@@ -401,7 +421,7 @@ export default {
                         piearc = d3.arc()
                                 .innerRadius(0)
                                 .outerRadius(r.bubble * 0.16);
-                    var limit = 0.3,
+                    var limit = this._labelLimit,
                         RectWidth = 400,
                         rectX = r.outer+r.bubble* 5.4,  //rect_doct x
                         maxHeight = 25,   //rect max height
@@ -1183,13 +1203,13 @@ export default {
 
                 }
                 _renderWheelContent() {
-                    const r = this._radius,
+                    const contentG = this._g.append("g").attr("class", "contentG"),
+                        r = this._radius,
                         lc = this._labelcolor,
-                        limit = 0.5,
+                        limit = this._labelLimit,
                         a = this._padAngle,
                         xpad = this._xpad,
                         v = (this._dayRadian-Math.PI)/2,
-                        icon = [heaticon , rollicon , coolicon],
                         iconwhite = [heatwhite , rollwhite , coolwhite],
                         piearc = d3.arc()
                             .innerRadius(0)
@@ -1198,13 +1218,10 @@ export default {
                         wm = this,
                         wheel = this._container,
                         processData = d3.group(this._chartData, d => d.month);
-                        const sample = this._sort(this._chartData)
-                        this._allIndex = d3.map(sample, d => d.date);
-                        var outrate = (item1 , item2) => {
-                            return d => (wm._allIndex.indexOf(d.date) !== -1) ? item1 : item2
-                        },
-                        className = value => d => value + d.month,
-                        idName = value => d => value + d.date,
+                    const sample = this._sort(this._chartData);
+                        this._allIndex = d3.map(sample, d => d.indexName);
+                    var processClass = value => d => value + d.month,
+                        indexId = value => d => value + d.indexName,
 
                         //河流图节点
                         circleColor = d => d3.color(lc[d.month]).darker(0.2),
@@ -1212,140 +1229,195 @@ export default {
 
                         //index line
                         lineStroke = d => (wm._allIndex.indexOf(d.date) !== -1) ? d3.color(lc[d.month]).darker(2) : d3.color(lc[d.month]).darker(0.6),
-                        lineStrokeWidth = outrate(1,0.5),
-                        lineOpacity = 0.4,
+                        lineStrokeWidth = this._outrate(this._leadlineStyle.highlight_strwidth, this._leadlineStyle.original_strwidth),
                         
                         //index rect
                         pathStroke = d => d3.color(lc[d.month]).darker(0.6),
                         pathFill = d => lc[d.month];
+                    const padIndex = [...processData.keys()];//[0, 1, 2] or [0, 2];
                     const scatterG = this._g
                         .append("g")
-                        .attr("class", "scatterG"),
-                    iconG = this._g
-                        .append("g")
-                        .attr("class", "iconG");
+                        .attr("class", "scatterG");
+                    
                     scatterG
-                        .selectAll("g").data(xpad).join("g").selectAll("g")
-                            .data((d, i) => processData.get("" + i) !== undefined ? processData.get("" + i) : [])
+                        .selectAll("g").data(padIndex).join("g").selectAll("g")
+                            .data(d => processData.get(d))
                             .join("g")
                             .attr("transform", d => `rotate(${(xpad[d.month](d.date) + v) * 180 / Math.PI - 180 })`)
                             .call(g => g.append("circle")
-                                .attr("class", className("circle_color"))
-                                .attr('id', idName('circle'))
+                                .attr("class", processClass("circle_color"))
+                                .attr('id', indexId('circle'))
                                 .attr("fill", circleColor)
                                 .attr("stroke", strokeColor)
-                                .attr("opacity", 1)
                                 .attr("stroke-width", 0.5)
                                 .attr("stroke-opacity", 1)
                                 .attr("cy", d => this._y(d.avg))
-                                .attr("r",2))
+                                .attr("r", this._outrate(this._circleStyle.highlight_r, this._circleStyle.original_r)))
                             .call(g => g.append("line")     //line1
-                                .attr("class" , d => "lead"+ d.month +" line" + d.indexName +" "+"linecurve")
-                                .attr("id" , idName("linecurve"))
-                                .style("visibility", wm._merge ? "hidden" : outrate("visible" , "hidden" ))
+                                .attr("class" , d => "leadline"+ d.month +" line" + d.indexName +" "+"linecurve")
+                                .attr("id" , indexId("linecurve"))
+                                .style("visibility", wm._merge ? "hidden" : this._outrate("visible" , "hidden" ))
                                 .attr("y1",r.inner*0.8 )
-                                .attr("y2", d => this._y(d.avg)-2)
+                                .attr("y2", d => this._y(d.avg) - 2)
                                 .attr("stroke", lineStroke)
                                 .attr("stroke-width", lineStrokeWidth)
-                                .attr("opacity", lineOpacity))
+                                .attr("opacity", this._leadlineStyle.opacity))
                             .call(g => g.append("line")     //line2
-                                .attr("class" , d => "lead"+ d.month +" line" + d.indexName +" "+"linestart")
-                                .attr("id" , idName("linestart"))
+                                .attr("class" , d => "leadline"+ d.month +" line" + d.indexName +" "+"linestart")
+                                .attr("id" , indexId("linestart"))
                                 .attr("y1", d => this._y(d.avg)+2)
                                 .attr("y2", r.outer)
                                 .attr("stroke", lineStroke)
                                 .attr("stroke-width", lineStrokeWidth)
-                                .attr("opacity", lineOpacity))
+                                .attr("opacity", this._leadlineStyle.opacity))
                             .call(g => g.append("line")
-                                .attr("class" , d => "lead"+ d.month +" line" + d.indexName)
+                                .attr("class" , d => "leadline"+ d.month +" line" + d.indexName)
                                 .attr("y1", d => this._h(d.humidity))
                                 .attr("y2", d => r.outer+r.bubble*1.10-this._hb(d.precipitation))
                                 .attr("stroke", lineStroke)
                                 .attr("stroke-width", lineStrokeWidth)
-                                .attr("opacity", lineOpacity))
-                            .call(g => g.append("line")
-                                .attr("class" , d => "lead"+ d.month +" line" + d.indexName +" "+"textline")
-                                .attr("id" , idName("textline"))
-                                .style("visibility", wm._merge ? "hidden" : outrate("visible" , "hidden" ))
-                                .attr("y1", d => r.outer+r.bubble*1.10)
-                                .attr("y2", d => r.outer+r.bubble*1.10)
-                                .attr("stroke", lineStroke)
-                                .attr("stroke-width", lineStrokeWidth)
-                                .attr("opacity", lineOpacity))
+                                .attr("opacity", this._leadlineStyle.opacity))
                             .call(g => g.append("path")
-                                .attr("class", className("humidity"))
-                                .attr('id', idName('humidity'))
+                                .attr("class", processClass("humidity"))
+                                .attr('id', indexId('humidity'))
                                 .attr("fill", pathFill)
                                 .attr("stroke", pathStroke)
-                                .attr("d", d => this._linepad(r.outer, this._h(d.humidity)))
+                                .attr("d", d => this._linepad(r.outer, this._h(d.humidity))))
                             .call(g => g.append("path")
-                                .attr("class", className("precipitation"))
-                                .attr('id',idName('precipitation'))
+                                .attr("class", processClass("precipitation"))
+                                .attr('id', indexId('precipitation'))
                                 .attr("fill", pathFill)
                                 .attr("stroke", pathStroke)
-                                .attr("d", d => this._linepad(r.outer+r.bubble*1.10-this._hb(d.precipitation) , r.outer+r.bubble*1.10))))
-                    iconG.selectAll("g").data(xpad)
-                        .join("image")   //icon
-                        .attr("class", "icon")
-                        .attr("id", (d , i) => "icon" + i)
-                        .attr("transform", (d , i) => `rotate(${(this._padAngle[i][0] + this._padAngle[i][1])/2 * 180 / Math.PI - 5.8})`)
-                        .style("visibility", (d , i) => processData.get("" + i) === undefined ? "hidden" : "visible")
-                        .attr("y",-r.inner*0.97)
-                        .attr("href", (d , i) => icon[i])
+                                .attr("d", d => this._linepad(r.outer+r.bubble*1.10-this._hb(d.precipitation) , r.outer+r.bubble*1.10)))
+                    
+                    const iconG = contentG.append("g")
+                            .attr("class", "iconG"),
+                        proIcon = [heaticon , rollicon , coolicon],
+                        lcFunc = d => lc[d],
+                        lcBorderFunc =  d => d3.color(lc[d]).darker(1),
+                        lineColorFunc =  d => d3.color(lc[d]).darker(1);
+                    initIconG()
+                    function initIconG(){
+                        iconG.selectAll("g")
+                            .data([0, 1, 2])
+                            .join("g")
+                            .call(g => g.append("image")
+                                .attr("class", "icon")
+                                .attr("id", d => `icon${d}`)
+                                .attr("transform", (d , i) => `rotate(${(wm._padAngle[i][0] + wm._padAngle[i][1])/2 * 180 / Math.PI - 5.8})`)
+                                .style("visibility", (d , i) => processData.get(i) ? "visible" : "hidden")
+                                .attr("y",-r.inner*0.97)
+                                .attr("href", (d , i) => proIcon[i]))
+
+                    }
+
+                    initRiverG()
+                    function initRiverG(){
+                        contentG.selectAll(".riverG")
+                            .data(padIndex)
+                            .join("g")
+                            .attr("class", "riverG")
+                            .call(g => g.append("path")     //河流图内层
+                                .attr("fill", lcFunc)
+                                .attr("class" , d => `innerRiver${d}`)
+                                .attr("fill-opacity", 0.8)
+                                .attr("d", d => d3.areaRadial()
+                                    .curve(d3.curveCardinal)
+                                    .angle(e => xpad[d](e.date) + v)
+                                    .innerRadius(e => wm._y(e.low))
+                                    .outerRadius(e => wm._y(e.high))(processData.get(d))))
+                            .call(g => g.append("path")     //河流图外层
+                                .attr("fill", lcFunc)
+                                .attr("class", d => `outerRiver${d}`)
+                                .attr("fill-opacity", 0.4)
+                                .attr("d", d => d3.areaRadial()
+                                    .curve(d3.curveCardinal)
+                                    .angle(e => xpad[d](e.date) + v)
+                                    .innerRadius(e => wm._y(e.elow))
+                                    .outerRadius(e => wm._y(e.ehigh))(processData.get(d))))
+                            .call(g => g.append("path")      //河流线
+                                .attr("fill", "none")
+                                .attr("class" , d => `riline${d}`)
+                                .attr("stroke", lineColorFunc)
+                                .attr("stroke-width", 1)
+                                .attr("d", d => d3.lineRadial()
+                                    .curve(d3.curveLinear)
+                                    .angle(e => xpad[d](e.date) + v)
+                                    .radius(e => wm._y(e.avg))(processData.get(d))))
+                            .call(g => g.append("line")      //扇形左边界
+                                .attr("y1", r.inner)
+                                .attr("y2", r.outer)
+                                .attr("stroke", lcBorderFunc)
+                                .attr("stroke-width", 0.5)
+                                .attr("transform", d => `rotate(${a[d][0]* 180 / Math.PI - 180})`))
+                            .call(g => g.append("line")     //扇形右边界
+                                .attr("y1", r.inner)
+                                .attr("y2", r.outer)
+                                .attr("stroke", lcBorderFunc)
+                                .attr("stroke-width", 0.5)
+                                .attr("transform", d => `rotate(${a[d][1]* 180 / Math.PI - 180})`))
+                            // .call(g => g.append("path") //河流图边框
+                            //     .attr("d", d => d3.arc()
+                            //         .startAngle(a[d][0])
+                            //         .endAngle(a[d][1])
+                            //         .innerRadius(r.outer)
+                            //         .outerRadius(r.outer+r.bubble*1.1+0.25)
+                            //     )
+                            //     .attr("stroke", lcBorderFunc)
+                            //     .attr("fill","none")
+                            //     .attr("stroke-width", 0.5))
+                    }
+
+                    const outerArcG = contentG.append("g")
+                            .attr("class", "outerArcG"),
+                        outerTextG = contentG.append("g")
+                            .attr("class", "outerTextG"),
+                        pieAngle = d3.pie()
+                            .value(d => d.angle)
+                            .startAngle(0.5* Math.PI)
+                            .endAngle(2.5 * Math.PI);
+                    if(!this._merge){
+                        initOuterArcG();
+                        initOuterTextG();
+                    }
+                    function initOuterArcG(){
+                        outerArcG.selectAll("g")
+                            .data(wm._chartData)
+                                .join("g")
+                                .attr("transform", d => `rotate(${(xpad[d.month](d.indexName) + v) * 180 / Math.PI - 180 }) translate(${[0,r.outer+r.bubble*1.38]})`)
+                                .attr("visibility", d => sample.findIndex(e => e.indexName===d.indexName) < 9 && sample.findIndex(e => e.indexName===d.indexName) !== -1 ? "visible" : "hidden")
+                                .attr("class", d => `piePath${d.indexName}`)
+                                .call(g => g.selectAll("path").data(d => pieAngle(d.property))
+                                    .join("path")
+                                    .attr("d", piearc)
+                                    .attr("class", d => `arcpie`+ d.data.process)
+                                    .attr("fill", d => ((+d.data.value) > limit? lc[+d.data.process] : "white"))
+                                    .style("stroke", d => d3.color(lc[+d.data.process]).darker(2))
+                                    .style('stroke-width', 0.25))
+                    }
+                    function initOuterTextG(){
+                        outerTextG.selectAll("g")
+                            .data(wm._chartData)
+                                .join("text")
+                                .attr("transform", d => `rotate(${(xpad[d.month](d.indexName) + 1.5*v) * 180 / Math.PI - 180 }) translate(${[0,r.outer+r.bubble*1.46]})`)
+                                .attr("visibility", d => sample.findIndex(e => e.indexName===d.indexName) < 9 && sample.findIndex(e => e.indexName===d.indexName) !== -1 ? "visible" : "hidden")
+                                .attr("class", processClass("arctext"))
+                                .attr("id", indexId("arctext"))
+                                .attr("fill", d =>  d3.color(lc[d.month]).darker(1.5))
+                                .attr("font-weight", "bold")
+                                .text(d => sample.findIndex(e=> e.indexName===d.indexName) + 1)
+                    }
 
                     for (let key in xpad){
-                        const processdata = processData.get(key), 
+                        const processdata = processData.get(+key), 
                         lck = lc[key],
                         daker = d3.color(lck).darker(0.6),
                         darkerborder = d3.color(lck).darker(2);
                         if(processdata === undefined) continue                 
-                        const area = d3.areaRadial()
-                            // .curve(d3.curveBasis)
-                            .curve(d3.curveCardinal)
-                            .angle(d => xpad[key](d.date) + v);
-                        const line = d3.lineRadial()
-                            .curve(d3.curveLinear)
-                            .angle(d => xpad[key](d.date) + v);
                         const arc=d3.arc()
                             .startAngle(a[key][0])
                             .endAngle(a[key][1]);
-                        this._g
-                        .call(g => g.append("path")     //河流图内层
-                                .attr("fill", lck)
-                                .attr("class" , "river1"+key)
-                                .attr("fill-opacity", 0.4)
-                                .attr("d", area
-                                    .innerRadius(d => this._y(d.low))
-                                    .outerRadius(d => this._y(d.high))
-                                (processdata)))
-                        .call(g => g.append("path")     //河流图外层
-                            .attr("fill", lck)
-                            .attr("class" , "river2"+key)
-                            .attr("fill-opacity", 0.8)
-                            .attr("d", area
-                                .innerRadius(d => this._y(d.elow))
-                                .outerRadius(d => this._y(d.ehigh))
-                                (processdata)))
-                        .call(g => g.append("path")      //河流线
-                            .attr("fill", "none")
-                            .attr("class" , "riline"+key)
-                            .attr("stroke", daker)
-                            .attr("stroke-width", 1)
-                            .attr("d", line
-                                .radius(d => this._y(d.avg))
-                            (processdata)))
-                        .call(g => g.append("line")      //扇形左边界
-                                .attr("y1", r.inner)
-                                .attr("y2", r.outer)
-                                .attr("stroke", darkerborder)
-                                .attr("stroke-width", 0.5)
-                                .attr("transform", d => `rotate(${a[key][0]* 180 / Math.PI - 180})`))
-                        .call(g => g.append("line")     //扇形右边界
-                                .attr("y1", r.inner)
-                                .attr("y2", r.outer)
-                                .attr("stroke", darkerborder)
-                                .attr("stroke-width", 0.5)
-                                .attr("transform", d => `rotate(${a[key][1]* 180 / Math.PI - 180})`))
+                        contentG
                         .call(g => g.append("path")
                                 .attr("d", arc
                                     .innerRadius(r.outer)
@@ -1367,14 +1439,14 @@ export default {
                             .attr("opacity", 0.6)
                             .on("mouseover", (e, d) => {
                                 this._hightlightcss()
-                                wheel.selectAll(".riline"+key)
-                                    .attr("opacity",1)
+                                wheel.selectAll(".riline" + key)
+                                    .attr("opacity", 1)
                                 wheel.selectAll(".clead"+key )
+                                    .attr("opacity", wm._cleadStyle.opacity)
+                                wheel.selectAll(".innerRiver"+key)
+                                    .attr("opacity", 0.8)
+                                wheel.selectAll(".outerRiver"+key)
                                     .attr("opacity", 0.4)
-                                wheel.selectAll(".river1"+key)
-                                    .attr("opacity",0.4)
-                                wheel.selectAll(".river2"+key)
-                                    .attr("opacity",0.8)
                                 wheel.selectAll("#process"+key)
                                     .attr("fill",d3.color(lck).darker(0.2))
                                     .attr("opacity" , 0.6)
@@ -1383,22 +1455,22 @@ export default {
                                 wheel.selectAll("#icon"+key)
                                     .attr("href", iconwhite[key])
                                 wheel.selectAll(".circle_color"+key)
-                                    .attr("r",outrate (3.5 , 2))
+                                    .attr("r", wm._outrate(wm._circleStyle.highlight_r , wm._circleStyle.original_r))
                                     .attr("opacity", 1);
                                 wheel.selectAll(".precipitation"+key)
-                                    .attr("stroke",d => (wm._allIndex.indexOf(d.indexName) !== -1) ? d3.color(lck).darker(1.6) :daker)
+                                    .attr("stroke", wm._outrate(d3.color(lck).darker(1.6), daker))
                                     .attr("opacity", 1)
                                 wheel.selectAll(".humidity"+key)
-                                    .attr("stroke",d => (wm._allIndex.indexOf(d.indexName) !== -1) ? d3.color(lck).darker(1.6) :daker)
+                                    .attr("stroke", wm._outrate(d3.color(lck).darker(1.6), daker))
                                     .attr("opacity", 1)
-                                wheel.selectAll(".lead"+key )
-                                    .attr("stroke-width", outrate(1.5,0.5))
-                                    .attr("opacity", 0.4)
+                                wheel.selectAll(".lead" + key )
+                                    .attr("stroke-width", wm._outrate(wm._leadlineStyle.highlight_strwidth, wm._leadlineStyle.original_strwidth))
+                                    .attr("opacity", wm._leadlineStyle.opacity)
                                 wheel.selectAll(".linestart")
-                                    .attr("y1", d => (wm._allIndex.indexOf(d.indexName) !== -1) ? this._y(d.avg)+3.5 : this._y(d.avg)+2)
+                                    .attr("y1", d => this._y(d.avg) + wm._outrate(wm._leadlineStyle.highlight_strwidth, wm._leadlineStyle.original_strwidth)(d))
                                 wheel.selectAll(".linecurve")
-                                    .attr("y2", d => (wm._allIndex.indexOf(d.indexName) !== -1) ? this._y(d.avg)-3.5 : this._y(d.avg)-2)
-                                wheel.selectAll(".arcpie"+key)
+                                    .attr("y2", d => this._y(d.avg) - wm._outrate(wm._leadlineStyle.highlight_strwidth, wm._leadlineStyle.original_strwidth)(d))
+                                wheel.selectAll(".arcpie"+key).selectAll("path")
                                     .attr("opacity", 1)
                                     .style('stroke-width', 0.5)
                                 wheel.selectAll(".arctext"+key)
@@ -1408,20 +1480,20 @@ export default {
                             })
                             .on("mouseleave", (e, d) => {
                                 this._initcss()
-                                wheel.selectAll("#process"+key)
+                                wheel.selectAll("#process" + key)
                                     .attr("fill",lck)
                                 wheel.selectAll("#circle"+key)
                                     .attr("stroke" , daker)
                                 wheel.selectAll("#icon"+key)
-                                    .attr("href", icon[key])
+                                    .attr("href", proIcon[key])
                                 wheel.selectAll(".circle_color"+key)
-                                        .attr("r",2);
+                                        .attr("r", this._leadlineStyle.original_strwidth);
                                 wheel.selectAll(".precipitation"+key)
                                     .attr("stroke",daker)
                                 wheel.selectAll(".humidity"+key)
                                     .attr("stroke",daker)
                                 wheel.selectAll(".lead"+key)
-                                    .attr("stroke-width", outrate(1,0.5))
+                                    .attr("stroke-width", wm._outrate(1,0.5))
                                 wheel.selectAll(".linestart")
                                     .attr("y1", d =>  this._y(d.avg)+2)
                                 wheel.selectAll(".linecurve")
@@ -1431,64 +1503,30 @@ export default {
                                 wheel.selectAll(".arctext"+key)
                                     .attr("fill", d3.color(lck).darker(1.5))
                             }))
-
-                        for (let item in processdata){
-                            if(wm._merge) break
-                            const pindex=processdata[item];
-                            if(pindex.humidity<limit&&pindex.precipitation<limit)continue
-                            const thisangel=(xpad[key](pindex.date) + v) * 180 / Math.PI - 180;
-                            
-                            const pie = d3.pie()
-                                .value(d => d.angle)
-                                .startAngle(0.5* Math.PI)
-                                .endAngle(2.5 * Math.PI);
-                                // .startAngle(1.5* Math.PI-thisangel/180*Math.PI)
-                                // .endAngle(1.5* Math.PI-thisangel/180*Math.PI + 2* Math.PI);
-                            let piedata=pie(pindex.property)
-                            let g=this._g.selectAll(".pie"+pindex.date)
-                                .data(piedata).enter()
-                                .append("g")
-                                .attr("transform", `rotate(${(xpad[key](pindex.date) + v) * 180 / Math.PI - 180 }) translate(${[0,r.outer+r.bubble*1.30]})`);
-                            g.append("path")
-                                .attr("class", `arcpie`+key +' pie'+ pindex.date)
-                                .attr("d", piearc)
-                                .attr("fill", (d,i) => ((+d.data.value)>limit? lck : "white"))
-                                .style("stroke", darkerborder)
-                                .style('stroke-width', 0.25)
-                                .attr("opacity", 1)
-                            let label=(+sample.findIndex((value, index, arr)=> value.indexName===pindex.date))
-                            let text=label !==-1  ? (sample.length-label) : "";
-                            text= text >9 ? "" : text;
-                            this._g.append("g")
-                                .attr("class", `arctext`+key)
-                                .attr("transform", `rotate(${(xpad[key](pindex.date) + 1.5*v) * 180 / Math.PI - 180 }) translate(${[0,r.outer+r.bubble*1.38]})`)
-                            .call(g => g.append("text")     //外圈 circle
-                                .attr("id", `arctext`+pindex.date)
-                                .attr("fill", d3.color(lck).darker(1.5))
-                                .style("font-family", "DIN")
-                                .style("padding", "1px")
-                                .attr("font-size", "6pt")
-                                .attr("font-weight", "bold")
-                                .text(text))     
-                        }
-
-                        this._g.append("g").selectAll(" .visoverlay")
-                            .data(processdata)
+                    }
+                    const overlayG = this._g.append("g")
+                            .attr("class", "overlayG");
+                    
+                    function initInnerOverlay(){
+                        overlayG.selectAll(" .visoverlay")
+                            .data(wm._chartData)
                             .join("g")
                             .attr("class", "visoverlay")
-                            .attr("transform", d => `rotate(${xpad[key](d.date) * 180 / Math.PI - 180})`) // rad 2 deg - 180 -> rotate back to 12 o'clock                
+                            .attr("transform", d => `rotate(${xpad[d.month](d.indexName) * 180 / Math.PI - 180})`) // rad 2 deg - 180 -> rotate back to 12 o'clock                
                             .call(g => g.append("path")
-                                .attr("d", this._line(r.inner, r.max)))
+                                .attr("d", wm._line(r.inner, r.max)))
                                 .on("mouseenter", (e, d) => {
-                                    insertInfo(e,lck,d);
-                                    this._hightlightcss()
-                                    axisenter(d.indexName,key,lck,daker,true);                                   
+                                    wm._insertInfo(e, d);
+                                    wm._hightlightcss()
+                                    wm._axisenter(d.indexName, d.month, true);                               
                                 })
                                 .on("mouseleave", (e, d) => {
-                                    this._initcss()
-                                    axisout(d.indexName,key,lck,daker,true);
+                                    wm._initcss()
+                                    wm._axisout(d.indexName, d.month, true);
                                 });
                     }
+                    initInnerOverlay()
+                    contentG.raise()
                     for (let item in sample){
                         let index = chorddata['label'].indexOf(sample[item].indexName),targets=[],id=sample[item].indexName;
                         for (let target =item+1;target < sample.length ;target++){
@@ -1501,7 +1539,7 @@ export default {
                         }
                         graph.nodes.push({'id':id,'group': sample[item].month,'targets':targets})
                     }
-                    const nodeG=this._g.append("g")
+                    const nodeG = this._g.append("g")
                             .attr("transform",`rotate(${-60})`)
                             .attr("class", "nodeG"),
                         tree = d3.cluster()
@@ -1552,7 +1590,7 @@ export default {
                             .attr("d", this._line(r.inner*0.8, r.max)))
                             .on("mouseenter", overed)
                             .on("mouseout", outed)
-                    const labelcol=(d , i) => d3.color(lc[+d[0].data.group]).darker(2);
+                    const labelcol=(d , i) => d3.color(lc[+d[0].data.group]).darker(0.6);
                     const linedata=root.leaves().flatMap(leaf => leaf.outgoing);
                     const link = nodeG.append("g")
                         .attr("stroke", colornone)
@@ -1566,202 +1604,77 @@ export default {
                                 return "clead"+ (+d[0].data.group) + " clinein"+d[0].data.id +" clineout"+d[1].data.id
                             })
                             .attr("stroke",  labelcol)
-                            .attr("stroke-width",1)
-                            .attr("opacity", 0.4)
-                        d3.selectAll(".processPath").raise()
-                        d3.selectAll(".icon").raise()
-                        function overed(e, d){
-                            const name=d.data.id,key=d.data.group,lck=lc[key],daker=d3.color(lck).darker(0.6);
-                            const data=wm._chartData.filter(d => d.indexName===name)[0];
-                            wm._hightlightcss()
-                            wheel.selectAll(".clead" + key)
-                                .attr("opacity", 0.1)
-                            axisenter(name,key,lck,daker,true);
-                            let rlines=multiplyaxis(name)
-                            for (let index of rlines){
-                                axisenter(index,key,lck,daker,false);
-                            }
-                            insertInfo(e,lck,data);
+                            .attr("stroke-width", this._cleadStyle["stroke-width"])
+                            .attr("opacity", this._cleadStyle.opacity)
+                    function overed(e, d){
+                        const name=d.data.id,key=d.data.group;
+                        const data=wm._chartData.filter(d => d.indexName===name)[0];
+                        wm._hightlightcss()
+                        wm._axisenter(name, key, true);
+                        let rlines=multiplyaxis(name)
+                        for (let index of rlines){
+                            wm._axisenter(index, key, false);
                         }
+                        wm._insertInfo(e, data)
+                    }
 
-                        function outed(event, d) {
-                            const name=d.data.id,key=d.data.group,lck=lc[key],daker=d3.color(lck).darker(0.6);
-                            wm._initcss()
-                            axisout(name,key,lck,daker,true);
-                            let rlines=multiplyaxis(name)
-                            for (let index of rlines){
-                                axisout(index,key,lck,daker,false);
+                    function outed(event, d) {
+                        const name = d.data.id,key=d.data.group;
+                        wm._initcss()
+                        wm._axisout(name, key, true);
+                        let rlines=multiplyaxis(name)
+                        for (let index of rlines){
+                            wm._axisout(index, key, false);
+                        }
+                    }
+                    function multiplyaxis(name){
+                        var target=[]
+                        for (let item of root.leaves()){
+                            if(item.data.id===name){
+                                target=item.data.targets
                             }
                         }
-                        function multiplyaxis(name){
-                            var target=[]
-                            for (let item of root.leaves()){
-                                if(item.data.id===name){
-                                    target=item.data.targets
-                                }
-                            }
-                            for (let item of linedata){
-                                if(item[1].data.id===name){
-                                    target.push(item[0].data.id)
-                                }
-                            }
-                            return [...new Set(target)]
-                        }
-                        function axisenter(name,key,lck,daker,flag){
-                            // hightlightcss()
-                            wheel.selectAll(".riline"+key)
-                                    .attr("opacity",1)
-                            wheel.selectAll(".river1"+key)
-                                    .attr("opacity",0.4)
-                            wheel.selectAll(".river2"+key)
-                                .attr("opacity",0.8)
-                            wheel.selectAll("#process" + key)
-                                    .attr("opacity" , 0.6)
-                            wheel.select("#circle"+name)
-                                    .attr("r",3.5)
-                                    .attr("opacity", 1);
-                            wheel.select("#precipitation"+name)
-                                .attr("stroke",d => (wm._allIndex.indexOf(d.indexName) !== -1) ? d3.color(lck).darker(1.6) :daker)
-                                .attr("opacity", 1)
-                            wheel.select("#humidity"+name)
-                                .attr("stroke", d => (wm._allIndex.indexOf(d.indexName) !== -1) ? d3.color(lck).darker(1.6) :daker)
-                                .attr("opacity", 1)
-                            wheel.selectAll(".line"+name)
-                                .attr("stroke",d3.color(lck).darker(4))
-                            wheel.selectAll(".line" + name)
-                                .attr("stroke-width", 1.5)
-                                .attr("opacity", 0.4)
-                            wheel.selectAll("#textline" + name)
-                                .style("visibility", "visible")
-                                .attr("y2", outrate(r.outer+r.bubble*1.10,r.outer+r.bubble*1.20))
-                            wheel.selectAll("#linestart"+ name)
-                                .attr("y1", d => wm._y(d.avg)+3.5 )
-                            wheel.selectAll("#linecurve" + name)
-                                .attr("y2", d =>  wm._y(d.avg)-3.5)
-                            wheel.selectAll(".pie"+ name)
-                                .style('stroke-width', 0.5)
-                                .attr("opacity", 1)
-                            wheel.selectAll("#arctext"+name)
-                                    .attr("opacity", 1)
-                                    .attr("fill", d3.color(lck).darker(4))
-                            if(flag){
-                                wheel.selectAll(".clinein" + name)
-                                    .attr("opacity", 0.5)
-                                wheel.selectAll(".clineout" + name)
-                                    .attr("opacity", 0.5)
+                        for (let item of linedata){
+                            if(item[1].data.id===name){
+                                target.push(item[0].data.id)
                             }
                         }
-                        function axisout(name,key,lck,daker,flag){
-                            // initcss()
-                            wheel.select("#circle"+name)
-                                        .attr("r",2);
-                            wheel.select("#precipitation"+name)
-                                .attr("stroke",daker)
-                            wheel.select("#humidity"+name)
-                                .attr("stroke",daker)
-                            wheel.selectAll(".line"+name)
-                                .attr("stroke",daker)        
-                            wheel.selectAll(".line" + name)
-                                .attr("stroke-width", outrate(1,0.5))
-                            wheel.selectAll("#textline" + name)
-                                .style("visibility", wm._merge ? "hidden" : outrate("visible" , "hidden" ))
-                                .attr("y2", r.outer+r.bubble*1.10)
-                            wheel.selectAll("#linestart"+ name)
-                                .attr("y1", d =>  wm._y(d.avg)+2)
-                            wheel.selectAll("#linecurve" + name)
-                                .attr("y2", d =>  wm._y(d.avg)-3.5)
-                            wheel.selectAll(".pie"+ name)
-                                .style('stroke-width', 0.25)
-                            wheel.selectAll("#arctext"+name)
-                                .attr("fill", d3.color(lck).darker(1.5))
-                            wheel.selectAll(".dailyInfo").remove()
-                            if(flag){
-                                wheel.selectAll(".clineout" + name)
-                                    .attr("opacity",0.4)
-                                    .attr("stroke", labelcol).raise()
-                                wheel.selectAll(".clinein" + name)
-                                        .attr("opacity",0.4)
-                            }
-                        }
-                        function insertInfo(e,lck,d){
-                            const t = wm._texts;
-                            let x=e.offsetX+wm._g.node().getBBox().x,
-                                y=e.offsetY+wm._g.node().getBBox().y;
-                            x*y>0 ? (x<0 ? (x=x-40,y=y-40):(x=x+20,y=y+40)) :(x<0 ? (x=x-40,y=y+40):(x=x+40,y=y-60));
-                            wm._dailyInfo = wm._g.append("g")
-                                // .style("visibility", "hidden")
-                                .attr("transform", `translate(${[x,y]})`)
-                                .attr("class","dailyInfo")
-                                .attr("font-size", "7pt")
-                                .style("font-family", "DIN")
-                                .style("font-weight", "normal")
-                                .call(g => g.append("rect")
-                                        .attr("x" , -10)
-                                        .attr("y" , -15)
-                                        .attr("rx" , 5)
-                                        .attr("ry", 5)
-                                        .style("fill",d3.color(lck).brighter(0.2))
-                                        .attr("stroke", "grey")
-                                        .attr("stroke-width",1)
-                                        .attr("width", 165)
-                                        .attr("opacity" ,0.5)
-                                        .attr("filter","url(#filter)")
-                                        .attr("height", 95))
-                                .call(g => g.append("g")                       
-                                    .call(g => t.name = g.append("text").attr("fill", "black").text("Date: "))
-                                    .call(g =>  g.append("line").attr("x1",-1).attr("x2", 130).style("stroke", d3.color(lck).darker(4)).attr("y1", 2).attr("y2", 2).style("stroke-width", 0.5))
-                                    .call(g => t.avg = g.append("text").attr("y", "1.3em").attr("fill", "black").text("Avg: ")) 
-                                    .call(g => t.deviation = g.append("text").attr("y", "2.6em").attr("fill", "black").text("Deviation: ")))
-                                    .call(g => t.high = g.append("text").attr("y", "3.9em").attr("fill", "black").text("High: "))
-                                    .call(g => t.low = g.append("text").attr("y", "5.2em").attr("fill", "black").text("Low: "))
-                                    .call(g => t.prec = g.append("text").attr("y", "6.5em").attr("fill", "black").text("Prec.: "))
-                                    .call(g =>  g.append("line").attr("x1",-1).attr("x2", 135).style("stroke", d3.color(lck).darker(4)).attr("y1", 2+4*12.4).attr("y2", 2+4*12.4).style("stroke-width", 0.5))
-                                    .call(g => t.humidity = g.append("text").attr("y", "7.8em").attr("fill", "black").text("Humidity: "))
-                                    // .call(g =>  g.append("line").attr("x1",-1).attr("x2", 135).style("stroke", d3.color(lck).darker(4)).attr("y1", 2+5*12.4).attr("y2", 2+5*12.4).style("stroke-width", 0.5))
-                                    
-                            t.name.text(`Index: ${d.indexName}`);
-                            t.avg.text(`Value: ${d.avg.toFixed(3)}`)
-                            t.deviation.text(`Deviation: ${d.deviation.toFixed(3)}`)
-                            t.high.text(`High: ${d.high.toFixed(3)}`);
-                            t.low.text(`Low: ${d.low.toFixed(3)}`);
-                            t.prec.text(`SPE.: ${d.precipitation.toFixed(3)}`);
-                            t.humidity.text(`T^2: ${d.humidity.toFixed(3)}`);
-                        }
+                        return [...new Set(target)]
+                    }
                 }
 
-                _axisenter(name,key,lck,daker,flag){
-                    const cG = this._container
-                    // hightlightcss()
+                _axisenter(name, key, flag){
+                    const cG = this._container,
+                        wm = this,
+                        lck =  this._labelcolor[key],
+                        daker = d3.color(lck).darker(0.6);
                     cG.selectAll(".riline"+key)
                             .attr("opacity",1)
-                    cG.selectAll(".river1"+key)
-                            .attr("opacity",0.4)
-                    cG.selectAll(".river2"+key)
-                        .attr("opacity",0.8)
+                    cG.selectAll(".innerRiver"+key)
+                            .attr("opacity", 0.8)
+                    cG.selectAll(".outerRiver"+key)
+                        .attr("opacity", 0.4)
                     cG.selectAll("#process" + key)
                             .attr("opacity" , 0.6)
                     cG.select("#circle"+name)
-                            .attr("r",3.5)
+                            .attr("r", this._circleStyle.highlight_r)
                             .attr("opacity", 1);
                     cG.select("#precipitation"+name)
-                        .attr("stroke",d => (wm._allIndex.indexOf(d.indexName) !== -1) ? d3.color(lck).darker(1.6) :daker)
+                        .attr("stroke", wm._outrate(d3.color(lck).darker(1.6), daker))
                         .attr("opacity", 1)
                     cG.select("#humidity"+name)
-                        .attr("stroke", d => (wm._allIndex.indexOf(d.indexName) !== -1) ? d3.color(lck).darker(1.6) :daker)
+                        .attr("stroke", wm._outrate(d3.color(lck).darker(1.6), daker))
                         .attr("opacity", 1)
                     cG.selectAll(".line"+name)
                         .attr("stroke",d3.color(lck).darker(4))
                     cG.selectAll(".line" + name)
                         .attr("stroke-width", 1.5)
                         .attr("opacity", 0.4)
-                    cG.selectAll("#textline" + name)
-                        .style("visibility", "visible")
-                        .attr("y2", outrate(r.outer+r.bubble*1.10,r.outer+r.bubble*1.20))
                     cG.selectAll("#linestart"+ name)
-                        .attr("y1", d => wm._y(d.avg)+3.5 )
+                        .attr("y1", d => wm._y(d.avg) + this._circleStyle.highlight_r)
                     cG.selectAll("#linecurve" + name)
-                        .attr("y2", d =>  wm._y(d.avg)-3.5)
-                    cG.selectAll(".pie"+ name)
+                        .attr("y2", d => wm._y(d.avg) - this._circleStyle.highlight_r)
+                    cG.selectAll(".piePath"+ name).selectAll("path")
                         .style('stroke-width', 0.5)
                         .attr("opacity", 1)
                     cG.selectAll("#arctext"+name)
@@ -1769,18 +1682,51 @@ export default {
                             .attr("fill", d3.color(lck).darker(4))
                     if(flag){
                         cG.selectAll(".clinein" + name)
-                            .attr("opacity", 0.5)
+                            .attr("opacity", this._cleadStyle.opacity)
                         cG.selectAll(".clineout" + name)
-                            .attr("opacity", 0.5)
+                            .attr("opacity", this._cleadStyle.opacity)
+                    }
+                }
+
+                _axisout(name, key, flag){
+                    const cG = this._container,
+                        // wm = this,
+                        lck =  this._labelcolor[key],
+                        daker = d3.color(lck).darker(0.6);
+                    cG.select("#circle"+name)
+                        .attr("r", this._circleStyle.original_r);
+                    cG.select("#precipitation"+name)
+                        .attr("stroke", daker)
+                    cG.select("#humidity"+name)
+                        .attr("stroke", daker)
+                    cG.selectAll(".line"+name)
+                        .attr("stroke", daker)        
+                    cG.selectAll(".line" + name)
+                        .attr("stroke-width", this._outrate(this._leadlineStyle.highlight_strwidth, this._leadlineStyle.original_strwidth))
+                    cG.selectAll("#linestart"+ name)
+                        .attr("y1", d =>  this._y(d.avg) + this._circleStyle.original_r)
+                    cG.selectAll("#linecurve" + name)
+                        .attr("y2", d =>  this._y(d.avg)- this._circleStyle.original_r)
+                    cG.selectAll(".piePath"+ name).selectAll("path")
+                        .style('stroke-width', 0.25)
+                    cG.selectAll("#arctext"+name)
+                        .attr("fill", d3.color(lck).darker(1.5))
+                    cG.selectAll(".dailyInfo").remove()
+                    if(flag){
+                        cG.selectAll(".clineout" + name)
+                            .attr("opacity",0.4)
+                            .attr("stroke", daker).raise()
+                        cG.selectAll(".clinein" + name)
+                                .attr("opacity",0.4)
                     }
                 }
                 _initcss(){
                     const cG = this._container;
                     for (let i in [0,1,2]){
-                        cG.selectAll(".lead"+i )
-                            .attr("opacity", 0.4)
-                        cG.selectAll(".clead"+i )
-                            .attr("opacity", 0.4)
+                        cG.selectAll(".leadline"+i )
+                            .attr("opacity", this._leadlineStyle.opacity)
+                        cG.selectAll(`.clead${i}`)
+                            .attr("opacity", this._cleadStyle.opacity)
                         cG.selectAll(".humidity"+i)
                             .attr("opacity", 1)
                         cG.selectAll(".precipitation"+i)
@@ -1791,18 +1737,20 @@ export default {
                             .attr("opacity", 1)
                         cG.selectAll(".arctext"+i)
                             .attr("opacity", 1)
-                        cG.selectAll("#process"+i)
-                            .attr("opacity" , 0.6)
-                        cG.selectAll(".river1"+i)
-                            .attr("opacity",0.4)
-                        cG.selectAll(".river2"+i)
-                            .attr("opacity",0.8)
+                        cG.selectAll(".innerRiver"+i)
+                            .attr("opacity", 0.8)
+                        cG.selectAll(".outerRiver"+i)
+                            .attr("opacity", 0.4)
                     }
+                    cG.selectAll(".processPath")
+                        .attr("opacity" , 0.6)
                 }
                 _hightlightcss(){
                     const cG = this._container;
                     for (let i in [0,1,2]){
-                        cG.selectAll(".lead" + i )
+                        cG.selectAll(".riline" + i)
+                            .attr("opacity", 0.4)
+                        cG.selectAll(".leadline" + i )
                             .attr("opacity", 0.1)
                         cG.selectAll(".clead" + i )
                             .attr("opacity", 0.1)
@@ -1816,15 +1764,58 @@ export default {
                             .attr("opacity", 0.5)
                         cG.selectAll(".arctext" + i)
                             .attr("opacity", 0.5)
-                        cG.selectAll("#process" + i)
-                            .attr("opacity" , 0.3)
-                        cG.selectAll(".river1" + i)
-                            .attr("opacity",0.1)
-                        cG.selectAll(".river2" + i)
-                            .attr("opacity",0.4)
+                        cG.selectAll(".innerRiver" + i)
+                            .attr("opacity", 0.4)
+                        cG.selectAll(".outerRiver" + i)
+                            .attr("opacity", 0.1)
                     }
+                    cG.selectAll(".processPath")
+                        .attr("opacity" , 0.3)
                 }
 
+                _insertInfo(e, d){
+                    const t = this._texts,
+                        lck = this._labelcolor[d.month];
+                    let x=  e.offsetX + this._g.node().getBBox().x,
+                        y=  e.offsetY + this._g.node().getBBox().y;
+                    x*y>0 ? (x<0 ? (x=x-40,y=y-40):(x=x+20,y=y+40)) :(x<0 ? (x=x-40,y=y+40):(x=x+40,y=y-60));
+                    this._dailyInfo = this._g.append("g")
+                        // .style("visibility", "hidden")
+                        .attr("transform", `translate(${[x,y]})`)
+                        .attr("class","dailyInfo")
+                        .attr("font-size", "7pt")
+                        .style("font-family", "DIN")
+                        .style("font-weight", "normal")
+                        .call(g => g.append("rect")
+                                .attr("x" , -10)
+                                .attr("y" , -15)
+                                .attr("rx" , 5)
+                                .attr("ry", 5)
+                                .style("fill",d3.color(lck).brighter(0.2))
+                                .attr("stroke", "grey")
+                                .attr("stroke-width",1)
+                                .attr("width", 165)
+                                .attr("opacity" ,0.5)
+                                .attr("filter","url(#filter)")
+                                .attr("height", 95))
+                        .call(g => g.append("g")                       
+                            .call(g => t.name = g.append("text").attr("fill", "black").text("Date: "))
+                            .call(g =>  g.append("line").attr("x1",-1).attr("x2", 130).style("stroke", d3.color(lck).darker(4)).attr("y1", 2).attr("y2", 2).style("stroke-width", 0.5))
+                            .call(g => t.avg = g.append("text").attr("y", "1.3em").attr("fill", "black").text("Avg: ")) 
+                            .call(g => t.deviation = g.append("text").attr("y", "2.6em").attr("fill", "black").text("Deviation: ")))
+                            .call(g => t.high = g.append("text").attr("y", "3.9em").attr("fill", "black").text("High: "))
+                            .call(g => t.low = g.append("text").attr("y", "5.2em").attr("fill", "black").text("Low: "))
+                            .call(g => t.prec = g.append("text").attr("y", "6.5em").attr("fill", "black").text("Prec.: "))
+                            .call(g =>  g.append("line").attr("x1",-1).attr("x2", 135).style("stroke", d3.color(lck).darker(4)).attr("y1", 2+4*12.4).attr("y2", 2+4*12.4).style("stroke-width", 0.5))
+                            .call(g => t.humidity = g.append("text").attr("y", "7.8em").attr("fill", "black").text("Humidity: "))
+                    t.name.text(`Index: ${d.indexName}`);
+                    t.avg.text(`Value: ${d.avg.toFixed(3)}`)
+                    t.deviation.text(`Deviation: ${d.deviation.toFixed(3)}`)
+                    t.high.text(`High: ${d.high.toFixed(3)}`);
+                    t.low.text(`Low: ${d.low.toFixed(3)}`);
+                    t.prec.text(`SPE.: ${d.precipitation.toFixed(3)}`);
+                    t.humidity.text(`T^2: ${d.humidity.toFixed(3)}`);
+                }
                 _sort(data){
                     let speSort = d3.sort(data,d=> d.precipitation),
                         T2Sort = d3.sort(data,d=> d.humidity);
@@ -1887,22 +1878,8 @@ export default {
                         .endAngle(this._dayRadian)();
                 }
 
-                _arc(radius, start, end, outerRadius) {
-                    outerRadius = outerRadius || radius;
-                    return d3.arc()
-                        .innerRadius(radius)
-                        .outerRadius(outerRadius)
-                        .startAngle(start)
-                        .endAngle(end)();
-                }
-
-                _circle(g, r) {
-                    g.append("circle")
-                        .attr("fill", "none")
-                        .attr("stroke", "#aaa")
-                        .attr("stroke-width", 0.5)
-                        // .attr("stroke-dasharray", "10,5,2,5")
-                        .attr("r", d => typeof r === "function" ? r(d) : r);
+                _outrate(item1 , item2){
+                    return d => (this._allIndex.indexOf(d.indexName) !== -1 && this._allIndex.indexOf(d.indexName) < 9) ? item1 : item2
                 }
 
                 _sliderArray(arr){

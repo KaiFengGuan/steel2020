@@ -150,7 +150,7 @@ export default {
     delabelColor: delabelColor,
     processColor: processColor,
     labelColorFunc (index) {
-        return labelColor[index]
+        return index !== 404 ? labelColor[index] : noflagColor
     },
 
     setPoData(matrix) {

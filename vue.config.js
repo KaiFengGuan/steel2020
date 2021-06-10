@@ -13,7 +13,8 @@ module.exports = {
         port: 8889,
         proxy: {
             '/baogangapi': {
-                target: 'http://localhost:5555',
+                // target: 'http://localhost:5555',
+                target: 'http://219.216.80.46:5555',
                 // target: 'http://202.118.21.236:7205',
                 changeOrigin: true,
                 pathRewrite: {
@@ -21,7 +22,8 @@ module.exports = {
                 }
             },
             '/newbaogangapi': {
-              target: 'http://localhost:5000',
+            //   target: 'http://localhost:5000',
+              target: 'http://219.216.80.46:5000',
               // target: 'http://202.118.21.236:7205',
               changeOrigin: true,
               pathRewrite: {

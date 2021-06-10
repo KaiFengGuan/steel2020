@@ -37,11 +37,15 @@
 				<el-row>
 					<el-card class="myel-card">		 
 						<div class="my-card-title" slot="header">
-							<span style="margin-left:5px">Tabular View</span>
+								<span style="margin-left:5px">Tabular View  <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search"></el-button> </span>
+
 						</div>
 						<div class="my-card-body" style="padding-top:5px">
 							<brushableParallel ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse"></brushableParallel>
 						</div>
+						<!-- <el-col :span="4"> -->
+							
+						<!-- </el-col> -->
 					</el-card>
 				</el-row>
 			</el-col>
@@ -234,7 +238,21 @@ export default {
 			plateoptions:[{
 					value: 'All',
 					label: 'All'
-				}],
+        }],
+      req_body: {
+        "slabthickness": "[]",
+        "tgtdischargetemp": "[]",
+        "tgtplatethickness": "[]",
+        "tgtwidth": "[]",
+        "tgtplatelength2": "[]",
+        "tgttmplatetemp": "[]",
+        "cooling_start_temp": "[]",
+        "cooling_stop_temp": "[]",
+        "cooling_rate1": "[]",
+        "productcategory": "[]",
+        "steelspec": "[]",
+        "status_cooling": "0"
+      },
 			orderoptions:[{
 					value: 'Number',
 					label: 'Number'
@@ -252,16 +270,16 @@ export default {
 			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
-			interval: 12,
+			interval: 2,
 			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
 				"T-SNE", "ISOMAP", "UMAP"
 			],
 			algorithmUrls: {
-				"T-SNE": "/baogangapi/v1.0/model/VisualizationTsne/",
-				"ISOMAP": "/baogangapi/v1.0/model/VisualizationMDS/",
-				"UMAP": "/baogangapi/v1.0/model/VisualizationPCA/"
+				"T-SNE": "/newbaogangapi/v1.0/model/VisualizationTsne/",
+				"ISOMAP": "/newbaogangapi/v1.0/model/VisualizationMDS/",
+				"UMAP": "/newbaogangapi/v1.0/model/VisualizationPCA/"
 			},
 			algorithmSelected: "T-SNE",
 			plateTempProp: {
@@ -327,12 +345,14 @@ export default {
 		]),
 		dateselect : function(){
 			var endmonth = new Date(this.startmonth.valueOf())
-			if(endmonth.getMonth() < 12){
-				endmonth.setMonth(endmonth.getMonth() + 1)
-			}else{
-				endmonth.setFullYear(endmonth.getFullYear() + 1)
-				endmonth.setMonth(1)
-			}
+			// if(endmonth.getMonth() < 12){
+			// 	endmonth.setMonth(endmonth.getMonth() + 1)
+			// }else{
+			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
+			// 	endmonth.setMonth(1)
+      // }
+      
+      endmonth.setDate(endmonth.getDate() + 7)
 			return [this.startmonth, endmonth]
 		},
 		monthdata : vm => sampledata[+vm.startmonth.getMonth()+1],
@@ -381,65 +401,71 @@ export default {
 			await this.getAlgorithmData()
 			this.getHttpData()
 		},
-		async getHttpData() {
-			// this.jsonData = myJsonData
-			// this.mergeflag()
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
-			// this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
-			// return
-			this.plateTempPropvalue=['All']
-			this.loadingDataLoading = true
-			let startDate = this.startDateString;
-			let endDate = this.endDateString;
-			// let startDate="2018-11-01 00:00:00";
-			// let endDate = "2018-11-01 12:00:00";
-			// request
-			// let stationsResponse = this.getStationsData(startDate, endDate);
-			// let jsonResponse = this.getJsonData(startDate, endDate);
-			// let conditionResponse = this.getConditionData(startDate, endDate);
+		newdiagnose() {
+			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+		},
 
-			// response
-			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
-			await this.getStationsData(startDate, endDate).then(Response => {
-				this.stationsData=Response.data
-			})
-			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
-			console.log(this.jsonData.length)
-			this.jsonData = this.jsonData.filter(d => {
-				return this.brushUpid.includes(d.upid)
-			})
-			console.log(this.jsonData.length)
-			console.log(this.brushUpid.length)
-			console.log(d3.groups(this.jsonData , d => d.flag))
+	// 	async getHttpData() {
+	// 		// this.jsonData = myJsonData
+	// 		// this.mergeflag()
+	// 		// this.jsonData = this.jsonData.filter(d => {
+	// 		// 	return this.brushUpid.includes(d.upid)
+	// 		// })
+	// 		// this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
+	// 		// return
+	// 		this.plateTempPropvalue=['All']
+	// 		this.loadingDataLoading = true
+	// 		let startDate = this.startDateString;
+	// 		let endDate = this.endDateString;
+	// 		// let startDate="2018-11-01 00:00:00";
+	// 		// let endDate = "2018-11-01 12:00:00";
+	// 		// request
+	// 		// let stationsResponse = this.getStationsData(startDate, endDate);
+	// 		// let jsonResponse = this.getJsonData(startDate, endDate);
+	// 		// let conditionResponse = this.getConditionData(startDate, endDate);
+
+	// 		// response
+	// 		// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
+	// 		await this.getStationsData(startDate, endDate).then(Response => {
+	// 			this.stationsData=Response.data
+    //   })
+    //   // console.log("start:", startDate);
+    //   // console.log('end: ', endDate);
+	// 		this.jsonData = (await this.getJsonData(startDate, endDate)).data;
+	// 		console.log(this.jsonData.length)
+	// 		this.jsonData = this.jsonData.filter(d => {
+	// 			return this.brushUpid.includes(d.upid)
+	// 		})
+	// 		console.log(this.jsonData.length)
+	// 		console.log(this.brushUpid.length)
+	// 		console.log(d3.groups(this.jsonData , d => d.flag))
 			
 
-			let flagData = (await baogangAxios(`/baogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
-			// this.getplatetype();
-			let allDataArr = []
-			for (let item of this.jsonData) {
-					let upid = item['upid']
-					allDataArr.push(flagData[upid])
-			}
+	// 		let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
+	// 		// this.getplatetype();
+	// 		let allDataArr = []
+	// 		for (let item of this.jsonData) {
+	// 				let upid = item['upid']
+	// 				allDataArr.push(flagData[upid])
+	// 		}
 
-			for (let i = 0; i < this.jsonData.length; i++) {
-				this.jsonData[i]['flag'] = allDataArr[i]
-			}
+	// 		for (let i = 0; i < this.jsonData.length; i++) {
+	// 			this.jsonData[i]['flag'] = allDataArr[i]
+	// 		}
 
-			// paint
-			this.loadingDataLoading = false
-			this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
-			this.jsonData = this.jsonData.filter(d => {
-				return this.brushUpid.includes(d.upid)
-			})
-      if(this.scatterData.length!==0)this.mergeflag()
-      // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
+	// 		// paint
+	// 		this.loadingDataLoading = false
+	// 		this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
+	// 		this.jsonData = this.jsonData.filter(d => {
+	// 			return this.brushUpid.includes(d.upid)
+	// 		})
+    //   if(this.scatterData.length!==0)this.mergeflag()
+    //   // console.log("jsonData: ", this.jsonData);
+	// 		this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
 
-			// clear
-			this.selectedTrainData = [];
-		},
+	// 		// clear
+	// 		this.selectedTrainData = [];
+	// 	},
 		mergeflag(){
 			let mergedata=[]
 			for (let item in this.scatterData){
@@ -482,7 +508,7 @@ export default {
 				})
 		},
 		async getplatetype() {
-			return baogangAxios(`/baogangapi/v1.0/model/VisualizationPlatetypes/`).
+			return baogangAxios(`/newbaogangapi/v1.0/model/VisualizationPlatetypes/`).
 			then(res=>{
 				let data=res.data.flat()
 				data.sort()
@@ -526,29 +552,29 @@ export default {
 			this.paintDetailPro(this.radio)
 		},
 
-		getJsonData(startDate, endDate) {
-			// return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoDataDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/50/`)
-      //   .catch(error => {
-      //       this.getNotification("getJsonData:"+error)
-      //     })
-      return baogangPlotAxios(`/newbaogangapi/v1.0/getMareyTimesDataApi/all/${startDate}/${endDate}/100`,
-        {"steelspec": "all", "tgtplatethickness": '["all"]'})
-        .catch(error => {
-          this.getNotification("getJsonData:"+error)
-        })
-		},
+	// 	getJsonData(startDate, endDate) {
+	// 		// return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoDataDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/50/`)
+    //   //   .catch(error => {
+    //   //       this.getNotification("getJsonData:"+error)
+    //   //     })
+    //   return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyTimesDataApi/all/${startDate}/${endDate}/100`,
+    //     {"steelspec": "all", "tgtplatethickness": '["all"]'})
+    //     .catch(error => {
+    //       this.getNotification("getJsonData:"+error)
+    //     })
+	// 	},
 
-		getStationsData(startDate, endDate) {
-			// return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoStationDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/`)
-			// 	.catch(function(error){
-			// 		this.getNotification("getStationsData:"+error)
-      // 	})
-      return baogangPlotAxios(`/newbaogangapi/v1.0/getMareyStationsDataApi/all/${startDate}/${endDate}/`,
-        {"steelspec": "all", "tgtplatethickness": '["all"]'})
-				.catch(function(error){
-					this.getNotification("getStationsData:"+error)
-				})
-		},
+	// 	getStationsData(startDate, endDate) {
+	// 		// return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoStationDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/`)
+	// 		// 	.catch(function(error){
+	// 		// 		this.getNotification("getStationsData:"+error)
+    //   // 	})
+    //   return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyStationsDataApi/all/${startDate}/${endDate}/`,
+    //     {"steelspec": "all", "tgtplatethickness": '["all"]'})
+	// 			.catch(function(error){
+	// 				this.getNotification("getStationsData:"+error)
+	// 			})
+	// 	},
 		changeColor(){
 			this.changeLabelColor()
 			this.switchChange(this.isSwitch)
@@ -773,11 +799,14 @@ export default {
 			this.$refs.brushSlider.paintChart(this.timeBrushData)
 		},
 		async getAlgorithmData() {
-			await baogangAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-				this.scatterData=Response.data
+			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
+        		this.scatterData = Response.data
+				// console.log("*************");
+				// console.log(Response.data);
+				// console.log("*************");
 				this.$refs.scatterCate.paintChart(this.scatterData)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
-				this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+        		this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 			})
 		},
 	},

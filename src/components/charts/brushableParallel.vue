@@ -8,6 +8,7 @@ import * as d3 from 'd3'
 import util from 'src/views/baogang/util.js';
 // import util from '../../views/baogang/util.js'
 import { mapGetters, mapMutations} from 'vuex'
+import { forEach } from '../../views/baogang/sampledata/stationdata';
 export default {
     data () {
         return {
@@ -17,7 +18,11 @@ export default {
             categoryColors: util.categoryColor,
             mouseList: undefined,
             brushdata: undefined,
-            plData: undefined
+            plData: undefined,
+            tgtThicknessStation: 0,
+            lengthStation:0,
+            widthStation: 0,
+            slabThicknesssStation: 0,
         }
     },
 
@@ -82,56 +87,109 @@ export default {
                 d.slab_thickness = d.slab_thickness/100;
                 return d
             })
+                width = 355
             this.brushdata = brushdata
+            let objStatus ={"tgtplatethickness2":false,"tgtplatelength2":false,"tgtwidth":false,"slab_thickness":false}
+            // keys = [ "tgtplatethickness2", "tgtplatelength2","tgtwidth", "slab_thickness"],
+            // var margin = {top: 40, right: 20, bottom: 40, left: 20},
+            // var margin = {top: 40, right: 20, bottom: 40, left: 20},
             var margin = {top: 40, right: 20, bottom: 40, left: 20},
-                brushHeight = 10,
+
+                coolingArray = d3.filter(brushdata, (d,i) => d["status_cooling"] == 1),
+                nocoolingArray = d3.filter(brushdata, (d,i) => d["status_cooling"] == 0),
+                allArray = [],
+                cooling = ["cooling","nocooling"]
+            allArray.push(coolingArray)
+            allArray.push(nocoolingArray)
+            var xCooling =  d3.scaleBand() //Ordinal scale
+                            .domain(d3.range(allArray.length )) 
+                            .range([margin.left, width - margin.right - margin.left]),
+                            // .paddingInner(0.5),
+                yCooling = d3.scaleLinear()
+                            .domain([0, d3.max(allArray, d => d.length)]).nice()
+                            .range([50, 0]),
+                            // .range([50, 0]),
+
+                coolingMargin =  (width - margin.right - margin.left) /allArray.length/2 ;
+            var brushHeight = 10,
                 vm = this,
                 deselectedColor = "#eeeeee",
                 selectedColor = "#cccccc",
-                keys = [ "tgtwidth", "tgtplatethickness2", "tgtplatelength2","slab_thickness","charging_temp_act"],
+                // keys = [ "tgtwidth", "tgtplatethickness2", "tgtplatelength2","slab_thickness","charging_temp_act"],
+                // keys = [ "tgtplatethickness2", "tgtplatelength2","tgtwidth", "slab_thickness","status_cooling"],
+                keys = [ "tgtplatethickness2", "tgtplatelength2","tgtwidth", "slab_thickness"],
                 bardata = d3.map(keys, d => d3.map(brushdata, index => index[d])),
                 barbin = d3.map(keys, (d, i) => {
                     var length = 6;
                     var maxlength = bardata[i].length
                     while(true){
-                        var max = d3.max(d3.bin().thresholds(length)(bardata[i]), d => d.length) 
-                        if(max/maxlength < 0.6){
-                            break
+                        if(d !== "status_cooling"){
+                             var max = d3.max(d3.bin().thresholds(length)(bardata[i]), d => d.length) 
+                            if(max/maxlength < 0.5 || length >= 10){
+                                break
+                            }else{
+                                length++
+                            }
                         }else{
-                            length++
+                            length = 1
+                            break
                         }
+                       
                     }
                     return d3.bin().thresholds(length)(bardata[i])
-                }),
-                barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.extent(d3.map(array, d => d.length))[1]]).range([0, 50])),
+                })
+                barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.extent(d3.map(array, d => d.length))[1]]).range([0, 20]))
+                // barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.extent(d3.map(array, d => d.length))[1]]).range([0, 20]))
+            var newRange = []
+            for(let i in bardata){
+                newRange.push([d3.min(bardata[i]), d3.max(bardata[i])])
+            }
+
+
+
+
+
+            let newkeys =["tgtplatethickness2","tgtplatelength2","tgtwidth","slab_thickness","status_cooling"]
+            var barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.extent(d3.map(array, d => d.length))[1]]).range([0, 50])),
                 width = document.getElementById(this.menuId).offsetWidth,
                 arc = d3.arc()
                     .innerRadius(0)
                     .outerRadius(8)
                     .startAngle(0)
                     .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
-                height = keys.length * 100,
+                height = (keys.length + 1) * 98,
+                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([0,60])], [margin.left, width - margin.right]),
+                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([0,60], [margin.left, width - margin.right])])),
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
-                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1]), [margin.left, width - margin.right])])),
-                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear(d3.extent(brushdata, d => d[key]), [margin.left, width - margin.right])])),
-                y = d3.scalePoint(keys, [margin.top, height - margin.bottom]),
-                line = d3.line()
+                
+                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([newRange[keys.indexOf(key)][0], newRange[keys.indexOf(key)][1]], [margin.left, width - margin.right])])),
+                // y = d3.scalePoint(keys, [margin.top, height - margin.bottom]);
+                y = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
+                xScale = d3.axisBottom(xCooling).tickSizeOuter(0).tickSizeInner(0)
+                // yScale = d3.scalePoint(1, [margin.top, height - margin.bottom])
+                
+
+
+              // console.log(yScale(13));
+              x.set("status_cooling",d3.scaleBand([0,1], [margin.left, width - margin.right]))
+              // x.set("status_cooling",d3.scaleBand(["cooling","nocooling"], [margin.left, width - margin.right]))
+
+
+              var line = d3.line()
                     .defined(([, value]) => value != null)
                     .x(([key, value]) => x.get(key)(value))
                     .y(([key]) => y(key)),
                 brushHandle = (g, selection) => g
                     .selectAll(".handle--custom")
                     .data([{type: "w"}, {type: "e"}])
-                    .join(
-                        enter => enter.append("path")
+                    .join(enter => enter.append("path")
                             .attr("class", "handle--custom")
                             .attr("fill", "white")
                             .attr("fill-opacity", 1)
                             .attr("stroke", "#90a4ae")
                             .attr("stroke-width", 2)
                             .attr("cursor", "ew-resize")
-                            .attr("d", arc)
-                    )
+                            .attr("d", arc))
                         .attr("display", selection === null ? "none" : null)
                         .attr("transform", selection === null ? null : (d, i) => `translate(${selection[i]},${0})`)
                 function brushSlider(){
@@ -150,7 +208,7 @@ export default {
                       .style("font-weight", util.tabularAxisTextAttr.fontWeight)
                       .style("font-style", util.tabularAxisTextAttr.fontStyle)
                 }
-
+          
             this.svg !== undefined && this.svg.remove()
             this.svg=d3.select("#"+vm.menuId)
                 .append("svg")
@@ -167,6 +225,7 @@ export default {
             for(let item in keys){
                 var barmargin =  (width - margin.right - margin.left) / barbin[item].length/2;
                 // d => (d3.filter(brushdata, e => e[keys] <= d.x1 && d.x0 <= e[keys] && +e.label=== 0)).length
+                // 这里绘制的是柱状图
                 svg.append("g")
                     .attr("class", "rectBar")
                     .attr("transform",`translate(0,${y(keys[item])})`)
@@ -175,11 +234,15 @@ export default {
                         .join("g")
                     .call(g => g.append("rect")
                         .attr("class", "rect" +item)
-                        .attr("x", d => x.get(keys[item])(d.x0))
+                        .attr("x", d => {
+                            return x.get(keys[item])(d.x0)})
                         .attr("fill", util.delabelColor[1])
                         .attr("y", d => -barScale[item]((d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && (+e.label=== 1))).length)+1)
                         .attr("height", d => barScale[item]((d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && (+e.label=== 1))).length))
                         .attr("width", d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin))
+                        // .attr("width", d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin))
+                        .attr("stroke","#000")
+                        .attr("stroke-width",1)
                     .call(g => g.append("rect")
                         .attr("class", "rect" +item)
                         .attr("x", d => x.get(keys[item])(d.x0))
@@ -188,40 +251,234 @@ export default {
                         // .attr("y", d => -barScale[item](d.length)+1)
                         .attr("height", d => barScale[item]((d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && (+e.label=== 0))).length))
                         .attr("width", d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin))
+                        .attr("stroke","#000")
+                        .attr("stroke-width",1)
+                    
+                // console.log(item);
+                // svg.append("circle")
+                //     .attr("class","circle"+item)
+                //     .attr("cx", x.)
+
                 this.brushSelection.set(keys[item], d3.extent(d3.filter(brushdata, d => new Date(d.toc) >= startTime && new Date(d.toc) <= endTime), d => d[keys[item]]))
             }
+
+
+
+
+
+
+
+
+
+            svg.append("g")
+                .attr("class","rectCooling")
+                // .attr("transform",`translate(0,${400})`)
+                .selectAll("rect")
+                // .selectAll("circle")
+                .data(allArray)
+                .join("g")
+                .each(function(d,i) {
+                   d3.select(this)
+                      .append("circle")
+                      .attr("class","coolingButton"+ i)
+                      .attr("cx",xCooling(i) +9.4)
+                      .attr("cy",484)
+                      .attr("r", 5)
+                      .attr("storke","#000")
+                      .attr("stroke-width",1)
+                      .attr("fill","#ccc")
+                      .attr('cursor', 'pointer')
+                      .on("click",function(e,d){
+                          console.log(e);
+                          console.log(d);
+                          //  path.each(function(d) {
+                          //     const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
+                          //     d3.select(this).attr("stroke", active ? vm.deGroupStyle : "none");
+                          //     if (active) {
+                          //         d3.select(this).raise();
+                          //         selected.push(d);
+                          // }
+                          // });
+                      })
+                })
+                .call(g => 
+                    g.append("rect")
+                        .attr("class",(d, i) => "rectcooling"+ i)
+                        .attr("x", (d, i) => xCooling(i))
+                        .attr("y", d => 400 + yCooling((d3.filter(d,  e => e["label"] == "1")).length))
+                        .attr("height", d => yCooling(0) - yCooling((d3.filter(d,  e => e["label"] == "1")).length) )
+                        // .attr("width", xCooling - coolingMargin)
+                        .attr("width", xCooling.bandwidth() - coolingMargin -50)
+                        // .attr("width", xCooling.bandwidth())
+
+
+                        // .attr("width", (d,i) => xCooling(i))
+
+                        .attr("fill", util.delabelColor[1]))
+                        .attr("opacity",0.5)
+                        .attr("stroke","#000")
+                        .attr("stroke-width",1)
+                .call(g => 
+                    g.append("rect")
+                    .attr("class",(d, i) => "rectcooling"+ i)
+                    .attr("x",(d,i) => xCooling(i))
+                    .attr("y", d => 460)
+                    .attr("height", d => yCooling(0) - yCooling((d3.filter(d,  e => e["label"] == "0")).length) )
+                    .attr("width", xCooling.bandwidth()- coolingMargin -50)
+                    // .attr("width", xCooling.bandwidth())
+                    .attr("fill", util.delabelColor[0])
+                    .attr("opacity",0.5)
+                    .attr("stroke","#000")
+                    .attr("stroke-width",1)
+
+                )
+                d3.select(".rectcooling0").lower()
+                d3.select(".rectcooling1").lower()
+
+
+              
+                // .call(g => 
+                //   g.append("circle")
+                //     .attr("class","coolingCircle"+ i)
+                //     .attr("cx",(d,i) => xCooling(i)+ 20)
+                //     .attr("cy", 480)
+                //     .attr("r", 5)
+                //     .attr("storke","#000")
+                //     .attr("stroke-width",2)
+                //     .attr("fill","#ccc")
+                //     .attr('cursor', 'pointer')
+                // )
+
+
+
+
+
+                svg.append("g").call(g =>
+                    g.append("rect")
+                      .attr("x",20)
+                      .attr("y",450)
+                      .attr("width",295)
+                      .attr("height",10)
+                      .attr("fill","#eee")
+                      .attr("rx",5)
+                      .attr("ry",5)
+                      .attr("stroke","#bbb")
+                      .attr("stroke-width",1)
+                      .raise()
+                )
+                  .call(g => 
+                    g.append("text")
+                      .attr("x", width - margin.left)
+                      .attr("y", 410)
+                      .attr("text-anchor", "end")
+                      .attr("fill", util.tabularTipsTextAttr.fontColor)
+                      .attr("font-family", util.tabularTipsTextAttr.fontFamily)
+                      .attr("font-size", util.tabularTipsTextAttr.fontSize)
+                      .attr("font-weight", util.tabularTipsTextAttr.fontWeight)
+                      .attr("font-style", util.tabularTipsTextAttr.fontStyle)
+                      .text("sta_cooling")
+                  )
+                // svg.append("g").attr("class",'x-axis').attr('transform',`translate(${20},${450})`).call(xScale)
+                  
+
+
+
+
+
+
+
+
+
+            
+
             const path = svg.append("g")
                 .attr("fill", "none")
                 .attr("stroke-width", 1)
                 .attr("stroke-opacity", 0.6)
                 .attr("class", "parallelPath")
                 .selectAll("path")
-                .data(vm.paralleldata.slice().sort((a, b) => d3.ascending(a["upid"], b["upid"])))
+                .data(vm.paralleldata.slice().sort((a, b) => {
+                return d3.ascending(a["upid"], b["upid"])}))
                 .join("path")
                 .attr("stroke", this.deGroupStyle)
                 .attr("id", d=> `paraPath${d.upid}`)
-                .attr("d", d => line(d3.cross(keys, [d], (key, d) => [key, d[key]])))
+                // .attr("d", d => line(d3.cross(keys, [d], (key, d) => [key, d[key]])))
+                .attr("d", d => line(d3.cross(newkeys, [d], (key, d) => [key, d[key]])))
                 .attr("class", "pathColor")
                 .on("mouseover", pathover)
                 .on("mouseout", pathout);
-
-            // path.append("title")
-            //     .text(label);
             var selections = this.brushSelection;
+            svg.append("g")
+              .selectAll("g")
+              .data(keys)
+              .join("g")
+              .attr("transform", d => `translate(0,${y(d)+6})`)
+              .call(g => g.append("circle")
+              .attr("class", (d, i) => "circlebutton" + i)
+              .attr("cx",width - margin.left/2)
+              .attr("cy", -40)
+              .attr("r", 5)
+              .attr("storke","#000")
+              .attr("stroke-width",2)
+              .attr("fill","#ccc")
+              .attr('cursor', 'pointer')
+              .on("click", function(e, d){
+                  // e.preventDefault();
+                  if(d == "tgtplatethickness2"){
+                      objStatus["tgtplatethickness2"] = !objStatus["tgtplatethickness2"]
+                      if(objStatus["tgtplatethickness2"]){
+                          svg.select(".circlebutton0").attr("fill","red")
+                      }else{
+                          svg.select(".circlebutton0").attr("fill","#ccc")
+                      }
+                      // svg.select(".circlebutton0").attr("fill","red")
+                      // objStatus.push("tgtplatethickness2")
+                  }else if(d == "tgtplatelength2"){
+                      objStatus["tgtplatelength2"] = !objStatus["tgtplatelength2"]
+                      if(objStatus["tgtplatelength2"]){
+                          svg.select(".circlebutton1").attr("fill","red")
+                      }else{
+                          svg.select(".circlebutton1").attr("fill","#ccc")
+                      }
+                  }else if(d == "tgtwidth"){
+                      objStatus["tgtwidth"] = !objStatus["tgtwidth"]
+                      if(objStatus["tgtwidth"]){
+                          svg.select(".circlebutton2").attr("fill","red")
+                      }else{
+                          svg.select(".circlebutton2").attr("fill","#ccc")
+                      }
+                  }else{
+                      objStatus["slab_thickness"] = !objStatus["slab_thickness"]
+                      if(objStatus["slab_thickness"]){
+                          svg.select(".circlebutton3").attr("fill","red")
+                      }else{
+                          svg.select(".circlebutton3").attr("fill","#ccc")
+                      }
+                  }
+              }))
+
+
+
             svg.append("g")
                 .selectAll("g")
                 .data(keys)
+                // .data(newkeys)
                 .join("g")
                 .attr("transform", d => `translate(0,${y(d)+6})`)
                 .attr("id", (d, i) => "parallel" + i)
                 // .attr("fill", "#2c3e50")
-                .each(function(d,i) { 
+                .each(function(d,i) {
+                  if(i< 4){ 
                     d3.select(this)
-                    
                         .call(d3.axisBottom(x.get(d))
-                            .tickSizeOuter(10)
-                            .tickSizeInner(10)
-                            .ticks(barbin[i].length)); 
+                            .tickSizeOuter(5)
+                            .tickSizeInner(5)
+                            .tickFormat(d3.format(",.2f"))
+                            // .ticks(barbin[i].length)); 
+                            .ticks(5))
+                  }
+      
+                            
                 })
                 .call(g => g.append("text")
                     .attr("x", width - margin.left)
@@ -233,7 +490,8 @@ export default {
                     .attr("font-weight", util.tabularTipsTextAttr.fontWeight)
                     .attr("font-style", util.tabularTipsTextAttr.fontStyle)
                     .text(d => d.replace(/tgtwidth/, "tgt_width").replace(/tgtplatethickness2/, "tgt_thickness")
-                        .replace(/tgtplatelength2/, "tgt_length").replace(/slab_thickness/, "slab_thickness").replace(/charging_temp_act/, "charging")))
+                    .replace(/tgtplatelength2/, "tgt_length").replace(/slab_thickness/, "slab_thickness").replace(/charging_temp_act/, "charging").replace(/status_cooling/,"sta_cooling")))
+                    
                 .call(g => g.selectAll("text")
                     .clone(true).lower()
                     .attr("fill", "none")
@@ -244,10 +502,38 @@ export default {
                     )
                 .call(g =>g.selectAll(".domain").remove())
                 .call(brush)
-                .call(brush.move, d => selections.get(d).map(x.get(d)));
+                .attr("class",(d,i) => "brushX" + i)
+                .call(brush.move, (d,i)=>{
+                  if(i< 4){
+                    return selections.get(d).map(x.get(d))
+                  }
+                }
+                );
                 brushSlider()
+
+                // svg.append("g")
+                //  .selectAll("g")
+                //  .data(cooling)
+
+
                 // svg.selectAll("text").attr("font-family", "DIN").attr("stroke", "none").style("fill", "#2c3e50")
+          
+           
                 
+                // keys = [ "tgtplatethickness2", "tgtplatelength2","tgtwidth", "slab_thickness"],
+            // svg.select(".circlebutton4").remove()
+           
+           
+
+
+
+
+
+
+
+
+
+
             function pathover(event,d){
                 const tooltip = vm.svg.append("g")
                     .attr("class", "tooltip")
@@ -320,9 +606,19 @@ export default {
                 vm.$emit("parallMouse", {upid: [d.upid],  mouse: 1});
             }
             function brushed({selection}, key) {
+                var tempValue = selections.get(key).map(d => x.get(key)(d));
+                // console.log(selections);
+                if(objStatus[key] && !(tempValue.every((d, i) => d === selection[i]))){
+                    d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)));
+                    return
+                }else{
+                    d3.select(this).call(brushHandle, selection);
+                }
+                // console.log(key);
                 if (selection === null) selections.delete(key);
                 else selections.set(key, selection.map(x.get(key).invert));
                 const selected = [];
+                // d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)))
                 path.each(function(d) {
                     const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
                     d3.select(this).attr("stroke", active ? vm.deGroupStyle : "none");
@@ -331,6 +627,7 @@ export default {
                         selected.push(d);
                     }
                 });
+                
                 if (selection === null){
                     d3.selectAll(".rect" + keys.indexOf(key))
                     .attr("opacity", 0.5)
@@ -340,29 +637,32 @@ export default {
                         // .attr("fill", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? selectedColor : deselectedColor)
                         .attr("opacity", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? 0.5 : 0.05)
                 }
-                // console.log(this)
-                // console.log(d3.select("#parallel" + keys.indexOf(key)).node())
-                // console.log(this === d3.select("#parallel" + keys.indexOf(key)).node()) //true
-    
-                // d3.select("#parallel" + keys.indexOf(key)).call(brushHandle, selection);
-                d3.select(this).call(brushHandle, selection);
+                // if(objStatus[key]){
+                //     d3.select(this).call(brushHandle, selection);
+                // }
+                // console.log(selections.get(key).map(d => x.get(key)(d)));
+
                 svg.property("value", selected).dispatch("input");
                 d3.select(".rectBar").lower();
                 brushSlider()
+               
             }
         },
+
+
+
         mouse(value){
-			this.mouseList = value
-            this.clear();
-			if(value.mouse===0){
-				this.changePath(value.upid)
-                this.changePath(this.hightlightGroup)
-			}else{
-                this.init()
-                if(this.hightlightGroup.length !== 0){
-                    this.clear()
+          this.mouseList = value
+                this.clear();
+          if(value.mouse===0){
+            this.changePath(value.upid)
                     this.changePath(this.hightlightGroup)
-                }
+          }else{
+                    this.init()
+                    if(this.hightlightGroup.length !== 0){
+                        this.clear()
+                        this.changePath(this.hightlightGroup)
+                    }
 			}
 		},
         resetPath(){    //reset Style before highlight

@@ -181,7 +181,7 @@
 					</el-card>		
 				</el-row>
 				</transition>
-				<el-button circle class="diagnosis_button" icon="el-icon-more" @click="diagnosisVisible = ! diagnosisVisible"></el-button>
+				<el-button circle class="diagnosis_button" icon="el-icon-more" @click="clickDiagnosisButton"></el-button>
 			<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
 				<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
 					<el-card class="my-card-body-detail">
@@ -213,10 +213,11 @@ import smallWheel from './smallWheel.vue';
 import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
-import myJsonData from "./sampledata/jsondata.json"
-import myStationData from "./sampledata/stationdata.js"
+// import myJsonData from "./sampledata/jsondata.json"
+// import myStationData from "./sampledata/stationdata.js"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
+// console.log(sampledata)
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
 export default {
@@ -234,7 +235,21 @@ export default {
 			plateoptions:[{
 					value: 'All',
 					label: 'All'
-				}],
+        }],
+      req_body: {
+        "slabthickness": "[]",
+        "tgtdischargetemp": "[]",
+        "tgtplatethickness": "[]",
+        "tgtwidth": "[]",
+        "tgtplatelength2": "[]",
+        "tgttmplatetemp": "[]",
+        "cooling_start_temp": "[]",
+        "cooling_stop_temp": "[]",
+        "cooling_rate1": "[]",
+        "productcategory": "[]",
+        "steelspec": "[]",
+        "status_cooling": "0"
+      },
 			orderoptions:[{
 					value: 'Number',
 					label: 'Number'
@@ -247,21 +262,21 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2019, 2, 1, 0, 0),
+			startmonth: new Date(2019, 2, 10, 0, 0),
 			time: undefined,
 			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
-			interval: 12,
+			interval: 4,
 			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
 				"T-SNE", "ISOMAP", "UMAP"
 			],
 			algorithmUrls: {
-				"T-SNE": "/baogangapi/v1.0/model/VisualizationTsne/",
-				"ISOMAP": "/baogangapi/v1.0/model/VisualizationMDS/",
-				"UMAP": "/baogangapi/v1.0/model/VisualizationPCA/"
+				"T-SNE": "/newbaogangapi/v1.0/model/VisualizationTsne/",
+				"ISOMAP": "/newbaogangapi/v1.0/model/VisualizationMDS/",
+				"UMAP": "/newbaogangapi/v1.0/model/VisualizationPCA/"
 			},
 			algorithmSelected: "T-SNE",
 			plateTempProp: {
@@ -326,13 +341,16 @@ export default {
 			"endDate",
 		]),
 		dateselect : function(){
-			var endmonth = new Date(this.startmonth.valueOf())
-			if(endmonth.getMonth() < 12){
-				endmonth.setMonth(endmonth.getMonth() + 1)
-			}else{
-				endmonth.setFullYear(endmonth.getFullYear() + 1)
-				endmonth.setMonth(1)
-			}
+      var endmonth = new Date(this.startmonth.valueOf())
+      
+			// if(endmonth.getMonth() < 12){
+			// 	endmonth.setMonth(endmonth.getMonth() + 1)
+			// }else{
+			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
+			// 	endmonth.setMonth(1)
+      // }
+      endmonth.setDate(endmonth.getDate() + 7)
+
 			return [this.startmonth, endmonth]
 		},
 		monthdata : vm => sampledata[+vm.startmonth.getMonth()+1],
@@ -349,8 +367,8 @@ export default {
 			return this.monthdata.filter(d =>{
 				var toc = new Date(d.toc);
 				
-				return toc < end && toc > start
-				// return toc < this.endDate && toc > this.startDate
+				// return toc < end && toc > start
+				return toc > this.startDate && toc < this.endDate
 			})
 		},
 		brushUpid : vm => d3.map(vm.brushData, d => d.upid),
@@ -404,25 +422,20 @@ export default {
 			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
 			await this.getStationsData(startDate, endDate).then(Response => {
 				this.stationsData=Response.data
-			})
-			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
-			console.log(this.jsonData.length)
-			this.jsonData = this.jsonData.filter(d => {
-				return this.brushUpid.includes(d.upid)
-			})
-			console.log(this.jsonData.length)
-			console.log(this.brushUpid.length)
-			console.log(d3.groups(this.jsonData , d => d.flag))
-			
+      })
 
-			let flagData = (await baogangAxios(`/baogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
+			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
+			// this.jsonData = this.jsonData.filter(d => {
+			// 	return this.brushUpid.includes(d.upid)
+			// })
+
+			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
 			// this.getplatetype();
 			let allDataArr = []
 			for (let item of this.jsonData) {
 					let upid = item['upid']
 					allDataArr.push(flagData[upid])
 			}
-
 			for (let i = 0; i < this.jsonData.length; i++) {
 				this.jsonData[i]['flag'] = allDataArr[i]
 			}
@@ -430,9 +443,9 @@ export default {
 			// paint
 			this.loadingDataLoading = false
 			this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
-			this.jsonData = this.jsonData.filter(d => {
-				return this.brushUpid.includes(d.upid)
-			})
+			// this.jsonData = this.jsonData.filter(d => {
+			// 	return this.brushUpid.includes(d.upid)
+			// })
       if(this.scatterData.length!==0)this.mergeflag()
       // console.log("jsonData: ", this.jsonData);
 			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
@@ -482,7 +495,7 @@ export default {
 				})
 		},
 		async getplatetype() {
-			return baogangAxios(`/baogangapi/v1.0/model/VisualizationPlatetypes/`).
+			return baogangAxios(`/newbaogangapi/v1.0/model/VisualizationPlatetypes/`).
 			then(res=>{
 				let data=res.data.flat()
 				data.sort()
@@ -531,7 +544,7 @@ export default {
       //   .catch(error => {
       //       this.getNotification("getJsonData:"+error)
       //     })
-      return baogangPlotAxios(`/newbaogangapi/v1.0/getMareyTimesDataApi/all/${startDate}/${endDate}/100`,
+      return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyTimesDataApi/all/${startDate}/${endDate}/100`,
         {"steelspec": "all", "tgtplatethickness": '["all"]'})
         .catch(error => {
           this.getNotification("getJsonData:"+error)
@@ -543,7 +556,7 @@ export default {
 			// 	.catch(function(error){
 			// 		this.getNotification("getStationsData:"+error)
       // 	})
-      return baogangPlotAxios(`/newbaogangapi/v1.0/getMareyStationsDataApi/all/${startDate}/${endDate}/`,
+      return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyStationsDataApi/all/${startDate}/${endDate}/`,
         {"steelspec": "all", "tgtplatethickness": '["all"]'})
 				.catch(function(error){
 					this.getNotification("getStationsData:"+error)
@@ -567,7 +580,8 @@ export default {
 		async trainClick(value) {
 			this.diagnosisVisible = true;
 			this.upidSelect = []
-			this.chooseList = value.batch;
+      this.chooseList = value.batch;
+
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
 			}
@@ -639,7 +653,12 @@ export default {
 			// diagnosisData
 			this.paintRiverLike(upid);
 			this.platetype(upid);
-		},
+    },
+    clickDiagnosisButton() {
+      this.diagnosisVisible = ! this.diagnosisVisible
+
+      this.$refs.mareyChart.diagnosisClick(this.diagnosisVisible)
+    },
 
 		async paintRiverLike(upid) {
 			let query=[]
@@ -773,11 +792,11 @@ export default {
 			this.$refs.brushSlider.paintChart(this.timeBrushData)
 		},
 		async getAlgorithmData() {
-			await baogangAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-				this.scatterData=Response.data
+			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
+        this.scatterData=Response.data
 				this.$refs.scatterCate.paintChart(this.scatterData)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
-				this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+        this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 			})
 		},
 	},

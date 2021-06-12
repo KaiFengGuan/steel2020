@@ -147,10 +147,11 @@ export default {
     // labelColor: ['red', d3.schemeCategory10[0]]
     labelColor2: labelColor2,
     labelColor: labelColor,
+    noflagColor: noflagColor,
     delabelColor: delabelColor,
     processColor: processColor,
     labelColorFunc (index) {
-        return labelColor[index]
+        return index !== 404 ? labelColor[index] : noflagColor
     },
 
     setPoData(matrix) {

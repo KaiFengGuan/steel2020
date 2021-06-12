@@ -88,14 +88,14 @@ export default {
                 vm = this,
                 deselectedColor = "#eeeeee",
                 selectedColor = "#cccccc",
-                keys = [ "tgtwidth", "tgtplatethickness2", "tgtplatelength2","slab_thickness","charging_temp_act"],
+                keys = [ "tgtplatethickness2", "tgtplatelength2", "tgtwidth","slab_thickness"],
                 bardata = d3.map(keys, d => d3.map(brushdata, index => index[d])),
                 barbin = d3.map(keys, (d, i) => {
                     var length = 6;
                     var maxlength = bardata[i].length
                     while(true){
                         var max = d3.max(d3.bin().thresholds(length)(bardata[i]), d => d.length) 
-                        if(max/maxlength < 0.6){
+                        if(max/maxlength < 0.6 || length >= 10){
                             break
                         }else{
                             length++

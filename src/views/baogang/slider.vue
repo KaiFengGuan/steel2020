@@ -35,7 +35,7 @@ export default {
           .scaleBand()
           .domain(brushData.endTimeOutput)
           .range([miniMargin.left, width - miniMargin.right])
-          .paddingInner(0.5)
+          // .paddingInner(0.5)
       const vm = this
       let flag = 0
       // y
@@ -66,12 +66,12 @@ export default {
       endTimeOutput1.forEach((d, i) => newDate.push({ endTimeOutput: d, no_flag: no_flag1[i], good_flag: good_flag1[i], bad_flag: bad_flag1[i] }))
       const stack = d3.stack().keys(['no_flag', 'good_flag', 'bad_flag']).order(d3.stackOrderNone).offset(d3.stackOffsetNone)
       const series = stack(newDate)
-      console.log('series: ', series)
+      // console.log('series: ', series)
       const miniXScale1 = d3
         .scaleBand()
         .domain(brushData.endTimeOutput)
         .range([miniMargin.left, width - miniMargin.right])
-        .paddingInner(0.5)
+        // .paddingInner(0.5)
 
       const miniYScale1 = d3
         .scaleLinear()
@@ -112,7 +112,8 @@ export default {
             .attr('y', d => miniHeight - miniYScale(brushData.no_flag[d]))
             .attr('width', miniXScale.bandwidth())
             .attr('height', d => miniYScale(brushData.no_flag[d]))
-            .attr('stroke', 'none')
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1)
             .attr('fill', this.noflagColor)
         )
         .call(g =>
@@ -123,7 +124,8 @@ export default {
             .attr('y', d => miniHeight - miniYScale(brushData.no_flag[d]) - miniYScale(brushData.good_flag[d]))
             .attr('width', miniXScale.bandwidth())
             .attr('height', d => miniYScale(brushData.good_flag[d]))
-            .attr('stroke', 'none')
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1)
             .attr('fill', this.labelColor[1])
         )
         .call(g =>
@@ -134,7 +136,8 @@ export default {
             .attr('y', d => miniHeight - miniYScale(brushData.no_flag[d]) - miniYScale(brushData.good_flag[d]) - miniYScale(brushData.bad_flag[d]))
             .attr('width', miniXScale.bandwidth())
             .attr('height', d => miniYScale(brushData.bad_flag[d]))
-            .attr('stroke', 'none')
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1)
             .attr('fill', this.labelColor[0])
         )
         .on('mouseover', mouseover)
@@ -272,7 +275,7 @@ export default {
             })
           }
         })
-        console.log('upperDate',upperData);
+        // console.log('upperDate',upperData);
         const upperSeries = stack(upperData)
         // svg原始的
         mainG

@@ -32,7 +32,12 @@ export default {
 			brushData: undefined,
 			defaultStrokeWidth : undefined,
       initialBrushXSelection : undefined,
-      mainHeight: 0
+      zoom_for_brush: 1,
+      mainHeight: 0,
+      diagnosisVisible: false,
+      small_windows_height: 500,
+      mareyDistance: 0,
+      stationBottomGap: 0
     };
   },
   methods: {
@@ -64,6 +69,7 @@ export default {
       const mainHeight = document.getElementById(this.menuId).offsetHeight;
       this.mainHeight = mainHeight
       const stationBottomGap = 10;
+      vm.stationBottomGap = stationBottomGap
       var stops = d3.merge(this.data.map(d => d.stops.map(s => ({ train: d, stop: s }))));
       var stopsTime = d3.map(alldata, d => {
         let arr = d3.pairs(d.stops, (a,b) => new Date(b.realTime).getTime() - new Date(a.realTime).getTime())
@@ -77,7 +83,7 @@ export default {
         mareyWidth = width - mareyEntry - 7.6 * margin.right,
         coreX = mareyEntry * 0.55,
         mareyDistance = 1.8 * margin.top;
-      
+      vm.mareyDistance = mareyDistance
       let stationlength = mareyWidth / vm.stations.length,
           stationRect = stationlength / 1.2,
           rectDistance = (stationlength - stationRect)/2,
@@ -498,11 +504,11 @@ export default {
         }
       }
       function paintMareyLine(mareyContentGroup) {
-        let removeElement = mareyContentGroup.selectAll('.mareyLineGroup')._groups[0][0]
+        let removeElement = mareyContentGroup.selectAll('.mareyGroup')._groups[0][0]
         removeElement !== undefined && removeElement.remove()
 
         // 站点提示线
-        let MareyGroup = mareyContentGroup.append("g").attr("class", "mareyLineGroup");
+        let MareyGroup = mareyContentGroup.append("g").attr("class", "mareyGroup");
         MareyGroup.append("g")
           .attr('class', 'stationsLine')
           .selectAll("g")
@@ -523,11 +529,12 @@ export default {
         // 渲染马雷图线
         let paintdata = vm.isMerge ? vm.filterdata : vm.data
         var train = MareyGroup.append("g")
-          .attr("fill", "white")
+          .attr("class", "mareyLineGroup")
           .selectAll("g")
           .data(paintdata)
           .join("g")
           .attr("class", "mareyLine")
+          .attr('transform', (d, i, arr) => `translate(0, ${y(new Date(d.stops[0].time))})`)
           .style("color", vm.trainGroupStyle)
           .attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) })
           .attr("id", d => ("id" + d.upid))
@@ -570,17 +577,19 @@ export default {
             .attr("opacity" , 0.4)
           if(vm.changeColor && quality[1] !== undefined){
             mergeG.append("g")
-            .attr("fill", "white")
-            .selectAll(`.select g`+item)
-            .data(quality[1] !== undefined ? quality[0][1] : [])
-            .join("g")
-            .style("color", vm.trainGroupStyle)
-            .attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) } )
-            .attr("id", d => ("id" + d.upid))
-            .call(g => g.append("path")
-              .attr("fill", "none")
-              .attr("stroke", "currentColor")
-              .attr("d", d => line(d.stops)))
+              .attr("fill", "white")
+              .selectAll(`.select g`+item)
+              .data(quality[1] !== undefined ? quality[0][1] : [])
+              .join("g")
+              .attr("class", "mareyLine")
+              .attr('transform', (d, i, arr) => `translate(0, ${y(new Date(d.stops[0].time))})`)
+              .style("color", vm.trainGroupStyle)
+              .attr("stroke-width", d => { return defaultStrokeWidth(d.tgtplatethickness2) } )
+              .attr("id", d => ("id" + d.upid))
+              .call(g => g.append("path")
+                .attr("fill", "none")
+                .attr("stroke", "currentColor")
+                .attr("d", d => line(d.stops)))
             qualityData.push(...d3.map(quality[0][1], d=> d.upid))
           }
         }
@@ -638,7 +647,7 @@ export default {
               .join("path")
               .attr("d", (d, i) => voronoi.renderCell(i))
               .on("mouseover", (event, d) => {
-                if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return;
+                if((filter.indexOf(d.train.upid) !== -1 && (qualityData.indexOf(d.train.upid) === -1)) && vm.isMerge) return;
                 vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 0});
                 let toopcolor = vm.trainGroupStyle(d.train);
                 mouseoverLine(d.train.upid);
@@ -664,7 +673,7 @@ export default {
                 tooltip.attr("transform", `translate(${x(d.stop.station.distance) - box.width / 2}, ${y(new Date(d.stop.time)) + 37})`);
               })
               .on("mouseout", (event, d) => {
-                if( (filter.indexOf(d.train.upid) !==-1 && (qualityData.indexOf(d.train.upid) ===-1)) && vm.isMerge) return;
+                if((filter.indexOf(d.train.upid) !== -1 && (qualityData.indexOf(d.train.upid) === -1)) && vm.isMerge) return;
                 vm.$emit("trainMouse", {upid: [d.train.upid],  mouse: 1});
                 tooltip.style("display", "none");
                 if(vm.trainSelectedList.includes(d.train.upid)) return
@@ -720,15 +729,15 @@ export default {
           .attr("class", "mareyMiniGroup")
 
         const miniDistance = d3.min(d3.pairs(d3.map(vm.data, d => new Date(d.stops[0].time)), (a, b) => b.getTime() -a.getTime()));
-        let miniMargin = { top: 115, right: 15, bottom: 200, left: 35 },
+        let miniMargin = { top: 115, right: 15, bottom: 220, left: 35 },
           miniheight =  mainHeight - miniMargin.top - miniMargin.bottom,
           miniwidth = 75,
           miniXScale = d3.scaleTime()
             .domain([new Date(minDate), new Date(maxDate)])
             .range([0, miniheight - miniMargin.bottom - miniMargin.top]),
           mainXZoom = d3.scaleLinear()
-            .range([mareyDistance, mainHeight ])
-            .domain([0, miniheight]),
+            .domain([0, miniheight])
+            .range([mareyDistance, mainHeight]),
           BrushSelectHeight = miniXScale(new Date(100 * miniDistance + new Date(vm.data[0].stops[0].time).getTime())),
           // data.length > 50 ? (this.isMerge ? miniXScale(new Date(data[50].stops[0].time)) : miniXScale(new Date(data[65].stops[0].time))) : (this.isMerge ? 0.5 * unitHeight : 0.3 * unitHeight),
           // miniXScale(new Date(data[65].stops[0].time.slice(0, 19))),
@@ -736,9 +745,20 @@ export default {
           initialBrushXSelection = [0, BrushSelectHeight],
           brush = d3.brushY()
             .extent([[0, 0], [miniwidth - miniMargin.right - miniMargin.left, miniheight - miniMargin.bottom - miniMargin.top]])
-            .on("end", brushmove);
+            .on("end", brushmove)
+            .on('brush', event => {
+              const extentX = event.selection;
+              d3.select(".miniLine1").attr("y1", miniMargin.top + extentX[0]);
+              d3.select(".miniLine2").attr("y1", miniMargin.top + extentX[1]);
+            });
         initialBrushXSelection = vm.initialBrushXSelection !== undefined ? vm.initialBrushXSelection : initialBrushXSelection
 
+        let zoom_extent = [[miniMargin.left, miniMargin.top], [miniwidth-miniMargin.right, miniheight - miniMargin.bottom]];
+        let zoom = d3.zoom()
+                // .scaleExtent([1, 11])
+                .translateExtent(zoom_extent)
+                .extent(zoom_extent)
+                .on("zoom", zoomed);
         const brushXPosition = width - mareyEntry - miniMargin.right - margin.right / 2;
         const miniGroup = mareyMiniGroup.append("g")
           .attr("class", "miniGroup")
@@ -748,7 +768,9 @@ export default {
           .attr("transform", `translate(${[brushXPosition, miniMargin.top]})`)
           .append("g")
             .attr("class", "brush")
-            .call(brush);
+            .call(brush)
+            .call(zoom)
+            .on("mousedown.zoom", null);
         brushGroup.selectAll("rect")
           .attr("width", miniwidth - miniMargin.right - miniMargin.left)
           .attr("height", miniheight - miniMargin.bottom - miniMargin.top);
@@ -879,10 +901,14 @@ export default {
           mainXZoom.domain(extentX);
           y = d3.scaleTime()
             .domain(selectTime)
-            .range([mareyDistance + stationBottomGap, mainHeight - 30]);
+            .range([mareyDistance + stationBottomGap, mainHeight - mareyDistance - stationBottomGap - 50]);
           line = d3.line()
             .x(d => x(d.station.distance))
-            .y(d => y(new Date(d.time)));
+            .y((d,i,arr) => {
+              return y(new Date(arr[i].time)) - y(new Date(arr[0].time))
+              // return y(new Date(d.time))
+            })
+            // .y(d => y(new Date(d.time)));
           voronoi = Delaunay
             .from(stops, d => x(d.stop.station.distance), d => y(new Date(d.stop.time)))
             .voronoi([0, mareyDistance, mareyWidth, mareyDistance + height]);
@@ -895,15 +921,28 @@ export default {
               ( (miniXScale(new Date(d["merge"][0].stops[0].time))>extentX[0] && miniXScale(new Date(d["merge"][0].stops[0].time))<extentX[1]) && 
                 (miniXScale(new Date(d["merge"][d["merge"].length - 1].stops[0].time))>extentX[0] && miniXScale(new Date(d["merge"][d["merge"].length - 1].stops[0].time))<extentX[1]) )
               ) ? 0.4 : 0.2);
-          d3.select(".miniLine1").attr("y1", miniMargin.top + extentX[0]);
-          d3.select(".miniLine2").attr("y1", miniMargin.top + extentX[1]);
           mareyContentGroup.select(".selection")
             .attr("fill", "none")
             .attr("stroke", "#aaa");
+          
           vm.initialBrushXSelection = extentX;
-
           paintMareyLine(mareyContentGroup);
           paintStationsLabel(mareyContentGroup);
+        }
+        function zoomed(event) {
+          let k = event.transform.k;
+          let brush_select = vm.initialBrushXSelection;
+          let rect_h = miniheight - miniMargin.bottom - miniMargin.top
+          // console.log(miniheight);
+          if (vm.zoom_for_brush - k > 0 && brush_select[1] < rect_h) {
+            brush_select[1] = brush_select[1] + 10;
+          }
+          else if (vm.zoom_for_brush - k < 0 && brush_select[1]-10 > brush_select[0]) {
+            brush_select[1] = brush_select[1] - 10;
+          }
+
+          vm.zoom_for_brush = k   // 保存状态
+          brushGroup.call(brush.move, brush_select);
         }
       }
       function shadowInit() {
@@ -977,11 +1016,36 @@ export default {
       });
     },
     diagnosisClick(diagnosisVisible) {
+      this.diagnosisVisible = diagnosisVisible
       let miniLine2 = d3.selectAll('.miniLine2')
           .transition()
-          .duration(1000);
+          .duration(500);
       if (diagnosisVisible) {
-        miniLine2.attr('y2', 500);
+        miniLine2.attr('y2', this.small_windows_height);
+
+        let selectTime = this.initialBrushXSelection
+        let y = d3.scaleTime()
+            .domain(selectTime)
+            .range([this.mareyDistance + this.stationBottomGap, this.small_windows_height - this.mareyDistance - this.stationBottomGap - 50]);
+        // let line = d3.line()
+        //     .x(d => x(d.station.distance))
+        //     .y(d => y(new Date(d.time)));
+        // let voronoi = Delaunay
+        //     .from(stops, d => x(d.stop.station.distance), d => y(new Date(d.stop.time)))
+
+        let marey_line = d3.select('.mareyContentGroup').select('.mareyLineGroup')
+        marey_line.selectAll('.mareyLine')
+          .data(this.isMerge ? this.filterdata : this.data)
+          .transition(d3.transition()
+            .duration(200)
+            .ease(d3.easeLinear))
+          
+          .attr('transform',  (d, i, arr) => {
+            // console.log(d);
+            return `translate(0, ${y(new Date(d.stops[0].time))})`
+          })
+          
+
       }
       else {
         miniLine2.attr('y2', this.mainHeight);

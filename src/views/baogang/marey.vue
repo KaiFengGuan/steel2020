@@ -459,7 +459,7 @@ export default {
 	// 		this.jsonData = this.jsonData.filter(d => {
 	// 			return this.brushUpid.includes(d.upid)
 	// 		})
-    //   if(this.scatterData.length!==0)this.mergeflag()
+    //  	if(this.scatterData.length!==0)this.mergeflag()
     //   // console.log("jsonData: ", this.jsonData);
 	// 		this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
 
@@ -801,9 +801,6 @@ export default {
 		async getAlgorithmData() {
 			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
         		this.scatterData = Response.data
-				// console.log("*************");
-				// console.log(Response.data);
-				// console.log("*************");
 				this.$refs.scatterCate.paintChart(this.scatterData)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
         		this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
@@ -1047,10 +1044,10 @@ export default {
     border-right-color: #DCDFE6;
     border-left-color: #DCDFE6;
 }
-.el-tabs__item {
-	// height: 30px !important;
+// .el-tabs__item {
+// 	height: 30px !important;
 	
-}
+// }
 .el-tabs--border-card>.el-tabs__content {
     padding: 0px !important;
 }

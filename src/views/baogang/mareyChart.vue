@@ -874,6 +874,7 @@ export default {
           .attr("stroke", "#c9cbcc")
           .attr("stroke-width", 0.15)
           .attr("filter","url(#shadow-label)")
+        // debugger
         brushGroup.call(brush.move, initialBrushXSelection);
         mareyContentGroup.select(".selection")
           .attr("fill", "none")

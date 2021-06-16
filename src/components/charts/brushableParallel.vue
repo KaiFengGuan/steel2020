@@ -23,6 +23,11 @@ export default {
             lengthStation:0,
             widthStation: 0,
             slabThicknesssStation: 0,
+            countpaint:0,
+            newBrushSelection:new Map(),
+            objStatus: {"tgtplatethickness2":false,"tgtplatelength2":false,"tgtwidth":false,"slab_thickness":false},
+            coolingStation: [{"cooling":true},{"nocooling":false}],  
+
         }
     },
 
@@ -81,6 +86,7 @@ export default {
 			return newObj
 		},
         paintChart(plData, startTime, endTime) {
+            this.countpaint++
             plData = this.deepCopy(plData)
             this.plData = plData
             var brushdata = plData.map( d => {
@@ -89,7 +95,7 @@ export default {
             })
             var width = 355
             this.brushdata = brushdata
-            let objStatus ={"tgtplatethickness2":false,"tgtplatelength2":false,"tgtwidth":false,"slab_thickness":false}
+            // let 
             // keys = [ "tgtplatethickness2", "tgtplatelength2","tgtwidth", "slab_thickness"],
             // var margin = {top: 40, right: 20, bottom: 40, left: 20},
             // var margin = {top: 40, right: 20, bottom: 40, left: 20},
@@ -153,17 +159,10 @@ export default {
                     .startAngle(0)
                     .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
                 height = (keys.length + 1) * 98,
-                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([0,60])], [margin.left, width - margin.right]),
-                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([0,60], [margin.left, width - margin.right])])),
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
-                // x = new Map(Array.from(keys, key => [key, d3.scaleLinear([newRange[keys.indexOf(key)][0], newRange[keys.indexOf(key)][1]], [margin.left, width - margin.right])])),
-                // y = d3.scalePoint(keys, [margin.top, height - margin.bottom]);
                 y = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
                 xScale = d3.axisBottom(xCooling).tickSizeOuter(0).tickSizeInner(0)
-                // yScale = d3.scalePoint(1, [margin.top, height - margin.bottom])
-              // console.log(yScale(13));
               x.set("status_cooling",d3.scaleBand([0,1], [margin.left, width - margin.right]))
-              // x.set("status_cooling",d3.scaleBand(["cooling","nocooling"], [margin.left, width - margin.right]))
               var line = d3.line()
                     .defined(([, value]) => value != null)
                     .x(([key, value]) => x.get(key)(value))
@@ -247,8 +246,12 @@ export default {
                 // svg.append("circle")
                 //     .attr("class","circle"+item)
                 //     .attr("cx", x.)
-
                 this.brushSelection.set(keys[item], d3.extent(d3.filter(brushdata, d => new Date(d.toc) >= startTime && new Date(d.toc) <= endTime), d => d[keys[item]]))
+
+                // if(this.countpaint == 1){
+                // }else{
+                //     this.brushSelection.set(keys[item],d3.extent())
+                // }
             }
 
 
@@ -300,58 +303,44 @@ export default {
                 d3.select(".rectcooling0").lower()
                 d3.select(".rectcooling1").lower()
                 svg.append("g")
-                    .attr("class","coolingButton")
                     // .attr("transform",`translate(0,${400})`)
-                    .selectAll("circle")
-                    // .selectAll("circle")
-                    .data(coolingStation)
+                    .selectAll("g")
+                    .data(vm.coolingStation)
                     .join("g")
-                    .each(function(d,i) {
-                      d3.select(this)
-                          .append("circle")
-                          .attr("class","coolingButton"+ i)
-                          .attr("cx",xCooling(i) +9.4)
+                    .call(g => g.append("circle")
+                         .attr("class",(d,i) => "coolingButton"+ i)
+                          .attr("cx",(d,i) => xCooling(i) +9.4)
                           .attr("cy",484)
                           .attr("r", 5)
                           .attr("storke","#000")
                           .attr("stroke-width",1)
                           .attr("fill","#ccc")
                           .attr('cursor', 'pointer')
-                          .on("click",function(e,d){
-                              if(Object.keys(d) == "cooling"){
-                                    coolingStation["cooling"] = !coolingStation["cooling"]
-                                    if(coolingStation["cooling"]){
-                                        svg.select(".coolingButton0").attr("fill","red")
-                                        for(let item of allArray[0]){
-                                            svg.select(`#paraPath${item["upid"]}`)
-                                            .style("visibility","hidden").raise()
-                                        }        
-                                    }else{
-                                        svg.select(".coolingButton0").attr("fill","#ccc")
-                                         for(let item of allArray[0]){
-                                            svg.select(`#paraPath${item["upid"]}`)
-                                            .style("visibility","visible").raise()
-                                          }        
-                                    }
+                          .on("click", function(e, d){
+                              if(Object.keys(d)[0] == "cooling"){
+                                   vm.coolingStation["cooling"] = !vm.coolingStation["cooling"]
                               }else{
-                                  coolingStation["nocooling"] = !coolingStation["nocooling"]
-                                  if(coolingStation["nocooling"]){
-                                    svg.select(".coolingButton1").attr("fill","red")
-                                    for(let item of allArray[1]){
-                                        svg.select(`#paraPath${item["upid"]}`)
-                                        .style("visibility","hidden").raise()
-                                    }     
-                                  }
-                                  else{
-                                    svg.select(".coolingButton1").attr("fill","#ccc")
-                                    for(let item of allArray[1]){
-                                        svg.select(`#paraPath${item["upid"]}`)
-                                        .style("visibility","visible").raise()
-                                    }  
-                                  }
+                                   vm.coolingStation["nocooling"] = !vm.coolingStation["nocooling"]
                               }
-                          })
-                    })
+                              svg.select(".coolingButton0").attr("fill",vm.coolingStation["cooling"] ?"red":"#ccc")
+                              svg.select(".coolingButton1").attr("fill",vm.coolingStation["nocooling"] ?"red":"#ccc")
+                              path.each(function(d) {
+                                    const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
+                                    if(vm.coolingStation["nocooling"] && vm.coolingStation["cooling"]){
+                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 1 && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
+                                    }else if(vm.coolingStation["cooling"] && !vm.coolingStation["nocooling"]){
+                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
+                                    }else if(!vm.coolingStation["cooling"] &&vm.coolingStation["nocooling"]){
+                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 1) ? vm.deGroupStyle : "none");
+                                    }else{
+                                        d3.select(this).attr("stroke",active ? vm.deGroupStyle : "none");
+                                    }
+                              });
+              }))
+               
+
+
+
                 svg.append("g").call(g =>
                     g.append("rect")
                       .attr("x",20)
@@ -377,7 +366,6 @@ export default {
                       .attr("font-style", util.tabularTipsTextAttr.fontStyle)
                       .text("sta_cooling")
                   )
-                // svg.append("g").attr("class",'x-axis').attr('transform',`translate(${20},${450})`).call(xScale)
             const path = svg.append("g")
                             .attr("fill", "none")
                             .attr("stroke-width", 1)
@@ -395,7 +383,15 @@ export default {
                             .attr("class", "pathColor")
                             .on("mouseover", pathover)
                             .on("mouseout", pathout);
-            var selections = this.brushSelection;
+
+
+            var selections = this.brushSelection
+          
+            // if(this.countpaint == 0){
+            //     selections = 
+            // }else{
+            //    selections = vm.newBrushSelection
+            // }
             svg.append("g")
               .selectAll("g")
               .data(keys)
@@ -413,31 +409,31 @@ export default {
               .on("click", function(e, d){
                   // e.preventDefault();
                   if(d == "tgtplatethickness2"){
-                      objStatus["tgtplatethickness2"] = !objStatus["tgtplatethickness2"]
-                      if(objStatus["tgtplatethickness2"]){
+                      vm.objStatus["tgtplatethickness2"] = !vm.objStatus["tgtplatethickness2"]
+                      if(vm.objStatus["tgtplatethickness2"]){
                           svg.select(".circlebutton0").attr("fill","red")
                       }else{
                           svg.select(".circlebutton0").attr("fill","#ccc")
                       }
                       // svg.select(".circlebutton0").attr("fill","red")
-                      // objStatus.push("tgtplatethickness2")
+                      // vm.objStatus.push("tgtplatethickness2")
                   }else if(d == "tgtplatelength2"){
-                      objStatus["tgtplatelength2"] = !objStatus["tgtplatelength2"]
-                      if(objStatus["tgtplatelength2"]){
+                      vm.objStatus["tgtplatelength2"] = !vm.objStatus["tgtplatelength2"]
+                      if(vm.objStatus["tgtplatelength2"]){
                           svg.select(".circlebutton1").attr("fill","red")
                       }else{
                           svg.select(".circlebutton1").attr("fill","#ccc")
                       }
                   }else if(d == "tgtwidth"){
-                      objStatus["tgtwidth"] = !objStatus["tgtwidth"]
-                      if(objStatus["tgtwidth"]){
+                      vm.objStatus["tgtwidth"] = !vm.objStatus["tgtwidth"]
+                      if(vm.objStatus["tgtwidth"]){
                           svg.select(".circlebutton2").attr("fill","red")
                       }else{
                           svg.select(".circlebutton2").attr("fill","#ccc")
                       }
                   }else{
-                      objStatus["slab_thickness"] = !objStatus["slab_thickness"]
-                      if(objStatus["slab_thickness"]){
+                      vm.objStatus["slab_thickness"] = !vm.objStatus["slab_thickness"]
+                      if(vm.objStatus["slab_thickness"]){
                           svg.select(".circlebutton3").attr("fill","red")
                       }else{
                           svg.select(".circlebutton3").attr("fill","#ccc")
@@ -495,6 +491,7 @@ export default {
                 }
                 );
                 brushSlider()
+                ChangeState()
             // d3.selectAll(".selection").remove()
             // d3.selectAll(".handle--custom").remove()
             // d3.selectAll(".handle--custom").remove()
@@ -574,7 +571,7 @@ export default {
             function brushed({selection}, key) {
                 var tempValue = selections.get(key).map(d => x.get(key)(d));
                 // console.log(selections);
-                if(objStatus[key] && !(tempValue.every((d, i) => d === selection[i]))){
+                if(vm.objStatus[key] && !(tempValue.every((d, i) => d === selection[i]))){
                     d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)));
                     return
                 }else{
@@ -585,9 +582,30 @@ export default {
                 else selections.set(key, selection.map(x.get(key).invert));
                 const selected = [];
                 // d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)))
+                //  path.each(function(d) {
+                //                     const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
+                //                     if(vm.coolingStation["nocooling"] &&vm.coolingStation["cooling"]){
+                //                             d3.select(this).attr("stroke",( active && d["status_cooling"] == 1 && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
+                //                     }else if(vm.coolingStation["cooling"] && !vm.coolingStation["nocooling"]){
+                //                             d3.select(this).attr("stroke",( active && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
+                //                     }else if(!vm.coolingStation["cooling"] &&vm.coolingStation["nocooling"]){
+                //                             d3.select(this).attr("stroke",( active && d["status_cooling"] == 1) ? vm.deGroupStyle : "none");
+                //                     }else{
+                //                         d3.select(this).attr("stroke",active ? vm.deGroupStyle : "none");
+                //                     }
+                //               });
                 path.each(function(d) {
                     const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
                     d3.select(this).attr("stroke", active ? vm.deGroupStyle : "none");
+                     if(vm.coolingStation["nocooling"] &&vm.coolingStation["cooling"]){
+                                d3.select(this).attr("stroke",( active && d["status_cooling"] == 1 && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
+                        }else if(vm.coolingStation["cooling"] && !vm.coolingStation["nocooling"]){
+                                d3.select(this).attr("stroke",( active && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
+                        }else if(!vm.coolingStation["cooling"] &&vm.coolingStation["nocooling"]){
+                                d3.select(this).attr("stroke",( active && d["status_cooling"] == 1) ? vm.deGroupStyle : "none");
+                        }else{
+                            d3.select(this).attr("stroke",active ? vm.deGroupStyle : "none");
+                        }
                     if (active) {
                         d3.select(this).raise();
                         selected.push(d);
@@ -602,15 +620,36 @@ export default {
                         // .attr("fill", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? selectedColor : deselectedColor)
                         .attr("opacity", (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? 0.5 : 0.05)
                 }
+                // vm.brushSelection = selections 
                 // if(objStatus[key]){
                 //     d3.select(this).call(brushHandle1, selection);
                 // }
                 // console.log(selections.get(key).map(d => x.get(key)(d)));
-
+                vm.newBrushSelection = selections
                 svg.property("value", selected).dispatch("input");
                 d3.select(".rectBar").lower();
                 brushSlider()
                
+            }
+            function  ChangeState(){
+              
+                // console.log(vm.coolingStation[0]["cooling"]);
+                // console.log(vm.svg.select(".coolingButton0"));
+                // svg.select(".coolingButton0").attr("fill","red")
+                svg.select(".coolingButton0").attr("fill",vm.coolingStation[0]["cooling"] ?"red":"#ccc")
+                svg.select(".coolingButton1").attr("fill",vm.coolingStation[1]["nocooling"] ?"red":"#ccc")
+                path.each(function(d) {
+                                    const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
+                                    if(vm.coolingStation[1]["nocooling"] && vm.coolingStation[0]["cooling"]){
+                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 1 && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
+                                    }else if(vm.coolingStation[0]["cooling"] && !vm.coolingStation[1]["nocooling"]){
+                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
+                                    }else if(!vm.coolingStation[0]["cooling"] &&vm.coolingStation[1]["nocooling"]){
+                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 1) ? vm.deGroupStyle : "none");
+                                    }else{
+                                        d3.select(this).attr("stroke",active ? vm.deGroupStyle : "none");
+                                    }
+                });
             }
         },
 
@@ -658,6 +697,8 @@ export default {
                             .attr("stroke-width", 1.75).raise()
           }
 		},
+       
+       
     },
     mounted(){
     }

@@ -263,12 +263,12 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2019, 2, 10, 0, 0),
+			startmonth: new Date(2019, 2, 1, 0, 0),
 			time: undefined,
 			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
-			interval: 4,
+			interval: 8,
 			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
@@ -350,7 +350,7 @@ export default {
 			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
 			// 	endmonth.setMonth(1)
       // }
-      endmonth.setDate(endmonth.getDate() + 7)
+      endmonth.setDate(endmonth.getDate() + 20)
 
 			return [this.startmonth, endmonth]
 		},

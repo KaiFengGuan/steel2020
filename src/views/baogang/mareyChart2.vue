@@ -124,10 +124,12 @@ export default {
           this._defaultStrokeWidth = undefined;
           this._highLightStrokeWidth = 2;
           this._zoom_for_brush = 1;
+          this._line_tran = undefined;
 
           this._coreX = 0;
           this._rectWidth = 60;
-          this._circleRy = undefined;
+          this._info_bgc_w = 195;
+          this._detail_rect_w = this._rectWidth * 2.5;
         }
 
         stateInit(is_merge, changecolor) {
@@ -147,8 +149,54 @@ export default {
             ( d => vm.categoryColors(d.productcategory));
           
           this._filterdata = this._deepCopy(this._timesdata);
+
           if (this._is_merge) {
             this._mergeresult = this._mergeTimesData(this._timesdata, this._stationsdata);
+
+            // 左边圆形的标尺数据计算
+            let merge_plates = [], fu_arr = [], m_arr = [], c_arr = [], t_arr = [];
+            let sub_arr = [];
+            this._mergeresult.forEach(d => merge_plates.push(...d['merge']))
+            for (let i in merge_plates) {
+              let item_data = merge_plates[i];
+              let item_data_stops = item_data.stops;
+              let single_arr = [];
+
+              fu_arr.push(item_data.fuTotalTimeAfter * 1000);
+              m_arr.push(item_data.mtotalTime * 1000);
+              c_arr.push(item_data.ccTotalTime * 1000);
+              t_arr.push(new Date(item_data_stops[0].time))
+
+              for (let j in this._stationsdata.slice(0, -1)) {
+                let stations_item = this._stationsdata[j];
+                let time_spend = 0;
+                for (let k in item_data_stops.slice(0, -1)) {
+                  if (stations_item.key === item_data_stops[k].station.key) {
+                    time_spend = (new Date(item_data_stops[(+k)+1].time)).getTime() - (new Date(item_data_stops[k].time))
+                  }
+                }
+                single_arr.push(time_spend)
+              }
+              sub_arr.push(single_arr)
+            }
+            fu_arr = fu_arr.filter(d => d!==0)
+            m_arr = m_arr.filter(d => d!==0)
+            c_arr = c_arr.filter(d => d!==0)
+            t_arr = d3.pairs(t_arr, (a, b) => b - a)
+            let fu_extent = [0, d3.quantile(fu_arr, 0.75)];
+            let m_extent = [0, d3.quantile(m_arr, 0.75)];
+            let c_extent = [0, d3.quantile(c_arr, 0.75)];
+            let t_extent = [0, d3.quantile(t_arr, 0.75)];
+
+            let sub_extent = [];
+            for (let i = 0; i < 16; i++) {
+              let a = [];
+              sub_arr.forEach(d => a.push(d[i]));
+              sub_extent.push([0, d3.quantile(a.filter(e => e !== 0), 0.75)]);  
+            }
+
+
+            // 合并相关图元 绘图数据
             for (let item in this._mergeresult) {
               let mergeItem = this._mergeresult[item]['merge'];
               let mergeSelect = this._mergeresult[item]['select'];
@@ -165,6 +213,44 @@ export default {
                 this._qualityData.push(...d3.map(quality[0][1], d=> d.upid));
               }
 
+              // 每个合并块中的子母工序统计
+              let fu_arr = [], m_arr = [], c_arr = [], t_arr = [];
+              let sub_arr = [];
+              for (let i in mergeItem) {
+                let item_data = mergeItem[i];
+                let item_data_stops = item_data.stops;
+                let single_arr = [];
+
+                fu_arr.push(item_data.fuTotalTimeAfter * 1000);
+                m_arr.push(item_data.mtotalTime * 1000);
+                c_arr.push(item_data.ccTotalTime * 1000);
+                t_arr.push(new Date(item_data_stops[0].time))
+
+                for (let j in this._stationsdata.slice(0, -1)) {
+                  let stations_item = this._stationsdata[j];
+                  let time_spend = 0;
+                  for (let k in item_data_stops.slice(0, -1)) {
+                    if (stations_item.key === item_data_stops[k].station.key) {
+                      time_spend = (new Date(item_data_stops[(+k)+1].time)).getTime() - (new Date(item_data_stops[k].time))
+                    }
+                  }
+                  single_arr.push(time_spend)
+                }
+                sub_arr.push(single_arr)
+              }
+              t_arr = d3.pairs(t_arr, (a, b) => b - a);
+              let fu_mean = d3.mean(fu_arr);
+              let m_mean = d3.mean(m_arr);
+              let c_mean = d3.mean(c_arr);
+              let t_mean = d3.mean(t_arr);
+              let sub_mean = [];
+              for (let i = 0; i < 16; i++) {
+                let a = [];
+                sub_arr.forEach(d => a.push(d[i]));
+                sub_mean.push(d3.mean(a));  
+              }
+
+
               // 马雷合并相关图元需要的数据
               this._mergeresult_1.push({
                 item: item,
@@ -172,7 +258,22 @@ export default {
                 mergeSelect: mergeSelect,
                 mergeId: mergeId,
                 selectId: selectId,
-                pathColor: pathColor
+                pathColor: pathColor,
+                date_s: new Date(mergeItem[0].stops[0].time),
+                date_e: new Date(mergeItem[mergeItem.length - 1].stops[0].time),
+
+                fu_extent: fu_extent,
+                m_extent: m_extent,
+                c_extent: c_extent,
+                t_extent: t_extent,
+                sub_extent: sub_extent,
+
+                fu_mean: fu_mean,
+                m_mean: m_mean,
+                c_mean: c_mean,
+                t_mean: t_mean,
+                sub_mean: sub_mean
+
               })
             }
           }
@@ -223,9 +324,10 @@ export default {
 
           
           this._renderMareyBackground();
-          this._renderMareyChart();
-          this._renderMareyBrush();
           this._renderInfoChart();
+          this._renderMareyChart();
+
+          this._renderMareyBrush();
           
           return this;
         }
@@ -241,16 +343,17 @@ export default {
           let m_w = this._marey_size.w - this._stations_size.p_h - 20;
           let m_h_s = this._stations_size.h + this._stations_size.gap;
           let m_h_e = this._height - this._stations_size.h - this._stations_size.gap - 50;
-          let miniDistance = d3.min(d3.pairs(d3.map(this._timesdata, d => new Date(d.stops[0].time)), (a, b) => b.getTime() -a.getTime()));
           this._stops = d3.merge(this._timesdata.map(d => d.stops.map(s => ({ train: d, stop: s }))));
-
+          
           this._mini_y = d3.scaleTime()
             .domain([new Date(min_date), new Date(max_date)])
             .range([0, this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom]);
           this._zoom_mini_y = d3.scaleLinear()
             .domain([0, this._brush_size.h])
             .range([this._stations_size.h, this._height]);
-          this._brush_select[1] = this._mini_y(new Date(100 * miniDistance + new Date(this._timesdata[0].stops[0].time).getTime()));
+          this._brush_select[1] = (this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom) * 0.2;
+
+          
           this._x = d3.scaleLinear()
             .domain(d3.extent(this._stationsdata, d => d.distance))
             .range([0 , m_w]);
@@ -323,14 +426,14 @@ export default {
             .attr('transform', `translate(${[0, 0]})`)
             .call(g => g.append("rect")
               .attr("x" , this._coreX - 1.8 * 65)
-              .style("fill","white")
-              .attr("width", 65 * 3)
+              .style("fill", "white")
+              .attr("width", this._info_bgc_w)
               .attr("height", this._y_height - this._main_magin.bottom))
             .call(g => g.append("rect")
               .attr("class", "shadow_rect")
               .attr("x" , this._coreX - 1.8 * 65)
               .style("fill","none")
-              .attr("width", 65 + this._coreX - 20)
+              .attr("width", this._info_bgc_w)
               .attr("height", this._y_height - this._main_magin.bottom))
               .attr("filter","url(#shadow-card)")
           
@@ -1139,15 +1242,176 @@ export default {
           axis.selectAll("text").attr("text-anchor", "start")
         }
 
+        // 左边批次信息
+        _renderInfoChart() {
+          if (!this._is_merge) return;
+
+          this._info_g === undefined ? undefined : this._info_g.remove();
+          this._info_g = this._container.append('g')
+            .attr('class', 'infoContentGroup')
+            .attr('transform', `translate(${[0, 0]})`);
+          
+          this._renderInfoLinkMergeArea();
+          this._renderInfoDetail();
+        }
+        _renderInfoLinkMergeArea() {
+          let InfoLinkGroup = this._info_g.append('g')
+            .attr('class', 'InfoLinkGroup');
+
+          let linkRectMerge = InfoLinkGroup.selectAll('.linkRectMerge')
+            .data(this._mergeresult_1)
+            .join('g')
+            .attr('class', 'linkRectMerge')
+            .attr('id', d => `linkRectMerge${d.item}`)
+            .attr('transform', d => `translate(${[0, this._y(new Date(d.mergeItem[0].stops[0].time))]})`)
+          
+          let link_path = d => {
+            let pathHeight = this._y(d.date_e)- this._y(d.date_s);
+
+            return d3.linkHorizontal()({
+              source: [this._coreX + this._rectWidth, 0],
+              target: [this._info_size.w - 10, pathHeight/2]
+            })
+          }
+          linkRectMerge
+            .append('path')
+            .attr('d', link_path)
+            .attr("stroke", d => d.pathColor)
+            .attr("opacity", 0.4)
+            .attr("fill", "none")
+            .attr("stroke-width", 2)
+          
+          linkRectMerge
+            .append("rect")
+            .attr("transform", `translate(${[this._info_size.w - 10, 0]})`)
+            .attr("width", 2)
+            .attr("height", d => this._y(d.date_e)- this._y(d.date_s))
+            .attr("fill", d => d.pathColor)
+            .attr("opacity", 0.4)
+        }
+        _renderInfoDetail() {
+          let InfoDetailGroup = this._info_g.append('g')
+            .attr('class', 'InfoDetailGroup');
+
+          let chartGroup = InfoDetailGroup.selectAll('.chartGroup')
+            .data(this._mergeresult_1)
+            .join('g')
+            .attr('transform', d => 
+              `translate(${[this._coreX - 1.8*65 + (this._info_bgc_w - this._detail_rect_w)/2 + 3, 
+              this._y(new Date(d.mergeItem[0].stops[0].time))]})`
+            )
+            .attr('class', 'chartGroup')
+            .attr('id', d => `chartGroup${d.item}`);
+          
+          chartGroup.append('g')
+            .attr('class', 'infoBackground')
+            .append('rect')
+						.attr('class', 'lineRect')
+						.attr('id', d => 'lineRect' + d.item)
+            .attr('width', this._detail_rect_w)
+            .attr('height', this._detail_rect_w)
+            .attr('stroke', d => {
+              // console.log(d);
+              return d.pathColor})
+            .attr('stroke-width', 2)
+            .attr('stroke-opacity', 0.4)
+            .attr('fill', 'white')
+            .attr('filter', 'url(#shadow-card)');
+          
+          this._renderInfoDetailCircle(chartGroup);
+            
+            
+        }
+        _renderInfoDetailCircle(chartGroup) {
+          const PI = Math.PI;
+          let circleR = this._detail_rect_w / 2;
+          let gap_angle = 0.1/2;
+          let inner_outer_gap = 3;
+          let cornerRadius = 2;
+          let inner_arc_width = 18;
+          let outer_arc_width = 5;
+
+          let inner_arc_r1 = this._detail_rect_w/2 * 0.4;
+          let inner_arc_r2 = inner_arc_r1 + inner_arc_width;
+          let outer_arc_r1 = inner_arc_r2 + inner_outer_gap;
+          let outer_arc_r2 = outer_arc_r1 + outer_arc_width;
+          let start_angle = -PI/6;
+          let t_angle = PI/3;
+          let p_angle = (2*PI - PI/3)/3;
+
+          let angle_arr = [
+            [start_angle+gap_angle, t_angle-Math.abs(start_angle)-gap_angle],
+            [t_angle-Math.abs(start_angle)+gap_angle, t_angle-Math.abs(start_angle)+p_angle-gap_angle],
+            [t_angle-Math.abs(start_angle)+p_angle+gap_angle, t_angle-Math.abs(start_angle)+p_angle*2-gap_angle],
+            [t_angle-Math.abs(start_angle)+p_angle*2+gap_angle, t_angle-Math.abs(start_angle)+p_angle*3-gap_angle]
+          ];
+          let inner_angle_scale = [
+            d3.scaleLinear().domain(this._mergeresult_1[0].t_extent).range(angle_arr[0]),
+            d3.scaleLinear().domain(this._mergeresult_1[0].fu_extent).range(angle_arr[1]),
+            d3.scaleLinear().domain(this._mergeresult_1[0].m_extent).range(angle_arr[2]),
+            d3.scaleLinear().domain(this._mergeresult_1[0].c_extent).range(angle_arr[3])
+          ];
+
+          let path_attr = g => g
+            .attr('stroke', 'grey')
+            .attr('stroke-width', 1)
+            .attr('fill', 'none')
+
+
+          let innerGroup = chartGroup.append('g')
+            .attr('class', 'innerArcGroup')
+            .attr('transform', `translate(${[circleR, circleR]})`)
+          angle_arr.forEach((a, i) => {
+            innerGroup.append('path')
+              .attr('d', d3.arc()
+                .innerRadius(inner_arc_r1)
+                .outerRadius(inner_arc_r2)
+                .cornerRadius(cornerRadius)
+                .startAngle(a[0])
+                .endAngle(a[1]))
+              .call(path_attr)
+          })
+          innerGroup.append('path')
+            .attr('d', d3.arc()
+                .innerRadius(inner_arc_r1)
+                .outerRadius(inner_arc_r2)
+                .cornerRadius(cornerRadius)
+                .startAngle(angle_arr[0][0])
+                .endAngle(0.3)
+            )
+            .attr('fill', 'red')
+            .attr('opacity', 0.5)
+
+
+          let outerGroup = chartGroup.append('g')
+            .attr('class', 'outerArcGroup')
+            .attr('transform', `translate(${[circleR, circleR]})`)
+          angle_arr.forEach(a => {
+            outerGroup.append('path')
+              .attr('d', d3.arc()
+                .innerRadius(outer_arc_r1)
+                .outerRadius(outer_arc_r2)
+                .cornerRadius(cornerRadius)
+                .startAngle(a[0])
+                .endAngle(a[1]))
+              .call(path_attr)
+          })
+
+
+            
+        }
+
         // 整图过渡动画
         _mareyChartTranslate() {
           this._translateMareyLine();
+          this._translateInfoChart();
         }
         _translateMareyLine() {
           let line_tran = d3.transition()
             .delay(50)
             .duration(500)
             // .ease(d3.easeLinear);
+
           let marey_group = this._marey_g.select('.mareyGroup');
           let mergeLine = d => this._line(d.stops)
     
@@ -1184,60 +1448,34 @@ export default {
               .voronoi([0, this._stations_size.h, this._marey_size.w, this._stations_size.h + this._y_height]);
           this._renderMareyLineTooltip();
         }
+        _translateInfoChart() {
+          let line_tran = d3.transition()
+            .delay(50)
+            .duration(500);
+          let link_path = d => {
+            let pathHeight = this._y(d.date_e)- this._y(d.date_s);
+            return d3.linkHorizontal()({
+              source: [this._coreX + this._rectWidth, 0],
+              target: [this._info_size.w - 10, pathHeight/2]
+            })
+          }
 
-        // 左边批次信息
-        _renderInfoChart() {
-          this._info_g === undefined ? undefined : this._info_g.remove();
-          this._info_g = this._container.append('g')
-            .attr('class', 'infoContentGroup')
-            .attr('transform', `translate(${[0, 0]})`);
+          let linkRectMerge = this._info_g.selectAll('.linkRectMerge')
+            .transition(line_tran);
+          linkRectMerge
+            .attr('transform', d => `translate(${[0, this._y(new Date(d.mergeItem[0].stops[0].time))]})`);
+          linkRectMerge.select('path')
+            .attr('d', link_path);
+          linkRectMerge.select('rect')
+            .attr('height', d => this._y(d.date_e)- this._y(d.date_s));
           
-          this._renderInfoLinkMergeArea();
-        }
-        _renderInfoLinkMergeArea() {
-          let LinkG = this._info_g.append('g')
-            .attr('class', 'InfoGroup');
-
-          let linkRectMerge = LinkG.selectAll('.linkRectMerge')
-            .data(this._mergeresult_1)
-            .join('g')
-            .attr('class', 'linkRectMerge')
-            .attr('id', d => `linkRectMerge${d.item}`)
-            .attr('transform', d => `translate(${[0, this._y(new Date(d.mergeItem[0].stops[0].time))]})`)
-          
-          // linkRectMerge
-          //   .attr('d', d => {
-          //     let circleRy = (
-          //       this._y((new Date(d.mergeItem[d.mergeItem.length - 1].stops[0].time))) + 
-          //       this._y((new Date(d.mergeItem[0].stops[0].time)))
-          //     ) / 2;
-          //     let position = [this._coreX, circleRy];
-          //     let pathHeight = (this._y((new Date(d.mergeItem[mergeItem.length - 1].stops[0].time)))- this._y((new Date(mergeItem[0].stops[0].time))));
-
-          //     return d3.linkHorizontal()({
-          //       source: [position[0] + this._rectWidth, position[1]],
-          //       target: [this._info_size.w - 10, (circleRy > 90 - pathHeight/2 && circleRy < 90 + pathHeight / 2) ? (circleRy + pathHeight/2 - 90)/2 + 90 : circleRy]
-          //     })
-          //   })
-          //   .attr("stroke", d => {
-          //     let quality = d3.sort(d3.groups(d['merge'], d => d.flag), d=> d[1].length);
-          //     let pathColor = this._change_color ?  
-          //       (quality[1] !== undefined ? vm.labelColors[quality[1][0]] : vm.labelColors[quality[0][0]]) : 
-          //       this._trainGroupStyle(mergeItem[0]);
-                
-          //     return pathColor})
-          //   .attr("opacity", 0.4)
-          //   .attr("fill", "none")
-          //   .attr("stroke-width", 2)
-          
-          // LinkG.selectAll('.MergeHeight')
-          //   .data(this._mergeresult)
-          //   .append("rect")
-          //   .attr("transform", `translate(${[this._info_size.w - 10, y((new Date(mergeItem[0].stops[0].time)))]})`)
-          //   .attr("width", 2)
-          //   .attr("height", pathHeight)
-          //   .attr("fill", pathColor)
-          //   .attr("opacity", 0.4)
+          let chartGroup = this._info_g.selectAll('.chartGroup')
+            .transition(line_tran);
+          chartGroup
+            .attr('transform', d => 
+              `translate(${[this._coreX - 1.8*65 + (this._info_bgc_w - this._rectWidth * 2.5)/2 + 3, 
+              this._y(new Date(d.mergeItem[0].stops[0].time))]})`
+            )
         }
 
         _deepCopy(obj) {

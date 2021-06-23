@@ -204,8 +204,9 @@ export default {
               let mergeId = d3.map(mergeItem, d => d.upid);
               let selectId = d3.map(mergeSelect, d => d.upid);
               let quality = d3.sort(d3.groups(mergeItem, d => d.flag), d=> d[1].length);
+              let last_quality = quality.slice(-1);
               let pathColor = this._change_color ?  
-                (quality[1] !== undefined ? vm.labelColors[quality[1][0]] : vm.labelColors[quality[0][0]]) : 
+                (last_quality[0][0] !== 404 ? vm.labelColors[last_quality[0][0]] : vm.noflagColor) : 
                 this._trainGroupStyle(mergeItem[0]);
 
               this._filterdata.splice(...this._mergeresult[this._mergeresult.length-item-1]['index']);
@@ -395,6 +396,37 @@ export default {
             .attr('dy', 0)
             .attr('stdDeviation', 5)
             .attr('flood-color', '#ededed');
+          
+          
+          function hatching(defs, id_no, bgc_color) {
+            let w = 5;
+            let sk_w = 4;
+            let pattern = defs.append('pattern')
+            .attr('id', 'hatching_pattern_' + id_no)
+            .attr('patternUnits', 'userSpaceOnUse')
+            .attr('patternTransform', `rotate(${45})`)
+            .attr('width', w)
+            .attr('height', w)
+            pattern
+              .append('rect')
+              .attr('width', w)
+              .attr('height', w)
+              .attr('fill', bgc_color)
+            pattern
+              .append('line')
+              .attr('x1', 0)
+              .attr('y1', 0)
+              .attr('x2', 0)
+              .attr('y2', 50)
+              .attr('stroke', 'white')
+              .attr('stroke-width', sk_w)
+              .attr('stroke-opacity', 1)
+          }
+          hatching(defs, 0, 'grey');
+          hatching(defs, 1, vm.processColor[0]);
+          hatching(defs, 2, vm.processColor[1]);
+          hatching(defs, 3, vm.processColor[2]);
+          
         }
         _renderMareyBackground() {
           let shadow_x = -this._stations_size.p_h + 10;
@@ -1051,7 +1083,7 @@ export default {
 		    	  		.attr('x', 0)
 		    	  		.attr('y', d => this._mini_y(new Date(d.stops[0].time)))
 		    	  		.attr('id', d => 'miniBar' + d.upid)
-                .attr('height', 1)
+                .attr('height', 0.5)
 		    	  		.attr('width', mini_g_w)
 		    	  		.attr("fill", this._trainGroupStyle)
                 .attr("opacity", d=> 
@@ -1060,22 +1092,13 @@ export default {
                   0.8 : 0.7)
             )
             .call(g => g.selectAll('.mergePath')
-              .data(this._is_merge ? this._mergeresult : [])
+              .data(this._is_merge ? this._mergeresult_1 : [])
               .join('rect')
                 .attr('class', 'mergePath')
-                .attr('y', d => this._mini_y(new Date(d['merge'][0].stops[0].time)))
-                .attr('height', d => 
-                  this._mini_y(new Date(d['merge'][d['merge'].length - 1].stops[0].time)) - 
-                  this._mini_y(new Date(d["merge"][0].stops[0].time)))
+                .attr('y', d => this._mini_y(d.date_s))
+                .attr('height', d => this._mini_y(d.date_e) - this._mini_y(d.date_s))
                 .attr('width', mini_g_w)
-                .attr('fill', (d, i) => {
-                  let mergeItem = d['merge'];
-                  let quality = d3.sort(d3.groups(mergeItem, d => d.flag), d=> d[1].length);
-                  let pathColor = this._change_color ? 
-                    (quality[1] !== undefined ? vm.labelColors[quality[1][0]] : vm.labelColors[quality[0][0]]) : 
-                    this._trainGroupStyle(mergeItem[0]);
-                  return pathColor
-                })
+                .attr('fill', d => d.pathColor)
                 .attr('opacity', 0.5)
             )
         }
@@ -1149,10 +1172,10 @@ export default {
                 that._mini_y(new Date(d.stops[0].time))<extentX[1] ? 0.4 : 0.2);
             d3.select(".miniGroup").selectAll(".mergePath")
               .attr("opacity", d=> (
-                (extentX[0]>=that._mini_y(new Date(d["merge"][0].stops[0].time)) && extentX[0]<=that._mini_y(new Date(d["merge"][d["merge"].length - 1].stops[0].time))) ||
-                (extentX[1]>=that._mini_y(new Date(d["merge"][0].stops[0].time)) && extentX[1]<=that._mini_y(new Date(d["merge"][d["merge"].length - 1].stops[0].time))) ||
-                ( (that._mini_y(new Date(d["merge"][0].stops[0].time))>extentX[0] && that._mini_y(new Date(d["merge"][0].stops[0].time))<extentX[1]) && 
-                  (that._mini_y(new Date(d["merge"][d["merge"].length - 1].stops[0].time))>extentX[0] && that._mini_y(new Date(d["merge"][d["merge"].length - 1].stops[0].time))<extentX[1]) )
+                (extentX[0]>=that._mini_y(d.date_s) && extentX[0]<=that._mini_y(d.date_e)) ||
+                (extentX[1]>=that._mini_y(d.date_s) && extentX[1]<=that._mini_y(d.date_e)) ||
+                ( (that._mini_y(d.date_s)>extentX[0] && that._mini_y(d.date_s)<extentX[1]) && 
+                  (that._mini_y(d.date_e))>extentX[0] && that._mini_y(d.date_e)<extentX[1]) 
                 ) ? 0.4 : 0.2);
             that._brush_g.select(".selection")
               .attr("fill", "none")
@@ -1296,10 +1319,11 @@ export default {
           let chartGroup = InfoDetailGroup.selectAll('.chartGroup')
             .data(this._mergeresult_1)
             .join('g')
-            .attr('transform', d => 
-              `translate(${[this._coreX - 1.8*65 + (this._info_bgc_w - this._detail_rect_w)/2 + 3, 
-              this._y(new Date(d.mergeItem[0].stops[0].time))]})`
-            )
+            .attr('transform', (d, i) => {
+              let chart_x = this._coreX - 1.8*65 + (this._info_bgc_w - this._detail_rect_w)/2 + 3;
+              let chart_y = this._y(d.date_s);
+              return `translate(${[chart_x, chart_y]})`
+            })
             .attr('class', 'chartGroup')
             .attr('id', d => `chartGroup${d.item}`);
           
@@ -1323,13 +1347,16 @@ export default {
             
         }
         _renderInfoDetailCircle(chartGroup) {
+          let circlecolor = this._deepCopy(vm.processColor);
+          circlecolor.unshift('grey');  // 时间颜色
+
           const PI = Math.PI;
           let circleR = this._detail_rect_w / 2;
           let gap_angle = 0.1/2;
-          let inner_outer_gap = 3;
+          let inner_outer_gap = 5;
           let cornerRadius = 2;
-          let inner_arc_width = 18;
-          let outer_arc_width = 5;
+          let inner_arc_width = 20;
+          let outer_arc_width = 8;
 
           let inner_arc_r1 = this._detail_rect_w/2 * 0.4;
           let inner_arc_r2 = inner_arc_r1 + inner_arc_width;
@@ -1351,7 +1378,7 @@ export default {
             d3.scaleLinear().domain(this._mergeresult_1[0].m_extent).range(angle_arr[2]),
             d3.scaleLinear().domain(this._mergeresult_1[0].c_extent).range(angle_arr[3])
           ];
-
+          
           let path_attr = g => g
             .attr('stroke', 'grey')
             .attr('stroke-width', 1)
@@ -1366,36 +1393,139 @@ export default {
               .attr('d', d3.arc()
                 .innerRadius(inner_arc_r1)
                 .outerRadius(inner_arc_r2)
-                .cornerRadius(cornerRadius)
                 .startAngle(a[0])
                 .endAngle(a[1]))
               .call(path_attr)
+            
+            innerGroup.append('path')
+              .attr('d', d => {
+                return d3.arc()
+                  .innerRadius(inner_arc_r1)
+                  .outerRadius(inner_arc_r2)
+                  .startAngle(a[0])
+                  .endAngle(inner_angle_scale[i](
+                    i===0?(d.t_mean<=d.t_extent[1]?d.t_mean:d.t_extent[1]):
+                    i===1?(d.fu_mean<=d.fu_extent[1]?d.fu_mean:d.fu_extent[1]):
+                    i===2?(d.m_mean<=d.m_extent[1]?d.m_mean:d.m_extent[1]):
+                    (d.c_mean<=d.c_extent[1]?d.c_mean:d.c_extent[1]))
+                  )()
+              })
+              .attr('fill', d => 
+                i===0?(d.t_mean>d.t_extent[1]?`url(#hatching_pattern_${i})`:circlecolor[i]):
+                i===1?(d.fu_mean>d.fu_extent[1]?`url(#hatching_pattern_${i})`:circlecolor[i]):
+                i===2?(d.m_mean>d.m_extent[1]?`url(#hatching_pattern_${i})`:circlecolor[i]):
+                (d.c_mean>d.c_extent[1]?`url(#hatching_pattern_${i})`:circlecolor[i])
+              )
+              .attr('opacity', 0.8)
           })
-          innerGroup.append('path')
-            .attr('d', d3.arc()
-                .innerRadius(inner_arc_r1)
-                .outerRadius(inner_arc_r2)
-                .cornerRadius(cornerRadius)
-                .startAngle(angle_arr[0][0])
-                .endAngle(0.3)
-            )
-            .attr('fill', 'red')
-            .attr('opacity', 0.5)
+          
 
 
           let outerGroup = chartGroup.append('g')
             .attr('class', 'outerArcGroup')
             .attr('transform', `translate(${[circleR, circleR]})`)
-          angle_arr.forEach(a => {
+          for (let i = 1; i < angle_arr.length; i++) {
             outerGroup.append('path')
               .attr('d', d3.arc()
                 .innerRadius(outer_arc_r1)
                 .outerRadius(outer_arc_r2)
-                .cornerRadius(cornerRadius)
-                .startAngle(a[0])
-                .endAngle(a[1]))
+                .startAngle(angle_arr[i][0])
+                .endAngle(angle_arr[i][1]))
               .call(path_attr)
-          })
+          }
+          // 加热工序6个站点，显示5个数据，画4根线
+          let fu_sub_angle = (angle_arr[1][1] - angle_arr[1][0]) / 5;
+          let fu_start_angle = angle_arr[1][0];
+          for (let i = 0; i < 5; i++) {
+            outerGroup.append('path')
+              .attr('d', d => {
+                let fu_sub_scale = d3.scaleLinear()
+                  .domain(d.sub_extent[i])
+                  .range([fu_start_angle, fu_start_angle+fu_sub_angle])
+                return d3.arc()
+                  .innerRadius(outer_arc_r1+0.5)
+                  .outerRadius(outer_arc_r2-0.5)
+                  .startAngle(fu_sub_scale(0))
+                  .endAngle(fu_sub_scale(d.sub_mean[i]>d.sub_extent[i][1]?d.sub_extent[i][1]:d.sub_mean[i]))()
+              })
+              .attr('fill', d => d.sub_mean[i]>d.sub_extent[i][1]?`url(#hatching_pattern_${1})`:circlecolor[1])
+              .attr('opacity', 0.8)
+            fu_start_angle += fu_sub_angle
+          }
+          fu_start_angle = angle_arr[1][0];
+          for (let i = 0; i < 4; i ++) {  
+            fu_start_angle = fu_start_angle + fu_sub_angle;
+            outerGroup.append('path')
+              .attr('d', d3.arc()
+                .innerRadius(outer_arc_r1+0.5)
+                .outerRadius(outer_arc_r2-0.5)
+                .startAngle(fu_start_angle)
+                .endAngle(fu_start_angle))
+              .attr('stroke', d3.color(circlecolor[1]).darker(0.2))
+              .attr('stroke-width', 1)
+          }
+          // 轧制工序8个站点，显示7个数据，画6根线
+          let m_sub_angle = (angle_arr[2][1] - angle_arr[2][0]) / 7;
+          let m_start_angle = angle_arr[2][0];
+          for (let i = 6; i < 13; i++) {
+            outerGroup.append('path')
+              .attr('d', d => {
+                let m_sub_scale = d3.scaleLinear()
+                  .domain(d.sub_extent[i])
+                  .range([m_start_angle, m_start_angle+m_sub_angle])
+                return d3.arc()
+                  .innerRadius(outer_arc_r1+0.5)
+                  .outerRadius(outer_arc_r2-0.5)
+                  .startAngle(m_sub_scale(0))
+                  .endAngle(m_sub_scale(d.sub_mean[i]>d.sub_extent[i][1]?d.sub_extent[i][1]:d.sub_mean[i]))()
+              })
+              .attr('fill', d => d.sub_mean[i]>d.sub_extent[i][1]?`url(#hatching_pattern_${2})`:circlecolor[2])
+              .attr('opacity', 0.8)
+            m_start_angle += m_sub_angle
+          }
+          m_start_angle = angle_arr[2][0];
+          for (let i = 0; i < 6; i ++) {  
+            m_start_angle = m_start_angle + m_sub_angle;
+            outerGroup.append('path')
+              .attr('d', d3.arc()
+                .innerRadius(outer_arc_r1+0.5)
+                .outerRadius(outer_arc_r2-0.5)
+                .startAngle(m_start_angle)
+                .endAngle(m_start_angle))
+              .attr('stroke', d3.color(circlecolor[2]).darker(0.2))
+              .attr('stroke-width', 1)
+          }
+          // 冷却工序3个站点，显示2个数据，画1根线
+          let c_sub_angle = (angle_arr[3][1] - angle_arr[3][0]) / 2;
+          let c_start_angle = angle_arr[3][0];
+          for (let i = 14; i < 16; i++) {
+            outerGroup.append('path')
+              .attr('d', d => {
+                let c_sub_scale = d3.scaleLinear()
+                  .domain(d.sub_extent[i])
+                  .range([c_start_angle, c_start_angle+c_sub_angle])
+                return d3.arc()
+                  .innerRadius(outer_arc_r1+0.5)
+                  .outerRadius(outer_arc_r2-0.5)
+                  .startAngle(c_sub_scale(0))
+                  .endAngle(c_sub_scale(d.sub_mean[i]>d.sub_extent[i][1]?d.sub_extent[i][1]:d.sub_mean[i]))()
+              })
+              .attr('fill', d => d.sub_mean[i]>d.sub_extent[i][1]?`url(#hatching_pattern_${3})`:circlecolor[3])
+              .attr('opacity', 0.8)
+            c_start_angle += c_sub_angle
+          }
+          c_start_angle = angle_arr[3][0]
+          for (let i = 0; i < 1; i ++) {  
+            c_start_angle = c_start_angle + c_sub_angle;
+            outerGroup.append('path')
+              .attr('d', d3.arc()
+                .innerRadius(outer_arc_r1+0.5)
+                .outerRadius(outer_arc_r2-0.5)
+                .startAngle(c_start_angle)
+                .endAngle(c_start_angle))
+              .attr('stroke', d3.color(circlecolor[3]).darker(0.2))
+              .attr('stroke-width', 1)
+          }
 
 
             
@@ -1472,10 +1602,15 @@ export default {
           let chartGroup = this._info_g.selectAll('.chartGroup')
             .transition(line_tran);
           chartGroup
-            .attr('transform', d => 
-              `translate(${[this._coreX - 1.8*65 + (this._info_bgc_w - this._rectWidth * 2.5)/2 + 3, 
-              this._y(new Date(d.mergeItem[0].stops[0].time))]})`
-            )
+            .attr('transform', (d, i, arr) => {
+              let chart_x = this._coreX - 1.8*65 + (this._info_bgc_w - this._detail_rect_w)/2 + 3;
+              let chart_y = this._y(d.date_s);
+
+              console.log(arr);
+              // let overlay = chart_y + 
+
+              return `translate(${[chart_x, chart_y]})`
+            })
         }
 
         _deepCopy(obj) {

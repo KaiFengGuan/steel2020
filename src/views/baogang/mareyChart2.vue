@@ -130,6 +130,7 @@ export default {
           this._rectWidth = 60;
           this._info_bgc_w = 195;
           this._detail_rect_w = this._rectWidth * 2.5;
+          this._detail_gap = 10;
         }
 
         stateInit(is_merge, changecolor) {
@@ -1286,7 +1287,7 @@ export default {
             .join('g')
             .attr('class', 'linkRectMerge')
             .attr('id', d => `linkRectMerge${d.item}`)
-            .attr('transform', d => `translate(${[0, this._y(new Date(d.mergeItem[0].stops[0].time))]})`)
+            .attr('transform', d => `translate(${[0, this._y(d.date_s)]})`)
           
           let link_path = d => {
             let pathHeight = this._y(d.date_e)- this._y(d.date_s);
@@ -1579,13 +1580,18 @@ export default {
           this._renderMareyLineTooltip();
         }
         _translateInfoChart() {
+          let that = this;
           let line_tran = d3.transition()
             .delay(50)
             .duration(500);
+          
+          let position_data = [];
           let link_path = d => {
             let pathHeight = this._y(d.date_e)- this._y(d.date_s);
+            let pos = this._getPosition(position_data, d.date_s, d.date_e);
+            let source_y = pos[1]-this._y(d.date_s)+this._detail_rect_w/2;
             return d3.linkHorizontal()({
-              source: [this._coreX + this._rectWidth, 0],
+              source: [this._coreX + this._rectWidth, source_y],
               target: [this._info_size.w - 10, pathHeight/2]
             })
           }
@@ -1601,16 +1607,40 @@ export default {
           
           let chartGroup = this._info_g.selectAll('.chartGroup')
             .transition(line_tran);
+          position_data = [];
           chartGroup
-            .attr('transform', (d, i, arr) => {
-              let chart_x = this._coreX - 1.8*65 + (this._info_bgc_w - this._detail_rect_w)/2 + 3;
-              let chart_y = this._y(d.date_s);
-
-              console.log(arr);
-              // let overlay = chart_y + 
-
-              return `translate(${[chart_x, chart_y]})`
+            .attr('transform', d => {
+              let pos = this._getPosition(position_data, d.date_s, d.date_e);
+              return `translate(${pos})`
             })
+
+          
+        }
+        _getPosition(position_data, date_s, date_e) {
+          let chart_x = this._coreX - 1.8*65 + (this._info_bgc_w - this._detail_rect_w)/2 + 3;
+          let chart_y;
+          let path_y0 = this._y(date_s);
+          let path_y1 = this._y(date_e);
+
+          if (path_y0 >= -20 && path_y0 <= this._height) {
+            if (position_data.length === 0) {
+              chart_y = path_y0;
+            } else {
+              let prev = position_data.slice(-1)[0];
+              let prev_end = prev + this._detail_rect_w + this._detail_gap;
+              if ( prev_end > path_y0) {
+                chart_y = prev_end;
+              } else {
+                chart_y = path_y0;
+              }
+            }
+          } else {
+            chart_y = path_y0;
+          }
+
+          position_data.push(chart_y);
+
+          return [chart_x, chart_y];
         }
 
         _deepCopy(obj) {

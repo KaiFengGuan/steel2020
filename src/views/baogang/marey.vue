@@ -53,7 +53,7 @@
 				<el-row>
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
-							<el-col :span="16"><span>Condition View</span></el-col>
+							<el-col :span="15"><span>Condition View</span></el-col>
 							<el-col :span="1" style="font-size: 12px;margin:2px 0px;padding-left:0px">MinRange</el-col>
 							<el-col :span="2">
 								<el-slider v-model="minrange" :step="1" :min="5" :max="40" class="my-slider"
@@ -71,6 +71,48 @@
 							<el-col :span="1" :class="{activeStyle: isMerge, deActiveStyle : !isMerge}">
 								<el-button size="mini" round style="height:25px;width: 45px;margin:-2px;padding:-2px" type="info" plain @click="mergeUpdate">
 									<img src="../../assets/images/diagnosis.svg" style="height:16px;width:16px;"></el-button>
+							</el-col>
+              <el-col :span="1">
+								<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;padding:25px">
+                  <el-row class="toltip">
+                    <el-row :gutter="8">
+                      <el-col :span="8" style="font-size: 13px;">
+                        <div style="height: 24px;padding-right:5px;margin:9px 0px 15px 0px" class="fontcolor">ThicknessGap </div>
+                        <div style="height: 24px;padding-left:16px;margin:15px 0" class="fontcolor">WidthGap </div>
+                        <div style="height: 24px;padding-left:12px;margin:15px 0" class="fontcolor">LengthGap </div>
+                      </el-col>
+                      <el-col :span="10" id="imput-line">
+                        <el-slider v-model="plateTempProp.thickness" :step="1" :min="1" :max="20" style="margin:0px 0;color:#999a9d" input-size="mini" ></el-slider>
+                        <el-slider v-model="plateTempProp.width" :step="1" :min="10" :max="2500" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
+                        <el-slider v-model="plateTempProp.length" :step="1" :min="1" :max="25" style="margin:3px 0;color:#999a9d" input-size="mini" ></el-slider>
+                      </el-col>
+                      <el-col :span="4">
+                        <div style="margin:5px 0px 21.5px 0px" class="fontcolor">{{plateTempProp.thickness}}mm</div>
+                        <div style="margin:21.5px 0px" class="fontcolor">{{plateTempProp.width}}mm</div>
+                        <div style="margin:21.5px 0px" class="fontcolor"> {{plateTempProp.length}}m</div>
+                      </el-col>
+                    </el-row>
+                    <el-form size="mini" label-width="100px" >
+                      <el-form-item label="Category" style="padding-right: 10px;font-size:13px;padding-left:2px" class="abel">
+                          <el-select v-model="plateTempPropvalue"   placeholder="请选择钢板型号" size="mini" multiple style="margin:6px">
+                          <el-option v-for="item in plateoptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+                        </el-select>
+                      </el-form-item>
+                    </el-form>
+                  </el-row>
+                  <el-row :gutter="8">
+                    <el-col :span="8" style="font-size: 13px;">
+                      <div style="height: 24px;padding-left:40px;margin:8px 0px" class="fontcolor">Range </div>                
+                    </el-col>
+                    <el-col :span="10" id="imput-line">
+                      <el-slider v-model="plateTempProp.deviation" :step="1" :min="0" :max="50" style="margin:2.5px;color:#999a9d" ></el-slider>
+                    </el-col>
+                    <el-col :span="4">
+                      <div style="margin:2px">{{plateTempProp.deviation}}%</div>
+                    </el-col>
+                  </el-row>
+                  <img src="../../assets/images/config.svg" style="height:16px;width:16px;vertical-align: middle;line-height:1.5" slot="reference">
+								</el-popover>
 							</el-col>
 						</div>
 						<div class="my-card-body">

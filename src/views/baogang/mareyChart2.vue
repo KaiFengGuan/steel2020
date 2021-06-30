@@ -7,6 +7,7 @@ import * as d3 from "d3";
 import { Delaunay } from "d3-delaunay";
 import util from "./util.js";
 import { mapGetters, mapMutations } from "vuex";
+import { join } from './sampledata/stationdata.js';
 export default {
   data() {
     return {
@@ -264,6 +265,7 @@ export default {
                 date_s: new Date(mergeItem[0].stops[0].time),
                 date_e: new Date(mergeItem[mergeItem.length - 1].stops[0].time),
 
+                // extent 和 mean 可以删掉
                 fu_extent: fu_extent,
                 m_extent: m_extent,
                 c_extent: c_extent,
@@ -274,7 +276,9 @@ export default {
                 m_mean: m_mean,
                 c_mean: c_mean,
                 t_mean: t_mean,
-                sub_mean: sub_mean
+                sub_mean: sub_mean,
+
+                stage_avg_angle: [fu_mean/fu_extent[1], m_mean/m_extent[1], c_mean/c_extent[1]]
 
               })
             }
@@ -1101,7 +1105,32 @@ export default {
                 .attr('width', mini_g_w)
                 .attr('fill', d => d.pathColor)
                 .attr('opacity', 0.5)
+              
             )
+          
+          if (this._change_color) {
+            if (!this._is_merge) return;
+
+            let merge_data = d3.map(this._mergeresult_1, datum => {
+              let quality = d3.sort(d3.groups(datum.mergeItem, d => d.flag), d => d[1].length);
+              return quality[1] !== undefined ? quality[0][1] : [];
+            })
+
+            let merge_data_arr = [];
+            merge_data.forEach(d => merge_data_arr.push(...d));
+
+            miniGroup
+              .call(g => g.selectAll('.merge_line')
+                .data(merge_data_arr)
+                .join('rect')
+                .attr('x', 0)
+                .attr('y', d => this._mini_y(new Date(d.stops[0].time)))
+                .attr('height', 0.5)
+                .attr('width', mini_g_w)
+                .attr('fill', this._trainGroupStyle)
+                .attr('opacity', 0.5)
+              )
+          }
         }
         _renderMareyBrushHandle() {
           let that = this;
@@ -1343,7 +1372,7 @@ export default {
             .attr('fill', 'white')
             .attr('filter', 'url(#shadow-card)');
           
-          this._renderInfoDetailCircle(chartGroup);
+          this._renderInfoDetailCircle1(chartGroup);
             
             
         }
@@ -1531,6 +1560,122 @@ export default {
 
             
         }
+        _renderInfoDetailCircle1(chartGroup) {
+          let that = this;
+          let circlecolor = this._deepCopy(vm.processColor);
+          circlecolor.unshift('grey');  // 时间颜色
+
+          // 尺寸参数
+          let circleR = this._detail_rect_w / 2;
+          let inner_outer_gap = 5;
+          let inner_arc_width = 20;
+          let outer_arc_width = 8;
+          let inner_arc_r1 = this._detail_rect_w/2 * 0.4;
+          let inner_arc_r2 = inner_arc_r1 + inner_arc_width;
+          let outer_arc_r1 = inner_arc_r2 + inner_outer_gap;
+          let outer_arc_r2 = outer_arc_r1 + outer_arc_width;
+          
+          // 角度相关参数
+          const PI = Math.PI;
+          let arc_start = -PI/6;
+          let arc_gap_angle = 0.1;
+          let pr_angle = PI/3;  // 生产间隔，节奏参数
+
+          let all_stage_angle = __uniformityArcAngle();
+          console.log(all_stage_angle);
+          __StageArcStroke();   // 画格
+          __FillContent();  // 画填充
+
+
+          // 图元模态：均匀分布
+          function __uniformityArcAngle() {
+            let sub_num = [5, 7, 2];  // 各母工序包含子工序的个数
+            let stage_angle = [];
+            let arc_angle_sum = 2*PI - pr_angle -4*arc_gap_angle;
+            let per_sub_angle = arc_angle_sum / d3.sum(sub_num);
+            sub_num.forEach(d => stage_angle.push(d * per_sub_angle));
+
+            let stage_name = ['F', 'M', 'C'];
+            let res = [];
+            for (let i = 0; i < stage_name.length; i++) {
+              let stage_start = (i===0 ? (pr_angle/2) : res.slice(-1)[0].stage_end) + arc_gap_angle;
+              let stage_end = stage_start + stage_angle[i];
+
+              let _sub = [];
+              for (let j = 0; j < sub_num[i]; j++) {
+                let s = j===0 ? stage_start : _sub.slice(-1)[0][1];
+                let e = s + per_sub_angle;
+                _sub.push([s, e]);
+              }
+
+              res.push({
+                name: stage_name[i],
+                stage_start: stage_start,
+                stage_end: stage_end,
+                stage_sub: _sub
+              })
+            }
+            
+            return res;
+          }
+          // 图元模态：时长占比分布
+          function __propotionArcAngle() {
+
+          }
+
+          function __StageArcStroke() {
+            let path_attr = g => g
+              .attr('stroke', 'grey')
+              .attr('stroke-width', 1)
+              .attr('fill', 'none');
+            
+            let ArcGroup = chartGroup.append('g')
+              .attr('class', 'ArcGroup')
+              .attr('transform', `translate(${[circleR, circleR]})`);
+            
+            let stageArc = ArcGroup.selectAll('.parentProcess')
+              .data(all_stage_angle)
+              .join('g');
+            stageArc
+              .append('path')
+              .attr('d', d => d3.arc()
+                .innerRadius(inner_arc_r1)
+                .outerRadius(inner_arc_r2)
+                .startAngle(d.stage_start)
+                .endAngle(d.stage_end)())
+              .call(path_attr);
+            stageArc.selectAll('.subProcess')
+              .data(d => d.stage_sub)
+              .join('g')
+              .append('path')
+              .attr('d', d => d3.arc()
+                .innerRadius(outer_arc_r1)
+                .outerRadius(outer_arc_r2)
+                .startAngle(d[0])
+                .endAngle(d[1])())
+              .call(path_attr);
+          }
+          function __FillContent() {
+            let FillArcGroup = chartGroup.append('g')
+              .attr('class', 'FillArcGroup')
+              .attr('transform', `translate(${[circleR, circleR]})`);
+            
+            FillArcGroup.selectAll('.innerFill')
+              .data(datum => datum.stage_avg_angle)
+              .join('path')
+              .attr('d', (d, i) => {
+                let start_angle = all_stage_angle[i].stage_start;
+                let end_angle = start_angle + (all_stage_angle[i].stage_end-all_stage_angle[i].stage_start)*d;
+                return d3.arc()
+                  .innerRadius(inner_arc_r1)
+                  .outerRadius(inner_arc_r2)
+                  .startAngle(start_angle)
+                  .endAngle(end_angle)()
+              })
+              .attr('fill', (d, i) => circlecolor[i+1])
+          }
+        }
+        
 
         // 整图过渡动画
         _mareyChartTranslate() {
@@ -1622,9 +1767,9 @@ export default {
           let path_y0 = this._y(date_s);
           let path_y1 = this._y(date_e);
 
-          if (path_y0 >= -20 && path_y0 <= this._height) {
+          if (path_y0 >= 0 && path_y0 <= this._height) {
             if (position_data.length === 0) {
-              chart_y = path_y0;
+              chart_y = path_y0 - 50;
             } else {
               let prev = position_data.slice(-1)[0];
               let prev_end = prev + this._detail_rect_w + this._detail_gap;

@@ -227,7 +227,7 @@ export default {
                 fu_arr.push(item_data.fuTotalTimeAfter * 1000);
                 m_arr.push(item_data.mtotalTime * 1000);
                 c_arr.push(item_data.ccTotalTime * 1000);
-                t_arr.push(new Date(item_data_stops[0].time))
+                t_arr.push(new Date(item_data_stops[5].time)) // 节奏指标：出炉时间
 
                 for (let j in this._stationsdata.slice(0, -1)) {
                   let stations_item = this._stationsdata[j];
@@ -242,16 +242,30 @@ export default {
                 sub_arr.push(single_arr)
               }
               t_arr = d3.pairs(t_arr, (a, b) => b - a);
-              let fu_mean = d3.mean(fu_arr);
-              let m_mean = d3.mean(m_arr);
-              let c_mean = d3.mean(c_arr);
-              let t_mean = d3.mean(t_arr);
-              let sub_mean = [];
+              let fu_mean = d3.mean(fu_arr), fu_std = d3.deviation(fu_arr);
+              let m_mean  = d3.mean(m_arr),  m_std = d3.deviation(m_arr);
+              let c_mean  = d3.mean(c_arr),  c_std = d3.deviation(c_arr);
+              let t_mean  = d3.mean(t_arr),  t_std = d3.deviation(t_arr);
+              let sub_mean = [], stage_sub_avg_angle = [];
               for (let i = 0; i < 16; i++) {
                 let a = [];
                 sub_arr.forEach(d => a.push(d[i]));
-                sub_mean.push(d3.mean(a));  
+
+                let m_a = d3.mean(a);
+                sub_mean.push(m_a);
+                stage_sub_avg_angle.push({
+                  stage_i: (i>=0&&i<=5) ? 0 : (i>=6&&i<=13) ? 1 : (i>=14&&i<=16) ? 2 : undefined,
+                  data: m_a/sub_extent[i][1]
+                });
               }
+              let fu_stage_res = [], m_stage_res = [], c_stage_res = [];
+              let fu_stage_sub_avg_angle = stage_sub_avg_angle.slice(0, 5);
+              fu_stage_sub_avg_angle.forEach((d, j) => d['sub_j'] = j);
+              let m_stage_sub_avg_angle = stage_sub_avg_angle.slice(6, 13);
+              m_stage_sub_avg_angle.forEach((d, j) => d['sub_j'] = j);
+              let c_stage_sub_avg_angle = stage_sub_avg_angle.slice(14, 16);
+              c_stage_sub_avg_angle.forEach((d, j) => d['sub_j'] = j);
+              stage_sub_avg_angle = [...fu_stage_sub_avg_angle, ...m_stage_sub_avg_angle, ...c_stage_sub_avg_angle];
 
 
               // 马雷合并相关图元需要的数据
@@ -278,7 +292,9 @@ export default {
                 t_mean: t_mean,
                 sub_mean: sub_mean,
 
-                stage_avg_angle: [fu_mean/fu_extent[1], m_mean/m_extent[1], c_mean/c_extent[1]]
+                stage_avg_angle: [fu_mean/fu_extent[1], m_mean/m_extent[1], c_mean/c_extent[1]],
+                stage_sub_avg_angle: stage_sub_avg_angle,
+                pr_angle: t_mean/t_extent[1]
 
               })
             }
@@ -403,11 +419,9 @@ export default {
             .attr('flood-color', '#ededed');
           
           
-          function hatching(defs, id_no, bgc_color) {
-            let w = 5;
-            let sk_w = 4;
+          function hatching(defs, id_name, bgc_color, w, sk_w) {
             let pattern = defs.append('pattern')
-            .attr('id', 'hatching_pattern_' + id_no)
+            .attr('id', id_name)
             .attr('patternUnits', 'userSpaceOnUse')
             .attr('patternTransform', `rotate(${45})`)
             .attr('width', w)
@@ -427,10 +441,19 @@ export default {
               .attr('stroke-width', sk_w)
               .attr('stroke-opacity', 1)
           }
-          hatching(defs, 0, 'grey');
-          hatching(defs, 1, vm.processColor[0]);
-          hatching(defs, 2, vm.processColor[1]);
-          hatching(defs, 3, vm.processColor[2]);
+
+          let stage_hatching_w = 5;
+          let stage_hatching_sk_w = 4;
+          hatching(defs, 'hatching_pattern_0', '#cccccc', stage_hatching_w, stage_hatching_sk_w);
+          hatching(defs, 'hatching_pattern_1', vm.processColor[0], stage_hatching_w, stage_hatching_sk_w);
+          hatching(defs, 'hatching_pattern_2', vm.processColor[1], stage_hatching_w, stage_hatching_sk_w);
+          hatching(defs, 'hatching_pattern_3', vm.processColor[2], stage_hatching_w, stage_hatching_sk_w);
+
+          let stage_sub_hatching_w = 4;
+          let stage_sub_hatching_sk_w = 2;
+          hatching(defs, 'hatching_sub_pattern_1', vm.processColor[0], stage_sub_hatching_w, stage_sub_hatching_sk_w);
+          hatching(defs, 'hatching_sub_pattern_2', vm.processColor[1], stage_sub_hatching_w, stage_sub_hatching_sk_w);
+          hatching(defs, 'hatching_sub_pattern_3', vm.processColor[2], stage_sub_hatching_w, stage_sub_hatching_sk_w);
           
         }
         _renderMareyBackground() {
@@ -1563,13 +1586,13 @@ export default {
         _renderInfoDetailCircle1(chartGroup) {
           let that = this;
           let circlecolor = this._deepCopy(vm.processColor);
-          circlecolor.unshift('grey');  // 时间颜色
+          circlecolor.unshift('#cccccc');  // 时间颜色
 
           // 尺寸参数
           let circleR = this._detail_rect_w / 2;
           let inner_outer_gap = 5;
-          let inner_arc_width = 20;
           let outer_arc_width = 8;
+          let inner_arc_width = outer_arc_width/0.618;
           let inner_arc_r1 = this._detail_rect_w/2 * 0.4;
           let inner_arc_r2 = inner_arc_r1 + inner_arc_width;
           let outer_arc_r1 = inner_arc_r2 + inner_outer_gap;
@@ -1583,11 +1606,12 @@ export default {
 
           let all_stage_angle = __uniformityArcAngle();
           console.log(all_stage_angle);
-          __StageArcStroke();   // 画格
           __FillContent();  // 画填充
+          __StageStroke();   // 画格
+          __StageText();
 
 
-          // 图元模态：均匀分布
+          // 角度计算 -> 图元模态：均匀分布
           function __uniformityArcAngle() {
             let sub_num = [5, 7, 2];  // 各母工序包含子工序的个数
             let stage_angle = [];
@@ -1618,12 +1642,12 @@ export default {
             
             return res;
           }
-          // 图元模态：时长占比分布
+          // 角度计算 -> 图元模态：时长占比分布
           function __propotionArcAngle() {
 
           }
 
-          function __StageArcStroke() {
+          function __StageStroke() {
             let path_attr = g => g
               .attr('stroke', 'grey')
               .attr('stroke-width', 1)
@@ -1633,17 +1657,27 @@ export default {
               .attr('class', 'ArcGroup')
               .attr('transform', `translate(${[circleR, circleR]})`);
             
+            // 生产节奏
+            ArcGroup.append('path')
+              .attr('d', d3.arc()
+                .innerRadius(inner_arc_r1)
+                .outerRadius(inner_arc_r2)
+                .startAngle(arc_start)
+                .endAngle(arc_start + pr_angle))
+              .call(path_attr);
+
             let stageArc = ArcGroup.selectAll('.parentProcess')
               .data(all_stage_angle)
               .join('g');
-            stageArc
-              .append('path')
+            // 母工序
+            stageArc.append('path')
               .attr('d', d => d3.arc()
                 .innerRadius(inner_arc_r1)
                 .outerRadius(inner_arc_r2)
                 .startAngle(d.stage_start)
                 .endAngle(d.stage_end)())
               .call(path_attr);
+            // 子工序
             stageArc.selectAll('.subProcess')
               .data(d => d.stage_sub)
               .join('g')
@@ -1660,19 +1694,84 @@ export default {
               .attr('class', 'FillArcGroup')
               .attr('transform', `translate(${[circleR, circleR]})`);
             
+            // 节奏
+            FillArcGroup.append('path')
+              .attr('d', d => d3.arc()
+                .innerRadius(inner_arc_r1)
+                .outerRadius(inner_arc_r2)
+                .startAngle(arc_start)
+                .endAngle(arc_start + pr_angle * (d.pr_angle>=1?1:d.pr_angle))())
+              .attr('fill', d => d.pr_angle>=1?`url(#hatching_pattern_${0})`:circlecolor[0]);
+            
+            // 填充内环
             FillArcGroup.selectAll('.innerFill')
               .data(datum => datum.stage_avg_angle)
-              .join('path')
+              .enter()
+              .append('path')
               .attr('d', (d, i) => {
                 let start_angle = all_stage_angle[i].stage_start;
-                let end_angle = start_angle + (all_stage_angle[i].stage_end-all_stage_angle[i].stage_start)*d;
+                let end_angle = all_stage_angle[i].stage_end;
+                let arc_angle = start_angle + (end_angle-start_angle) * (d>=1?1:d);
                 return d3.arc()
                   .innerRadius(inner_arc_r1)
                   .outerRadius(inner_arc_r2)
                   .startAngle(start_angle)
-                  .endAngle(end_angle)()
+                  .endAngle(arc_angle)()
               })
-              .attr('fill', (d, i) => circlecolor[i+1])
+              .attr('fill', (d, i) => d>=1?`url(#hatching_pattern_${i+1})`:circlecolor[i+1]);
+            
+            // 填充外环
+            let outerFill = FillArcGroup.selectAll('.outerFill')
+              .data(datum => datum.stage_sub_avg_angle)
+              .enter()
+              .append('path')
+              .attr('d', d => {
+                let start_angle = all_stage_angle[d.stage_i].stage_sub[d.sub_j][0];
+                let end_angle = all_stage_angle[d.stage_i].stage_sub[d.sub_j][1];
+                let arc_angle = start_angle + (end_angle - start_angle) * (d.data>=1?1:d.data);
+                return d3.arc()
+                  .innerRadius(outer_arc_r1)
+                  .outerRadius(outer_arc_r2)
+                  .startAngle(start_angle)
+                  .endAngle(arc_angle)()
+              })
+              .attr('fill', d => d.data>=1?`url(#hatching_sub_pattern_${d.stage_i+1})`:circlecolor[d.stage_i + 1]);
+
+          }
+          function __StageText() {
+            let text = ['Pr', 'Fu', 'M', 'C']
+            let StageText = chartGroup.append('g')
+              .attr('class', 'StageText')
+              .attr('transform', `translate(${[circleR, circleR]})`);
+
+            StageText.selectAll('.StageTextContent')
+              .data(text)
+              .enter()
+              .append('g')
+              .attr("transform", (d, i) => {
+                let text_r = inner_arc_r1 - 10;
+                let start = i===0 ? arc_start : all_stage_angle[i-1].stage_start;
+                let end = i===0 ? (arc_start+pr_angle) : all_stage_angle[i-1].stage_end;
+                let rotate = start + (end - start)/2;
+                let tran_x = text_r * Math.cos(rotate-PI/2);
+                let tran_y = text_r * Math.sin(rotate-PI/2);
+                return `translate(${tran_x}, ${tran_y})`
+              })
+              .append('text')
+              .attr("transform", (d, i) => {
+                let text_r = inner_arc_r1 - 10;
+                let start = i===0 ? arc_start : all_stage_angle[i-1].stage_start;
+                let end = i===0 ? (arc_start+pr_angle) : all_stage_angle[i-1].stage_end;
+                let rotate = start + (end - start)/2;
+                return `rotate(${rotate*180/PI})`
+              })
+              .text(d => d)
+							.attr("fill", (d, i) => d3.color(circlecolor[i]).darker(0.6))
+              .attr('text-anchor', 'middle')
+              .style("font-family", util.conditionRadiaTextAttr.fontFamily)
+              .style("font-weight", util.conditionRadiaTextAttr.fontWeight)
+              .style("font-style", util.conditionRadiaTextAttr.fontStyle)
+							.style("font-size", util.conditionRadiaTextAttr.fontSize)
           }
         }
         

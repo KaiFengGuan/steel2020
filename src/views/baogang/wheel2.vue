@@ -133,7 +133,7 @@ export default {
                     this._labelcolor = ['#fcd8a9', '#cce9c7', '#c1c9ee'];
                     this._padAngle=[];
                     this._linespace=6;
-                    this._merge = false;
+                    this._merge = true;
                     this._horizonView = true;
                     this._indexdata = [];
                     this._allIndex = undefined;    //index name
@@ -179,12 +179,15 @@ export default {
                         }
                     }
                 }
+
                 data(_) {
                     return arguments.length ? (this._data = _, this) : this._data;
                 }
+
                 labels(_){
                     return arguments.length ? (this._labels = _, this) : this._labels;
                 }
+
                 process(_){
                     return arguments.length ? (this._process = _, this) : this._process;
                 }
@@ -196,28 +199,35 @@ export default {
                 size(_) {
                     return arguments.length ? (this._width = _[0], this._height = _[1], this) : [this._width, this._height];
                 }
+
                 render() {
                     this._init();
                     this._renderComponents()
                     this._renderMerge()
                     return this;
                 }
+
                 _renderBar(){
-                    this._fliterdata();
+                    this._fliterScaleData();
                     this._renderMainWheel();
                     this._renderMainBar();
                 }
+
                 _renderWheel(){
-                    this._initdata();
+                    this._initScaleData();
                     this._renderMainWheel();
                     this._g.attr('transform', 'translate(300,0)')
                 }
+
                 _renderMerge(){
                     this._g == null ? undefined : this._g.remove();
                     this._g = this._container.append('g').attr('transform', 'translate(-50,0)');
+                    
+                    this._initdata();
                     this._merge ? this._renderBar() : this._renderWheel();
                     d3.selectAll('.circleButton').raise()
                 }
+
                 _renderComponents(){
                     this._container
                         .append('g')
@@ -241,6 +251,7 @@ export default {
                         .on('click', e =>{
                             this._heatOrRiver = ! this._heatOrRiver
                             this._heatOrRiver ? this._initHeatG() : this._initRiverG()
+                            this._renderWheelFilter()
                         })
                     this._container
                         .append('circle')
@@ -254,6 +265,7 @@ export default {
                             this._renderWheelFilter()
                         })
                 }
+
                 _init() {
                     const r = this._radius;
                     
@@ -267,18 +279,16 @@ export default {
                     // this._fontSize.center = fs(r.max);
                     fs.range([4, 18]);
                     // this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
-
                 }
+
                 _initdata() {
-                    const wm=this
-                    const labels=[],lows = [], highs = [], precs = [], humis = [];
                     const field = this._field;
                     this._padprocess=[[],[],[]];
                     this._chartData = this._data.map(d => {
                         const datum = {
                             indexName: d[field.name],
                             date: d[field.name],
-                            month: wm.getIndex(d[field.name]),
+                            month: this.getIndex(d[field.name]),
                             low: d[field.low],
                             high: d[field.high],
                             elow: d[field.elow],
@@ -299,15 +309,51 @@ export default {
                         datum.property[2].value=e.avg>e.low&e.high>e.avg? 0 : 1.6;
                         let deviation=e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg)/e.low : (e.avg-e.high)/e.high);
                         datum.deviation=deviation;
-                        wm._padprocess[wm.getIndex(datum.indexName)].push(datum.indexName)
-                        labels.push(datum.indexName)
-                        lows.push(datum.low, datum.elow);
-                        highs.push(datum.high, datum.ehigh);
-                        precs.push(datum.precipitation);
-                        humis.push(datum.humidity);
+                        datum.over = e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg) : (e.avg-e.high));
                         return datum;
                     });
+                }
 
+                _fliterScaleData(){
+                    // this._chartData = this._sort(this._chartData);
+                    this._chartData = d3.sort(this._chartData, d => - Math.abs(d.over))
+                    this._chartData = this._chartData.length > 25 ? this._chartData.slice(0,25) : this._chartData;
+                    const labels = this._chartData.map(d => d.indexName),
+                        lows = this._chartData.map(d => d.elow),
+                        highs = this._chartData.map(d => d.ehigh),
+                        precs = this._chartData.map(d => d.precipitation),
+                        humis = this._chartData.map(d => d.humidity);
+                    this._chartData.map(d => {
+                        this._padprocess[d.month].push(d.indexName)
+                        return d;
+                    });
+                    this._indexdata = this._chartData.slice(0);
+                    const mergeLength = this._indexdata.length < 25 ? this._indexdata.length :25,
+                        pad = 0,
+                        startAngle = Math.PI/6,
+                        angle = (Math.PI - 2 * startAngle - 3 * pad )/mergeLength;
+                    this._barAngle = (Math.PI - 2 * startAngle - 3 * pad) / mergeLength + Math.PI;
+                    const diverangle = (mergeLength - this._indexdata.length) * angle / 2
+                    const a = angle * this._padprocess[0].length + diverangle + Math.PI/6, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
+                    this._padAngle=[
+                        [diverangle + Math.PI/6, a ],
+                        [a + pad, a + b + pad ],
+                        [a + b + 2 * pad, a + b + c + 2 * pad],
+                    ]
+                    this._label=labels
+                    this._initScales(labels, lows, highs, precs, humis);
+                }
+
+                _initScaleData(){
+                    const labels = this._chartData.map(d => d.indexName),
+                        lows = this._chartData.map(d => d.elow),
+                        highs = this._chartData.map(d => d.ehigh),
+                        precs = this._chartData.map(d => d.precipitation),
+                        humis = this._chartData.map(d => d.humidity);
+                    this._chartData.map(d => {
+                        this._padprocess[d.month].push(d.indexName)
+                        return d;
+                    });
                     const pad = 0;
                     const angle = (Math.PI * 2 - 3 * pad )/this._data.length
                     this._barAngle = (Math.PI * 2- 3 * pad) / this._data.length + Math.PI;
@@ -320,67 +366,7 @@ export default {
                     this._label=labels
                     this._initScales(labels, lows, highs, precs, humis);
                 }
-                _fliterdata(){
-                    const wm=this,limit = this._labelLimit;
-                    const labels=[],lows = [], highs = [], precs = [], humis = [];
-                    const field = this._field;
-                    this._chartData = this._data.map(d => {
-                        const datum = {
-                            indexName: d[field.name],
-                            date: d[field.name],
-                            month: wm.getIndex(d[field.name]),
-                            low: d[field.low],
-                            high: d[field.high],
-                            elow: d[field.elow],
-                            ehigh: d[field.ehigh],
-                            avg: d[field.avg],
-                            precipitation: d[field.precipitation],
-                            humidity: d[field.humidity],
-                            property:[
-                                {'label': 'PCAT2', 'value': d[field.humidity], 'angle': 0.1 },
-                                {'label': 'PCASPE', 'value': d[field.precipitation], 'angle': 0.1},
-                                {'label': 'result', 'value': d[field.precipitation], 'angle': 0.2}
-                            ],
-                        };
-                        datum.property.map(m => {
-                            m.process = +datum.month
-                        });
-                        const e=datum;
-                        datum.property[2].value=e.avg>e.low&e.high>e.avg? 0 : 1.6;
-                        let deviation=e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg)/e.low : (e.avg-e.high)/e.high);
-                        datum.deviation=deviation;
-                        datum.over = e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg) : (e.avg-e.high));
-                        return datum;
-                    });
-                    // this._chartData = this._sort(this._chartData);
-                    this._chartData = d3.sort(this._chartData, d => - Math.abs(d.over))
-                    this._chartData = this._chartData.length > 25 ? this._chartData.slice(0,25) : this._chartData;
-                    this._padprocess=[[],[],[]]; 
-                    this._chartData.map(datum => {
-                        wm._padprocess[wm.getIndex(datum.indexName)].push(datum.indexName)
-                        labels.push(datum.indexName)
-                        lows.push(datum.low, datum.elow);
-                        highs.push(datum.high, datum.ehigh);
-                        precs.push(datum.precipitation);
-                        humis.push(datum.humidity);
-                        return datum;
-                    });
-                    this._indexdata = this._chartData.slice(0);
-                    const mergeLength = this._indexdata.length < 25 ? this._indexdata.length :25,
-                        pad = 0,
-                        startAngle = Math.PI/6,
-                        angle = (Math.PI - 2 * startAngle - 3 * pad )/mergeLength;
-                    this._barAngle = (Math.PI - 2 * startAngle - 3 * pad) / mergeLength + Math.PI;
-                    const diverangle = (mergeLength - this._indexdata.length) * angle / 2
-                    const a = angle * this._padprocess[0].length + diverangle + Math.PI/6, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
-                    this._padAngle=[
-                        [diverangle + Math.PI/6, a ],
-                        [a +pad, a + b + pad ],
-                        [a + b + 2 * pad, a + b + c + 2 * pad],
-                    ]
-                    this._label=labels
-                    this._initScales(labels, lows, highs, precs, humis);
-                }
+
                 _initScales(labels, lows, highs, precs, humis) {
                     const r = this._radius;
 
@@ -407,6 +393,7 @@ export default {
                         .domain(hext)
                         .range([r.outer , r.outer + r.bubble * 0.6]);
                 }
+
                 _renderMainWheel() {
                     this._renderPre();
                     this._contentG = this._g.append('g').attr('class', 'contentG');
@@ -415,6 +402,7 @@ export default {
                     this._initChordData();      //init chord line data
                     this._renderWheelChord();   //chord node and line
                 }
+
                 _renderPre(){
                     const defs1 =this._g.append('defs');
                     const filter1 = defs1.append('filter').attr('id', 'shadow-filter')
@@ -445,6 +433,7 @@ export default {
                         .attr('in', 'SourceGraphic')
                         .attr('mode','normal'))
                 }
+
                 _renderMainBar(){
                     const r = this._radius,
                         R = r.outer+r.bubble*1.05,
@@ -466,7 +455,7 @@ export default {
                                 .outerRadius(r.bubble * 0.16);
                     var limit = this._labelLimit,
                         RectWidth = 400,
-                        rectX = r.outer+r.bubble* 5.4,  //rect_doct x
+                        rectX = r.outer + 250,  //rect_doct x
                         maxHeight = 25,   //rect max height
                         rectPadding = {left: 5, right: 5, top: 5, bottom: 2},
                         indexSpace = 5,
@@ -477,7 +466,9 @@ export default {
                         barVisObject = Object.assign({}, ...selectInfo.map(d => {return {[d.indexName] : this._barVis}})),
                         indexArray = d3.map(selectInfo, (d, i) => i),
                         indexSort = d3.map(selectInfo, d => d.indexName),
-                        indexScale = d3.scaleOrdinal().domain(indexArray).range(indexArray),// index  --- sort
+                        tempsort = d3.map(d3.sort(selectInfo, d => -d.over), d => d.indexName),
+                        sortArray = d3.map(indexSort, d => tempsort.indexOf(d)),
+                        indexScale = d3.scaleOrdinal().domain(indexArray).range(sortArray),// index  --- sort
                         rectHeight = null,
                         yScaleCache = null,
                         yScale = null,  //指标在y轴上的坐标
@@ -539,9 +530,9 @@ export default {
                         var mouseInfo = this._mouseDis !== undefined ? mouseText(this._mouseDis) : undefined;
                         initMouseG();
 
-                        let tempsort = d3.map(d3.sort(selectInfo, d => -d.humidity), d => d.indexName),
+                        var tempsort = d3.map(d3.sort(selectInfo, d => -d.humidity), d => d.indexName),
                             sortArray = d3.map(indexSort, d => tempsort.indexOf(d)),
-                            totalSort = d3.map(d3.sort(selectInfo, d => -Math.abs(d.over)), d => d.indexName),
+                            totalSort = d3.map(d3.sort(selectInfo, d => -d.precipitation), d => d.indexName),
                             totalArray = d3.map(indexSort, d => totalSort.indexOf(d));
                         var scaleArray = [indexScale, d3.scaleOrdinal().domain(indexArray).range(sortArray), d3.scaleOrdinal().domain(indexArray).range(totalArray)];
                         indexScale = this._indexScale !== undefined ? scaleArray[this._indexScale] : scaleArray[2];
@@ -711,8 +702,8 @@ export default {
                             minRect !== maxHeight ? sliderG.selectAll('.rectG').remove() : renderRectG();
                         }
                         function initSort(){//init sortG
-                            sortG.selectAll('g').data([2, 1, 0]).join('g')
-                            .attr('transform', d => `translate(${[rectX + RectWidth - 100 -  60 * (1 - d), -wm._height/2 + 2.5]})`)
+                            sortG.selectAll('g').data([0, 1, 2]).join('g')
+                            .attr('transform', d => `translate(${[rectX + RectWidth - 160 +  60 * d, -wm._height/2 + 2.5]})`)
                             .call(g => g.append('rect')
                                 .attr('fill',  sortChange(sortColor, '#fff'))
                                 .attr('rx', 5)
@@ -902,6 +893,7 @@ export default {
                                     d3.select(this).select('rect').attr('fill', wm._heatOrRiver ? tabColor : 'white')
                                     d3.select(this).select('text').attr('fill', wm._heatOrRiver ? 'white' : tabColor)
                                     wm._heatOrRiver ? wm._initHeatG() : wm._initRiverG()
+                                    wm._renderWheelFilter()
                                 })
                         }
                         function initAxisG(batchTimeScale){ //init timeTick
@@ -1301,6 +1293,7 @@ export default {
                     this._initBorderG()
                     
                     this._heatOrRiver ? this._initHeatG() : this._initRiverG()
+                    this._renderWheelFilter()
 
                     this._initOuterBarG()
                     this._initOuterLineG()
@@ -1701,11 +1694,11 @@ export default {
                                 .on('mouseenter', (e, d) => {
                                     this._insertInfo(e, d);
                                     this._hightlightcss()
-                                    this._axisenter(d.indexName, d.month, true);                               
+                                    this._axisenter(d.indexName, d.month);                               
                                 })
                                 .on('mouseleave', (e, d) => {
                                     this._initcss()
-                                    this._axisout(d.indexName, d.month, true);
+                                    this._axisout(d.indexName, d.month);
                                 });
                 }
 
@@ -1813,7 +1806,7 @@ export default {
                             .attr('opacity', this._cleadStyle.opacity)
                 }
 
-                _axisenter(name, key, flag){
+                _axisenter(name, key){
                     const cG = this._container,
                         wm = this,
                         lck =  this._labelcolor[key],
@@ -1850,17 +1843,14 @@ export default {
                     cG.selectAll('#arctext'+name)
                             .attr('opacity', 1)
                             .attr('fill', d3.color(lck).darker(4))
-                    if(flag){
-                        cG.selectAll('.clinein' + name)
-                            .attr('opacity', this._cleadStyle.opacity)
-                        cG.selectAll('.clineout' + name)
-                            .attr('opacity', this._cleadStyle.opacity)
-                    }
+                    cG.selectAll('.clinein' + name)
+                        .attr('opacity', this._cleadStyle.opacity)
+                    cG.selectAll('.clineout' + name)
+                        .attr('opacity', this._cleadStyle.opacity)
                 }
 
-                _axisout(name, key, flag){
+                _axisout(name, key){
                     const cG = this._container,
-                        // wm = this,
                         lck =  this._labelcolor[key],
                         daker = d3.color(lck).darker(0.6);
                     cG.select('#circle'+name)
@@ -1882,13 +1872,11 @@ export default {
                     cG.selectAll('#arctext'+name)
                         .attr('fill', d3.color(lck).darker(1.5))
                     cG.selectAll('.dailyInfo').remove()
-                    if(flag){
-                        cG.selectAll('.clineout' + name)
+                    cG.selectAll('.clineout' + name)
+                        .attr('opacity',0.4)
+                        .attr('stroke', daker).raise()
+                    cG.selectAll('.clinein' + name)
                             .attr('opacity',0.4)
-                            .attr('stroke', daker).raise()
-                        cG.selectAll('.clinein' + name)
-                                .attr('opacity',0.4)
-                    }
                 }
 
                 _multiplyTarget(name){
@@ -1909,10 +1897,10 @@ export default {
                 _outed(e, d) {
                     let name = d.data.id,key=d.data.group;
                     this._initcss()
-                    this._axisout(name, key, true);
+                    this._axisout(name, key);
                     let rlines = this._multiplyTarget(name);
                     for (let index of rlines){
-                        this._axisout(index, key, false);
+                        this._axisout(index, key);
                     }
                 }
 
@@ -1920,10 +1908,10 @@ export default {
                     let name = d.data.id, key = d.data.group;
                     const data = this._chartData.filter(d => d.indexName===name)[0];
                     this._hightlightcss()
-                    this._axisenter(name, key, true);
+                    this._axisenter(name, key);
                     let rlines = this._multiplyTarget(name)
                     for (let index of rlines){
-                        this._axisenter(index, key, false);
+                        this._axisenter(index, key);
                     }
                     this._insertInfo(e, data)
                 }

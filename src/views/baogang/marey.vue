@@ -37,11 +37,15 @@
 				<el-row>
 					<el-card class="myel-card">		 
 						<div class="my-card-title" slot="header">
-							<span style="margin-left:5px">Tabular View</span>
+								<span style="margin-left:5px">Tabular View  <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search"></el-button> </span>
+
 						</div>
 						<div class="my-card-body" style="padding-top:5px">
 							<brushableParallel ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse"></brushableParallel>
 						</div>
+						<!-- <el-col :span="4"> -->
+							
+						<!-- </el-col> -->
 					</el-card>
 				</el-row>
 			</el-col>
@@ -382,6 +386,7 @@ export default {
 			"trainBorder",
 			"startDate",
 			"endDate",
+			"diagnosisState"
 		]),
 		dateselect : function(){
       var endmonth = new Date(this.startmonth.valueOf())
@@ -424,7 +429,8 @@ export default {
 			"changeLabelColor",
 			"setCorrSize",
 			"setmultiPara",
-			"setCurveSize"
+			"setCurveSize",
+			"changeDiagnosisState"
 		]),
 		getNotification(notice){
 			const h = this.$createElement;
@@ -495,6 +501,45 @@ export default {
 
 			// clear
 			this.selectedTrainData = [];
+		},
+		async newdiagnose() {
+			this.changeDiagnosisState()
+			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+
+			// response
+			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
+			await this.getStationsData(startDate, endDate).then(Response => {
+				this.stationsData=Response.data
+      })
+
+			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
+			// this.jsonData = this.jsonData.filter(d => {
+			// 	return this.brushUpid.includes(d.upid)
+			// })
+
+			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
+			// this.getplatetype();
+			let allDataArr = []
+			for (let item of this.jsonData) {
+					let upid = item['upid']
+					allDataArr.push(flagData[upid])
+			}
+			for (let i = 0; i < this.jsonData.length; i++) {
+				this.jsonData[i]['flag'] = allDataArr[i]
+			}
+
+			// paint
+			this.loadingDataLoading = false
+			this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
+			// this.jsonData = this.jsonData.filter(d => {
+			// 	return this.brushUpid.includes(d.upid)
+			// })
+      if(this.scatterData.length!==0)this.mergeflag()
+      // console.log("jsonData: ", this.jsonData);
+			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
+
+	// 		// clear
+	// 		this.selectedTrainData = [];
 		},
 		mergeflag(){
 			let mergedata=[]
@@ -1080,10 +1125,10 @@ export default {
     border-right-color: #DCDFE6;
     border-left-color: #DCDFE6;
 }
-.el-tabs__item {
-	// height: 30px !important;
+// .el-tabs__item {
+// 	height: 30px !important;
 	
-}
+// }
 .el-tabs--border-card>.el-tabs__content {
     padding: 0px !important;
 }

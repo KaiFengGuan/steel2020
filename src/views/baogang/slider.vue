@@ -261,7 +261,7 @@ export default {
         svg.selectAll('.handle--custom').raise()
 
         // 提取刷选的数据绘制刷选河流图
-        d3.selectAll('.upperRiver').remove()
+        svg.selectAll('.upperRiver').remove()
         const upperData = []
 
         brushEnter.forEach((d, i) => {
@@ -351,7 +351,7 @@ export default {
         .attr('rx', 5)
         .attr('ry', 5)
 
-      d3.select('.barChange')
+      svg.select('.barChange')
         .append('text')
         .attr('fill', '#2c3e50')
         .text('Bar')
@@ -364,7 +364,7 @@ export default {
         .attr('y', '9')
         .attr('dy', '2')
 
-      d3.select('.myButton')
+      svg.select('.myButton')
         .append('g')
         .attr('class', 'areaChange')
         .append('rect')
@@ -377,7 +377,7 @@ export default {
         .attr('rx', '5')
         .attr('ry', '5')
 
-      d3.select('.areaChange')
+      svg.select('.areaChange')
         .append('text')
         .text('Area')
         .attr('fill', '#2c3e50')
@@ -389,32 +389,32 @@ export default {
         .attr('x', '14.5')
         .attr('y', '31')
       flag === 0 ? switchBar() : 1
-      d3.select('.barChange').attr('cursor', 'pointer').on('click', switchBar)
-      d3.select('.areaChange').attr('cursor', 'pointer').on('click', switchArea)
-      d3.select('.upperRiver').attr('opacity', 0)
+      svg.select('.barChange').attr('cursor', 'pointer').on('click', switchBar)
+      svg.select('.areaChange').attr('cursor', 'pointer').on('click', switchArea)
+      svg.select('.upperRiver').attr('opacity', 0)
       function switchBar(event, d) {
         const t = d3.transition().duration(750).ease(d3.easeLinear)
-        d3.select('.upperRiver').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 0)
-        d3.select('.AreaRiver').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 0)
-        d3.select('.barGroup').selectAll('g').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 1)
+        svg.select('.upperRiver').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 0)
+        svg.select('.AreaRiver').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 0)
+        svg.select('.barGroup').selectAll('g').transition(d3.transition().duration(750).ease(d3.easeLinear)).attr('opacity', 1)
         flag = 0
-        d3.select('.areaChange').select('rect').attr('fill', util.buttonTextAttr.unactivated_color)
-        d3.select('.areaChange').select('text').attr('fill', util.buttonTextAttr.baseTextAttr.fontColor)
-        d3.select('.barChange').select('rect').attr('fill', util.buttonTextAttr.baseTextAttr.fontColor)
-        d3.select('.barChange').select('text').attr('fill', util.buttonTextAttr.unactivated_color)
+        svg.select('.areaChange').select('rect').attr('fill', util.buttonTextAttr.unactivated_color)
+        svg.select('.areaChange').select('text').attr('fill', util.buttonTextAttr.baseTextAttr.fontColor)
+        svg.select('.barChange').select('rect').attr('fill', util.buttonTextAttr.baseTextAttr.fontColor)
+        svg.select('.barChange').select('text').attr('fill', util.buttonTextAttr.unactivated_color)
       }
       function switchArea() {
         const t = d3.transition().duration(2000).ease(d3.easeLinear)
         flag = 1
-        d3.select('.upperRiver').transition(t).attr('opacity', 1)
+        svg.select('.upperRiver').transition(t).attr('opacity', 1)
         svg.select('.barChange')
           .call(g => g.select('rect').attr('fill', 'white'))
-        d3.select('.AreaRiver').attr('opacity', 1)
-        d3.select('.barGroup').selectAll('g').attr('opacity', 0)
-        d3.select('.barChange').select('rect').attr('fill', util.buttonTextAttr.unactivated_color)
-        d3.select('.barChange').select('text').attr('fill', util.buttonTextAttr.baseTextAttr.fontColor)
-        d3.select('.areaChange').select('rect').attr('fill', util.buttonTextAttr.baseTextAttr.fontColor)
-        d3.select('.areaChange').select('text').attr('fill', util.buttonTextAttr.unactivated_color)
+        svg.select('.AreaRiver').attr('opacity', 1)
+        svg.select('.barGroup').selectAll('g').attr('opacity', 0)
+        svg.select('.barChange').select('rect').attr('fill', util.buttonTextAttr.unactivated_color)
+        svg.select('.barChange').select('text').attr('fill', util.buttonTextAttr.baseTextAttr.fontColor)
+        svg.select('.areaChange').select('rect').attr('fill', util.buttonTextAttr.baseTextAttr.fontColor)
+        svg.select('.areaChange').select('text').attr('fill', util.buttonTextAttr.unactivated_color)
       }
 
       function mouseover(event, d) {

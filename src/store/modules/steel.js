@@ -13,6 +13,7 @@ let state = {
     multiPara: 20,
     curveSize: 0.5,
     hightlightGroup: [],
+    diagnosisState:false
 }
 
 let getters = {
@@ -37,7 +38,8 @@ let getters = {
     corrSize: state => state.corrSize,
     multiPara: state => state.multiPara,
     curveSize: state => state.curveSize,
-    hightlightGroup: state => state.hightlightGroup
+    hightlightGroup: state => state.hightlightGroup,
+    diagnosisState: state => state.diagnosisState
 }
 
 let actions = {
@@ -70,6 +72,9 @@ let mutations = {
     },
     hightLight(state, array){
         state.hightlightGroup = array
+    },
+    changeDiagnosisState(state){
+        state.diagnosisState = !state.diagnosisState
     }
 }
 

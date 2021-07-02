@@ -23,7 +23,7 @@ module.exports = {
             },
             '/newbaogangapi': {
             //   target: 'http://localhost:5000',
-              target: 'http://219.216.80.46:5000',
+              target: 'http://219.216.80.146:5502',
               // target: 'http://202.118.21.236:7205',
               changeOrigin: true,
               pathRewrite: {

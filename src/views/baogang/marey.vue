@@ -342,6 +342,7 @@ export default {
 			"trainBorder",
 			"startDate",
 			"endDate",
+			"diagnosisState"
 		]),
 		dateselect : function(){
 			var endmonth = new Date(this.startmonth.valueOf())
@@ -383,7 +384,8 @@ export default {
 			"changeLabelColor",
 			"setCorrSize",
 			"setmultiPara",
-			"setCurveSize"
+			"setCurveSize",
+			"changeDiagnosisState"
 		]),
 		getNotification(notice){
 			const h = this.$createElement;
@@ -402,7 +404,9 @@ export default {
 			this.getHttpData()
 		},
 		newdiagnose() {
+			this.changeDiagnosisState()
 			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+
 		},
 
 	// 	async getHttpData() {

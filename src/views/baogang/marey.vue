@@ -255,7 +255,7 @@ import util from './util.js';
 import mareyChart from './mareyChart2.vue';
 import scatterlog from 'components/charts/scatterlog.vue';
 import timeBrush from './timeBrush.vue';
-import wheeler from './wheel.vue';
+import wheeler from './wheel2.vue';
 import smallWheel from './smallWheel.vue';
 import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
@@ -892,6 +892,24 @@ export default {
 		// console.log(this.startmonth.getMonth())
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
+		var demo ={
+			"list": [],
+			"upidSelect": [
+				"19301005000"
+			],
+			"type": "group",
+			"batch": [
+				"19301001000",
+				"19301002000",
+				"19301003000",
+				"19301004000",
+				"19301005000",
+				"19301006000",
+				"19301007000",
+				"19301008000"
+			]
+		}
+		this.trainClick(demo)
 		this.getplatetype()
 		this.changeTime()
 	},

@@ -134,7 +134,7 @@ export default {
                     this._padAngle=[];
                     this._linespace=6;
                     this._merge = true;
-                    this._horizonView = true;
+                    this._horizonView = false;
                     this._indexdata = [];
                     this._allIndex = undefined;    //index name
                     this._indexScale = undefined;
@@ -171,6 +171,8 @@ export default {
                     this._graph = null;
                     this._leavesData = null;
                     this._lineData = null;
+
+                    this._mouseEvents = null;
                 }
                 getIndex(_){
                     for (let item in this._process){
@@ -210,7 +212,8 @@ export default {
                 _renderBar(){
                     this._fliterScaleData();
                     this._renderMainWheel();
-                    this._renderMainBar();
+                    this._mouseEvents = this._renderMainBar();
+                    // console.log(mouseEvents)
                 }
 
                 _renderWheel(){
@@ -225,7 +228,6 @@ export default {
                     
                     this._initdata();
                     this._merge ? this._renderBar() : this._renderWheel();
-                    d3.selectAll('.circleButton').raise()
                 }
 
                 _renderComponents(){
@@ -242,27 +244,69 @@ export default {
                             this._renderMerge()
                             d3.select('.mergeIcon').attr('href', this._merge ? mergeLabel: deMergeLabel);
                         })
-                    this._container
-                        .append('circle')
-                        .attr('class', 'circleButton')
-                        .attr('r', 5)
-                        .attr('stroke', 'black')
-                        .attr('fill', 'pink')
-                        .on('click', e =>{
+                    // this._container
+                    //     .append('circle')
+                    //     .attr('class', 'circleButton')
+                    //     .attr('r', 5)
+                    //     .attr('stroke', 'black')
+                    //     .attr('fill', 'pink')
+                    //     .on('click', e =>{
+                    //         this._heatOrRiver = ! this._heatOrRiver
+                    //         this._heatOrRiver ? this._initHeatG() : this._initRiverG()
+                    //         this._renderWheelFilter()
+                    //     })
+                    this._initHeatOrRiver()
+                    this._initFilterButton()
+                }
+
+                _initHeatOrRiver(){
+                    const tabColor = '#678fba';
+                    const semiButton = this._container.append('g').attr('class', 'semiButton')
+                        .attr('transform', `translate(${[40, - this._height/2 + 2.5]})`);
+                    semiButton.call(g => g.append('rect')
+                            .attr('fill', this._heatOrRiver ? tabColor : 'white')
+                            .attr('rx', 5)
+                            .attr('ry', 5)
+                            .attr('stroke', tabColor)
+                            .attr('stroke-width', 0.5)
+                            .attr('height', 20)
+                            .attr('width', 45))
+                        .call(g => g.append('text')
+                            .attr('fill', this._heatOrRiver ? 'white' : tabColor)
+                            .attr('x', 22.5)
+                            .attr('y', 12.5)
+                            .text('heat'))
+                        .on('click', (e, d) => {
                             this._heatOrRiver = ! this._heatOrRiver
                             this._heatOrRiver ? this._initHeatG() : this._initRiverG()
                             this._renderWheelFilter()
+                            semiButton.select('rect').attr('fill', this._heatOrRiver ? tabColor : 'white')
+                            semiButton.select('text').attr('fill', this._heatOrRiver ? 'white' : tabColor)
                         })
-                    this._container
-                        .append('circle')
-                        .attr('r', 5)
-                        .attr('transform', 'translate(25, 25)')
-                        .attr('class', 'circleButton')
-                        .attr('stroke', 'black')
-                        .attr('fill', 'white')
-                        .on('click', e =>{
+                }
+
+                _initFilterButton(){
+                    const tabColor = '#678fba';
+                    const filterButton = this._container.append('g').attr('class', 'filterButton')
+                        .attr('transform', `translate(${[100, - this._height/2 + 2.5]})`);
+                    filterButton.call(g => g.append('rect')
+                            .attr('fill', this._fliterStatus ? tabColor : 'white')
+                            .attr('rx', 5)
+                            .attr('ry', 5)
+                            .attr('stroke', tabColor)
+                            .attr('stroke-width', 0.5)
+                            .attr('height', 20)
+                            .attr('width', 45))
+                        .call(g => g.append('text')
+                            .attr('fill', this._fliterStatus ? 'white' : tabColor)
+                            .attr('x', 22.5)
+                            .attr('y', 12.5)
+                            .text('filter'))
+                        .on('click', (e, d) => {
                             this._fliterStatus = !this._fliterStatus
                             this._renderWheelFilter()
+                            filterButton.select('rect').attr('fill', this._fliterStatus ? tabColor : 'white')
+                            filterButton.select('text').attr('fill', this._fliterStatus ? 'white' : tabColor)
                         })
                 }
 
@@ -494,6 +538,12 @@ export default {
                         initDragG();
                         
                         var sliderData = this._sliderArray(selectInfo),
+                            // dataEX = sliderData.map((d, i) => {
+                            //     return new Array(maxLength).fill(wm._deepCopy(d)).map((e, f) =>{
+
+                            //     }
+                            //     )
+                            // }),
                             horizenEX = (new Array(maxLength).fill(0))
                             .map((d, i) => wm._deepCopy(sliderData).map((e, f) =>{ 
                                     var temp = e.map(g => {
@@ -552,8 +602,8 @@ export default {
                         const visG = mainG.append('g').attr('class', 'visG');
                         initVisG();
 
-                        const heatButton = mainG.append('g').attr('class', 'heatButton');
-                        initHeatButton();
+                        // const heatButton = mainG.append('g').attr('class', 'heatButton');
+                        // initHeatButton();
 
                         initMapArea()
                         sliderG.selectAll('.heatMapG').raise();
@@ -975,6 +1025,7 @@ export default {
                                     .data(d => horizenEX[+d])
                                     .join('g')
                                     .attr('class', 'rectElement')
+                                    .attr('opacity', opacityCache)
                                     .attr('transform', (d, i) =>`translate(${[0, yScale(i) - maxHeight]})`)
                                     .call(g => g.append('rect')
                                         .attr('height', maxHeight)
@@ -1260,7 +1311,20 @@ export default {
                                                 .attr('width', (d, i) => xLabelData[d.i][i])
                                                 .attr('x', (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2)))
                         }
-
+                        function mouseOver(args){
+                            opacityCache = (d, i) => {
+                                return indexScale(i) < rectNum ? (d.indexName ? (args.indexOf(d.indexName) !== -1  ? 1 : 0.4) : (args.indexOf(d[0].indexName !== -1) ? 1 : 0.4)) : 0;
+                            }
+                            renderSort()
+                        }
+                        function mouseOut(){
+                            opacityCache = (d, i) => indexScale(i) < rectNum ? 1 : 0;
+                            renderSort()
+                        }
+                        return {
+                            mouseOver,
+                            mouseOut,
+                        }
                 }
 
                 _renderWheelFilter(){
@@ -1691,14 +1755,16 @@ export default {
                             .attr('transform', d => `rotate(${this._xpad[d.month](d.indexName) * 180 / Math.PI - 180})`) // rad 2 deg - 180 -> rotate back to 12 o'clock                
                             .call(g => g.append('path')
                                 .attr('d', this._line(this._radius.inner, this._radius.max)))
-                                .on('mouseenter', (e, d) => {
+                                .on('mouseover', (e, d) => {
                                     this._insertInfo(e, d);
                                     this._hightlightcss()
-                                    this._axisenter(d.indexName, d.month);                               
+                                    this._axisenter(d.indexName, d.month);
+                                    this._merge ? this._mouseEvents.mouseOver([d.indexName]) : undefined;                            
                                 })
                                 .on('mouseleave', (e, d) => {
                                     this._initcss()
                                     this._axisout(d.indexName, d.month);
+                                    this._merge ? this._mouseEvents.mouseOut() : undefined;
                                 });
                 }
 
@@ -1779,7 +1845,7 @@ export default {
                             .attr('fill', 'white')
                             .attr('opacity', 0)
                             .attr('d', this._line(r.inner, r.max)))
-                            .on('mouseenter', (e, d) => {
+                            .on('mouseover', (e, d) => {
                                 this._overed(e, d)
                             })
                             .on('mouseout', (e, d) => {
@@ -1902,6 +1968,7 @@ export default {
                     for (let index of rlines){
                         this._axisout(index, key);
                     }
+                    this._merge ? this._mouseEvents.mouseOut() : undefined;
                 }
 
                 _overed(e, d){
@@ -1914,6 +1981,7 @@ export default {
                         this._axisenter(index, key);
                     }
                     this._insertInfo(e, data)
+                    this._merge ? this._mouseEvents.mouseOver([name,...rlines]) : undefined;
                 }
 
                 _initcss(){

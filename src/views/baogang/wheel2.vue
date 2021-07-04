@@ -16,11 +16,17 @@ import mergeLabel from "assets/images/mergeLabel.svg";
 import deMergeLabel from "assets/images/deMergeLabel.svg";
 import util from './util.js';
 import processJson from "@/assets/json/processJson.json"
-import {mapGetters} from "vuex"
-import { init } from 'echarts';
-var processIcon = [heaticon , rollicon , coolicon],
+import {mapGetters, mapMutations} from "vuex"
+const processIcon = [heaticon , rollicon , coolicon],
     iconwhite = [heatwhite , rollwhite , coolwhite];
 export default {
+    props: {
+        options: {
+            default: false,
+            type: Boolean,
+            require: true
+        }
+    },
 	data() {
 		return {
 			menuId: 'wheeling' + Math.random().toString(32).slice(-6),
@@ -34,6 +40,10 @@ export default {
 		}
 	},
 	methods: {
+        ...mapMutations([
+			"changeStatus",
+			"riverStatus"
+		]),
         paintChart(jsondata, chorddata, batchData) {
             this.jsondata = jsondata, this.chorddata = chorddata, this.batchData = batchData;
             const wheeldata = [] , labels = []
@@ -133,7 +143,7 @@ export default {
                     this._labelcolor = ['#fcd8a9', '#cce9c7', '#c1c9ee'];
                     this._padAngle=[];
                     this._linespace=6;
-                    this._merge = true;
+                    this._merge = false;
                     this._horizonView = false;
                     this._indexdata = [];
                     this._allIndex = undefined;    //index name
@@ -155,12 +165,12 @@ export default {
                     //Style 
                     this._cleadStyle = {
                         'opacity': 0.4,
-                        'stroke-width': 1
+                        'stroke-width': 0.75
                     }
                     this._leadlineStyle = {
                         'opacity': 0.4,
-                        'original_strwidth': 0.5,
-                        'highlight_strwidth': 1
+                        'original_strwidth': 0.25,
+                        'highlight_strwidth': 0.75
                     }
                     this._circleStyle ={
                         'original_r': 2,
@@ -173,6 +183,8 @@ export default {
                     this._lineData = null;
 
                     this._mouseEvents = null;
+
+                    this._tabColor = '#678fba';
                 }
                 getIndex(_){
                     for (let item in this._process){
@@ -204,27 +216,35 @@ export default {
 
                 render() {
                     this._init();
-                    this._renderComponents()
+                    if(!vm.options){
+                        this._renderComponents()
+                    }else{
+                        this._renderOption()
+                    }
                     this._renderMerge()
                     return this;
                 }
 
+                _renderOption(){
+                    this._merge = false
+                }
+
                 _renderBar(){
+                    this._g.attr('transform', 'translate(-50,0)');
                     this._fliterScaleData();
                     this._renderMainWheel();
                     this._mouseEvents = this._renderMainBar();
-                    // console.log(mouseEvents)
                 }
 
                 _renderWheel(){
                     this._initScaleData();
                     this._renderMainWheel();
-                    this._g.attr('transform', 'translate(300,0)')
+                    this._g.attr('transform', `translate(${vm.options ? this._width/3 : this._width/2},0)`)
                 }
 
                 _renderMerge(){
                     this._g == null ? undefined : this._g.remove();
-                    this._g = this._container.append('g').attr('transform', 'translate(-50,0)');
+                    this._g = this._container.append('g')
                     
                     this._initdata();
                     this._merge ? this._renderBar() : this._renderWheel();
@@ -244,23 +264,12 @@ export default {
                             this._renderMerge()
                             d3.select('.mergeIcon').attr('href', this._merge ? mergeLabel: deMergeLabel);
                         })
-                    // this._container
-                    //     .append('circle')
-                    //     .attr('class', 'circleButton')
-                    //     .attr('r', 5)
-                    //     .attr('stroke', 'black')
-                    //     .attr('fill', 'pink')
-                    //     .on('click', e =>{
-                    //         this._heatOrRiver = ! this._heatOrRiver
-                    //         this._heatOrRiver ? this._initHeatG() : this._initRiverG()
-                    //         this._renderWheelFilter()
-                    //     })
                     this._initHeatOrRiver()
                     this._initFilterButton()
                 }
 
                 _initHeatOrRiver(){
-                    const tabColor = '#678fba';
+                    const tabColor = this._tabColor;
                     const semiButton = this._container.append('g').attr('class', 'semiButton')
                         .attr('transform', `translate(${[40, - this._height/2 + 2.5]})`);
                     semiButton.call(g => g.append('rect')
@@ -277,16 +286,19 @@ export default {
                             .attr('y', 12.5)
                             .text('heat'))
                         .on('click', (e, d) => {
-                            this._heatOrRiver = ! this._heatOrRiver
-                            this._heatOrRiver ? this._initHeatG() : this._initRiverG()
-                            this._renderWheelFilter()
+                            if(!vm.options){
+                                this._heatOrRiver = !this._heatOrRiver
+                                vm.riverStatus(this._heatOrRiver)
+                            }
+                            // this._heatOrRiver ? this._initHeatG() : this._initRiverG()
+                            // this._renderWheelFilter()
                             semiButton.select('rect').attr('fill', this._heatOrRiver ? tabColor : 'white')
                             semiButton.select('text').attr('fill', this._heatOrRiver ? 'white' : tabColor)
                         })
                 }
 
                 _initFilterButton(){
-                    const tabColor = '#678fba';
+                    const tabColor = this._tabColor;
                     const filterButton = this._container.append('g').attr('class', 'filterButton')
                         .attr('transform', `translate(${[100, - this._height/2 + 2.5]})`);
                     filterButton.call(g => g.append('rect')
@@ -303,8 +315,11 @@ export default {
                             .attr('y', 12.5)
                             .text('filter'))
                         .on('click', (e, d) => {
-                            this._fliterStatus = !this._fliterStatus
-                            this._renderWheelFilter()
+                            if(!vm.options){
+                                this._fliterStatus = !this._fliterStatus
+                                vm.changeStatus(this._fliterStatus)
+                            }
+                            // this._renderWheelFilter()
                             filterButton.select('rect').attr('fill', this._fliterStatus ? tabColor : 'white')
                             filterButton.select('text').attr('fill', this._fliterStatus ? 'white' : tabColor)
                         })
@@ -313,15 +328,15 @@ export default {
                 _init() {
                     const r = this._radius;
                     
-                    r.max = Math.min(this._width, this._height) / 2.5;
+                    r.max = Math.min(this._width, this._height) / (vm.options ? 2 :2.5);
                     r.inner = r.max * 0.40;
                     r.bubble = r.max * 0.2;
                     r.outer = r.max - r.bubble *1.1 - r.label;
-                    const fs = d3.scaleLinear().domain([4, 1024]).range([0, 28]);
+                    // const fs = d3.scaleLinear().domain([4, 1024]).range([0, 28]);
                     // this._fontSize.info = fs(r.max);
-                    fs.range([8, 36]);
+                    // fs.range([8, 36]);
                     // this._fontSize.center = fs(r.max);
-                    fs.range([4, 18]);
+                    // fs.range([4, 18]);
                     // this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
                 }
 
@@ -588,14 +603,14 @@ export default {
                         indexScale = this._indexScale !== undefined ? scaleArray[this._indexScale] : scaleArray[2];
                         let sortG = mainG.append('g')
                                 .attr('class', 'sortG'),
-                            sortColor = '#678fba',
+                            sortColor = this._tabColor,
                             sortChange = (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1: value2,
                             sortText = ['Single' ,'Limit', 'Total'];
                         initSort();
 
                         const switchG = mainG.append('g').attr('class', 'switchG'),
                             textColor = ['Horizon', 'River'],
-                            tabColor = '#678fba',
+                            tabColor = this._tabColor,
                             transfrom = (v1, v2) => d => this._horizonView == Boolean(d) ? v1 : v2;
                         initSwitch();
 
@@ -687,7 +702,19 @@ export default {
                                     .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
                                     .attr('d', (d, i) => line(lineToRect(d, i)))
                                     .attr('stroke-width', 1)
-                                    .attr('fill', 'none'))
+                                    .attr('fill', 'none')
+                                    .on('mouseover', (e, d) => {
+                                        e.stopPropagation()
+                                    })
+                                    .on('mouseout', (e, d) => {
+                                        e.stopPropagation()
+                                    }))
+                                .on('mouseover', (e, d) => {
+                                    wm._overed(e, d.indexName, d.month)
+                                })
+                                .on('mouseout', (e, d) => {
+                                    wm._outed(e, d.indexName, d.month)
+                                })
                         }
                         function initArcG(){
                             arcG.selectAll('g').data(selectInfo)
@@ -923,29 +950,29 @@ export default {
                                     renderSort();
                                 })
                         }
-                        function initHeatButton(){
-                            heatButton.attr('transform', `translate(${[rectX +  RectWidth/2.2, - wm._height/2 + 2.5]})`)
-                            heatButton.append('rect')
-                                    .attr('fill', wm._heatOrRiver ? tabColor : 'white')
-                                    .attr('rx', 5)
-                                    .attr('ry', 5)
-                                    .attr('stroke', tabColor)
-                                    .attr('stroke-width', 0.5)
-                                    .attr('height', 20)
-                                    .attr('width', 45)
-                            heatButton.append('text')
-                                    .attr('fill', wm._heatOrRiver ? 'white' : tabColor)
-                                    .attr('x', 22.5)
-                                    .attr('y', 12.5)
-                                    .text('heat')
-                            heatButton.on('click', function(e, d){
-                                    wm._heatOrRiver = !wm._heatOrRiver;
-                                    d3.select(this).select('rect').attr('fill', wm._heatOrRiver ? tabColor : 'white')
-                                    d3.select(this).select('text').attr('fill', wm._heatOrRiver ? 'white' : tabColor)
-                                    wm._heatOrRiver ? wm._initHeatG() : wm._initRiverG()
-                                    wm._renderWheelFilter()
-                                })
-                        }
+                        // function initHeatButton(){
+                        //     heatButton.attr('transform', `translate(${[rectX +  RectWidth/2.2, - wm._height/2 + 2.5]})`)
+                        //     heatButton.append('rect')
+                        //             .attr('fill', wm._heatOrRiver ? tabColor : 'white')
+                        //             .attr('rx', 5)
+                        //             .attr('ry', 5)
+                        //             .attr('stroke', tabColor)
+                        //             .attr('stroke-width', 0.5)
+                        //             .attr('height', 20)
+                        //             .attr('width', 45)
+                        //     heatButton.append('text')
+                        //             .attr('fill', wm._heatOrRiver ? 'white' : tabColor)
+                        //             .attr('x', 22.5)
+                        //             .attr('y', 12.5)
+                        //             .text('heat')
+                        //     heatButton.on('click', function(e, d){
+                        //             wm._heatOrRiver = !wm._heatOrRiver;
+                        //             d3.select(this).select('rect').attr('fill', wm._heatOrRiver ? tabColor : 'white')
+                        //             d3.select(this).select('text').attr('fill', wm._heatOrRiver ? 'white' : tabColor)
+                        //             wm._heatOrRiver ? wm._initHeatG() : wm._initRiverG()
+                        //             wm._renderWheelFilter()
+                        //         })
+                        // }
                         function initAxisG(batchTimeScale){ //init timeTick
                             sliderG.selectAll('.axisG').data(rectPosition)
                                 .join('g')
@@ -1059,9 +1086,9 @@ export default {
                         }
                         function infoArea(arr, index, flag){// barG bin distribute
                             let data = horizenEX.map(d => d[index]).flat().map(d => d.value),
-                                bin = d3.bin().thresholds(30)(data),
+                                bin = d3.bin().thresholds(20)(data),
                                 y = d3.scaleLinear().domain([bin[0].x0, bin[bin.length - 1].x1]).range([2, maxHeight - 2]),
-                                bin2 = d3.bin().thresholds(30)(horizenEX.slice(Math.ceil(maxLength / 2)- 1, Math.ceil(maxLength / 2)).map(d => d[index]).flat().map(d => d.value)),
+                                bin2 = d3.bin().thresholds(20)(horizenEX.slice(Math.ceil(maxLength / 2)- 1, Math.ceil(maxLength / 2)).map(d => d[index]).flat().map(d => d.value)),
                                 x = d3.scaleLinear().domain([0, d3.max(bin, d => d.length)]).range([0, maxHeight - 2]),
                                 area = d3.area()
                                     .x0(d => maxHeight - 2 -x(d.length))
@@ -1313,7 +1340,17 @@ export default {
                         }
                         function mouseOver(args){
                             opacityCache = (d, i) => {
-                                return indexScale(i) < rectNum ? (d.indexName ? (args.indexOf(d.indexName) !== -1  ? 1 : 0.4) : (args.indexOf(d[0].indexName !== -1) ? 1 : 0.4)) : 0;
+                                if(indexScale(i) < rectNum){
+                                    if(d.indexName){
+                                        return args.indexOf(d.indexName) !== -1  ? 1 : 0.4
+                                    }else if(d[0].indexName){
+                                        return args.indexOf(d[0].indexName) !== -1  ? 1 : 0.4
+                                    }else if(d[0][0].indexName){
+                                        return args.indexOf(d[0][0].indexName) !== -1  ? 1 : 0.4
+                                    }
+                                }else{
+                                    return 0
+                                }
                             }
                             renderSort()
                         }
@@ -1500,6 +1537,8 @@ export default {
                         .selectAll('g')
                         .data(d => this._processData.get(d))
                         .join('g')
+                        .attr('class', this._processClass('heat'))
+                        .attr('id', this._indexId('heat'))
                         .attr('transform', d => `rotate(${(this._xpad[d.month](d.indexName) ) * 180 / Math.PI - 180 })`)
                         .call(g => g.selectAll('path').data(d => heatRange(d)).join('path')
                             // .attr('visibility', d => d.range ? 'visible' : 'hidden')
@@ -1655,6 +1694,8 @@ export default {
                                     .attr('href', iconwhite[d])
                                 wheel.selectAll('.circle_color'+d)
                                     .attr('r', wm._outrate(wm._circleStyle.highlight_r + 0.5, wm._circleStyle.original_r + 0.5))
+                                    .attr('opacity', 1);
+                                wheel.selectAll('.heat'+d)
                                     .attr('opacity', 1);
                                 wheel.selectAll('.precipitation'+d)
                                     .attr('stroke', wm._outrate(d3.color(this._labelcolor[d]).darker(1.6), daker(d)))
@@ -1846,10 +1887,10 @@ export default {
                             .attr('opacity', 0)
                             .attr('d', this._line(r.inner, r.max)))
                             .on('mouseover', (e, d) => {
-                                this._overed(e, d)
+                                this._overed(e, d.data.id, d.data.group)
                             })
                             .on('mouseout', (e, d) => {
-                                this._outed(e, d)
+                                this._outed(e, d.data.id, d.data.group)
                             })
                     const labelcol=(d , i) => d3.color(lc[+d[0].data.group]).darker(0.6);
                     const linedata = root.leaves().flatMap(leaf => leaf.outgoing);
@@ -1888,6 +1929,8 @@ export default {
                     cG.select('#circle'+name)
                             .attr('r', this._circleStyle.highlight_r)
                             .attr('opacity', 1);
+                    cG.select('#heat' + name)
+                        .attr('opacity', 1)
                     cG.select('#precipitation'+name)
                         .attr('stroke', wm._outrate(d3.color(lck).darker(1.6), daker))
                         .attr('opacity', 1)
@@ -1960,8 +2003,7 @@ export default {
                     return [...new Set(target)]
                 }
 
-                _outed(e, d) {
-                    let name = d.data.id,key=d.data.group;
+                _outed(e, name, key) {
                     this._initcss()
                     this._axisout(name, key);
                     let rlines = this._multiplyTarget(name);
@@ -1971,8 +2013,7 @@ export default {
                     this._merge ? this._mouseEvents.mouseOut() : undefined;
                 }
 
-                _overed(e, d){
-                    let name = d.data.id, key = d.data.group;
+                _overed(e, name, key){
                     const data = this._chartData.filter(d => d.indexName===name)[0];
                     this._hightlightcss()
                     this._axisenter(name, key);
@@ -1998,6 +2039,8 @@ export default {
                         cG.selectAll('.precipitation'+i)
                             .attr('opacity', 1)
                         cG.selectAll('.circle_color'+i)
+                            .attr('opacity', 1)
+                        cG.selectAll('.heat' + i)
                             .attr('opacity', 1)
                         cG.selectAll('.arcpie'+i)
                             .attr('opacity', 1)
@@ -2025,6 +2068,8 @@ export default {
                         cG.selectAll('.precipitation' + i)
                             .attr('opacity', 0.5)
                         cG.selectAll('.circle_color' + i)
+                            .attr('opacity', 0.5)
+                        cG.selectAll('.heat' + i)
                             .attr('opacity', 0.5)
                         cG.selectAll('.arcpie' + i)
                             .attr('opacity', 0.5)
@@ -2182,7 +2227,7 @@ export default {
                     })
                 }
             }
-            const wheel = new wheelRound(this.svg)
+            this.wheelChart = new wheelRound(this.svg)
                             .size([diameter, diameter])
                             .data(wheeldata)
                             .process(processJson)
@@ -2200,7 +2245,9 @@ export default {
             'corrSize',
             'multiPara',
             'curveSize',
-            'trainBorder'
+            'trainBorder',
+            'filterStatus',
+            'heatOrRiver'
         ])
 	},
     watch:{
@@ -2212,6 +2259,15 @@ export default {
         },
         curveSize:function(){
             this.renderChart()
+        },
+        filterStatus:function(){
+            this.wheelChart._fliterStatus = this.filterStatus
+            this.wheelChart._renderWheelFilter()
+        },
+        heatOrRiver:function(){
+            this.wheelChart._heatOrRiver = this.heatOrRiver
+            this.heatOrRiver ? this.wheelChart._initHeatG() : this.wheelChart._initRiverG()
+            this.wheelChart._renderWheelFilter()
         }
     }
 }

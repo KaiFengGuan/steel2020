@@ -202,7 +202,7 @@
 												</el-row>
 											</div>
 										<div class="my-card-body" @click="changeUpid(item)">
-											<small-wheel :ref="item" style="height:223px"></small-wheel>
+											<small-wheel :ref="item" style="height:223px" :options="true"></small-wheel>
 										</div>
 									</el-card>
 								</el-row>
@@ -219,7 +219,7 @@
 										</el-row>
 									</div> -->
 									<div class="my-card-body" >
-										<wheeler ref="wheelering" style="height:490px"></wheeler>
+										<wheeler ref="wheelering" style="height:490px" :options="false"></wheeler>
 									</div>
 								</el-card>
 							</el-col>
@@ -256,7 +256,7 @@ import mareyChart from './mareyChart2.vue';
 import scatterlog from 'components/charts/scatterlog.vue';
 import timeBrush from './timeBrush.vue';
 import wheeler from './wheel2.vue';
-import smallWheel from './smallWheel.vue';
+import smallWheel from './wheel2.vue';
 import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
@@ -682,7 +682,7 @@ export default {
 			await this.paintUnderCharts(this.upidSelect[0]);
 		},
 		async paintScatterList(upid){
-			this.$nextTick(function() {this.$refs[upid][0].init()})
+			// this.$nextTick(function() {this.$refs[upid][0].init()})
 			// let query=[]
 			// for (let item of this.plateTempPropvalue){
 			// 	if(item==='All'){
@@ -893,9 +893,13 @@ export default {
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
 		var demo ={
-			"list": [],
+			"list": [
+				"19301009000",
+				"19301002000"
+			],
 			"upidSelect": [
-				"19301005000"
+				"19301005000",
+				"19301009000"
 			],
 			"type": "group",
 			"batch": [
@@ -910,8 +914,8 @@ export default {
 			]
 		}
 		this.trainClick(demo)
-		this.getplatetype()
-		this.changeTime()
+		// this.getplatetype()
+		// this.changeTime()
 	},
 	watch: {
 		startDate:function(){

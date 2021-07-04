@@ -822,6 +822,7 @@ export default {
 		startDate:function(){
 			if(this.scatterData.length == 0)return
 			this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
+			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 			this.getHttpData()
 		}
 	}

@@ -31,7 +31,7 @@ export default {
             // diagnosisStation:false,
             keys: [ "tgtplatethickness2", "tgtplatelength2","tgtwidth", "slab_thickness"],
             brushGroup:[],
-            newBrushData:[[0.02,0.05],[17,22],[3,3.5],[3,3.5]],
+            newBrushData:[[0.02,0.05],[17,44],[3,3.5],[2.5,3]],
             brush: d3.brushX(),
             lastSelections:new Map(),
             lastHandle:new Map()
@@ -66,11 +66,11 @@ export default {
 		isSwitch(val,oldVal){
             d3.selectAll(".pathColor").attr("stroke", this.deGroupStyle)
         },
-		startDate:function(){
-            if(this.plData !== undefined){
-                this.paintChart(this.plData, this.startDate, this.endDate)
-            }
-		},
+		// startDate:function(){
+        //     if(this.plData !== undefined){
+        //         this.paintChart(this.plData, this.startDate, this.endDate)
+        //     }
+		// },
 		hightlightGroup:function(){
             if(this.hightlightGroup.length === 0){
                 this.init()
@@ -111,19 +111,18 @@ export default {
             this.plData = plData
             var brushdata = plData.map( d => {
                 d.slab_thickness = d.slab_thickness/100;
+                d.status_cooling = d.status_cooling + 1
                 return d
             })
             var width = 355
             this.brushdata = brushdata
-            // let 
-            // keys = [ "tgtplatethickness2", "tgtplatelength2","tgtwidth", "slab_thickness"],
-            // var margin = {top: 40, right: 20, bottom: 40, left: 20},
-            // var margin = {top: 40, right: 20, bottom: 40, left: 20},
             var margin = {top: 40, right: 20, bottom: 40, left: 20},
-                coolingArray = d3.filter(brushdata, (d,i) => d["status_cooling"] == 1),
-                nocoolingArray = d3.filter(brushdata, (d,i) => d["status_cooling"] == 0),
+                coolingArray = d3.filter(brushdata, (d,i) => d["status_cooling"] == 2),
+                nocoolingArray = d3.filter(brushdata, (d,i) => d["status_cooling"] == 1),
                 allArray = [],
-                cooling = ["cooling","nocooling"]
+                cooling = ["cooling","nocooling"],
+                objStatus = {"tgtplatethickness2":false,"tgtplatelength2":false,"tgtwidth":false,"slab_thickness":false}
+
             allArray.push(coolingArray)
             // allArray.push(coolingArray)
             allArray.push(nocoolingArray)
@@ -174,6 +173,13 @@ export default {
                 width = document.getElementById(this.menuId).offsetWidth,
                 arc = d3.arc()
                     .innerRadius(0)
+                    // .outerRadius(8)
+                    .outerRadius(6)
+                    .startAngle(0)
+                    .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
+                arcDiagnosis = d3.arc()
+                    .innerRadius(0)
+                    // .outerRadius(8)
                     .outerRadius(8)
                     .startAngle(0)
                     .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
@@ -181,7 +187,8 @@ export default {
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
                 y = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
                 xScale = d3.axisBottom(xCooling).tickSizeOuter(0).tickSizeInner(0)
-              x.set("status_cooling",d3.scaleBand([0,1], [margin.left, width - margin.right]))
+            //   x.set("status_cooling",d3.scaleBand([0,1], [margin.left, width - margin.right]))
+              x.set("status_cooling",d3.scaleLinear([0,3], [margin.left, width - margin.right]))
               var line = d3.line()
                     .defined(([, value]) => value != null)
                     .x(([key, value]) => x.get(key)(value))
@@ -198,43 +205,43 @@ export default {
                             // .attr("stroke", "red")
                             .attr("stroke-width", 2)
                             .attr("cursor", "ew-resize")
-                            .attr("d", arc))
+                            .attr("d", vm.diagnosisState ? arcDiagnosis : arc))
                         .attr("display", selection === null ? "none" : null)
                         .attr("transform", selection === null ? null : (d, i) => `translate(${selection[i]},${0})`)
              
-                function brushSlider(){
+            function brushSlider(){
+                svg.selectAll("#parallel .overlay").attr("fill", "#eeeeee").raise()
+                svg.selectAll("#parallel .selection").attr("fill", vm.brushSelectColor).attr("fill-opacity", 0.8).raise()
+                // svg.selectAll("#parallel .parallelPath").raise()
+                svg.selectAll(".handle--custom").raise()
+                svg.selectAll("#parallel .domain").remove()
+                svg.selectAll("#parallel .overlay").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
+                svg.selectAll("#parallel .selection").attr("rx", "5").attr("ry", "5").attr("stroke", "#aaa").attr("stroke-width", 1)
+                svg.selectAll("#parallel .tick text")
+                    .attr("stroke", "none")
+                    .style("font-family", util.tabularAxisTextAttr.fontFamily)
+                    .style("color", util.tabularAxisTextAttr.fontColor)
+                    .style("font-size", util.tabularAxisTextAttr.fontSize)
+                    .style("font-weight", util.tabularAxisTextAttr.fontWeight)
+                    .style("font-style", util.tabularAxisTextAttr.fontStyle)
+            }
+            function diagnosisBrushSlider(){
                     svg.selectAll("#parallel .overlay").attr("fill", "#eeeeee").raise()
-                    svg.selectAll("#parallel .selection").attr("fill", vm.brushSelectColor).attr("fill-opacity", 0.8).raise()
-                    // svg.selectAll("#parallel .parallelPath").raise()
-                    svg.selectAll(".handle--custom").raise()
-                    svg.selectAll("#parallel .domain").remove()
-                    svg.selectAll("#parallel .overlay").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
-                    svg.selectAll("#parallel .selection").attr("rx", "5").attr("ry", "5").attr("stroke", "#aaa").attr("stroke-width", 1)
-                    svg.selectAll("#parallel .tick text")
-                        .attr("stroke", "none")
-                        .style("font-family", util.tabularAxisTextAttr.fontFamily)
-                        .style("color", util.tabularAxisTextAttr.fontColor)
-                        .style("font-size", util.tabularAxisTextAttr.fontSize)
-                        .style("font-weight", util.tabularAxisTextAttr.fontWeight)
-                        .style("font-style", util.tabularAxisTextAttr.fontStyle)
-                }
-                function diagnosisBrushSlider(){
-                     svg.selectAll("#parallel .overlay").attr("fill", "#eeeeee").raise()
-                    svg.selectAll("#parallel .selection").attr("fill", vm.brushSelectColor).attr("fill-opacity", 0.8).raise()
-                    // svg.selectAll("#parallel .parallelPath").raise()
-                    svg.selectAll("#parallel .handle--custom").attr("stroke","red")
-                    svg.selectAll(".handle--custom").raise()
-                    svg.selectAll("#parallel .domain").remove()
-                    svg.selectAll("#parallel .overlay").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
-                    svg.selectAll("#parallel .selection").attr("rx", "5").attr("ry", "5").attr("stroke", "#aaa").attr("stroke-width", 1)
-                    svg.selectAll("#parallel .tick text")
-                        .attr("stroke", "none")
-                        .style("font-family", util.tabularAxisTextAttr.fontFamily)
-                        .style("color", util.tabularAxisTextAttr.fontColor)
-                        .style("font-size", util.tabularAxisTextAttr.fontSize)
-                        .style("font-weight", util.tabularAxisTextAttr.fontWeight)
-                        .style("font-style", util.tabularAxisTextAttr.fontStyle)    
-                }
+                svg.selectAll("#parallel .selection").attr("fill", vm.brushSelectColor).attr("fill-opacity", 0.8).raise()
+                // svg.selectAll("#parallel .parallelPath").raise()
+                svg.selectAll("#parallel .handle--custom").attr("stroke",util.labelColor[0])
+                svg.selectAll(".handle--custom").raise()
+                svg.selectAll("#parallel .domain").remove()
+                svg.selectAll("#parallel .overlay").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
+                svg.selectAll("#parallel .selection").attr("rx", "5").attr("ry", "5").attr("stroke", "#aaa").attr("stroke-width", 1)
+                svg.selectAll("#parallel .tick text")
+                    .attr("stroke", "none")
+                    .style("font-family", util.tabularAxisTextAttr.fontFamily)
+                    .style("color", util.tabularAxisTextAttr.fontColor)
+                    .style("font-size", util.tabularAxisTextAttr.fontSize)
+                    .style("font-weight", util.tabularAxisTextAttr.fontWeight)
+                    .style("font-style", util.tabularAxisTextAttr.fontStyle)    
+            }
             this.svg !== undefined && this.svg.remove()
             this.svg=d3.select("#"+vm.menuId)
                 .append("svg")
@@ -247,6 +254,24 @@ export default {
                     [width - margin.right, brushHeight / 2]
                 ])
                 .on("start brush end", brushed)
+            svg.append("g")
+                .attr("class","cardG")
+                .selectAll("rect")
+                .data(newkeys)
+                .join("rect")
+                .attr("class",(d,i) => "card"+i)
+                .attr("transform",d => `translate(${10},${y(d) - 42 })`)
+                .attr("fill","white")
+                .attr("fill-opacity",1)
+                .attr("stroke","#e0e0e0")
+                .attr("stroke-width",3)
+                .attr("stroke-opacity",0)
+                .attr("width",307)
+                .attr("height",80)
+                .attr("rx",10)
+                .attr("ry",10)
+                
+                
             for(let item in keys){
                 var barmargin =  (width - margin.right - margin.left) / barbin[item].length/2;
                 // d => (d3.filter(brushdata, e => e[keys] <= d.x1 && d.x0 <= e[keys] && +e.label=== 0)).length
@@ -255,8 +280,8 @@ export default {
                     .attr("class", "rectBar")
                     .attr("transform",`translate(0,${y(keys[item])})`)
                     .selectAll(".rect"+item)
-                        .data(barbin[item])
-                        .join("g")
+                    .data(barbin[item])
+                    .join("g")
                     .call(g => g.append("rect")
                         .attr("class", "rect" +item)
                         .attr("x", d => {
@@ -279,16 +304,6 @@ export default {
                 this.brushSelection.set(keys[item], d3.extent(d3.filter(brushdata, d => new Date(d.toc) >= startTime && new Date(d.toc) <= endTime), d => d[keys[item]]))
                 this.newBrushSelection.set(keys[item],this.newBrushData[item])
             }
-            // console.log(this.newBrushSelection);
-
-
-
-
-
-
-
-
-
             svg.append("g")
                 .attr("class","rectCooling")
                 // .attr("transform",`translate(0,${400})`)
@@ -299,7 +314,7 @@ export default {
                 .call(g => 
                     g.append("rect")
                         .attr("class",(d, i) => "rectcooling"+ i)
-                        .attr("x", (d, i) => xCooling(i))
+                        .attr("x", (d, i) => x.get("status_cooling")(i + 1))
                         .attr("y", d => 400 + yCooling((d3.filter(d,  e => e["label"] == "1")).length))
                         .attr("height", d => yCooling(0) - yCooling((d3.filter(d,  e => e["label"] == "1")).length) )
                         // .attr("width", xCooling - coolingMargin)
@@ -311,7 +326,7 @@ export default {
                 .call(g => 
                     g.append("rect")
                     .attr("class",(d, i) => "rectcooling"+ i)
-                    .attr("x",(d,i) => xCooling(i))
+                    .attr("x",(d,i) =>  x.get("status_cooling")(i + 1))
                     .attr("y", d => 460)
                     .attr("height", d => yCooling(0) - yCooling((d3.filter(d,  e => e["label"] == "0")).length) )
                     .attr("width", xCooling.bandwidth()- coolingMargin -50)
@@ -319,19 +334,17 @@ export default {
                     .attr("fill", util.delabelColor[0])
                     .attr("opacity",0.5)
                     .attr("stroke","#000")
-                    .attr("stroke-width",1)
-                )
+                    .attr("stroke-width",1))
                 d3.select(".rectcooling0").lower()
                 d3.select(".rectcooling1").lower()
                 svg.append("g")
-                    // .attr("transform",`translate(0,${400})`)
                     .selectAll("g")
                     .data(cooling)
                     .join("g")
                     .call(g => g.append("circle")
                          .attr("class",(d,i) => "coolingButton"+ i)
-                          .attr("cx",(d,i) => xCooling(i) +9.4)
-                          .attr("cy",484)
+                          .attr("cx",(d,i) =>  x.get("status_cooling")(i + 1) +9.4)
+                          .attr("cy",480)
                           .attr("r", 5)
                           .attr("storke","#000")
                           .attr("stroke-width",1)
@@ -343,25 +356,21 @@ export default {
                               }else{
                                    vm.coolingStation["nocooling"] = !vm.coolingStation["nocooling"]
                               }
-                              svg.select(".coolingButton0").attr("fill",vm.coolingStation["cooling"] ?"red":"#ccc")
-                              svg.select(".coolingButton1").attr("fill",vm.coolingStation["nocooling"] ?"red":"#ccc")
+                              svg.select(".coolingButton0").attr("fill",vm.coolingStation["cooling"] ? util.labelColor[0]:"#ccc")
+                              svg.select(".coolingButton1").attr("fill",vm.coolingStation["nocooling"] ? util.labelColor[0]:"#ccc")
                               path.each(function(d) {
                                     const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
                                     if( vm.coolingStation["cooling"]&&vm.coolingStation["nocooling"]){
-                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 1 && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
+                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 2 && d["status_cooling"] == 1) ? vm.deGroupStyle : "none");
                                     }else if(vm.coolingStation["cooling"] && !vm.coolingStation["nocooling"]){
-                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 0) ? vm.deGroupStyle : "none");
-                                    }else if(!vm.coolingStation["cooling"] &&vm.coolingStation["nocooling"]){
                                             d3.select(this).attr("stroke",( active && d["status_cooling"] == 1) ? vm.deGroupStyle : "none");
+                                    }else if(!vm.coolingStation["cooling"] &&vm.coolingStation["nocooling"]){
+                                            d3.select(this).attr("stroke",( active && d["status_cooling"] == 2) ? vm.deGroupStyle : "none");
                                     }else{
                                         d3.select(this).attr("stroke",active ? vm.deGroupStyle : "none");
                                     }
                               });
               }))
-               
-
-
-
             svg.append("g").call(g =>
                 g.append("rect")
                     .attr("x",20)
@@ -378,14 +387,16 @@ export default {
                 .call(g => 
                     g.append("text")
                       .attr("x", width - margin.left)
-                      .attr("y", 410)
+                      .attr("y", 420)
                       .attr("text-anchor", "end")
-                      .attr("fill", util.tabularTipsTextAttr.fontColor)
+                    //   .attr("fill", util.tabularTipsTextAttr.fontColor)
+                      .attr("fill", "#94a7b7")
                       .attr("font-family", util.tabularTipsTextAttr.fontFamily)
                       .attr("font-size", util.tabularTipsTextAttr.fontSize)
                       .attr("font-weight", util.tabularTipsTextAttr.fontWeight)
                       .attr("font-style", util.tabularTipsTextAttr.fontStyle)
                       .text("sta_cooling")
+                      
                   )
             const path = svg.append("g")
                             .attr("fill", "none")
@@ -404,48 +415,13 @@ export default {
                             .attr("class", "pathColor")
                             .on("mouseover", pathover)
                             .on("mouseout", pathout);
-
             var selections
-                // selections = this.brushSelection   
-
             if(vm.diagnosisState){
                 selections = this.newBrushSelection
             }else{
                 selections = this.brushSelection   
             }
-
-             
-            svg.append("g")
-              .selectAll("g")
-              .data(keys)
-              .join("g")
-              .attr("transform", d => `translate(0,${y(d)+6})`)
-              .call(g => g.append("circle")
-              .attr("class", (d, i) => "circlebutton" + i)
-              .attr("cx",width - margin.left/2)
-              .attr("cy", -40)
-              .attr("r", 5)
-              .attr("storke","#000")
-              .attr("stroke-width",2)
-              .attr("fill","#ccc")
-              .attr('cursor', 'pointer')
-              .on("click", function(e, d){
-                  // e.preventDefault();
-                  if(d == "tgtplatethickness2"){
-                      vm.objStatus["tgtplatethickness2"] = !vm.objStatus["tgtplatethickness2"]
-                  }else if(d == "tgtplatelength2"){
-                      vm.objStatus["tgtplatelength2"] = !vm.objStatus["tgtplatelength2"]
-                  }else if(d == "tgtwidth"){
-                      vm.objStatus["tgtwidth"] = !vm.objStatus["tgtwidth"]
-                  }else{
-                      vm.objStatus["slab_thickness"] = !vm.objStatus["slab_thickness"]
-                  }
-                  svg.select(".circlebutton0").attr("fill", vm.objStatus["tgtplatethickness2"] ? "red" : "#ccc" )
-                  svg.select(".circlebutton1").attr("fill", vm.objStatus["tgtplatelength2"] ? "red" : "#ccc" )
-                  svg.select(".circlebutton2").attr("fill", vm.objStatus["tgtwidth"] ? "red" : "#ccc" )
-                  svg.select(".circlebutton3").attr("fill", vm.objStatus["slab_thickness"] ? "red" : "#ccc" )
-
-              }))
+          
             svg.append("g")
                 .attr("class","brushParalle")
                 .selectAll("g")
@@ -466,54 +442,95 @@ export default {
                             .ticks(5))
                   }
                 })
-                .call(g => g.append("text")
-                    .attr("x", width - margin.left)
-                    .attr("y", - 40)
-                    .attr("text-anchor", "end")
-                    .attr("fill", util.tabularTipsTextAttr.fontColor)
-                    .attr("font-family", util.tabularTipsTextAttr.fontFamily)
-                    .attr("font-size", util.tabularTipsTextAttr.fontSize)
-                    .attr("font-weight", util.tabularTipsTextAttr.fontWeight)
-                    .attr("font-style", util.tabularTipsTextAttr.fontStyle)
-                    .text(d => d.replace(/tgtwidth/, "tgt_width").replace(/tgtplatethickness2/, "tgt_thickness")
-                    .replace(/tgtplatelength2/, "tgt_length").replace(/slab_thickness/, "slab_thickness").replace(/charging_temp_act/, "charging").replace(/status_cooling/,"sta_cooling")))
-                .call(g => g.selectAll("text")
-                    .clone(true).lower()
-                    .attr("fill", "none")
-                    .attr("stroke-width", 5)
-                    .attr("stroke-linejoin", "round")
-                    // .attr("font-family", "DIN")
-                    // .attr("stroke", "white")
-                    )
+                // .call(g => g.append("text")
+                //             .attr("class",(d,i) => "textButton" + i)
+                //             .attr("x", width - margin.left/2 -31)
+                //             // .attr("y", - 40)
+                //             .attr("y", - 35)
+                //             .attr("text-anchor", "middle")
+                //             .attr("fill", util.tabularTipsTextAttr.fontColor)
+                //             .attr('font-family', util.buttonTextAttr.baseTextAttr.fontFamily)
+                //             .attr('font-weight', util.buttonTextAttr.baseTextAttr.fontWeight)
+                //             .attr('font-style', util.buttonTextAttr.baseTextAttr.fontStyle)
+                //             .attr('font-size', util.buttonTextAttr.baseTextAttr.fontSize)
+                //     // .attr("font-family", util.tabularTipsTextAttr.fontFamily)
+                //     // .attr("font-size", util.tabularTipsTextAttr.fontSize)
+                //     // .attr("font-weight", util.tabularTipsTextAttr.fontWeight)
+                //     // .attr("font-style", util.tabularTipsTextAttr.fontStyle)
+                //     .text(d => d.replace(/tgtwidth/, "tgt_width").replace(/tgtplatethickness2/, "tgt_thickness")
+                //     .replace(/tgtplatelength2/, "tgt_length").replace(/slab_thickness/, "slab_thickness").replace(/charging_temp_act/, "charging").replace(/status_cooling/,"sta_cooling")))
+                // .call(g => g.selectAll("text")
+                //     .clone(true).lower()
+                //     .attr("fill", "none")
+                //     .attr("stroke-width", 5)
+                //     .attr("stroke-linejoin", "round")
+                //     // .attr("font-family", "DIN")
+                //     // .attr("stroke", "white")
+                //     )
                 .call(g =>g.selectAll(".domain").remove())
                 .call(brush)
                 .attr("class",(d,i) => "brushX" + i)
                 .call(brush.move, (d,i) => selections.get(d).map(x.get(d)))
-                // .call(g => g.append("g")
-                //             .attr("class",(d,i) => "previousbrusHandle"+i)
-                //             .selectAll(".previousbrusHandle"+i)
-                //              .data([{type: "w"}, {type: "e"}])
-                //             .join(enter => enter.append("path")
-                //                                 .attr("class", "handle--custom1")
-                //                                 .attr("fill", "white")
-                //                                 .attr("fill-opacity", 1)
-                //                                 .attr("stroke", "#90a4ae")
-                //                                 .attr("stroke-width", 2)
-                //                                 .attr("d")
-                //             )
-                //             // .call(g => g.appen)
-                // //             )
-                // .data([{type: "w"}, {type: "e"}])
-                //                     .join(enter => enter.append("path")
-                //                                     .attr("class", "handle--custom1")
-                //                                     .attr("fill", "white")
-                //                                     .attr("fill-opacity", 1)
-                //                                     .attr("stroke", "#90a4ae")
-                //                                     .attr("stroke-width", 2)
-                //                                     // .attr("cursor", "ew-resize")
-                //                                     .attr("d", arc))
-                // .each((key,i) => {
-                //     svg.select("#parallel"+i).data([{type: "w"}, {type: "e"}])
+
+
+            svg.append("g")
+                .selectAll("g")
+                .data(keys)
+                .join("g")
+                .attr("transform", d => `translate(0,${y(d)+6})`)
+                .call(g => g.append("rect")
+                                .attr("class",(d,i) => "rectButton" + i)
+                                .attr("x",width - margin.left/2 -60)
+                                .attr("y",-45)
+                                .attr("width",62)
+                                .attr("height",15)
+                                .attr("stroke",util.labelColor[1])
+                                .attr("rx",5)
+                                .attr("ry",5)
+                                .attr("fill","white"))
+                               
+                .call(g => g.append("text")
+                            .attr("class",(d,i) => "textButton" + i)
+                            .attr("x", width - margin.left/2 -31)
+                            .attr("y", - 35)
+                            .attr("text-anchor", "middle")
+                            .attr("fill", "#94a7b7")
+                            .attr('font-family', util.buttonTextAttr.baseTextAttr.fontFamily)
+                            .attr('font-weight', util.buttonTextAttr.baseTextAttr.fontWeight)
+                            .attr('font-style', util.buttonTextAttr.baseTextAttr.fontStyle)
+                            .attr('font-size', util.buttonTextAttr.baseTextAttr.fontSize)
+                            .attr("cursor","pointer")
+                            // .attr("font-family", util.tabularTipsTextAttr.fontFamily)
+                            // .attr("font-size", util.tabularTipsTextAttr.fontSize)
+                            // .attr("font-weight", util.tabularTipsTextAttr.fontWeight)
+                            // .attr("font-style", util.tabularTipsTextAttr.fontStyle)
+                            .text(d => d.replace(/tgtwidth/, "tgt_width").replace(/tgtplatethickness2/, "tgt_thickness")
+                            .replace(/tgtplatelength2/, "tgt_length").replace(/slab_thickness/, "slab_thickness").replace(/charging_temp_act/, "charging").replace(/status_cooling/,"sta_cooling")))
+                             .on('click', function(e,d){
+                                    if(d == "tgtplatethickness2"){
+                                        objStatus["tgtplatethickness2"] = !objStatus["tgtplatethickness2"]
+                                    }else if(d == "tgtplatelength2"){
+                                        objStatus["tgtplatelength2"] = !objStatus["tgtplatelength2"]
+                                    }else if(d == "tgtwidth"){
+                                        objStatus["tgtwidth"] = !objStatus["tgtwidth"]
+                                    }else{
+                                        objStatus["slab_thickness"] = !objStatus["slab_thickness"]
+                                    }
+                                    svg.select(".rectButton" + keys.indexOf(d)).attr("fill", objStatus[d] ?  "#94a7b7" :  "#ffffff" )
+                                    // svg.select("textButton" + keys.indexOf(d)).attr('color', objStatus[d] ? "red": util.buttonTextAttr.unactivated_color)
+                                    svg.select(".textButton" + keys.indexOf(d)).attr('fill', objStatus[d] ? "#ffffff": "#94a7b7")
+                                    svg.select(".card"+ keys.indexOf(d)).attr("stroke-opacity",objStatus[d] ? 0.3 : 0)
+                                })
+               
+
+            // for(let i=0; i < 4;i++){
+            //     d3.select("textButton" + i).raise()
+            // }
+            // console.log("ffd",svg.select("textButton0" ));
+                // // .call(g => g.append("g")
+                //             .attr("class",(key,item) => "previousHandle" + item)
+                //             .selectAll(".handle--custom1")
+                //             .data([{type: "w"}, {type: "e"}])
                 //                     .join(enter => enter.append("path")
                 //                                     .attr("class", "handle--custom1")
                 //                                     .attr("fill", "white")
@@ -523,13 +540,35 @@ export default {
                 //                                     // .attr("cursor", "ew-resize")
                 //                                     .attr("d", arc))
                 //                                     .attr("transform", (d, i) => {
-                //                                     return `translate(${vm.lastHandle.get(key)[i]},${0})`})
-                                    
-                // })
-                // .call(brushHandle1,(d,i) => vm.lastSelections.get(d))
+                //                                         console.log(d);
+                //                                     // return `translate(${vm.lastHandle.get(key)[i]},${0})`
+                //                                     }
+                //     ))
             this.xScale = x
              if(vm.diagnosisState){
-
+                    // for(let item in keys){
+                    //     // console.log(item);
+                    //     svg.select(".brushX" + item)
+                    //         // .append("g")
+                    //         // .attr("class","previousHandle" + item)
+                    //         // .call(g => 
+                    //                         .selectAll(".handle--custom1")
+                    //                          .data([{type: "w1"}, {type: "e1"}])
+                    //                          .join(enter => enter.append("path")
+                    //                                 .attr("class", "handle--custom1")
+                    //                                 .attr("fill", "white")
+                    //                                 .attr("fill-opacity", 1)
+                    //                                 .attr("stroke", "#90a4ae")
+                    //                                 .attr("stroke-width", 2)
+                    //                                 // .attr("cursor", "ew-resize")
+                    //                                 .attr("d", arc))
+                    //                                 .attr("transform", (d, i) => {
+                    //                                     console.log(d);
+                    //                                     console.log(i);
+                    //                                     return `translate(${vm.lastHandle.get(keys[item])[i]},${0})`
+                    //                                })
+                    //         // )
+                    // }
                     svg.select(".brushParalle")
                         .append("g")
                         .attr("class","previousBrushed")
@@ -566,16 +605,9 @@ export default {
             }else{
                 brushSlider()
             }
-                // brushSlider()
-            if(vm.diagnosisState){
-                for(let i = 0;i<4;i++){
-                    // svg.select(".brushX"+i).
-                }
-
-            }
 
 
-        
+            // svg.select(".textButton0").attr("fill","red")
             
             // 折现和散点图之间的联动以及toptip
             function pathover(event,d){
@@ -651,12 +683,24 @@ export default {
             }
             function brushed({selection}, key) {
                 var tempValue = selections.get(key).map(d => x.get(key)(d));
-                if(vm.objStatus[key] && !(tempValue.every((d, i) => d === selection[i]))){
+
+            
+                d3.select(this).call(brushHandle, selection);
+
+
+                if(objStatus[key] && !(tempValue.every((d, i) => d === selection[i]))){
                     d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)))
                     return
-                }else{
-                    d3.select(this).call(brushHandle, selection);
                 }
+                // else{
+                // }
+                  
+                if(!vm.diagnosisState && !(tempValue.every((d, i) => d === selection[i]))){
+                    d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)))
+                    return
+                }
+
+
                 if (selection === null) selections.delete(key);
                 else selections.set(key, selection.map(x.get(key).invert));
                 // if (selection === null) selections.delete(key);
@@ -680,6 +724,10 @@ export default {
                 //                     }
                 // });
                 if(vm.diagnosisState){
+                    // d3.select(".handle--custom1").raise()
+                    // d3.select(".handle--custom").raise()
+                    // d3.select(".handle--custom").raise()
+                    
                     let currentSelections = Array.from(selections),
                     previousSelections = Array.from(vm.lastSelections),
                     secondStateSelections = []
@@ -690,10 +738,12 @@ export default {
                         const secondStateactive = secondStateSelections.every(([key,[min1,max1],[min2,max2]]) => (d[key] >= min1 &&d[key]<=max1) || (d[key] >= min2 &&d[key]<=max2))
                         let state = 0
                         if(active){
-                             d3.select(this).attr("stroke","red")
+                             d3.select(this).attr("stroke",vm.deGroupStyle)
                         }else if(secondStateactive){
                             state = 1
-                             d3.select(this).attr("stroke",vm.deGroupStyle)
+                             d3.select(this).attr("stroke",vm.deGroupStyle).attr("stroke-opacity",0.1)
+                            //  d3.select(this).attr("stroke","none")
+
                         }else{
                              d3.select(this).attr("stroke","none")
                         }
@@ -715,7 +765,6 @@ export default {
 
                 }else{
                     path.each(function(d) {
-                        // console.log(selections);
                         const active = Array.from(selections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
                         // const active = Array.from(vm.lastSelections).every(([key, [min, max]]) => d[key] >= min && d[key] <= max);
                         // d3.select(this).attr("stroke", active ? vm.deGroupStyle : "none");
@@ -764,6 +813,10 @@ export default {
                 d3.select(".rectBar").lower();
                 brushSlider()
             }
+            console.log(svg.select("card0"));
+            // svg.select("card0").attr("fill-opacity",0.3)
+            // svg.select("card0").attr("fill-opacity",0.3)
+
         },
         mouse(value){
           this.mouseList = value

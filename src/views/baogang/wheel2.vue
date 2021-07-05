@@ -21,7 +21,7 @@ const processIcon = [heaticon , rollicon , coolicon],
     iconwhite = [heatwhite , rollwhite , coolwhite];
 export default {
     props: {
-        options: {
+        contract: {
             default: false,
             type: Boolean,
             require: true
@@ -143,7 +143,7 @@ export default {
                     this._labelcolor = ['#fcd8a9', '#cce9c7', '#c1c9ee'];
                     this._padAngle=[];
                     this._linespace=6;
-                    this._merge = false;
+                    this._merge = true;
                     this._horizonView = false;
                     this._indexdata = [];
                     this._allIndex = undefined;    //index name
@@ -151,6 +151,7 @@ export default {
                     this._mouseDis  = undefined;
                     this._barVis = true;
                     this._labelLimit = 0.5;
+                    this._stopPropagation = (e, d) => e.stopPropagation();
 
                     this._processClass = e => d => e + d.month,
                     this._indexId = e => d => e + d.indexName,
@@ -184,7 +185,13 @@ export default {
 
                     this._mouseEvents = null;
 
-                    this._tabColor = '#678fba';
+                    this._buttonColor = '#94a7b7'; //  #678fba
+                    this._buttonStyle = {
+                        width: 40,
+                        height: 18 ,
+                        textX: 20,
+                        textY:  12
+                    }
                 }
                 getIndex(_){
                     for (let item in this._process){
@@ -216,7 +223,7 @@ export default {
 
                 render() {
                     this._init();
-                    if(!vm.options){
+                    if(!vm.contract){
                         this._renderComponents()
                     }else{
                         this._renderOption()
@@ -239,7 +246,7 @@ export default {
                 _renderWheel(){
                     this._initScaleData();
                     this._renderMainWheel();
-                    this._g.attr('transform', `translate(${vm.options ? this._width/3 : this._width/2},0)`)
+                    this._g.attr('transform', `translate(${vm.contract ? this._width/3 : this._width/2},0)`)
                 }
 
                 _renderMerge(){
@@ -269,7 +276,7 @@ export default {
                 }
 
                 _initHeatOrRiver(){
-                    const tabColor = this._tabColor;
+                    const tabColor = this._buttonColor;
                     const semiButton = this._container.append('g').attr('class', 'semiButton')
                         .attr('transform', `translate(${[40, - this._height/2 + 2.5]})`);
                     semiButton.call(g => g.append('rect')
@@ -278,27 +285,25 @@ export default {
                             .attr('ry', 5)
                             .attr('stroke', tabColor)
                             .attr('stroke-width', 0.5)
-                            .attr('height', 20)
-                            .attr('width', 45))
+                            .attr('height', this._buttonStyle.height)
+                            .attr('width', this._buttonStyle.width))
                         .call(g => g.append('text')
                             .attr('fill', this._heatOrRiver ? 'white' : tabColor)
-                            .attr('x', 22.5)
-                            .attr('y', 12.5)
+                            .attr('x', this._buttonStyle.textX)
+                            .attr('y', this._buttonStyle.textY)
                             .text('heat'))
                         .on('click', (e, d) => {
-                            if(!vm.options){
+                            if(!vm.contract){
                                 this._heatOrRiver = !this._heatOrRiver
                                 vm.riverStatus(this._heatOrRiver)
                             }
-                            // this._heatOrRiver ? this._initHeatG() : this._initRiverG()
-                            // this._renderWheelFilter()
                             semiButton.select('rect').attr('fill', this._heatOrRiver ? tabColor : 'white')
                             semiButton.select('text').attr('fill', this._heatOrRiver ? 'white' : tabColor)
                         })
                 }
 
                 _initFilterButton(){
-                    const tabColor = this._tabColor;
+                    const tabColor = this._buttonColor;
                     const filterButton = this._container.append('g').attr('class', 'filterButton')
                         .attr('transform', `translate(${[100, - this._height/2 + 2.5]})`);
                     filterButton.call(g => g.append('rect')
@@ -307,15 +312,15 @@ export default {
                             .attr('ry', 5)
                             .attr('stroke', tabColor)
                             .attr('stroke-width', 0.5)
-                            .attr('height', 20)
-                            .attr('width', 45))
+                            .attr('height', this._buttonStyle.height)
+                            .attr('width', this._buttonStyle.width))
                         .call(g => g.append('text')
                             .attr('fill', this._fliterStatus ? 'white' : tabColor)
-                            .attr('x', 22.5)
-                            .attr('y', 12.5)
+                            .attr('x', this._buttonStyle.textX)
+                            .attr('y', this._buttonStyle.textY)
                             .text('filter'))
                         .on('click', (e, d) => {
-                            if(!vm.options){
+                            if(!vm.contract){
                                 this._fliterStatus = !this._fliterStatus
                                 vm.changeStatus(this._fliterStatus)
                             }
@@ -328,7 +333,7 @@ export default {
                 _init() {
                     const r = this._radius;
                     
-                    r.max = Math.min(this._width, this._height) / (vm.options ? 2 :2.5);
+                    r.max = Math.min(this._width, this._height) / (vm.contract ? 2 :2.5);
                     r.inner = r.max * 0.40;
                     r.bubble = r.max * 0.2;
                     r.outer = r.max - r.bubble *1.1 - r.label;
@@ -518,7 +523,6 @@ export default {
                         maxHeight = 25,   //rect max height
                         rectPadding = {left: 5, right: 5, top: 5, bottom: 2},
                         indexSpace = 5,
-                        iconWidth = 20,
                         rectNum =  null,
                         opacityCache = null,
                         selectInfo = this._indexdata,
@@ -540,7 +544,7 @@ export default {
 
                         var lineG = mainG.append('g').attr('class', 'lineG'),
                             arcG = mainG.append('g').attr('class', 'arcG');
-                        initLineG();
+                        initLineG.call(this);
                         initArcG();
 
                         var sliderG = mainG.append('g')
@@ -585,14 +589,15 @@ export default {
 
                         var triangleG = mainG.append('g')
                             .attr('class', 'triangleG')
-                            .attr('transform', `translate(${[rectX - iconWidth - 2.5, 0]})`),
+                            .attr('transform', `translate(${[rectX - maxHeight, 0]})`),
                             trianIcon = d => barVisObject[d.indexName] ? 'M-5,-2.5l10,0l-5,5l-5,-5zM-5,-2.5z' : 'M-2.5,0l0,-5l5,5l-5,5zM-2.5,0z';
                         initIcon();
 
-                        var barG = mainG.append('g').attr('class', 'barG').attr('transform', `translate(${[rectX- maxHeight - iconWidth, 0]})`);
+                        var barG = mainG.append('g').attr('class', 'barG').attr('transform', `translate(${[rectX- maxHeight * 2, 0]})`);
                         initBarG();
 
-                        var mouseInfo = this._mouseDis !== undefined ? mouseText(this._mouseDis) : undefined;
+                        var mouseInfo = this._mouseDis !== undefined ? mouseText(this._mouseDis) : undefined,
+                            textG = mainG.append('g').attr('class', 'textG').attr('transform', `translate(${[rectX, 0]})`);
                         initMouseG();
 
                         var tempsort = d3.map(d3.sort(selectInfo, d => -d.humidity), d => d.indexName),
@@ -603,25 +608,25 @@ export default {
                         indexScale = this._indexScale !== undefined ? scaleArray[this._indexScale] : scaleArray[2];
                         let sortG = mainG.append('g')
                                 .attr('class', 'sortG'),
-                            sortColor = this._tabColor,
+                            sortColor = this._buttonColor,
                             sortChange = (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1: value2,
                             sortText = ['Single' ,'Limit', 'Total'];
-                        initSort();
+                        initSort.call(this);
 
                         const switchG = mainG.append('g').attr('class', 'switchG'),
                             textColor = ['Horizon', 'River'],
-                            tabColor = this._tabColor,
+                            tabColor = this._buttonColor,
                             transfrom = (v1, v2) => d => this._horizonView == Boolean(d) ? v1 : v2;
-                        initSwitch();
+                        initSwitch.call(this);
 
                         const visG = mainG.append('g').attr('class', 'visG');
-                        initVisG();
-
-                        // const heatButton = mainG.append('g').attr('class', 'heatButton');
-                        // initHeatButton();
+                        initVisG.call(this);
 
                         initMapArea()
                         sliderG.selectAll('.heatMapG').raise();
+
+                        const mapBorderG = mainG.append('g').attr('class', 'mapBorderG').attr('transform', `translate(${[rectX, 0]})`);
+                        initMapBorder()
 
                         function renderyAxis(){
                             let invert = d3.scaleOrdinal().domain(indexScale.range()).range(indexScale.domain())
@@ -637,7 +642,7 @@ export default {
                             lineToRect = (d, i) =>{
                                 let centerY = centerScaleY(d),
                                     endY = yScale(+i);
-                                return [[rectX - 75, centerY],[rectX - 60, centerY], [rectX - maxHeight - iconWidth, endY], [rectX , endY], [rectX + RectWidth, endY]]
+                                return [[rectX - 75, centerY],[rectX - 60, centerY], [rectX - maxHeight * 2, endY]]
                             };
                             lineToCircle = d =>{
                                 let [startX, startY] = startXY(d),
@@ -688,7 +693,6 @@ export default {
                                 .call(g => g.append('text')
                                         .attr('class', 'sortIndex')
                                         .text((d, i) => +indexScale(i) + 1)
-                                        // .text((d, i) => i + 1)
                                         .attr('transform', d => `translate(${[rectX - 145, centerScaleY(d) + 2.5]})`))
                                 .call(g => g.append('text')
                                     .attr('font-size', '8px')
@@ -703,17 +707,22 @@ export default {
                                     .attr('d', (d, i) => line(lineToRect(d, i)))
                                     .attr('stroke-width', 1)
                                     .attr('fill', 'none')
-                                    .on('mouseover', (e, d) => {
-                                        e.stopPropagation()
-                                    })
-                                    .on('mouseout', (e, d) => {
-                                        e.stopPropagation()
-                                    }))
+                                    .on('mouseover', this._stopPropagation)
+                                    .on('mouseout', this._stopPropagation))
+                                .call(g => g.append('rect')
+                                    .attr('transform', (d, i) => `translate(${[rectX - 2 * maxHeight, yScale(i) - maxHeight]})`)
+                                    .attr('height', maxHeight)
+                                    .attr('width', RectWidth + 2 * maxHeight)
+                                    .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
+                                    .attr('stroke-width', 0.75)
+                                    .attr('fill', 'none')
+                                    .on('mouseover', this._stopPropagation)
+                                    .on('mouseout', this._stopPropagation))
                                 .on('mouseover', (e, d) => {
-                                    wm._overed(e, d.indexName, d.month)
+                                    this._overed(e, d.indexName, d.month)
                                 })
                                 .on('mouseout', (e, d) => {
-                                    wm._outed(e, d.indexName, d.month)
+                                    this._outed(e, d.indexName, d.month)
                                 })
                         }
                         function initArcG(){
@@ -776,30 +785,32 @@ export default {
                                 .attr('transform', d => `translate(${[rectPosition[d], 0]})`)
                             updateArea();
                             renderAxisG(timeScale);
-                            minRect !== maxHeight ? sliderG.selectAll('.rectG').remove() : renderRectG();
+                            minRect !== maxHeight ? mainG.selectAll('.rectG').remove() : renderRectG();
                         }
                         function initSort(){//init sortG
-                            sortG.selectAll('g').data([0, 1, 2]).join('g')
-                            .attr('transform', d => `translate(${[rectX + RectWidth - 160 +  60 * d, -wm._height/2 + 2.5]})`)
-                            .call(g => g.append('rect')
-                                .attr('fill',  sortChange(sortColor, '#fff'))
-                                .attr('rx', 5)
-                                .attr('ry', 5)
-                                .attr('stroke', sortColor)
-                                .attr('stroke-width', 0.5)
-                                .attr('height', 20)
-                                .attr('width', 45))
-                            .call(g => g.append('text')
-                                .attr('fill', sortChange('#fff', sortColor))
-                                .attr('x', 22.5)
-                                .attr('y', 12.5)
-                                .text(d => sortText[d]))
-                            .on('click', (e, d) =>{
-                                indexScale = scaleArray[d];
-                                wm._indexScale = d;
-                                renderyAxis()
-                                renderSort()
-                            })
+                            sortG.selectAll('g')
+                                .data([0, 1, 2])
+                                .join('g')
+                                .attr('transform', d => `translate(${[rectX + RectWidth - 160 +  60 * d, -this._height/2 + 2.5]})`)
+                                .call(g => g.append('rect')
+                                    .attr('fill',  sortChange(sortColor, '#fff'))
+                                    .attr('rx', 5)
+                                    .attr('ry', 5)
+                                    .attr('stroke', sortColor)
+                                    .attr('stroke-width', 0.5)
+                                    .attr('height', this._buttonStyle.height)
+                                    .attr('width', this._buttonStyle.width))
+                                .call(g => g.append('text')
+                                    .attr('fill', sortChange('#fff', sortColor))
+                                    .attr('x', this._buttonStyle.textX)
+                                    .attr('y', this._buttonStyle.textY)
+                                    .text(d => sortText[d]))
+                                .on('click', (e, d) =>{
+                                    indexScale = scaleArray[d];
+                                    this._indexScale = d;
+                                    renderyAxis()
+                                    renderSort()
+                                })
                         }
                         function mouseText(dis){// calculate abscissa
                             let sumsearch = d3.leastIndex(rectPosition, d => dis < d),
@@ -823,6 +834,9 @@ export default {
                                 lineG.selectAll('.sortIndex')
                                     .transition(t)
                                     .text((d, i) => indexScale(i) + 1)
+                                lineG.selectAll('rect')
+                                    .transition(t)
+                                    .attr('transform', (d, i) => `translate(${[rectX - 2 * maxHeight, yScale(i) - maxHeight]})`)
                                 lineG.selectAll('.lineToRect')
                                     .transition(t)
                                     .attr('d', (d, i) => line(lineToRect(d, i)))
@@ -863,37 +877,43 @@ export default {
                                         .attr('d', trianIcon)
                                 if(wm._mouseDis !== undefined){
                                     var mouseInfo = mouseText(wm._mouseDis);
-                                    sliderG.selectAll('.textG')
+                                    textG.selectAll('text')
                                         .transition(t)
                                         .attr('opacity', opacityCache)
                                         .attr('transform', (d, i) =>`translate(${[wm._mouseDis - 10, yScale(i) - maxHeight/2]})`)
                                         .text((d, i) => (+mouseInfo[i]).toFixed(2))
-                                    sliderG.select('.mouseG').raise()
-                                    sliderG.selectAll('.textG').raise()
+                                    textG.select('.mouseG').raise()
+                                    textG.raise()
                                 }
                                 sliderG.selectAll('.heatMapElement')
                                     .transition(t)
                                     .attr('opacity', (d, i) => barVisObject[d[0].indexName] ? opacityCache(d, i) : 0)
                                     .attr('transform', (d, i) =>`translate(${[0, yScale(i) + maxHeight]})`)
+                                mapBorderG.selectAll('g')
+                                    .transition(t)
+                                    .attr('opacity', (d, i) => barVisObject[d.indexName] ? opacityCache(d, i) : 0)
+                                    .attr('transform', (d, i) =>`translate(${[0, yScale(i)]})`)
                                 arcG.selectAll('g')
                                     .transition(t)
                                     .attr('opacity', opacityCache)
+                                barG.raise()
+                                lineG.raise()
                         }
                         function initSwitch(){ //init switchG
                             switchG.selectAll('g').data([1, 0]).join('g')
-                                .attr('transform', d => `translate(${[rectX +  60 * (1 - d), - wm._height/2 + 2.5]})`)//280  - 100
+                                .attr('transform', d => `translate(${[rectX +  60 * (1 - d), - this._height/2 + 2.5]})`)//280  - 100
                                 .call(g => g.append('rect')
                                     .attr('fill', transfrom(tabColor, '#fff'))
                                     .attr('rx', 5)
                                     .attr('ry', 5)
                                     .attr('stroke', tabColor)
                                     .attr('stroke-width', 0.5)
-                                    .attr('height', 20)
-                                    .attr('width', 45))
+                                    .attr('height', this._buttonStyle.height)
+                                    .attr('width', this._buttonStyle.width))
                                 .call(g => g.append('text')
                                     .attr('fill', transfrom('#fff', tabColor))
-                                    .attr('x', 22.5)
-                                    .attr('y', 12.5)
+                                    .attr('x', this._buttonStyle.textX)
+                                    .attr('y', this._buttonStyle.textY)
                                     .text(d => textColor[d]))
                                 .on('click', (e, d) =>{
                                     if(wm._horizonView !== Boolean(d)){
@@ -909,16 +929,10 @@ export default {
                                             .attr('fill', transfrom('#fff', tabColor));
                                         if(wm._horizonView){
                                             sliderG.selectAll('.horizenG')
-                                            // .transition(d3.transition()
-                                            //     .duration(200)
-                                            //     .ease(d3.easeLinear))
                                             .remove();
                                             initMergeArea()
                                         }else{
                                             sliderG.selectAll('.batchG')
-                                            // .transition(d3.transition()
-                                            //     .duration(150)
-                                            //     .ease(d3.easeLinear))
                                             .remove();
                                             initHorizenArea()
                                         }
@@ -927,19 +941,19 @@ export default {
                         }
                         function initVisG(){
                             visG
-                                .attr('transform', `translate(${[rectX +  RectWidth/3.1, - wm._height/2 + 2.5]})`)
+                                .attr('transform', `translate(${[rectX +  RectWidth/3.1, - this._height/2 + 2.5]})`)
                             visG.append('rect')
-                                    .attr('fill', wm._barVis ? tabColor : 'white')
+                                    .attr('fill', this._barVis ? tabColor : 'white')
                                     .attr('rx', 5)
                                     .attr('ry', 5)
                                     .attr('stroke', tabColor)
                                     .attr('stroke-width', 0.5)
-                                    .attr('height', 20)
-                                    .attr('width', 45)
+                                    .attr('height', this._buttonStyle.height)
+                                    .attr('width', this._buttonStyle.width)
                             visG.append('text')
-                                    .attr('fill', wm._barVis ? 'white' : tabColor)
-                                    .attr('x', 22.5)
-                                    .attr('y', 12.5)
+                                    .attr('fill', this._barVis ? 'white' : tabColor)
+                                    .attr('x', this._buttonStyle.textX)
+                                    .attr('y', this._buttonStyle.textY)
                                     .text('vis')
                             visG.on('click', function(e, d){
                                     wm._barVis = !wm._barVis;
@@ -950,29 +964,6 @@ export default {
                                     renderSort();
                                 })
                         }
-                        // function initHeatButton(){
-                        //     heatButton.attr('transform', `translate(${[rectX +  RectWidth/2.2, - wm._height/2 + 2.5]})`)
-                        //     heatButton.append('rect')
-                        //             .attr('fill', wm._heatOrRiver ? tabColor : 'white')
-                        //             .attr('rx', 5)
-                        //             .attr('ry', 5)
-                        //             .attr('stroke', tabColor)
-                        //             .attr('stroke-width', 0.5)
-                        //             .attr('height', 20)
-                        //             .attr('width', 45)
-                        //     heatButton.append('text')
-                        //             .attr('fill', wm._heatOrRiver ? 'white' : tabColor)
-                        //             .attr('x', 22.5)
-                        //             .attr('y', 12.5)
-                        //             .text('heat')
-                        //     heatButton.on('click', function(e, d){
-                        //             wm._heatOrRiver = !wm._heatOrRiver;
-                        //             d3.select(this).select('rect').attr('fill', wm._heatOrRiver ? tabColor : 'white')
-                        //             d3.select(this).select('text').attr('fill', wm._heatOrRiver ? 'white' : tabColor)
-                        //             wm._heatOrRiver ? wm._initHeatG() : wm._initRiverG()
-                        //             wm._renderWheelFilter()
-                        //         })
-                        // }
                         function initAxisG(batchTimeScale){ //init timeTick
                             sliderG.selectAll('.axisG').data(rectPosition)
                                 .join('g')
@@ -1017,15 +1008,14 @@ export default {
                                     .attr('d', (d, i) => infoArea(d, i, false)))
                         }
                         function initMouseG(){
-                            sliderG.append('line')
+                            textG.append('line')
                                 .attr('class', 'mouseG')
                                 .attr('y1', yScale(0) - maxHeight)
                                 .attr('y2', lastY)
                                 .attr('transform', (d, i) =>`translate(${[mouseInfo ? wm._mouseDis : 0, 0]})`)
                                 .attr('stroke', mouseInfo !==undefined ? '#bbbcbd' : 'none')
                                 .attr('stroke-width', 0.25)
-                            sliderG.selectAll('textG').data(selectInfo).join('text')
-                                .attr('class', 'textG')
+                            textG.selectAll('text').data(selectInfo).join('text')
                                 .attr('opacity', opacityCache)
                                 .attr('transform', (d, i) =>`translate(${[mouseInfo ?  wm._mouseDis - 10 : 0 , yScale(i) - maxHeight/2]})`)
                                     .text((d, i) => mouseInfo !==undefined ? (+mouseInfo[i]).toFixed(2) : '')
@@ -1033,18 +1023,20 @@ export default {
                             sliderG.on('mousemove', (e, d) => {
                                 let mouseDis = e.offsetX - rectX;//mouse distance
                                 if(mouseDis <= 0)return
-                                sliderG.select('.mouseG')
+                                textG.select('.mouseG')
                                     .attr('transform', (d, i) =>`translate(${[mouseDis, 0]})`)
                                     .attr('stroke', '#bbbcbd')
                                 var mouseInfo = mouseText(mouseDis);
-                                sliderG.selectAll('.textG')
+                                textG.selectAll('text')
                                     .attr('transform', (d, i) =>`translate(${[mouseDis - 10, yScale(i) -maxHeight/2]})`)
                                     .text((d, i) => (+mouseInfo[i]).toFixed(2))
                                 wm._mouseDis = mouseDis;
                             })
                         }
                         function renderRectG(){
-                            sliderG.selectAll('.rectG').data(Object.keys(rectPosition).filter((d, i) => i !== Math.ceil(maxLength/2) - 1))
+                            mainG.append('g')
+                                .attr('transform', d =>`translate(${[rectX, 0]})`)
+                                .selectAll('.rectG').data(Object.keys(rectPosition).filter((d, i) => i !== Math.ceil(maxLength/2) - 1))
                                 .join('g')
                                 .attr('transform', d =>`translate(${[d == 0 ? 0 : rectPosition[+d -1 ], 0]})`)
                                 .attr('class', 'rectG')
@@ -1337,6 +1329,20 @@ export default {
                                                 .attr('height', d => t2Batch(d.T2))
                                                 .attr('width', (d, i) => xLabelData[d.i][i])
                                                 .attr('x', (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2)))
+                        }
+                        function initMapBorder(){
+                            mapBorderG.selectAll('g')
+                                .data(selectInfo)
+                                .join('g')
+                                .attr('opacity', (d, i) => barVisObject[d.indexName] ? opacityCache(d, i) : 0)
+                                .attr('class', 'heatMapBorder')
+                                .attr('transform', (d, i) =>`translate(${[0, yScale(i)]})`)
+                                    .call(g => g.append('rect')
+                                        .attr('height', maxHeight)
+                                        .attr('width', RectWidth)
+                                        .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
+                                        .attr('stroke-width', 0.5)
+                                        .attr('fill', 'none'))
                         }
                         function mouseOver(args){
                             opacityCache = (d, i) => {

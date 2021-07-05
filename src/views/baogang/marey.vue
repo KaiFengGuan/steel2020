@@ -202,7 +202,7 @@
 												</el-row>
 											</div>
 										<div class="my-card-body" @click="changeUpid(item)">
-											<small-wheel :ref="item" style="height:223px" :options="true"></small-wheel>
+											<small-wheel :ref="item" style="height:223px" :contract="true"></small-wheel>
 										</div>
 									</el-card>
 								</el-row>
@@ -219,7 +219,7 @@
 										</el-row>
 									</div> -->
 									<div class="my-card-body" >
-										<wheeler ref="wheelering" style="height:490px" :options="false"></wheeler>
+										<wheeler ref="wheelering" style="height:490px" :contract="false"></wheeler>
 									</div>
 								</el-card>
 							</el-col>

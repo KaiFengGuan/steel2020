@@ -391,7 +391,7 @@ export default {
                         pad = 0,
                         startAngle = Math.PI/6,
                         angle = (Math.PI - 2 * startAngle - 3 * pad )/mergeLength;
-                    this._barAngle = (Math.PI - 2 * startAngle - 3 * pad) / mergeLength + Math.PI;
+                    this._barAngle = (Math.PI - 2 * startAngle - 3 * pad) / mergeLength;
                     const diverangle = (mergeLength - this._indexdata.length) * angle / 2
                     const a = angle * this._padprocess[0].length + diverangle + Math.PI/6, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
                     this._padAngle=[
@@ -415,7 +415,7 @@ export default {
                     });
                     const pad = 0;
                     const angle = (Math.PI * 2 - 3 * pad )/this._data.length
-                    this._barAngle = (Math.PI * 2- 3 * pad) / this._data.length + Math.PI;
+                    this._barAngle = (Math.PI * 2- 3 * pad) / this._data.length;
                     const a = angle * this._padprocess[0].length, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
                     this._padAngle=[
                         [-a/2, a/2 ],
@@ -499,7 +499,7 @@ export default {
                         wm = this,
                         lc =this._labelcolor,
                         xpad = this._xpad,
-                        v = (this._barAngle-Math.PI)/2,
+                        v = this._barAngle/2,
                         mainG = this._g.append('g').attr('class', 'mainG'),
                         line = d3.line()
                                 .x(e => e[0])
@@ -1368,17 +1368,25 @@ export default {
                     let indexes;
                     if(this._fliterStatus) {
                         indexes = d3.map(this._chartData.filter(this._outrate(true, false)), d => d.indexName);
+                        const angle = new Array(this._processindex.length).fill([]);
+                        d3.groups(this._chartData.filter(this._outrate(true, false)), d => d.month)
+                            .map(d => {
+                                angle[d[0]] = d[1].map(d => (this._xpad[d.month](d.date) + this._barAngle/2) * 180 / Math.PI - 180 )
+                            });
+                        this._renderBorderG(angle)
                     }else{
                         indexes = d3.map(this._chartData, d => d.indexName);
+                        this._initBorderG()
                     }
+                    let searchIndex = d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden'
                     if(this._heatOrRiver){
-                        this._contentG.selectAll('.riverG').selectAll('g').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden')
+                        this._contentG.selectAll('.riverG').selectAll('g').attr('visibility', searchIndex)
                     }else{
-                        this._contentG.selectAll('.riverG').selectAll('circle').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden')
+                        this._contentG.selectAll('.riverG').selectAll('circle').attr('visibility', searchIndex)
                     }
-                    this._contentG.selectAll('.outerBarG').selectAll('g').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden');
-                    this._contentG.selectAll('.outerLineG').selectAll('g').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden');
-                    this._contentG.selectAll('.innerLineG').selectAll('g').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden');
+                    this._contentG.selectAll('.outerBarG').selectAll('g').attr('visibility', searchIndex);
+                    this._contentG.selectAll('.outerLineG').selectAll('g').attr('visibility', searchIndex);
+                    this._contentG.selectAll('.innerLineG').selectAll('g').attr('visibility', searchIndex);
                     // if(!this._merge){
                     //     this._contentG.selectAll('.outerElementG').selectAll('g')
                     // }
@@ -1408,6 +1416,7 @@ export default {
                 }
                 
                 _initBorderG(){
+                    this._contentG.selectAll('.borderG').remove()
                     const lcBorderFunc = d => d3.color(this._labelcolor[d]).darker(1)
                     this._contentG.selectAll('.borderG')
                             .data(this._padindex)
@@ -1436,13 +1445,57 @@ export default {
                             .attr('stroke-width', 0.5))     
                 }
 
+                _renderBorderG(angle){
+                    this._contentG.selectAll('.borderG').remove()
+                    const lcBorderFunc = d => d3.color(this._labelcolor[d]).darker(1),
+                        v = this._barAngle * 180 / Math.PI;
+                    const borderAngle = angle.map((d, i) => {
+                        d.sort((a, b) => a - b)
+                        let arr = [];
+                        if(d.length == 0)return arr
+                        arr = d.map(e => [e - v/2, e + v/2, i]);
+                        for(let index = 0; index < arr.length - 1; index++){
+                            if(arr[index + 1][0] - arr[index][1] < v/3){
+                                arr.splice(index, 2, [arr[index][0], arr[index + 1][1], i])
+                                index --
+                            }
+                        }
+                        return arr
+                    })
+                    this._contentG.selectAll('.borderG')
+                            .data(this._padindex.filter(d => angle[d].length !== 0))
+                            .join('g')
+                            .attr('class', 'borderG')
+                        .call(g => g.selectAll('g').data((d, i) => {console.log(borderAngle[d]); return borderAngle[d]})
+                            .join('g')
+                            .call(g => g.append('line')      //扇形左边界
+                                .attr('y1', this._radius.inner)
+                                .attr('y2', this._radius.outer)
+                                .attr('stroke', d => lcBorderFunc(d[2]))
+                                .attr('stroke-width', 0.5)
+                                .attr('transform', d => `rotate(${d[0]})`))
+                            .call(g => g.append('line')     //扇形右边界
+                                .attr('y1', this._radius.inner)
+                                .attr('y2', this._radius.outer)
+                                .attr('stroke', d => lcBorderFunc(d[2]))
+                                .attr('stroke-width', 0.5)
+                                .attr('transform', d => `rotate(${d[1]})`))
+                            .call(g => g.append('path')
+                                .attr('d', d => d3.arc()
+                                    .startAngle((d[1] + 180)* Math.PI / 180)
+                                    .endAngle((d[0] + 180) * Math.PI / 180)
+                                    .innerRadius(this._radius.outer)
+                                    .outerRadius(this._radius.outer + this._radius.bubble*1.1 + 0.25)(d))
+                                .attr('stroke', d => lcBorderFunc(d[2]))
+                                .attr('fill','none')
+                                .attr('stroke-width', 0.5)))
+                }
+
                 _initIconG(){
                     this._contentG.selectAll('iconG')
                         .data(this._padindex)
                         .join(enter => enter.append('image')
                             .attr('class', 'iconG')
-                            // .call(g => g.append('image')
-                                // .attr('class', 'icon')
                                 .attr('id', d => `icon${d}`)
                                 .attr('transform', d => `rotate(${(this._padAngle[d][0] + this._padAngle[d][1])/2 * 180 / Math.PI - 5.8})`)
                                 .attr('y', -this._radius.inner*0.97)
@@ -1466,7 +1519,7 @@ export default {
                     
                     const lcFunc = d => this._labelcolor[d],
                         lineColorFunc =  d => d3.color(this._labelcolor[d]).darker(1),
-                        v = (this._barAngle-Math.PI)/2,
+                        v = this._barAngle/2,
                         //河流图节点
                         circleColor = d => d3.color(this._labelcolor[d.month]).darker(0.2),
                         strokeColor = d => d3.color(this._labelcolor[d.month]).darker(1);
@@ -1605,7 +1658,7 @@ export default {
                 }
 
                 _initOuterLineG(){
-                    const v = (this._barAngle-Math.PI)/2,
+                    const v = this._barAngle/2,
                         lineStroke = d => (this._allIndex.indexOf(d.date) !== -1) ? d3.color(this._labelcolor[d.month]).darker(2) : d3.color(this._labelcolor[d.month]).darker(0.6),
                         lineStrokeWidth = this._outrate(this._leadlineStyle.highlight_strwidth, this._leadlineStyle.original_strwidth);
                     this._contentG
@@ -1626,7 +1679,7 @@ export default {
                 }
 
                 _initInnerLineG(){
-                    const v = (this._barAngle-Math.PI)/2,
+                    const v = this._barAngle/2,
                         lineStroke = d => (this._allIndex.indexOf(d.date) !== -1) ? d3.color(this._labelcolor[d.month]).darker(2) : d3.color(this._labelcolor[d.month]).darker(0.6),
                         lineStrokeWidth = this._outrate(this._leadlineStyle.highlight_strwidth, this._leadlineStyle.original_strwidth);
                     this._contentG
@@ -1753,7 +1806,7 @@ export default {
                         piearc = d3.arc()
                             .innerRadius(0)
                             .outerRadius(this._radius.bubble * 0.12),
-                        v = (this._barAngle-Math.PI)/2;
+                        v = this._barAngle/2;
                     this._contentG.selectAll('.outerElementG')
                         .data(this._padindex)
                         .join(
@@ -1836,7 +1889,7 @@ export default {
                     const r = this._radius,
                         lc = this._labelcolor,
                         xpad = this._xpad,
-                        v = (this._barAngle-Math.PI)/2,
+                        v = this._barAngle/2,
                         chordG = this._g.append('g')
                             .attr('transform',`rotate(${-60})`)
                             .attr('class', 'chordG'),
@@ -2179,15 +2232,15 @@ export default {
                         .innerRadius(y1)
                         .outerRadius(y2)
                         .startAngle(Math.PI)
-                        .endAngle(this._barAngle)();
+                        .endAngle(this._barAngle + Math.PI)();
                 }
                 _linepad(y1, y2) {
                     return d3.arc()
                         .innerRadius(y1)
                         .outerRadius(y2)
                         .startAngle(Math.PI)
-                        .padAngle((this._barAngle - Math.PI)/this._linespace)
-                        .endAngle(this._barAngle)();
+                        .padAngle((this._barAngle)/this._linespace)
+                        .endAngle(this._barAngle + Math.PI)();
                 }
 
                 _outrate(item1 , item2){

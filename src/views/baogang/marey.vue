@@ -898,8 +898,7 @@ export default {
 				"19301002000"
 			],
 			"upidSelect": [
-				"19301005000",
-				"19301009000"
+				"19301005000"
 			],
 			"type": "group",
 			"batch": [
@@ -915,7 +914,7 @@ export default {
 		}
 		this.trainClick(demo)
 		// this.getplatetype()
-		// this.changeTime()
+		this.changeTime()
 	},
 	watch: {
 		startDate:function(){

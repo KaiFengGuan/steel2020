@@ -13,7 +13,6 @@ let actions = {
 
 let mutations = {
     changeStatus(state, status){
-        console.log(status)
         state.filterStatus = status
     },
     riverStatus(state, status){

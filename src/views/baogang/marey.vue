@@ -498,7 +498,7 @@ export default {
 			// })
       if(this.scatterData.length!==0)this.mergeflag()
       // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
+			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData, this.isMerge);
 
 			// clear
 			this.selectedTrainData = [];
@@ -537,7 +537,7 @@ export default {
 			// })
       if(this.scatterData.length!==0)this.mergeflag()
       // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData);
+			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData, this.isMerge);
 
 	// 		// clear
 	// 		this.selectedTrainData = [];
@@ -703,19 +703,16 @@ export default {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
 				return false
 			}
-			// await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-			// 	this.$nextTick(function() {
-			// 		this.$refs[upid][0].paintChart(diagnosisData,Response.data)
-			// 		this.corrdata = Response.data
-			// 	})	
-			// })
+			await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
 				this.$nextTick(function() {
 					this.$refs[upid][0].paintChart(diagnosisData, correlationData)
 					this.corrdata = correlationData
 				})
+			})
 		},
 		mareyUpdate(){
-			this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
+      // this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
+      this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
 		},
 		mergeUpdate(){
 			this.isMerge = !this.isMerge
@@ -745,12 +742,12 @@ export default {
 		paintUnderCharts(upid) {
 			// diagnosisData
 			this.paintRiverLike(upid);
-			this.platetype(upid);
+			// this.platetype(upid);
     },
     clickDiagnosisButton() {
       this.diagnosisVisible = ! this.diagnosisVisible
 
-      this.$refs.mareyChart.diagnosisClick(this.diagnosisVisible)
+      // this.$refs.mareyChart.diagnosisClick(this.diagnosisVisible)
     },
 
 		async paintRiverLike(upid) {
@@ -779,10 +776,10 @@ export default {
 			// 	// Object.assign(processDetail, detailProData)
 			// }
 			// console.log(processDetail)
-			// await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-			// 	this.$refs.wheelering.paintChart(diagnosisData,Response.data, processData)
-			// })
-			this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
+			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
+				this.$refs.wheelering.paintChart(diagnosisData,Response.data, processData)
+			})
+			// this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
 			// this.paintDetailPro(this.processTurn)
 		},
 
@@ -898,45 +895,45 @@ export default {
 		// console.log(this.startmonth.getMonth())
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
-		var demo ={
-			"list": [
-				"19301009000",
-				"19301002000"
-			],
-			"upidSelect": [
-				"19301005000"
-			],
-			"type": "group",
-			"batch": [
-				["19301001000",
-				"19301002000",
-				"19301003000",
-				"19301004000",
-				"19301005000",
-				"19301006000",
-				"19301007000",
-				"19301008000"],
-				["19301001000",
-				"19301002000",
-				"19301003000",
-				"19301004000",
-				"19301005000",
-				"19301006000",
-				"19301007000",
-				"19301008000"],
-				["19301001000",
-				"19301002000",
-				"19301003000",
-				"19301004000",
-				"19301005000",
-				"19301006000",
-				"19301007000",
-				"19301008000"],
-			]
-		}
-		this.trainClick(demo)
-		// this.getplatetype()
-		// this.changeTime()
+		// var demo ={
+		// 	"list": [
+		// 		"19301009000",
+		// 		"19301002000"
+		// 	],
+		// 	"upidSelect": [
+		// 		"19301005000"
+		// 	],
+		// 	"type": "group",
+		// 	"batch": [
+		// 		["19301001000",
+		// 		"19301002000",
+		// 		"19301003000",
+		// 		"19301004000",
+		// 		"19301005000",
+		// 		"19301006000",
+		// 		"19301007000",
+		// 		"19301008000"],
+		// 		["19301001000",
+		// 		"19301002000",
+		// 		"19301003000",
+		// 		"19301004000",
+		// 		"19301005000",
+		// 		"19301006000",
+		// 		"19301007000",
+		// 		"19301008000"],
+		// 		["19301001000",
+		// 		"19301002000",
+		// 		"19301003000",
+		// 		"19301004000",
+		// 		"19301005000",
+		// 		"19301006000",
+		// 		"19301007000",
+		// 		"19301008000"],
+		// 	]
+		// }
+		// this.trainClick(demo)
+		this.getplatetype()
+		this.changeTime()
 	},
 	watch: {
 		startDate:function(){

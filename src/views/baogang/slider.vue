@@ -179,7 +179,9 @@ export default {
           .on('start brush', brushed)
           .on('end', endSelect)
       // svg.append('g').call(brush).call(brush.move, [50, 75])原始的
-      selectionG.append('g').call(brush).call(brush.move, [50, 75])
+      selectionG.append('g').call(brush).call(brush.move, [60, 75])
+      // vm.setStartDate(new Date(new Date(brushData.endTimeOutput[0]) - 0.5 * 86400 * 1000))
+      // vm.setEndDate(new Date(brushData.endTimeOutput[brushData.endTimeOutput.length - 1]))
 
       function brushed({ selection }) {
         const brushEnter = d3.map(brushData.endTimeOutput, d => {

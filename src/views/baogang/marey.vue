@@ -36,11 +36,11 @@
 				</el-row>
 				<el-row>
 					<el-card class="myel-card">		 
-						<div class="my-card-title" slot="header">
+						<div class="my-card-title" slot="header" >
 								<span style="margin-left:5px">Tabular View  <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search"></el-button> </span>
 
 						</div>
-						<div class="my-card-body" style="padding-top:5px">
+						<div class="my-card-body" style="padding-top:5px; overflow:scroll">
 							<brushableParallel ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse"></brushableParallel>
 						</div>
 						<!-- <el-col :span="4"> -->
@@ -202,7 +202,7 @@
 												</el-row>
 											</div>
 										<div class="my-card-body" @click="changeUpid(item)">
-											<small-wheel :ref="item" style="height:223px"></small-wheel>
+											<small-wheel :ref="item" style="height:223px" :contract="true"></small-wheel>
 										</div>
 									</el-card>
 								</el-row>
@@ -219,7 +219,7 @@
 										</el-row>
 									</div> -->
 									<div class="my-card-body" >
-										<wheeler ref="wheelering" style="height:490px"></wheeler>
+										<wheeler ref="wheelering" style="height:490px" :contract="false"></wheeler>
 									</div>
 								</el-card>
 							</el-col>
@@ -255,12 +255,13 @@ import util from './util.js';
 import mareyChart from './mareyChart2.vue';
 import scatterlog from 'components/charts/scatterlog.vue';
 import timeBrush from './timeBrush.vue';
-import wheeler from './wheel.vue';
-import smallWheel from './smallWheel.vue';
+import wheeler from './wheel2.vue';
+import smallWheel from './wheel2.vue';
 import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 // import myJsonData from "./sampledata/jsondata.json"
+import correlationData from './sampledata/corr.json'
 // import myStationData from "./sampledata/stationdata.js"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
@@ -309,12 +310,12 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2019, 2, 8, 0, 0),
+			startmonth: new Date(2019, 2, 10, 0, 0),
 			time: undefined,
 			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
-			interval: 4,
+			interval: 2,
 			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
@@ -397,7 +398,7 @@ export default {
 			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
 			// 	endmonth.setMonth(1)
       // }
-      endmonth.setDate(endmonth.getDate() + 10)
+      endmonth.setDate(endmonth.getDate() + 5)
 
 			return [this.startmonth, endmonth]
 		},
@@ -506,40 +507,40 @@ export default {
 			this.changeDiagnosisState()
 			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 
-			// response
-			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
-			await this.getStationsData(startDate, endDate).then(Response => {
-				this.stationsData=Response.data
-      })
+	// 		// response
+	// 		// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
+	// 		await this.getStationsData(this.startDate, this.endDate).then(Response => {
+	// 			this.stationsData=Response.data
+    //   })
 
-			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
+	// 		this.jsonData = (await this.getJsonData(startDate, endDate)).data;
+	// 		// this.jsonData = this.jsonData.filter(d => {
+	// 		// 	return this.brushUpid.includes(d.upid)
+	// 		// })
 
-			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
-			// this.getplatetype();
-			let allDataArr = []
-			for (let item of this.jsonData) {
-					let upid = item['upid']
-					allDataArr.push(flagData[upid])
-			}
-			for (let i = 0; i < this.jsonData.length; i++) {
-				this.jsonData[i]['flag'] = allDataArr[i]
-			}
+	// 		let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
+	// 		// this.getplatetype();
+	// 		let allDataArr = []
+	// 		for (let item of this.jsonData) {
+	// 				let upid = item['upid']
+	// 				allDataArr.push(flagData[upid])
+	// 		}
+	// 		for (let i = 0; i < this.jsonData.length; i++) {
+	// 			this.jsonData[i]['flag'] = allDataArr[i]
+	// 		}
 
-			// paint
-			this.loadingDataLoading = false
-			this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
-      if(this.scatterData.length!==0)this.mergeflag()
-      // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData, this.isMerge);
+	// 		// paint
+	// 		this.loadingDataLoading = false
+	// 		this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
+	// 		// this.jsonData = this.jsonData.filter(d => {
+	// 		// 	return this.brushUpid.includes(d.upid)
+	// 		// })
+    //   if(this.scatterData.length!==0)this.mergeflag()
+    //   // console.log("jsonData: ", this.jsonData);
+	// 		this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData, this.isMerge);
 
-	// 		// clear
-	// 		this.selectedTrainData = [];
+	// // 		// clear
+	// // 		this.selectedTrainData = [];
 		},
 		mergeflag(){
 			let mergedata=[]
@@ -673,16 +674,20 @@ export default {
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
 			}
-			this.upidSelect = [...new Set(value.upidSelect)]
+			this.upidSelect = [...new Set(value.upidSelect)].filter(d => this.upidData.get(d) !== undefined)
 
 			for(let item of value.upidSelect){
-				await this.paintScatterList(item)
+				try{
+					await this.paintScatterList(item)
+				}catch(e){
+					console.log(e)
+				}
 			}
 			this.corrdata = []
 			await this.paintUnderCharts(this.upidSelect[0]);
 		},
 		async paintScatterList(upid){
-			this.$nextTick(function() {this.$refs[upid][0].init()})
+			// this.$nextTick(function() {this.$refs[upid][0].init()})
 			// let query=[]
 			// for (let item of this.plateTempPropvalue){
 			// 	if(item==='All'){
@@ -696,7 +701,6 @@ export default {
 			// 	return false
 			// }
 			var diagnosisData = this.upidData.get(upid)[0]
-			console.log(diagnosisData)
 			// Vue.set(this.sampleCss, upid, "solid 0.05px " + this.trainBorder(diagnosisData))
 			if(this.corrdata.length !== 0) {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
@@ -704,9 +708,9 @@ export default {
 			}
 			await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
 				this.$nextTick(function() {
-					this.$refs[upid][0].paintChart(diagnosisData,Response.data)
-					this.corrdata = Response.data
-				})	
+					this.$refs[upid][0].paintChart(diagnosisData, correlationData)
+					this.corrdata = correlationData
+				})
 			})
 		},
 		mareyUpdate(){
@@ -760,11 +764,14 @@ export default {
 
 			this.selectedUpid =  "UPID " + upid
 			// let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
+			// console.log(this.upidData.get(upid))
 			var diagnosisData = this.upidData.get(upid)[0]
 			this.sampleCss = {}
 			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
-			var processData = []
-			this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
+			var processData = this.chooseList.map(d => d.filter(e => this.upidData.get(e) !== undefined).map(e => this.upidData.get(e)[0]))
+			console.log(processData)
+			// return 
+			// this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
 			this.diagnosisData = diagnosisData
 			// let processDetail = []
 			// for(let item of this.processArray){
@@ -775,9 +782,10 @@ export default {
 			// 	// Object.assign(processDetail, detailProData)
 			// }
 			// console.log(processDetail)
-			await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
+			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
 				this.$refs.wheelering.paintChart(diagnosisData,Response.data, processData)
 			})
+			// this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
 			// this.paintDetailPro(this.processTurn)
 		},
 
@@ -893,6 +901,43 @@ export default {
 		// console.log(this.startmonth.getMonth())
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
+		// var demo ={
+		// 	"list": [
+		// 		"19301009000",
+		// 		"19301002000"
+		// 	],
+		// 	"upidSelect": [
+		// 		"19301005000"
+		// 	],
+		// 	"type": "group",
+		// 	"batch": [
+		// 		["19301001000",
+		// 		"19301002000",
+		// 		"19301003000",
+		// 		"19301004000",
+		// 		"19301005000",
+		// 		"19301006000",
+		// 		"19301007000",
+		// 		"19301008000"],
+		// 		["19301001000",
+		// 		"19301002000",
+		// 		"19301003000",
+		// 		"19301004000",
+		// 		"19301005000",
+		// 		"19301006000",
+		// 		"19301007000",
+		// 		"19301008000"],
+		// 		["19301001000",
+		// 		"19301002000",
+		// 		"19301003000",
+		// 		"19301004000",
+		// 		"19301005000",
+		// 		"19301006000",
+		// 		"19301007000",
+		// 		"19301008000"],
+		// 	]
+		// }
+		// this.trainClick(demo)
 		this.getplatetype()
 		this.changeTime()
 	},
@@ -900,6 +945,7 @@ export default {
 		startDate:function(){
 			if(this.scatterData.length == 0)return
 			this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
+			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 			this.getHttpData()
 		}
 	}

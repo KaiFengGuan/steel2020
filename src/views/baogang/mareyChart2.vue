@@ -521,7 +521,7 @@ export default {
           this._zoom_mini_y = d3.scaleLinear()
             .domain([0, this._brush_size.h])
             .range([this._stations_size.h, this._height]);
-          this._brush_select[1] = (this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom) * 0.15;
+          this._brush_select[1] = (this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom) * 0.25;
 
           
           this._x = d3.scaleLinear()
@@ -1298,27 +1298,22 @@ export default {
             arr.upid = d.upid
             return arr
           });
+          
+          let max_stations = d3.max(stopsTime_good.map(d => d.length));
+          let timebins_good = [];
+          let timebins_bad = [];
+          for (let i = 0; i < max_stations; i++) {
+            timebins_good.push(d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i])));
+            timebins_bad.push(d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i])));
+          }
 
 
-          let max_stations = d3.max(stopsTime_good.map(d => d.length));
-          let timebins_good = [];
-          let timebins_bad = [];
-          for (let i = 0; i < max_stations; i++) {
-            timebins_good.push(d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i])));
-            timebins_bad.push(d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i])));
-          }
 
-          // let timebins_good = stopsTime_good[0].map((d, i) => {
-          //   return d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i]))
-          // });
-          // let timebins_bad = stopsTime_bad[0].map((d, i) => {
-          //   return d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i]))
-          // });
-
+          
           let binxScale = timebins_good.map((d, i) => 
             d3.scaleLinear()
               .domain([
-                d3.max([timebins_good[i][0].x0, timebins_bad[i][0].x0]), 
+                d3.min([timebins_good[i][0].x0, timebins_bad[i][0].x0]), 
                 d3.max([timebins_good[i][timebins_good[i].length-1].x1, timebins_bad[i][timebins_bad[i].length-1].x1])
               ])
               .range([5, this._stations_size.s_w - 5])
@@ -1863,10 +1858,9 @@ export default {
                 batch: batch_data
               })
               
-              
-              let select_upid = d3.map(d.mergeItem, d => d.upid)
-              let sort_res = d3.sort(select_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0)
-              vm.hightLight(sort_res)
+              let select_upid = d3.map(d.mergeItem, d => d.upid)
+              let sort_res = d3.sort(select_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0)
+              vm.hightLight(sort_res)
             }
           }
           function __pathOver(e, d) {

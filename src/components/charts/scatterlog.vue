@@ -23,7 +23,7 @@ export default {
 			property:["ave_temp_dis","avg_p5","crowntotal","finishtemptotal","tgtplatelength2","tgtplatethickness2","tgtwidth","wedgetotal"],
 			GaleArray:[],
 			mouseAttrs:{"color": "#666666", "r": 3, "stroke": 0.5},
-			clickAttrs:{"color": "#666666", "r": 4, "stroke": 1.25},
+			clickAttrs:{"color": "#666666", "r": 4.5, "stroke": 1.25},
 			mouseList: undefined
 		}
 	},

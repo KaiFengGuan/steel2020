@@ -16,11 +16,17 @@ import mergeLabel from "assets/images/mergeLabel.svg";
 import deMergeLabel from "assets/images/deMergeLabel.svg";
 import util from './util.js';
 import processJson from "@/assets/json/processJson.json"
-import {mapGetters} from "vuex"
-import { init } from 'echarts';
-var processIcon = [heaticon , rollicon , coolicon],
+import {mapGetters, mapMutations} from "vuex"
+const processIcon = [heaticon , rollicon , coolicon],
     iconwhite = [heatwhite , rollwhite , coolwhite];
 export default {
+    props: {
+        contract: {
+            default: false,
+            type: Boolean,
+            require: true
+        }
+    },
 	data() {
 		return {
 			menuId: 'wheeling' + Math.random().toString(32).slice(-6),
@@ -34,6 +40,10 @@ export default {
 		}
 	},
 	methods: {
+        ...mapMutations([
+			"changeStatus",
+			"riverStatus"
+		]),
         paintChart(jsondata, chorddata, batchData) {
             this.jsondata = jsondata, this.chorddata = chorddata, this.batchData = batchData;
             const wheeldata = [] , labels = []
@@ -141,9 +151,17 @@ export default {
                     this._mouseDis  = undefined;
                     this._barVis = true;
                     this._labelLimit = 0.5;
+                    this._stopPropagation = (e, d) => e.stopPropagation();
 
                     this._processClass = e => d => e + d.month,
                     this._indexId = e => d => e + d.indexName,
+
+                    //mainG
+                    this._borderStyle ={
+                        color: '#b9bbbd',
+                        rx: 3,
+                        ry: 3
+                    }
 
                     //contentG
                     this._fliterStatus = false;
@@ -155,12 +173,12 @@ export default {
                     //Style 
                     this._cleadStyle = {
                         'opacity': 0.4,
-                        'stroke-width': 1
+                        'stroke-width': 0.75
                     }
                     this._leadlineStyle = {
                         'opacity': 0.4,
-                        'original_strwidth': 0.5,
-                        'highlight_strwidth': 1
+                        'original_strwidth': 0.25,
+                        'highlight_strwidth': 0.75
                     }
                     this._circleStyle ={
                         'original_r': 2,
@@ -171,6 +189,16 @@ export default {
                     this._graph = null;
                     this._leavesData = null;
                     this._lineData = null;
+
+                    this._mouseEvents = null;
+
+                    this._buttonColor = '#94a7b7'; //  #678fba
+                    this._buttonStyle = {
+                        width: 40,
+                        height: 18 ,
+                        textX: 20,
+                        textY:  12
+                    }
                 }
                 getIndex(_){
                     for (let item in this._process){
@@ -202,30 +230,38 @@ export default {
 
                 render() {
                     this._init();
-                    this._renderComponents()
+                    if(!vm.contract){
+                        this._renderComponents()
+                    }else{
+                        this._renderOption()
+                    }
                     this._renderMerge()
                     return this;
                 }
 
+                _renderOption(){
+                    this._merge = false
+                }
+
                 _renderBar(){
+                    this._g.attr('transform', 'translate(-50,0)');
                     this._fliterScaleData();
                     this._renderMainWheel();
-                    this._renderMainBar();
+                    this._mouseEvents = this._renderMainBar();
                 }
 
                 _renderWheel(){
                     this._initScaleData();
                     this._renderMainWheel();
-                    this._g.attr('transform', 'translate(300,0)')
+                    this._g.attr('transform', `translate(${vm.contract ? this._width/3 : this._width/2},0)`)
                 }
 
                 _renderMerge(){
                     this._g == null ? undefined : this._g.remove();
-                    this._g = this._container.append('g').attr('transform', 'translate(-50,0)');
+                    this._g = this._container.append('g')
                     
                     this._initdata();
                     this._merge ? this._renderBar() : this._renderWheel();
-                    d3.selectAll('.circleButton').raise()
                 }
 
                 _renderComponents(){
@@ -242,42 +278,77 @@ export default {
                             this._renderMerge()
                             d3.select('.mergeIcon').attr('href', this._merge ? mergeLabel: deMergeLabel);
                         })
-                    this._container
-                        .append('circle')
-                        .attr('class', 'circleButton')
-                        .attr('r', 5)
-                        .attr('stroke', 'black')
-                        .attr('fill', 'pink')
-                        .on('click', e =>{
-                            this._heatOrRiver = ! this._heatOrRiver
-                            this._heatOrRiver ? this._initHeatG() : this._initRiverG()
-                            this._renderWheelFilter()
+                    this._initHeatOrRiver()
+                    this._initFilterButton()
+                }
+
+                _initHeatOrRiver(){
+                    const tabColor = this._buttonColor;
+                    const semiButton = this._container.append('g').attr('class', 'semiButton')
+                        .attr('transform', `translate(${[40, - this._height/2 + 2.5]})`);
+                    semiButton.call(g => g.append('rect')
+                            .attr('fill', this._heatOrRiver ? tabColor : 'white')
+                            .attr('rx', 5)
+                            .attr('ry', 5)
+                            .attr('stroke', tabColor)
+                            .attr('stroke-width', 0.5)
+                            .attr('height', this._buttonStyle.height)
+                            .attr('width', this._buttonStyle.width))
+                        .call(g => g.append('text')
+                            .attr('fill', this._heatOrRiver ? 'white' : tabColor)
+                            .attr('x', this._buttonStyle.textX)
+                            .attr('y', this._buttonStyle.textY)
+                            .text('heat'))
+                        .on('click', (e, d) => {
+                            if(!vm.contract){
+                                this._heatOrRiver = !this._heatOrRiver
+                                vm.riverStatus(this._heatOrRiver)
+                            }
+                            semiButton.select('rect').attr('fill', this._heatOrRiver ? tabColor : 'white')
+                            semiButton.select('text').attr('fill', this._heatOrRiver ? 'white' : tabColor)
                         })
-                    this._container
-                        .append('circle')
-                        .attr('r', 5)
-                        .attr('transform', 'translate(25, 25)')
-                        .attr('class', 'circleButton')
-                        .attr('stroke', 'black')
-                        .attr('fill', 'white')
-                        .on('click', e =>{
-                            this._fliterStatus = !this._fliterStatus
-                            this._renderWheelFilter()
+                }
+
+                _initFilterButton(){
+                    const tabColor = this._buttonColor;
+                    const filterButton = this._container.append('g').attr('class', 'filterButton')
+                        .attr('transform', `translate(${[100, - this._height/2 + 2.5]})`);
+                    filterButton.call(g => g.append('rect')
+                            .attr('fill', this._fliterStatus ? tabColor : 'white')
+                            .attr('rx', 5)
+                            .attr('ry', 5)
+                            .attr('stroke', tabColor)
+                            .attr('stroke-width', 0.5)
+                            .attr('height', this._buttonStyle.height)
+                            .attr('width', this._buttonStyle.width))
+                        .call(g => g.append('text')
+                            .attr('fill', this._fliterStatus ? 'white' : tabColor)
+                            .attr('x', this._buttonStyle.textX)
+                            .attr('y', this._buttonStyle.textY)
+                            .text('filter'))
+                        .on('click', (e, d) => {
+                            if(!vm.contract){
+                                this._fliterStatus = !this._fliterStatus
+                                vm.changeStatus(this._fliterStatus)
+                            }
+                            // this._renderWheelFilter()
+                            filterButton.select('rect').attr('fill', this._fliterStatus ? tabColor : 'white')
+                            filterButton.select('text').attr('fill', this._fliterStatus ? 'white' : tabColor)
                         })
                 }
 
                 _init() {
                     const r = this._radius;
                     
-                    r.max = Math.min(this._width, this._height) / 2.5;
+                    r.max = Math.min(this._width, this._height) / (vm.contract ? 2 :2.5);
                     r.inner = r.max * 0.40;
                     r.bubble = r.max * 0.2;
                     r.outer = r.max - r.bubble *1.1 - r.label;
-                    const fs = d3.scaleLinear().domain([4, 1024]).range([0, 28]);
+                    // const fs = d3.scaleLinear().domain([4, 1024]).range([0, 28]);
                     // this._fontSize.info = fs(r.max);
-                    fs.range([8, 36]);
+                    // fs.range([8, 36]);
                     // this._fontSize.center = fs(r.max);
-                    fs.range([4, 18]);
+                    // fs.range([4, 18]);
                     // this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
                 }
 
@@ -332,7 +403,7 @@ export default {
                         pad = 0,
                         startAngle = Math.PI/6,
                         angle = (Math.PI - 2 * startAngle - 3 * pad )/mergeLength;
-                    this._barAngle = (Math.PI - 2 * startAngle - 3 * pad) / mergeLength + Math.PI;
+                    this._barAngle = (Math.PI - 2 * startAngle - 3 * pad) / mergeLength;
                     const diverangle = (mergeLength - this._indexdata.length) * angle / 2
                     const a = angle * this._padprocess[0].length + diverangle + Math.PI/6, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
                     this._padAngle=[
@@ -356,7 +427,7 @@ export default {
                     });
                     const pad = 0;
                     const angle = (Math.PI * 2 - 3 * pad )/this._data.length
-                    this._barAngle = (Math.PI * 2- 3 * pad) / this._data.length + Math.PI;
+                    this._barAngle = (Math.PI * 2- 3 * pad) / this._data.length;
                     const a = angle * this._padprocess[0].length, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
                     this._padAngle=[
                         [-a/2, a/2 ],
@@ -440,7 +511,7 @@ export default {
                         wm = this,
                         lc =this._labelcolor,
                         xpad = this._xpad,
-                        v = (this._barAngle-Math.PI)/2,
+                        v = this._barAngle/2,
                         mainG = this._g.append('g').attr('class', 'mainG'),
                         line = d3.line()
                                 .x(e => e[0])
@@ -454,12 +525,12 @@ export default {
                                 .innerRadius(0)
                                 .outerRadius(r.bubble * 0.16);
                     var limit = this._labelLimit,
-                        RectWidth = 400,
-                        rectX = r.outer + 250,  //rect_doct x
+                        RectWidth = 650,
+                        arcX = 200,
+                        rectX = r.outer + 300,  //rect_doct x
                         maxHeight = 25,   //rect max height
                         rectPadding = {left: 5, right: 5, top: 5, bottom: 2},
                         indexSpace = 5,
-                        iconWidth = 20,
                         rectNum =  null,
                         opacityCache = null,
                         selectInfo = this._indexdata,
@@ -481,21 +552,27 @@ export default {
 
                         var lineG = mainG.append('g').attr('class', 'lineG'),
                             arcG = mainG.append('g').attr('class', 'arcG');
-                        initLineG();
+                        initLineG.call(this);
                         initArcG();
 
                         var sliderG = mainG.append('g')
                             .attr('class', 'sliderG')
                             .attr('transform', `translate(${[rectX, 0]})`),
-                            maxLength = 3,  //batch numbers
+                            maxLength = batchData.length,  //batch numbers
                             minRect = RectWidth/ (maxLength + 0.5),
                             rectArray = new Array(maxLength).fill(minRect).map((d, i) => Math.ceil(maxLength/2) == i + 1 ? 1.5 * d : d),   //batch position
                             rectPosition = Array.from(d3.cumsum(rectArray));
                         initDragG();
                         
-                        var sliderData = this._sliderArray(selectInfo),
-                            horizenEX = (new Array(maxLength).fill(0))
-                            .map((d, i) => wm._deepCopy(sliderData).map((e, f) =>{ 
+                        var sliderData = batchData.map(d => this._sliderArray(selectInfo, d)),
+                            // dataEX = sliderData.map((d, i) => {
+                            //     return new Array(maxLength).fill(wm._deepCopy(d)).map((e, f) =>{
+
+                            //     }
+                            //     )
+                            // }),
+                            horizenEX = sliderData
+                            .map((d, i) => d.map((e, f) =>{ 
                                     var temp = e.map(g => {
                                         g.i = i;
                                         return g
@@ -515,19 +592,20 @@ export default {
                             //https://observablehq.com/d/d503153fbfd48b03
 
                         wm._horizonView ? initMergeArea() : initHorizenArea();
-                        if(rectArray.some(d => d === maxHeight))renderRectG()
+                        if(rectArray.some(d => d === maxHeight))initRectG()
                         initAxisG(timeScale);
 
                         var triangleG = mainG.append('g')
                             .attr('class', 'triangleG')
-                            .attr('transform', `translate(${[rectX - iconWidth - 2.5, 0]})`),
+                            .attr('transform', `translate(${[rectX - maxHeight, 0]})`),
                             trianIcon = d => barVisObject[d.indexName] ? 'M-5,-2.5l10,0l-5,5l-5,-5zM-5,-2.5z' : 'M-2.5,0l0,-5l5,5l-5,5zM-2.5,0z';
                         initIcon();
 
-                        var barG = mainG.append('g').attr('class', 'barG').attr('transform', `translate(${[rectX- maxHeight - iconWidth, 0]})`);
+                        var barG = mainG.append('g').attr('class', 'barG').attr('transform', `translate(${[rectX- maxHeight * 2, 0]})`);
                         initBarG();
 
-                        var mouseInfo = this._mouseDis !== undefined ? mouseText(this._mouseDis) : undefined;
+                        var mouseInfo = this._mouseDis !== undefined ? mouseText(this._mouseDis) : undefined,
+                            textG = mainG.append('g').attr('class', 'textG').attr('transform', `translate(${[rectX, 0]})`);
                         initMouseG();
 
                         var tempsort = d3.map(d3.sort(selectInfo, d => -d.humidity), d => d.indexName),
@@ -538,25 +616,30 @@ export default {
                         indexScale = this._indexScale !== undefined ? scaleArray[this._indexScale] : scaleArray[2];
                         let sortG = mainG.append('g')
                                 .attr('class', 'sortG'),
-                            sortColor = '#678fba',
+                            sortColor = this._buttonColor,
                             sortChange = (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1: value2,
                             sortText = ['Single' ,'Limit', 'Total'];
-                        initSort();
+                        initSort.call(this);
 
                         const switchG = mainG.append('g').attr('class', 'switchG'),
                             textColor = ['Horizon', 'River'],
-                            tabColor = '#678fba',
+                            tabColor = this._buttonColor,
                             transfrom = (v1, v2) => d => this._horizonView == Boolean(d) ? v1 : v2;
-                        initSwitch();
+                        initSwitch.call(this);
 
                         const visG = mainG.append('g').attr('class', 'visG');
-                        initVisG();
-
-                        const heatButton = mainG.append('g').attr('class', 'heatButton');
-                        initHeatButton();
+                        initVisG.call(this);
 
                         initMapArea()
                         sliderG.selectAll('.heatMapG').raise();
+
+                        const mapBorderG = mainG.append('g').attr('class', 'mapBorderG').attr('transform', `translate(${[rectX, 0]})`);
+                        initMapBorder.call(this)
+
+                        const sideTextG = mainG.append('g').attr('class', 'sideTextG').attr('transform', `translate(${[rectX + RectWidth, 0]})`);
+                        initSideTextG.call(this)
+
+                        renderSort()
 
                         function renderyAxis(){
                             let invert = d3.scaleOrdinal().domain(indexScale.range()).range(indexScale.domain())
@@ -572,12 +655,12 @@ export default {
                             lineToRect = (d, i) =>{
                                 let centerY = centerScaleY(d),
                                     endY = yScale(+i);
-                                return [[rectX - 75, centerY],[rectX - 60, centerY], [rectX - maxHeight - iconWidth, endY], [rectX , endY], [rectX + RectWidth, endY]]
+                                return [[rectX - arcX + 75, centerY],[rectX - arcX + 85, centerY], [rectX - maxHeight * 2, endY]]
                             };
                             lineToCircle = d =>{
                                 let [startX, startY] = startXY(d),
                                 centerY = centerScaleY(d);
-                                return [[startX, startY], [startX + 25, centerY], [rectX - 105, centerY]]
+                                return [[startX, startY], [startX + 25, centerY], [rectX - arcX + 30, centerY]]
                             };
                         }
                         function initIcon(){// init triangleG
@@ -595,7 +678,8 @@ export default {
                                 .call(g => g.append('path')
                                     .attr('transform', `translate(${[maxHeight/2, maxHeight/2]})`)
                                     .attr('d', trianIcon)
-                                    .attr('fill', d => lc[d.month]))
+                                    // .attr('fill', d => lc[d.month]))
+                                    .attr('fill', wm._borderStyle.color))
                                 .on('click', function(e, d){
                                     const t = d3.transition()
                                         .duration(300)
@@ -619,30 +703,49 @@ export default {
                                         .attr('fill', d =>  lc[d.month])
                                         .attr('r', r.bubble * 0.16)
                                         .attr('stroke',d => d3.color(lc[d.month]).darker(0.5))
-                                        .attr('transform', d =>  `translate(${[rectX - 145, centerScaleY(d)]})`))
+                                        .attr('transform', d =>  `translate(${[rectX - arcX, centerScaleY(d)]})`))
                                 .call(g => g.append('text')
                                         .attr('class', 'sortIndex')
                                         .text((d, i) => +indexScale(i) + 1)
-                                        // .text((d, i) => i + 1)
-                                        .attr('transform', d => `translate(${[rectX - 145, centerScaleY(d) + 2.5]})`))
+                                        .attr('transform', d => `translate(${[rectX - arcX, centerScaleY(d) + 2.5]})`))
                                 .call(g => g.append('text')
                                     .attr('font-size', '8px')
                                     .attr('class', d => `arctext${d.month}`)
                                     .attr('id', d => `arctext${d.indexName}`)
                                     .attr('fill', d => d3.color(lc[d.month]).darker(0.5))
                                     .text(d => d.indexName.replace(/thickness/, '').replace(/temp_uniformity_/, '').replace(/wedge/, '').slice(0, 8))
-                                    .attr('transform', d => `translate(${[rectX - 90, centerScaleY(d) + 2]})`))
+                                    .attr('transform', d => `translate(${[rectX - arcX + 55, centerScaleY(d) + 2]})`))
                                 .call(g => g.append('path')
                                     .attr('class', 'lineToRect')
                                     .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
                                     .attr('d', (d, i) => line(lineToRect(d, i)))
                                     .attr('stroke-width', 1)
-                                    .attr('fill', 'none'))
+                                    .attr('fill', 'none')
+                                    .on('mouseover', this._stopPropagation)
+                                    .on('mouseout', this._stopPropagation))
+                                .call(g => g.append('rect')
+                                    .attr('transform', (d, i) => `translate(${[rectX - 2 * maxHeight, yScale(i) - maxHeight]})`)
+                                    .attr('height', maxHeight)
+                                    .attr('width', RectWidth + 2 * maxHeight)
+                                    // .attr('stroke', d => d3.color(lc[d.month]).darker(1.5))
+                                    .attr('stroke', this._borderStyle.color)
+                                    .attr('stroke-width', 0.75)
+                                    .attr('rx', this._borderStyle.rx)
+                                    .attr('ry', this._borderStyle.ry)
+                                    .attr('fill', 'none')
+                                    .on('mouseover', this._stopPropagation)
+                                    .on('mouseout', this._stopPropagation))
+                                .on('mouseover', (e, d) => {
+                                    this._overed(e, d.indexName, d.month)
+                                })
+                                .on('mouseout', (e, d) => {
+                                    this._outed(e, d.indexName, d.month)
+                                })
                         }
                         function initArcG(){
                             arcG.selectAll('g').data(selectInfo)
                                 .join('g')
-                                .attr('transform', d => `translate(${[rectX - 125, centerScaleY(d)]})`)
+                                .attr('transform', d => `translate(${[rectX - arcX + 20, centerScaleY(d)]})`)
                                 .attr('opacity', opacityCache)
                                 .call(g => g.selectAll('path').data(d => pieAngle(d.property))
                                     .join('path')
@@ -699,30 +802,32 @@ export default {
                                 .attr('transform', d => `translate(${[rectPosition[d], 0]})`)
                             updateArea();
                             renderAxisG(timeScale);
-                            minRect !== maxHeight ? sliderG.selectAll('.rectG').remove() : renderRectG();
+                            minRect !== maxHeight ? mainG.selectAll('.rectG').remove() : initRectG();
                         }
                         function initSort(){//init sortG
-                            sortG.selectAll('g').data([0, 1, 2]).join('g')
-                            .attr('transform', d => `translate(${[rectX + RectWidth - 160 +  60 * d, -wm._height/2 + 2.5]})`)
-                            .call(g => g.append('rect')
-                                .attr('fill',  sortChange(sortColor, '#fff'))
-                                .attr('rx', 5)
-                                .attr('ry', 5)
-                                .attr('stroke', sortColor)
-                                .attr('stroke-width', 0.5)
-                                .attr('height', 20)
-                                .attr('width', 45))
-                            .call(g => g.append('text')
-                                .attr('fill', sortChange('#fff', sortColor))
-                                .attr('x', 22.5)
-                                .attr('y', 12.5)
-                                .text(d => sortText[d]))
-                            .on('click', (e, d) =>{
-                                indexScale = scaleArray[d];
-                                wm._indexScale = d;
-                                renderyAxis()
-                                renderSort()
-                            })
+                            sortG.selectAll('g')
+                                .data([0, 1, 2])
+                                .join('g')
+                                .attr('transform', d => `translate(${[rectX + RectWidth - 160 +  60 * d, -this._height/2 + 2.5]})`)
+                                .call(g => g.append('rect')
+                                    .attr('fill',  sortChange(sortColor, '#fff'))
+                                    .attr('rx', 5)
+                                    .attr('ry', 5)
+                                    .attr('stroke', sortColor)
+                                    .attr('stroke-width', 0.5)
+                                    .attr('height', this._buttonStyle.height)
+                                    .attr('width', this._buttonStyle.width))
+                                .call(g => g.append('text')
+                                    .attr('fill', sortChange('#fff', sortColor))
+                                    .attr('x', this._buttonStyle.textX)
+                                    .attr('y', this._buttonStyle.textY)
+                                    .text(d => sortText[d]))
+                                .on('click', (e, d) =>{
+                                    indexScale = scaleArray[d];
+                                    this._indexScale = d;
+                                    renderyAxis()
+                                    renderSort()
+                                })
                         }
                         function mouseText(dis){// calculate abscissa
                             let sumsearch = d3.leastIndex(rectPosition, d => dis < d),
@@ -746,6 +851,9 @@ export default {
                                 lineG.selectAll('.sortIndex')
                                     .transition(t)
                                     .text((d, i) => indexScale(i) + 1)
+                                lineG.selectAll('rect')
+                                    .transition(t)
+                                    .attr('transform', (d, i) => `translate(${[rectX - 2 * maxHeight, yScale(i) - maxHeight]})`)
                                 lineG.selectAll('.lineToRect')
                                     .transition(t)
                                     .attr('d', (d, i) => line(lineToRect(d, i)))
@@ -784,39 +892,52 @@ export default {
                                     .attr('opacity', opacityCache)
                                         .selectAll('path')
                                         .attr('d', trianIcon)
+                                textG.selectAll('text')
+                                    .transition(t)
+                                    .attr('opacity', opacityCache)
                                 if(wm._mouseDis !== undefined){
                                     var mouseInfo = mouseText(wm._mouseDis);
-                                    sliderG.selectAll('.textG')
+                                    textG.selectAll('text')
                                         .transition(t)
-                                        .attr('opacity', opacityCache)
                                         .attr('transform', (d, i) =>`translate(${[wm._mouseDis - 10, yScale(i) - maxHeight/2]})`)
                                         .text((d, i) => (+mouseInfo[i]).toFixed(2))
-                                    sliderG.select('.mouseG').raise()
-                                    sliderG.selectAll('.textG').raise()
                                 }
+                                textG.select('.mouseG').raise()
+                                textG.raise()
+                                sideTextG.selectAll('text')
+                                    .transition(t)
+                                    .attr('opacity', opacityCache)
+                                    .attr('transform', (d, i) =>`translate(${[ 10 , yScale(i) - maxHeight/2]})`)
                                 sliderG.selectAll('.heatMapElement')
                                     .transition(t)
                                     .attr('opacity', (d, i) => barVisObject[d[0].indexName] ? opacityCache(d, i) : 0)
                                     .attr('transform', (d, i) =>`translate(${[0, yScale(i) + maxHeight]})`)
+                                mapBorderG.selectAll('g')
+                                    .transition(t)
+                                    .attr('opacity', (d, i) => barVisObject[d.indexName] ? opacityCache(d, i) : 0)
+                                    .attr('transform', (d, i) =>`translate(${[0, yScale(i)]})`)
                                 arcG.selectAll('g')
                                     .transition(t)
                                     .attr('opacity', opacityCache)
+                                arcG.raise()
+                                barG.raise()
+                                lineG.raise()
                         }
                         function initSwitch(){ //init switchG
                             switchG.selectAll('g').data([1, 0]).join('g')
-                                .attr('transform', d => `translate(${[rectX +  60 * (1 - d), - wm._height/2 + 2.5]})`)//280  - 100
+                                .attr('transform', d => `translate(${[rectX +  60 * (1 - d), - this._height/2 + 2.5]})`)//280  - 100
                                 .call(g => g.append('rect')
                                     .attr('fill', transfrom(tabColor, '#fff'))
                                     .attr('rx', 5)
                                     .attr('ry', 5)
                                     .attr('stroke', tabColor)
                                     .attr('stroke-width', 0.5)
-                                    .attr('height', 20)
-                                    .attr('width', 45))
+                                    .attr('height', this._buttonStyle.height)
+                                    .attr('width', this._buttonStyle.width))
                                 .call(g => g.append('text')
                                     .attr('fill', transfrom('#fff', tabColor))
-                                    .attr('x', 22.5)
-                                    .attr('y', 12.5)
+                                    .attr('x', this._buttonStyle.textX)
+                                    .attr('y', this._buttonStyle.textY)
                                     .text(d => textColor[d]))
                                 .on('click', (e, d) =>{
                                     if(wm._horizonView !== Boolean(d)){
@@ -832,16 +953,10 @@ export default {
                                             .attr('fill', transfrom('#fff', tabColor));
                                         if(wm._horizonView){
                                             sliderG.selectAll('.horizenG')
-                                            // .transition(d3.transition()
-                                            //     .duration(200)
-                                            //     .ease(d3.easeLinear))
                                             .remove();
                                             initMergeArea()
                                         }else{
                                             sliderG.selectAll('.batchG')
-                                            // .transition(d3.transition()
-                                            //     .duration(150)
-                                            //     .ease(d3.easeLinear))
                                             .remove();
                                             initHorizenArea()
                                         }
@@ -850,19 +965,19 @@ export default {
                         }
                         function initVisG(){
                             visG
-                                .attr('transform', `translate(${[rectX +  RectWidth/3.1, - wm._height/2 + 2.5]})`)
+                                .attr('transform', `translate(${[rectX +  RectWidth/3.1, - this._height/2 + 2.5]})`)
                             visG.append('rect')
-                                    .attr('fill', wm._barVis ? tabColor : 'white')
+                                    .attr('fill', this._barVis ? tabColor : 'white')
                                     .attr('rx', 5)
                                     .attr('ry', 5)
                                     .attr('stroke', tabColor)
                                     .attr('stroke-width', 0.5)
-                                    .attr('height', 20)
-                                    .attr('width', 45)
+                                    .attr('height', this._buttonStyle.height)
+                                    .attr('width', this._buttonStyle.width)
                             visG.append('text')
-                                    .attr('fill', wm._barVis ? 'white' : tabColor)
-                                    .attr('x', 22.5)
-                                    .attr('y', 12.5)
+                                    .attr('fill', this._barVis ? 'white' : tabColor)
+                                    .attr('x', this._buttonStyle.textX)
+                                    .attr('y', this._buttonStyle.textY)
                                     .text('vis')
                             visG.on('click', function(e, d){
                                     wm._barVis = !wm._barVis;
@@ -871,29 +986,6 @@ export default {
                                     barVisObject = Object.assign({}, ...selectInfo.map(d => {return {[d.indexName] : wm._barVis}}))
                                     renderyAxis();
                                     renderSort();
-                                })
-                        }
-                        function initHeatButton(){
-                            heatButton.attr('transform', `translate(${[rectX +  RectWidth/2.2, - wm._height/2 + 2.5]})`)
-                            heatButton.append('rect')
-                                    .attr('fill', wm._heatOrRiver ? tabColor : 'white')
-                                    .attr('rx', 5)
-                                    .attr('ry', 5)
-                                    .attr('stroke', tabColor)
-                                    .attr('stroke-width', 0.5)
-                                    .attr('height', 20)
-                                    .attr('width', 45)
-                            heatButton.append('text')
-                                    .attr('fill', wm._heatOrRiver ? 'white' : tabColor)
-                                    .attr('x', 22.5)
-                                    .attr('y', 12.5)
-                                    .text('heat')
-                            heatButton.on('click', function(e, d){
-                                    wm._heatOrRiver = !wm._heatOrRiver;
-                                    d3.select(this).select('rect').attr('fill', wm._heatOrRiver ? tabColor : 'white')
-                                    d3.select(this).select('text').attr('fill', wm._heatOrRiver ? 'white' : tabColor)
-                                    wm._heatOrRiver ? wm._initHeatG() : wm._initRiverG()
-                                    wm._renderWheelFilter()
                                 })
                         }
                         function initAxisG(batchTimeScale){ //init timeTick
@@ -930,6 +1022,13 @@ export default {
                                     .attr('stroke', (d, i) => lc[selectInfo[i].month])
                                     .attr('fill', 'none')
                                     .attr('stroke-width', 0.25))
+                                // .call(g => g.selectAll('.badSteel')
+                                //     .data((d, i) => infoData(d, i, true))
+                                //     .attr(''))
+                                // .call(g => g.append('path')
+                                //     .attr('fill', '#b9c6cd')
+                                //     .attr('opacity', 0.8)
+                                //     .attr('d', (d, i) => infoArea(d, i, true)))
                                 .call(g => g.append('path')
                                     .attr('fill', '#b9c6cd')
                                     .attr('opacity', 0.8)
@@ -940,15 +1039,14 @@ export default {
                                     .attr('d', (d, i) => infoArea(d, i, false)))
                         }
                         function initMouseG(){
-                            sliderG.append('line')
+                            textG.append('line')
                                 .attr('class', 'mouseG')
                                 .attr('y1', yScale(0) - maxHeight)
                                 .attr('y2', lastY)
                                 .attr('transform', (d, i) =>`translate(${[mouseInfo ? wm._mouseDis : 0, 0]})`)
                                 .attr('stroke', mouseInfo !==undefined ? '#bbbcbd' : 'none')
                                 .attr('stroke-width', 0.25)
-                            sliderG.selectAll('textG').data(selectInfo).join('text')
-                                .attr('class', 'textG')
+                            textG.selectAll('text').data(selectInfo).join('text')
                                 .attr('opacity', opacityCache)
                                 .attr('transform', (d, i) =>`translate(${[mouseInfo ?  wm._mouseDis - 10 : 0 , yScale(i) - maxHeight/2]})`)
                                     .text((d, i) => mouseInfo !==undefined ? (+mouseInfo[i]).toFixed(2) : '')
@@ -956,18 +1054,20 @@ export default {
                             sliderG.on('mousemove', (e, d) => {
                                 let mouseDis = e.offsetX - rectX;//mouse distance
                                 if(mouseDis <= 0)return
-                                sliderG.select('.mouseG')
+                                textG.select('.mouseG')
                                     .attr('transform', (d, i) =>`translate(${[mouseDis, 0]})`)
                                     .attr('stroke', '#bbbcbd')
                                 var mouseInfo = mouseText(mouseDis);
-                                sliderG.selectAll('.textG')
+                                textG.selectAll('text')
                                     .attr('transform', (d, i) =>`translate(${[mouseDis - 10, yScale(i) -maxHeight/2]})`)
                                     .text((d, i) => (+mouseInfo[i]).toFixed(2))
                                 wm._mouseDis = mouseDis;
                             })
                         }
-                        function renderRectG(){
-                            sliderG.selectAll('.rectG').data(Object.keys(rectPosition).filter((d, i) => i !== Math.ceil(maxLength/2) - 1))
+                        function initRectG(){
+                            mainG.append('g')
+                                .attr('transform', d =>`translate(${[rectX, 0]})`)
+                                .selectAll('.rectG').data(Object.keys(rectPosition).filter((d, i) => i !== Math.ceil(maxLength/2) - 1))
                                 .join('g')
                                 .attr('transform', d =>`translate(${[d == 0 ? 0 : rectPosition[+d -1 ], 0]})`)
                                 .attr('class', 'rectG')
@@ -975,6 +1075,7 @@ export default {
                                     .data(d => horizenEX[+d])
                                     .join('g')
                                     .attr('class', 'rectElement')
+                                    .attr('opacity', opacityCache)
                                     .attr('transform', (d, i) =>`translate(${[0, yScale(i) - maxHeight]})`)
                                     .call(g => g.append('rect')
                                         .attr('height', maxHeight)
@@ -1008,9 +1109,9 @@ export default {
                         }
                         function infoArea(arr, index, flag){// barG bin distribute
                             let data = horizenEX.map(d => d[index]).flat().map(d => d.value),
-                                bin = d3.bin().thresholds(30)(data),
+                                bin = d3.bin().thresholds(15)(data),
                                 y = d3.scaleLinear().domain([bin[0].x0, bin[bin.length - 1].x1]).range([2, maxHeight - 2]),
-                                bin2 = d3.bin().thresholds(30)(horizenEX.slice(Math.ceil(maxLength / 2)- 1, Math.ceil(maxLength / 2)).map(d => d[index]).flat().map(d => d.value)),
+                                bin2 = d3.bin().thresholds(15)(horizenEX.slice(Math.ceil(maxLength / 2)- 1, Math.ceil(maxLength / 2)).map(d => d[index]).flat().map(d => d.value)),
                                 x = d3.scaleLinear().domain([0, d3.max(bin, d => d.length)]).range([0, maxHeight - 2]),
                                 area = d3.area()
                                     .x0(d => maxHeight - 2 -x(d.length))
@@ -1123,6 +1224,7 @@ export default {
                                         .attr('transform', (d, i) =>`translate(${[0, yScale(i)]})`)
                                             .call(g => g.append('path')
                                                 .attr('fill', (d, i) => lc[selectInfo[i].month])
+                                                .attr('stroke', (d, i) => d3.color(lc[selectInfo[i].month]).darker(0.4))
                                                 .attr('class', 'path')
                                                 .attr('opacity', 0.8)
                                                 .datum(d => d)
@@ -1246,6 +1348,7 @@ export default {
                                             .call(g => g.selectAll('.mapQ')
                                                 .data(d => d).join('rect')
                                                 .attr('fill', d => lc[d.process])
+                                                .attr('stroke', d => d3.color(lc[d.process]).darker(0.6))
                                                 .attr('class', 'mapQ')
                                                 .attr('y', d => -qBatch(d.Q))
                                                 .attr('height', d => qBatch(d.Q))
@@ -1254,30 +1357,111 @@ export default {
                                             .call(g => g.selectAll('.mapT2')
                                                 .data(d => d).join('rect')
                                                 .attr('fill', d => lc[d.process])
+                                                .attr('stroke', d => d3.color(lc[d.process]).darker(0.6))
                                                 .attr('class', 'mapT2')
                                                 .attr('y', d => -t2Batch(d.T2) - maxHeight/2)
                                                 .attr('height', d => t2Batch(d.T2))
                                                 .attr('width', (d, i) => xLabelData[d.i][i])
-                                                .attr('x', (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2)))
+                                                .attr('x', (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2))
+                                            .call(g => g.append('rect')
+                                                .attr('class', 'heatMapInnerBorder')
+                                                .attr('width', 0.5)
+                                                .attr('y', - maxHeight)
+                                                .attr('height', maxHeight))
+                                            .call(g => g.append('rect')
+                                                .attr('width', 5)
+                                                .attr('class', 'heatMapInnerBorder')
+                                                .attr('x', -2.5)
+                                                .attr('y', - maxHeight)
+                                                .attr('height', maxHeight)
+                                                .attr('opacity', 0)))
                         }
-
+                        function initMapBorder(){
+                            mapBorderG.selectAll('g')
+                                .data(selectInfo)
+                                .join('g')
+                                .attr('opacity', (d, i) => barVisObject[d.indexName] ? opacityCache(d, i) : 0)
+                                .attr('class', 'heatMapBorder')
+                                .attr('transform', (d, i) =>`translate(${[0, yScale(i)]})`)
+                                    .call(g => g.append('rect')
+                                        .attr('height', maxHeight)
+                                        .attr('width', RectWidth)
+                                        // .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
+                                        .attr('stroke-width', 0.5)
+                                        .attr('stroke', this._borderStyle.color)
+                                        .attr('rx', this._borderStyle.rx)
+                                        .attr('ry', this._borderStyle.ry)
+                                        .attr('fill', 'none'))
+                                    .call(g => g.append('line')
+                                        .attr('y1', maxHeight)
+                                        .attr('stroke', d => d3.color(lc[d.month]).darker(1.5))
+                                        .attr('stroke-width', 0.5)
+                                        .attr('fill', 'none'))
+                        }
+                        function initSideTextG(){
+                            sideTextG.selectAll('text').data(selectInfo).join('text')
+                                .attr('opacity', opacityCache)
+                                .attr('transform', (d, i) =>`translate(${[ 10 , yScale(i) - maxHeight/2]})`)
+                                    .text(d => d.indexName)
+                                    .attr('fill', d => d3.color(lc[d.month]).darker(1))
+                                    // .attr('fill', '#707274')
+                                .on('mouseover', (e, d) => {
+                                    this._overed(e, d.indexName, d.month)
+                                    this._dailyInfo.remove()
+                                })
+                                .on('mouseout', (e, d) => {
+                                    this._outed(e, d.indexName, d.month)
+                                })
+                        }
+                        function mouseOver(args){
+                            opacityCache = (d, i) => {
+                                if(indexScale(i) < rectNum){
+                                    if(d.indexName){
+                                        return args.indexOf(d.indexName) !== -1  ? 1 : 0.4
+                                    }else if(d[0].indexName){
+                                        return args.indexOf(d[0].indexName) !== -1  ? 1 : 0.4
+                                    }else if(d[0][0].indexName){
+                                        return args.indexOf(d[0][0].indexName) !== -1  ? 1 : 0.4
+                                    }
+                                }else{
+                                    return 0
+                                }
+                            }
+                            renderSort()
+                        }
+                        function mouseOut(){
+                            opacityCache = (d, i) => indexScale(i) < rectNum ? 1 : 0;
+                            renderSort()
+                        }
+                        return {
+                            mouseOver,
+                            mouseOut,
+                        }
                 }
 
                 _renderWheelFilter(){
                     let indexes;
                     if(this._fliterStatus) {
                         indexes = d3.map(this._chartData.filter(this._outrate(true, false)), d => d.indexName);
+                        const angle = new Array(this._processindex.length).fill([]);
+                        d3.groups(this._chartData.filter(this._outrate(true, false)), d => d.month)
+                            .map(d => {
+                                angle[d[0]] = d[1].map(d => (this._xpad[d.month](d.date) + this._barAngle/2) * 180 / Math.PI - 180 )
+                            });
+                        this._renderBorderG(angle)
                     }else{
                         indexes = d3.map(this._chartData, d => d.indexName);
+                        this._initBorderG()
                     }
+                    let searchIndex = d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden'
                     if(this._heatOrRiver){
-                        this._contentG.selectAll('.riverG').selectAll('g').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden')
+                        this._contentG.selectAll('.riverG').selectAll('g').attr('visibility', searchIndex)
                     }else{
-                        this._contentG.selectAll('.riverG').selectAll('circle').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden')
+                        this._contentG.selectAll('.riverG').selectAll('circle').attr('visibility', searchIndex)
                     }
-                    this._contentG.selectAll('.outerBarG').selectAll('g').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden');
-                    this._contentG.selectAll('.outerLineG').selectAll('g').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden');
-                    this._contentG.selectAll('.innerLineG').selectAll('g').attr('visibility', d => indexes.indexOf(d.indexName) !== -1 ? 'visible' : 'hidden');
+                    this._contentG.selectAll('.outerBarG').selectAll('g').attr('visibility', searchIndex);
+                    this._contentG.selectAll('.outerLineG').selectAll('g').attr('visibility', searchIndex);
+                    this._contentG.selectAll('.innerLineG').selectAll('g').attr('visibility', searchIndex);
                     // if(!this._merge){
                     //     this._contentG.selectAll('.outerElementG').selectAll('g')
                     // }
@@ -1307,6 +1491,7 @@ export default {
                 }
                 
                 _initBorderG(){
+                    this._contentG.selectAll('.borderG').remove()
                     const lcBorderFunc = d => d3.color(this._labelcolor[d]).darker(1)
                     this._contentG.selectAll('.borderG')
                             .data(this._padindex)
@@ -1335,13 +1520,57 @@ export default {
                             .attr('stroke-width', 0.5))     
                 }
 
+                _renderBorderG(angle){
+                    this._contentG.selectAll('.borderG').remove()
+                    const lcBorderFunc = d => d3.color(this._labelcolor[d]).darker(1),
+                        v = this._barAngle * 180 / Math.PI;
+                    const borderAngle = angle.map((d, i) => {
+                        d.sort((a, b) => a - b)
+                        let arr = [];
+                        if(d.length == 0)return arr
+                        arr = d.map(e => [e - v/2, e + v/2, i]);
+                        for(let index = 0; index < arr.length - 1; index++){
+                            if(arr[index + 1][0] - arr[index][1] < v/3){
+                                arr.splice(index, 2, [arr[index][0], arr[index + 1][1], i])
+                                index --
+                            }
+                        }
+                        return arr
+                    })
+                    this._contentG.selectAll('.borderG')
+                            .data(this._padindex.filter(d => angle[d].length !== 0))
+                            .join('g')
+                            .attr('class', 'borderG')
+                        .call(g => g.selectAll('g').data((d, i) => {console.log(borderAngle[d]); return borderAngle[d]})
+                            .join('g')
+                            .call(g => g.append('line')      //扇形左边界
+                                .attr('y1', this._radius.inner)
+                                .attr('y2', this._radius.outer)
+                                .attr('stroke', d => lcBorderFunc(d[2]))
+                                .attr('stroke-width', 0.5)
+                                .attr('transform', d => `rotate(${d[0]})`))
+                            .call(g => g.append('line')     //扇形右边界
+                                .attr('y1', this._radius.inner)
+                                .attr('y2', this._radius.outer)
+                                .attr('stroke', d => lcBorderFunc(d[2]))
+                                .attr('stroke-width', 0.5)
+                                .attr('transform', d => `rotate(${d[1]})`))
+                            .call(g => g.append('path')
+                                .attr('d', d => d3.arc()
+                                    .startAngle((d[1] + 180)* Math.PI / 180)
+                                    .endAngle((d[0] + 180) * Math.PI / 180)
+                                    .innerRadius(this._radius.outer)
+                                    .outerRadius(this._radius.outer + this._radius.bubble*1.1 + 0.25)(d))
+                                .attr('stroke', d => lcBorderFunc(d[2]))
+                                .attr('fill','none')
+                                .attr('stroke-width', 0.5)))
+                }
+
                 _initIconG(){
                     this._contentG.selectAll('iconG')
                         .data(this._padindex)
                         .join(enter => enter.append('image')
                             .attr('class', 'iconG')
-                            // .call(g => g.append('image')
-                                // .attr('class', 'icon')
                                 .attr('id', d => `icon${d}`)
                                 .attr('transform', d => `rotate(${(this._padAngle[d][0] + this._padAngle[d][1])/2 * 180 / Math.PI - 5.8})`)
                                 .attr('y', -this._radius.inner*0.97)
@@ -1365,7 +1594,7 @@ export default {
                     
                     const lcFunc = d => this._labelcolor[d],
                         lineColorFunc =  d => d3.color(this._labelcolor[d]).darker(1),
-                        v = (this._barAngle-Math.PI)/2,
+                        v = this._barAngle/2,
                         //河流图节点
                         circleColor = d => d3.color(this._labelcolor[d.month]).darker(0.2),
                         strokeColor = d => d3.color(this._labelcolor[d.month]).darker(1);
@@ -1436,6 +1665,8 @@ export default {
                         .selectAll('g')
                         .data(d => this._processData.get(d))
                         .join('g')
+                        .attr('class', this._processClass('heat'))
+                        .attr('id', this._indexId('heat'))
                         .attr('transform', d => `rotate(${(this._xpad[d.month](d.indexName) ) * 180 / Math.PI - 180 })`)
                         .call(g => g.selectAll('path').data(d => heatRange(d)).join('path')
                             // .attr('visibility', d => d.range ? 'visible' : 'hidden')
@@ -1502,7 +1733,7 @@ export default {
                 }
 
                 _initOuterLineG(){
-                    const v = (this._barAngle-Math.PI)/2,
+                    const v = this._barAngle/2,
                         lineStroke = d => (this._allIndex.indexOf(d.date) !== -1) ? d3.color(this._labelcolor[d.month]).darker(2) : d3.color(this._labelcolor[d.month]).darker(0.6),
                         lineStrokeWidth = this._outrate(this._leadlineStyle.highlight_strwidth, this._leadlineStyle.original_strwidth);
                     this._contentG
@@ -1523,7 +1754,7 @@ export default {
                 }
 
                 _initInnerLineG(){
-                    const v = (this._barAngle-Math.PI)/2,
+                    const v = this._barAngle/2,
                         lineStroke = d => (this._allIndex.indexOf(d.date) !== -1) ? d3.color(this._labelcolor[d.month]).darker(2) : d3.color(this._labelcolor[d.month]).darker(0.6),
                         lineStrokeWidth = this._outrate(this._leadlineStyle.highlight_strwidth, this._leadlineStyle.original_strwidth);
                     this._contentG
@@ -1592,6 +1823,8 @@ export default {
                                 wheel.selectAll('.circle_color'+d)
                                     .attr('r', wm._outrate(wm._circleStyle.highlight_r + 0.5, wm._circleStyle.original_r + 0.5))
                                     .attr('opacity', 1);
+                                wheel.selectAll('.heat'+d)
+                                    .attr('opacity', 1);
                                 wheel.selectAll('.precipitation'+d)
                                     .attr('stroke', wm._outrate(d3.color(this._labelcolor[d]).darker(1.6), daker(d)))
                                     .attr('opacity', 1)
@@ -1648,7 +1881,7 @@ export default {
                         piearc = d3.arc()
                             .innerRadius(0)
                             .outerRadius(this._radius.bubble * 0.12),
-                        v = (this._barAngle-Math.PI)/2;
+                        v = this._barAngle/2;
                     this._contentG.selectAll('.outerElementG')
                         .data(this._padindex)
                         .join(
@@ -1691,14 +1924,16 @@ export default {
                             .attr('transform', d => `rotate(${this._xpad[d.month](d.indexName) * 180 / Math.PI - 180})`) // rad 2 deg - 180 -> rotate back to 12 o'clock                
                             .call(g => g.append('path')
                                 .attr('d', this._line(this._radius.inner, this._radius.max)))
-                                .on('mouseenter', (e, d) => {
+                                .on('mouseover', (e, d) => {
                                     this._insertInfo(e, d);
                                     this._hightlightcss()
-                                    this._axisenter(d.indexName, d.month);                               
+                                    this._axisenter(d.indexName, d.month);
+                                    this._merge ? this._mouseEvents.mouseOver([d.indexName]) : undefined;                            
                                 })
                                 .on('mouseleave', (e, d) => {
                                     this._initcss()
                                     this._axisout(d.indexName, d.month);
+                                    this._merge ? this._mouseEvents.mouseOut() : undefined;
                                 });
                 }
 
@@ -1729,7 +1964,7 @@ export default {
                     const r = this._radius,
                         lc = this._labelcolor,
                         xpad = this._xpad,
-                        v = (this._barAngle-Math.PI)/2,
+                        v = this._barAngle/2,
                         chordG = this._g.append('g')
                             .attr('transform',`rotate(${-60})`)
                             .attr('class', 'chordG'),
@@ -1779,11 +2014,11 @@ export default {
                             .attr('fill', 'white')
                             .attr('opacity', 0)
                             .attr('d', this._line(r.inner, r.max)))
-                            .on('mouseenter', (e, d) => {
-                                this._overed(e, d)
+                            .on('mouseover', (e, d) => {
+                                this._overed(e, d.data.id, d.data.group)
                             })
                             .on('mouseout', (e, d) => {
-                                this._outed(e, d)
+                                this._outed(e, d.data.id, d.data.group)
                             })
                     const labelcol=(d , i) => d3.color(lc[+d[0].data.group]).darker(0.6);
                     const linedata = root.leaves().flatMap(leaf => leaf.outgoing);
@@ -1822,6 +2057,8 @@ export default {
                     cG.select('#circle'+name)
                             .attr('r', this._circleStyle.highlight_r)
                             .attr('opacity', 1);
+                    cG.select('#heat' + name)
+                        .attr('opacity', 1)
                     cG.select('#precipitation'+name)
                         .attr('stroke', wm._outrate(d3.color(lck).darker(1.6), daker))
                         .attr('opacity', 1)
@@ -1894,18 +2131,17 @@ export default {
                     return [...new Set(target)]
                 }
 
-                _outed(e, d) {
-                    let name = d.data.id,key=d.data.group;
+                _outed(e, name, key) {
                     this._initcss()
                     this._axisout(name, key);
                     let rlines = this._multiplyTarget(name);
                     for (let index of rlines){
                         this._axisout(index, key);
                     }
+                    this._merge ? this._mouseEvents.mouseOut() : undefined;
                 }
 
-                _overed(e, d){
-                    let name = d.data.id, key = d.data.group;
+                _overed(e, name, key){
                     const data = this._chartData.filter(d => d.indexName===name)[0];
                     this._hightlightcss()
                     this._axisenter(name, key);
@@ -1914,6 +2150,7 @@ export default {
                         this._axisenter(index, key);
                     }
                     this._insertInfo(e, data)
+                    this._merge ? this._mouseEvents.mouseOver([name,...rlines]) : undefined;
                 }
 
                 _initcss(){
@@ -1930,6 +2167,8 @@ export default {
                         cG.selectAll('.precipitation'+i)
                             .attr('opacity', 1)
                         cG.selectAll('.circle_color'+i)
+                            .attr('opacity', 1)
+                        cG.selectAll('.heat' + i)
                             .attr('opacity', 1)
                         cG.selectAll('.arcpie'+i)
                             .attr('opacity', 1)
@@ -1957,6 +2196,8 @@ export default {
                         cG.selectAll('.precipitation' + i)
                             .attr('opacity', 0.5)
                         cG.selectAll('.circle_color' + i)
+                            .attr('opacity', 0.5)
+                        cG.selectAll('.heat' + i)
                             .attr('opacity', 0.5)
                         cG.selectAll('.arcpie' + i)
                             .attr('opacity', 0.5)
@@ -2066,28 +2307,28 @@ export default {
                         .innerRadius(y1)
                         .outerRadius(y2)
                         .startAngle(Math.PI)
-                        .endAngle(this._barAngle)();
+                        .endAngle(this._barAngle + Math.PI)();
                 }
                 _linepad(y1, y2) {
                     return d3.arc()
                         .innerRadius(y1)
                         .outerRadius(y2)
                         .startAngle(Math.PI)
-                        .padAngle((this._barAngle - Math.PI)/this._linespace)
-                        .endAngle(this._barAngle)();
+                        .padAngle((this._barAngle)/this._linespace)
+                        .endAngle(this._barAngle + Math.PI)();
                 }
 
                 _outrate(item1 , item2){
                     return d => (this._allIndex.indexOf(d.indexName) !== -1 && this._allIndex.indexOf(d.indexName) < 9) ? item1 : item2
                 }
 
-                _sliderArray(arr){
+                _sliderArray(arr, totalData){
                     return d3.map(arr, (d, f) => {
                         d.index = f;
                         // console.log(batchData);
                         var name = d.indexName,
                         
-                        batch = batchData.map(e => {
+                        batch = totalData.map(e => {
                             let s = {},
                             i = e.INDEX.indexOf(name);
                             s.time = new Date(e.toc),
@@ -2114,7 +2355,7 @@ export default {
                     })
                 }
             }
-            const wheel = new wheelRound(this.svg)
+            this.wheelChart = new wheelRound(this.svg)
                             .size([diameter, diameter])
                             .data(wheeldata)
                             .process(processJson)
@@ -2132,7 +2373,9 @@ export default {
             'corrSize',
             'multiPara',
             'curveSize',
-            'trainBorder'
+            'trainBorder',
+            'filterStatus',
+            'heatOrRiver'
         ])
 	},
     watch:{
@@ -2144,6 +2387,15 @@ export default {
         },
         curveSize:function(){
             this.renderChart()
+        },
+        filterStatus:function(){
+            this.wheelChart._fliterStatus = this.filterStatus
+            this.wheelChart._renderWheelFilter()
+        },
+        heatOrRiver:function(){
+            this.wheelChart._heatOrRiver = this.heatOrRiver
+            this.heatOrRiver ? this.wheelChart._initHeatG() : this.wheelChart._initRiverG()
+            this.wheelChart._renderWheelFilter()
         }
     }
 }

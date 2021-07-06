@@ -261,6 +261,7 @@ import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 // import myJsonData from "./sampledata/jsondata.json"
+import correlationData from './sampledata/corr.json'
 // import myStationData from "./sampledata/stationdata.js"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
@@ -702,12 +703,16 @@ export default {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
 				return false
 			}
-			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
+			// await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
+			// 	this.$nextTick(function() {
+			// 		this.$refs[upid][0].paintChart(diagnosisData,Response.data)
+			// 		this.corrdata = Response.data
+			// 	})	
+			// })
 				this.$nextTick(function() {
-					this.$refs[upid][0].paintChart(diagnosisData,Response.data)
-					this.corrdata = Response.data
-				})	
-			})
+					this.$refs[upid][0].paintChart(diagnosisData, correlationData)
+					this.corrdata = correlationData
+				})
 		},
 		mareyUpdate(){
 			this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
@@ -774,9 +779,10 @@ export default {
 			// 	// Object.assign(processDetail, detailProData)
 			// }
 			// console.log(processDetail)
-			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-				this.$refs.wheelering.paintChart(diagnosisData,Response.data, processData)
-			})
+			// await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
+			// 	this.$refs.wheelering.paintChart(diagnosisData,Response.data, processData)
+			// })
+			this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
 			// this.paintDetailPro(this.processTurn)
 		},
 

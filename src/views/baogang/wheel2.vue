@@ -144,7 +144,7 @@ export default {
                     this._padAngle=[];
                     this._linespace=6;
                     this._merge = true;
-                    this._horizonView = false;
+                    this._horizonView = true;
                     this._indexdata = [];
                     this._allIndex = undefined;    //index name
                     this._indexScale = undefined;
@@ -519,7 +519,8 @@ export default {
                                 .outerRadius(r.bubble * 0.16);
                     var limit = this._labelLimit,
                         RectWidth = 400,
-                        rectX = r.outer + 250,  //rect_doct x
+                        arcX = 200,
+                        rectX = r.outer + 300,  //rect_doct x
                         maxHeight = 25,   //rect max height
                         rectPadding = {left: 5, right: 5, top: 5, bottom: 2},
                         indexSpace = 5,
@@ -584,7 +585,7 @@ export default {
                             //https://observablehq.com/d/d503153fbfd48b03
 
                         wm._horizonView ? initMergeArea() : initHorizenArea();
-                        if(rectArray.some(d => d === maxHeight))renderRectG()
+                        if(rectArray.some(d => d === maxHeight))initRectG()
                         initAxisG(timeScale);
 
                         var triangleG = mainG.append('g')
@@ -628,6 +629,11 @@ export default {
                         const mapBorderG = mainG.append('g').attr('class', 'mapBorderG').attr('transform', `translate(${[rectX, 0]})`);
                         initMapBorder()
 
+                        const sideTextG = mainG.append('g').attr('class', 'sideTextG').attr('transform', `translate(${[rectX + RectWidth, 0]})`);
+                        initSideTextG.call(this)
+
+                        renderSort()
+
                         function renderyAxis(){
                             let invert = d3.scaleOrdinal().domain(indexScale.range()).range(indexScale.domain())
                             rectHeight = indexArray.map(d => (barVisObject[indexSort[invert(+d)]] ? 2 : 1 )* maxHeight + indexSpace)
@@ -642,12 +648,12 @@ export default {
                             lineToRect = (d, i) =>{
                                 let centerY = centerScaleY(d),
                                     endY = yScale(+i);
-                                return [[rectX - 75, centerY],[rectX - 60, centerY], [rectX - maxHeight * 2, endY]]
+                                return [[rectX - arcX + 75, centerY],[rectX - arcX + 85, centerY], [rectX - maxHeight * 2, endY]]
                             };
                             lineToCircle = d =>{
                                 let [startX, startY] = startXY(d),
                                 centerY = centerScaleY(d);
-                                return [[startX, startY], [startX + 25, centerY], [rectX - 105, centerY]]
+                                return [[startX, startY], [startX + 25, centerY], [rectX - arcX + 30, centerY]]
                             };
                         }
                         function initIcon(){// init triangleG
@@ -689,18 +695,18 @@ export default {
                                         .attr('fill', d =>  lc[d.month])
                                         .attr('r', r.bubble * 0.16)
                                         .attr('stroke',d => d3.color(lc[d.month]).darker(0.5))
-                                        .attr('transform', d =>  `translate(${[rectX - 145, centerScaleY(d)]})`))
+                                        .attr('transform', d =>  `translate(${[rectX - arcX, centerScaleY(d)]})`))
                                 .call(g => g.append('text')
                                         .attr('class', 'sortIndex')
                                         .text((d, i) => +indexScale(i) + 1)
-                                        .attr('transform', d => `translate(${[rectX - 145, centerScaleY(d) + 2.5]})`))
+                                        .attr('transform', d => `translate(${[rectX - arcX, centerScaleY(d) + 2.5]})`))
                                 .call(g => g.append('text')
                                     .attr('font-size', '8px')
                                     .attr('class', d => `arctext${d.month}`)
                                     .attr('id', d => `arctext${d.indexName}`)
                                     .attr('fill', d => d3.color(lc[d.month]).darker(0.5))
                                     .text(d => d.indexName.replace(/thickness/, '').replace(/temp_uniformity_/, '').replace(/wedge/, '').slice(0, 8))
-                                    .attr('transform', d => `translate(${[rectX - 90, centerScaleY(d) + 2]})`))
+                                    .attr('transform', d => `translate(${[rectX - arcX + 55, centerScaleY(d) + 2]})`))
                                 .call(g => g.append('path')
                                     .attr('class', 'lineToRect')
                                     .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
@@ -713,8 +719,10 @@ export default {
                                     .attr('transform', (d, i) => `translate(${[rectX - 2 * maxHeight, yScale(i) - maxHeight]})`)
                                     .attr('height', maxHeight)
                                     .attr('width', RectWidth + 2 * maxHeight)
-                                    .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
+                                    .attr('stroke', d => d3.color(lc[d.month]).darker(1.5))
                                     .attr('stroke-width', 0.75)
+                                    .attr('rx', 5)
+                                    .attr('ry', 5)
                                     .attr('fill', 'none')
                                     .on('mouseover', this._stopPropagation)
                                     .on('mouseout', this._stopPropagation))
@@ -728,7 +736,7 @@ export default {
                         function initArcG(){
                             arcG.selectAll('g').data(selectInfo)
                                 .join('g')
-                                .attr('transform', d => `translate(${[rectX - 125, centerScaleY(d)]})`)
+                                .attr('transform', d => `translate(${[rectX - arcX + 20, centerScaleY(d)]})`)
                                 .attr('opacity', opacityCache)
                                 .call(g => g.selectAll('path').data(d => pieAngle(d.property))
                                     .join('path')
@@ -785,7 +793,7 @@ export default {
                                 .attr('transform', d => `translate(${[rectPosition[d], 0]})`)
                             updateArea();
                             renderAxisG(timeScale);
-                            minRect !== maxHeight ? mainG.selectAll('.rectG').remove() : renderRectG();
+                            minRect !== maxHeight ? mainG.selectAll('.rectG').remove() : initRectG();
                         }
                         function initSort(){//init sortG
                             sortG.selectAll('g')
@@ -875,16 +883,22 @@ export default {
                                     .attr('opacity', opacityCache)
                                         .selectAll('path')
                                         .attr('d', trianIcon)
+                                textG.selectAll('text')
+                                    .transition(t)
+                                    .attr('opacity', opacityCache)
                                 if(wm._mouseDis !== undefined){
                                     var mouseInfo = mouseText(wm._mouseDis);
                                     textG.selectAll('text')
                                         .transition(t)
-                                        .attr('opacity', opacityCache)
                                         .attr('transform', (d, i) =>`translate(${[wm._mouseDis - 10, yScale(i) - maxHeight/2]})`)
                                         .text((d, i) => (+mouseInfo[i]).toFixed(2))
-                                    textG.select('.mouseG').raise()
-                                    textG.raise()
                                 }
+                                textG.select('.mouseG').raise()
+                                textG.raise()
+                                sideTextG.selectAll('text')
+                                    .transition(t)
+                                    .attr('opacity', opacityCache)
+                                    .attr('transform', (d, i) =>`translate(${[ 10 , yScale(i) - maxHeight/2]}) rotate(15)`)
                                 sliderG.selectAll('.heatMapElement')
                                     .transition(t)
                                     .attr('opacity', (d, i) => barVisObject[d[0].indexName] ? opacityCache(d, i) : 0)
@@ -896,6 +910,7 @@ export default {
                                 arcG.selectAll('g')
                                     .transition(t)
                                     .attr('opacity', opacityCache)
+                                arcG.raise()
                                 barG.raise()
                                 lineG.raise()
                         }
@@ -1033,7 +1048,7 @@ export default {
                                 wm._mouseDis = mouseDis;
                             })
                         }
-                        function renderRectG(){
+                        function initRectG(){
                             mainG.append('g')
                                 .attr('transform', d =>`translate(${[rectX, 0]})`)
                                 .selectAll('.rectG').data(Object.keys(rectPosition).filter((d, i) => i !== Math.ceil(maxLength/2) - 1))
@@ -1328,7 +1343,19 @@ export default {
                                                 .attr('y', d => -t2Batch(d.T2) - maxHeight/2)
                                                 .attr('height', d => t2Batch(d.T2))
                                                 .attr('width', (d, i) => xLabelData[d.i][i])
-                                                .attr('x', (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2)))
+                                                .attr('x', (d, i) => xBatch[d.i](d.time) - xLabelData[d.i][i]/2))
+                                            .call(g => g.append('rect')
+                                                .attr('class', 'heatMapInnerBorder')
+                                                .attr('width', 0.5)
+                                                .attr('y', - maxHeight)
+                                                .attr('height', maxHeight))
+                                            .call(g => g.append('rect')
+                                                .attr('width', 5)
+                                                .attr('class', 'heatMapInnerBorder')
+                                                .attr('x', -2.5)
+                                                .attr('y', - maxHeight)
+                                                .attr('height', maxHeight)
+                                                .attr('opacity', 0)))
                         }
                         function initMapBorder(){
                             mapBorderG.selectAll('g')
@@ -1342,7 +1369,29 @@ export default {
                                         .attr('width', RectWidth)
                                         .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
                                         .attr('stroke-width', 0.5)
+                                        .attr('rx', 5)
+                                        .attr('ry', 5)
                                         .attr('fill', 'none'))
+                                    .call(g => g.append('line')
+                                        .attr('y1', maxHeight)
+                                        .attr('stroke', d => d3.color(lc[d.month]).darker(1.5))
+                                        .attr('stroke-width', 0.5)
+                                        .attr('fill', 'none'))
+                        }
+                        function initSideTextG(){
+                            sideTextG.selectAll('text').data(selectInfo).join('text')
+                                .attr('opacity', opacityCache)
+                                .attr('transform', (d, i) =>`translate(${[ 10 , yScale(i) - maxHeight/2]}) rotate(15)`)
+                                    .text(d => d.indexName)
+                                    // .attr('fill', d => d3.color(lc[d.month]).darker(1))
+                                    .attr('fill', '#707274')
+                                .on('mouseover', (e, d) => {
+                                    this._overed(e, d.indexName, d.month)
+                                    this._dailyInfo.remove()
+                                })
+                                .on('mouseout', (e, d) => {
+                                    this._outed(e, d.indexName, d.month)
+                                })
                         }
                         function mouseOver(args){
                             opacityCache = (d, i) => {

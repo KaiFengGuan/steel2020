@@ -521,7 +521,7 @@ export default {
           this._zoom_mini_y = d3.scaleLinear()
             .domain([0, this._brush_size.h])
             .range([this._stations_size.h, this._height]);
-          this._brush_select[1] = (this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom) * 0.15;
+          this._brush_select[1] = (this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom) * 0.25;
 
           
           this._x = d3.scaleLinear()
@@ -1298,12 +1298,18 @@ export default {
             arr.upid = d.upid
             return arr
           });
-          let timebins_good = stopsTime_good[0].map((d, i) => {
-            return d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i]))
-          });
-          let timebins_bad = stopsTime_bad[0].map((d, i) => {
-            return d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i]))
-          });
+          
+          let max_stations = d3.max(stopsTime_good.map(d => d.length));
+          let timebins_good = [];
+          let timebins_bad = [];
+          for (let i = 0; i < max_stations; i++) {
+            timebins_good.push(d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i])));
+            timebins_bad.push(d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i])));
+          }
+
+
+
+          
           let binxScale = timebins_good.map((d, i) => 
             d3.scaleLinear()
               .domain([

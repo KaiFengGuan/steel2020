@@ -36,11 +36,11 @@
 				</el-row>
 				<el-row>
 					<el-card class="myel-card">		 
-						<div class="my-card-title" slot="header">
+						<div class="my-card-title" slot="header" >
 								<span style="margin-left:5px">Tabular View  <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search"></el-button> </span>
 
 						</div>
-						<div class="my-card-body" style="padding-top:5px">
+						<div class="my-card-body" style="padding-top:5px; overflow:scroll">
 							<brushableParallel ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse"></brushableParallel>
 						</div>
 						<!-- <el-col :span="4"> -->
@@ -310,12 +310,12 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2019, 2, 1, 0, 0),
+			startmonth: new Date(2019, 2, 10, 0, 0),
 			time: undefined,
 			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
-			interval: 8,
+			interval: 2,
 			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
@@ -398,7 +398,7 @@ export default {
 			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
 			// 	endmonth.setMonth(1)
       // }
-      endmonth.setDate(endmonth.getDate() + 20)
+      endmonth.setDate(endmonth.getDate() + 5)
 
 			return [this.startmonth, endmonth]
 		},
@@ -507,40 +507,40 @@ export default {
 			this.changeDiagnosisState()
 			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 
-			// response
-			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
-			await this.getStationsData(startDate, endDate).then(Response => {
-				this.stationsData=Response.data
-      })
+	// 		// response
+	// 		// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
+	// 		await this.getStationsData(this.startDate, this.endDate).then(Response => {
+	// 			this.stationsData=Response.data
+    //   })
 
-			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
+	// 		this.jsonData = (await this.getJsonData(startDate, endDate)).data;
+	// 		// this.jsonData = this.jsonData.filter(d => {
+	// 		// 	return this.brushUpid.includes(d.upid)
+	// 		// })
 
-			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
-			// this.getplatetype();
-			let allDataArr = []
-			for (let item of this.jsonData) {
-					let upid = item['upid']
-					allDataArr.push(flagData[upid])
-			}
-			for (let i = 0; i < this.jsonData.length; i++) {
-				this.jsonData[i]['flag'] = allDataArr[i]
-			}
+	// 		let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
+	// 		// this.getplatetype();
+	// 		let allDataArr = []
+	// 		for (let item of this.jsonData) {
+	// 				let upid = item['upid']
+	// 				allDataArr.push(flagData[upid])
+	// 		}
+	// 		for (let i = 0; i < this.jsonData.length; i++) {
+	// 			this.jsonData[i]['flag'] = allDataArr[i]
+	// 		}
 
-			// paint
-			this.loadingDataLoading = false
-			this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
-      if(this.scatterData.length!==0)this.mergeflag()
-      // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData, this.isMerge);
+	// 		// paint
+	// 		this.loadingDataLoading = false
+	// 		this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
+	// 		// this.jsonData = this.jsonData.filter(d => {
+	// 		// 	return this.brushUpid.includes(d.upid)
+	// 		// })
+    //   if(this.scatterData.length!==0)this.mergeflag()
+    //   // console.log("jsonData: ", this.jsonData);
+	// 		this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData, this.isMerge);
 
-	// 		// clear
-	// 		this.selectedTrainData = [];
+	// // 		// clear
+	// // 		this.selectedTrainData = [];
 		},
 		mergeflag(){
 			let mergedata=[]
@@ -945,6 +945,7 @@ export default {
 		startDate:function(){
 			if(this.scatterData.length == 0)return
 			this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
+			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 			this.getHttpData()
 		}
 	}

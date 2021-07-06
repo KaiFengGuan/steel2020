@@ -674,10 +674,14 @@ export default {
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
 			}
-			this.upidSelect = [...new Set(value.upidSelect)]
+			this.upidSelect = [...new Set(value.upidSelect)].filter(d => this.upidData.get(d) !== undefined)
 
 			for(let item of value.upidSelect){
-				await this.paintScatterList(item)
+				try{
+					await this.paintScatterList(item)
+				}catch(e){
+					console.log(e)
+				}
 			}
 			this.corrdata = []
 			await this.paintUnderCharts(this.upidSelect[0]);
@@ -697,7 +701,6 @@ export default {
 			// 	return false
 			// }
 			var diagnosisData = this.upidData.get(upid)[0]
-			console.log(diagnosisData)
 			// Vue.set(this.sampleCss, upid, "solid 0.05px " + this.trainBorder(diagnosisData))
 			if(this.corrdata.length !== 0) {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
@@ -761,10 +764,13 @@ export default {
 
 			this.selectedUpid =  "UPID " + upid
 			// let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
+			// console.log(this.upidData.get(upid))
 			var diagnosisData = this.upidData.get(upid)[0]
 			this.sampleCss = {}
 			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
-			var processData = this.chooseList.map(d => d.map(e => this.upidData.get(e)[0]))
+			var processData = this.chooseList.map(d => d.filter(e => this.upidData.get(e) !== undefined).map(e => this.upidData.get(e)[0]))
+			console.log(processData)
+			// return 
 			// this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
 			this.diagnosisData = diagnosisData
 			// let processDetail = []

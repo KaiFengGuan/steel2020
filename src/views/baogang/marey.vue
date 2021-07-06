@@ -767,8 +767,8 @@ export default {
 			var diagnosisData = this.upidData.get(upid)[0]
 			this.sampleCss = {}
 			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
-			var processData = []
-			this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
+			var processData = this.chooseList.map(d => d.map(e => this.upidData.get(e)[0]))
+			// this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
 			this.diagnosisData = diagnosisData
 			// let processDetail = []
 			// for(let item of this.processArray){
@@ -908,19 +908,35 @@ export default {
 			],
 			"type": "group",
 			"batch": [
-				"19301001000",
+				["19301001000",
 				"19301002000",
 				"19301003000",
 				"19301004000",
 				"19301005000",
 				"19301006000",
 				"19301007000",
-				"19301008000"
+				"19301008000"],
+				["19301001000",
+				"19301002000",
+				"19301003000",
+				"19301004000",
+				"19301005000",
+				"19301006000",
+				"19301007000",
+				"19301008000"],
+				["19301001000",
+				"19301002000",
+				"19301003000",
+				"19301004000",
+				"19301005000",
+				"19301006000",
+				"19301007000",
+				"19301008000"],
 			]
 		}
 		this.trainClick(demo)
 		// this.getplatetype()
-		this.changeTime()
+		// this.changeTime()
 	},
 	watch: {
 		startDate:function(){

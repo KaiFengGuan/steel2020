@@ -156,6 +156,13 @@ export default {
                     this._processClass = e => d => e + d.month,
                     this._indexId = e => d => e + d.indexName,
 
+                    //mainG
+                    this._borderStyle ={
+                        color: '#b9bbbd',
+                        rx: 3,
+                        ry: 3
+                    }
+
                     //contentG
                     this._fliterStatus = false;
                     this._contentG = null;
@@ -557,15 +564,15 @@ export default {
                             rectPosition = Array.from(d3.cumsum(rectArray));
                         initDragG();
                         
-                        var sliderData = this._sliderArray(selectInfo),
+                        var sliderData = batchData.map(d => this._sliderArray(selectInfo, d)),
                             // dataEX = sliderData.map((d, i) => {
                             //     return new Array(maxLength).fill(wm._deepCopy(d)).map((e, f) =>{
 
                             //     }
                             //     )
                             // }),
-                            horizenEX = (new Array(maxLength).fill(0))
-                            .map((d, i) => wm._deepCopy(sliderData).map((e, f) =>{ 
+                            horizenEX = sliderData
+                            .map((d, i) => d.map((e, f) =>{ 
                                     var temp = e.map(g => {
                                         g.i = i;
                                         return g
@@ -627,7 +634,7 @@ export default {
                         sliderG.selectAll('.heatMapG').raise();
 
                         const mapBorderG = mainG.append('g').attr('class', 'mapBorderG').attr('transform', `translate(${[rectX, 0]})`);
-                        initMapBorder()
+                        initMapBorder.call(this)
 
                         const sideTextG = mainG.append('g').attr('class', 'sideTextG').attr('transform', `translate(${[rectX + RectWidth, 0]})`);
                         initSideTextG.call(this)
@@ -671,7 +678,8 @@ export default {
                                 .call(g => g.append('path')
                                     .attr('transform', `translate(${[maxHeight/2, maxHeight/2]})`)
                                     .attr('d', trianIcon)
-                                    .attr('fill', d => lc[d.month]))
+                                    // .attr('fill', d => lc[d.month]))
+                                    .attr('fill', wm._borderStyle.color))
                                 .on('click', function(e, d){
                                     const t = d3.transition()
                                         .duration(300)
@@ -719,10 +727,11 @@ export default {
                                     .attr('transform', (d, i) => `translate(${[rectX - 2 * maxHeight, yScale(i) - maxHeight]})`)
                                     .attr('height', maxHeight)
                                     .attr('width', RectWidth + 2 * maxHeight)
-                                    .attr('stroke', d => d3.color(lc[d.month]).darker(1.5))
+                                    // .attr('stroke', d => d3.color(lc[d.month]).darker(1.5))
+                                    .attr('stroke', this._borderStyle.color)
                                     .attr('stroke-width', 0.75)
-                                    .attr('rx', 5)
-                                    .attr('ry', 5)
+                                    .attr('rx', this._borderStyle.rx)
+                                    .attr('ry', this._borderStyle.ry)
                                     .attr('fill', 'none')
                                     .on('mouseover', this._stopPropagation)
                                     .on('mouseout', this._stopPropagation))
@@ -898,7 +907,7 @@ export default {
                                 sideTextG.selectAll('text')
                                     .transition(t)
                                     .attr('opacity', opacityCache)
-                                    .attr('transform', (d, i) =>`translate(${[ 10 , yScale(i) - maxHeight/2]}) rotate(15)`)
+                                    .attr('transform', (d, i) =>`translate(${[ 10 , yScale(i) - maxHeight/2]})`)
                                 sliderG.selectAll('.heatMapElement')
                                     .transition(t)
                                     .attr('opacity', (d, i) => barVisObject[d[0].indexName] ? opacityCache(d, i) : 0)
@@ -1013,6 +1022,13 @@ export default {
                                     .attr('stroke', (d, i) => lc[selectInfo[i].month])
                                     .attr('fill', 'none')
                                     .attr('stroke-width', 0.25))
+                                // .call(g => g.selectAll('.badSteel')
+                                //     .data((d, i) => infoData(d, i, true))
+                                //     .attr(''))
+                                // .call(g => g.append('path')
+                                //     .attr('fill', '#b9c6cd')
+                                //     .attr('opacity', 0.8)
+                                //     .attr('d', (d, i) => infoArea(d, i, true)))
                                 .call(g => g.append('path')
                                     .attr('fill', '#b9c6cd')
                                     .attr('opacity', 0.8)
@@ -1093,9 +1109,9 @@ export default {
                         }
                         function infoArea(arr, index, flag){// barG bin distribute
                             let data = horizenEX.map(d => d[index]).flat().map(d => d.value),
-                                bin = d3.bin().thresholds(20)(data),
+                                bin = d3.bin().thresholds(15)(data),
                                 y = d3.scaleLinear().domain([bin[0].x0, bin[bin.length - 1].x1]).range([2, maxHeight - 2]),
-                                bin2 = d3.bin().thresholds(20)(horizenEX.slice(Math.ceil(maxLength / 2)- 1, Math.ceil(maxLength / 2)).map(d => d[index]).flat().map(d => d.value)),
+                                bin2 = d3.bin().thresholds(15)(horizenEX.slice(Math.ceil(maxLength / 2)- 1, Math.ceil(maxLength / 2)).map(d => d[index]).flat().map(d => d.value)),
                                 x = d3.scaleLinear().domain([0, d3.max(bin, d => d.length)]).range([0, maxHeight - 2]),
                                 area = d3.area()
                                     .x0(d => maxHeight - 2 -x(d.length))
@@ -1208,6 +1224,7 @@ export default {
                                         .attr('transform', (d, i) =>`translate(${[0, yScale(i)]})`)
                                             .call(g => g.append('path')
                                                 .attr('fill', (d, i) => lc[selectInfo[i].month])
+                                                .attr('stroke', (d, i) => d3.color(lc[selectInfo[i].month]).darker(0.4))
                                                 .attr('class', 'path')
                                                 .attr('opacity', 0.8)
                                                 .datum(d => d)
@@ -1331,6 +1348,7 @@ export default {
                                             .call(g => g.selectAll('.mapQ')
                                                 .data(d => d).join('rect')
                                                 .attr('fill', d => lc[d.process])
+                                                .attr('stroke', d => d3.color(lc[d.process]).darker(0.6))
                                                 .attr('class', 'mapQ')
                                                 .attr('y', d => -qBatch(d.Q))
                                                 .attr('height', d => qBatch(d.Q))
@@ -1339,6 +1357,7 @@ export default {
                                             .call(g => g.selectAll('.mapT2')
                                                 .data(d => d).join('rect')
                                                 .attr('fill', d => lc[d.process])
+                                                .attr('stroke', d => d3.color(lc[d.process]).darker(0.6))
                                                 .attr('class', 'mapT2')
                                                 .attr('y', d => -t2Batch(d.T2) - maxHeight/2)
                                                 .attr('height', d => t2Batch(d.T2))
@@ -1367,10 +1386,11 @@ export default {
                                     .call(g => g.append('rect')
                                         .attr('height', maxHeight)
                                         .attr('width', RectWidth)
-                                        .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
+                                        // .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
                                         .attr('stroke-width', 0.5)
-                                        .attr('rx', 5)
-                                        .attr('ry', 5)
+                                        .attr('stroke', this._borderStyle.color)
+                                        .attr('rx', this._borderStyle.rx)
+                                        .attr('ry', this._borderStyle.ry)
                                         .attr('fill', 'none'))
                                     .call(g => g.append('line')
                                         .attr('y1', maxHeight)
@@ -1381,10 +1401,10 @@ export default {
                         function initSideTextG(){
                             sideTextG.selectAll('text').data(selectInfo).join('text')
                                 .attr('opacity', opacityCache)
-                                .attr('transform', (d, i) =>`translate(${[ 10 , yScale(i) - maxHeight/2]}) rotate(15)`)
+                                .attr('transform', (d, i) =>`translate(${[ 10 , yScale(i) - maxHeight/2]})`)
                                     .text(d => d.indexName)
-                                    // .attr('fill', d => d3.color(lc[d.month]).darker(1))
-                                    .attr('fill', '#707274')
+                                    .attr('fill', d => d3.color(lc[d.month]).darker(1))
+                                    // .attr('fill', '#707274')
                                 .on('mouseover', (e, d) => {
                                     this._overed(e, d.indexName, d.month)
                                     this._dailyInfo.remove()
@@ -2302,13 +2322,13 @@ export default {
                     return d => (this._allIndex.indexOf(d.indexName) !== -1 && this._allIndex.indexOf(d.indexName) < 9) ? item1 : item2
                 }
 
-                _sliderArray(arr){
+                _sliderArray(arr, totalData){
                     return d3.map(arr, (d, f) => {
                         d.index = f;
                         // console.log(batchData);
                         var name = d.indexName,
                         
-                        batch = batchData.map(e => {
+                        batch = totalData.map(e => {
                             let s = {},
                             i = e.INDEX.indexOf(name);
                             s.time = new Date(e.toc),

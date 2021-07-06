@@ -34,7 +34,7 @@ export default {
             // // diagnosisStation:false,
             // keys: [ "tgtplatethickness", "tgtplatelength2","tgtwidth", "slab_thickness"],
             brushGroup:[],
-            newBrushData:[[10,40],[10,50],[1.5,4.5],[2.0,3.5],[1100,1200],[800,1000],[740,820],[300,700],[10.0,40.0]],
+            newBrushData:[[10,40],[20,45],[2.5,4.0],[2.0,3],[1100,1140],[600,800],[740,820],[300,700],[10.0,40.0]],
             brush: d3.brushX(),
             lastSelections:new Map(),
             lastHandle:new Map(),
@@ -243,7 +243,7 @@ export default {
                             .attr("fill-opacity", 1)
                             .attr("stroke", "#90a4ae")
                             // .attr("stroke", "red")
-                            .attr("stroke-width", 1)
+                            .attr("stroke-width", 2)
                             .attr("cursor", "ew-resize")
                             .attr("d", vm.diagnosisState ? arcDiagnosis : arc))
                         .attr("display", selection === null ? "none" : null)
@@ -345,6 +345,7 @@ export default {
                         .attr("stroke","#000")
                         .attr("stroke-width",1)
                 this.brushSelection.set(keys[item], d3.extent(d3.filter(brushdata, d => new Date(d.toc) >= startTime && new Date(d.toc) <= endTime), d => d[keys[item]]))
+                // this.newBrushSelection.set(keys[item],this.newBrushData[item])
                 this.newBrushSelection.set(keys[item],this.newBrushData[item])
             }
             d3.select(".rectBar").raise()
@@ -479,6 +480,9 @@ export default {
             if(vm.diagnosisState){
                 selections = this.newBrushSelection
             }else{
+                  
+
+
                 selections = this.brushSelection   
             }
         //   debugger
@@ -542,87 +546,82 @@ export default {
                             // .attr("font-weight", util.tabularTipsTextAttr.fontWeight)
                             // .attr("font-style", util.tabularTipsTextAttr.fontStyle)
                             .text(d => d.replace(/tgtwidth/, "tgt_wd").replace(/tgtthickness/, "tgt_th")
-                            .replace(/tgtplatelength2/, "tgt_len").replace(/slab_thickness/, "slab_th").replace(/tgtdischargetemp/, "tgtdischarg").replace(/tgttmplatetemp/,"tgttmplate")
+                            .replace(/tgtplatelength2/, "tgt_len").replace(/slab_thickness/, "slab_th").replace(/tgtdischargetemp/, "tgt_disch").replace(/tgttmplatetemp/,"tgt_temp")
                             .replace(/cooling_start_temp/,"start_temp")
                             .replace(/cooling_stop_temp/,"stop_temp")
                             .replace(/cooling_rate1/,"cooling_rate")
-                            .replace(/status_cooling/,"sta_cooling")
+                            .replace(/status_cooling/,"sta_cool")
                             ))
                             .on('click', function(e,d){
-
-                                    // if(d == "tgtthickness"){
-                                    //     objStatus["tgtthickness"] = !objStatus["tgtthickness"]
-                                    // }else if(d == "tgtplatelength2"){
-                                    //     objStatus["tgtplatelength2"] = !objStatus["tgtplatelength2"]
-                                    // }else if(d == "tgtwidth"){
-                                    //     objStatus["tgtwidth"] = !objStatus["tgtwidth"]
-                                    // }else{
-                                    //     objStatus["slab_thickness"] = !objStatus["slab_thickness"]
-                                    // }
                                     objStatus[d] = !objStatus[d]
-
                                     svg.select(".rectButton" + keys.indexOf(d)).attr("fill", objStatus[d] ?  "#94a7b7" :  "#ffffff" )
                                     svg.select(".textButton" + keys.indexOf(d)).attr('fill', objStatus[d] ? "#ffffff": "#94a7b7")
                                     svg.select(".card"+ keys.indexOf(d)).attr("stroke-opacity",objStatus[d] ? 1 : 0)
                                     svg.select(".card"+ keys.indexOf(d)).attr("fill",objStatus[d] ? "#f7f7f7" : "white")
+                                    svg.select(".card"+ keys.indexOf(d)).attr("fill-opacity",objStatus[d] ? 0.7 : 1)
                                 })
-            svg.select(".card9").attr("fill","#f7f7f7").attr("stroke-opacity",0.3)
-            svg.select(".textButton9" ).attr('fill', "#ffffff")
-            svg.select(".rectButton9").attr("fill",  "#94a7b7" )
+            svg.select(".card" + newkeys.indexOf("status_cooling")).attr("fill","#f7f7f7").attr("stroke-opacity",1)
+            svg.select(".textButton"+ newkeys.indexOf("status_cooling") ).attr('fill', "#ffffff")
+            svg.select(".rectButton"+ newkeys.indexOf("status_cooling")).attr("fill",  "#94a7b7" )
+            svg.select(".card"+ keys.indexOf("status_cooling")).attr("fill-opacity",0.7)
             this.xScale = x
             this.svg = svg
             if(vm.diagnosisState){
-                    // for(let item in keys){
+                    for(let item in keys){
                     //     // console.log(item);
-                    //     svg.select(".brushX" + item)
-                    //         // .append("g")
-                    //         // .attr("class","previousHandle" + item)
-                    //         // .call(g => 
-                    //                         .selectAll(".handle--custom1")
-                    //                          .data([{type: "w1"}, {type: "e1"}])
-                    //                          .join(enter => enter.append("path")
+                        svg.select(".brushX" + item)
+                            // .append("g")
+                            // .attr("class","previousHandle" + item)
+                            // .call(g => 
+                                            .selectAll(".handle--custom1")
+                                             .data([{type: "w1"}, {type: "e1"}])
+                                             .join(enter => enter.append("path")
+                                                    .attr("class", "handle--custom1")
+                                                    .attr("fill", "white")
+                                                    .attr("fill-opacity", 1)
+                                                    .attr("stroke", "#90a4ae")
+                                                    .attr("stroke-width", 2)
+                                                    // .attr("cursor", "ew-resize")
+                                                    .attr("d", arc))
+                                                    .attr("transform", (d, i) =>
+                                                         `translate(${vm.lastHandle.get(keys[item])[i]},${0})`
+                                                   )
+                            // )
+                    }
+                    
+                    // svg.select(".brushParalle")
+                    //     .append("g")
+                    //     .attr("class","previousBrushed")
+                    //     // .append("g")
+                    //     .selectAll("g")
+                    //     .data(keys)
+                    //     .join("g")
+                    //     .attr("class",(d,i) => "previousbrusHandle"+i)
+                    //     .attr("transform", d => `translate(0,${y(d)+6})`)
+                    //     .each((key,i) => {
+                    //         svg.select(".previousbrusHandle"+i).call(
+                    //             g => g.selectAll(".handle--custom1")
+                    //                 .data([{type: "w"}, {type: "e"}])
+                    //                 .join(enter => enter.append("path")
                     //                                 .attr("class", "handle--custom1")
                     //                                 .attr("fill", "white")
                     //                                 .attr("fill-opacity", 1)
                     //                                 .attr("stroke", "#90a4ae")
-                    //                                 .attr("stroke-width", 2)
+                    //                                 .attr("stroke-width", 1)
                     //                                 // .attr("cursor", "ew-resize")
                     //                                 .attr("d", arc))
                     //                                 .attr("transform", (d, i) => {
-                    //                                     console.log(d);
-                    //                                     console.log(i);
-                    //                                     return `translate(${vm.lastHandle.get(keys[item])[i]},${0})`
-                    //                                })
-                    //         // )
-                    // }
-                    svg.select(".brushParalle")
-                        .append("g")
-                        .attr("class","previousBrushed")
-                        // .append("g")
-                        .selectAll("g")
-                        .data(keys)
-                        .join("g")
-                        .attr("class",(d,i) => "previousbrusHandle"+i)
-                        .attr("transform", d => `translate(0,${y(d)+6})`)
-                        .each((key,i) => {
-                            svg.select(".previousbrusHandle"+i).call(
-                                g => g.selectAll(".handle--custom1")
-                                    .data([{type: "w"}, {type: "e"}])
-                                    .join(enter => enter.append("path")
-                                                    .attr("class", "handle--custom1")
-                                                    .attr("fill", "white")
-                                                    .attr("fill-opacity", 0.5)
-                                                    .attr("stroke", "#90a4ae")
-                                                    .attr("stroke-width", 0.5)
-                                                    // .attr("cursor", "ew-resize")
-                                                    .attr("d", arc))
-                                                    .attr("transform", (d, i) => {
-                                                    return `translate(${vm.lastHandle.get(key)[i]},${0})`})
-                                    )
-                            })
+                    //                                 return `translate(${vm.lastHandle.get(key)[i]},${0})`})
+                    //                 )
+                    //         })
             }
             if(vm.diagnosisState){
                 diagnosisBrushSlider()
+                
+                d3.selectAll(".handle--custom1").raise()
+                d3.selectAll(".handle--custom").raise()
+
+
             }else{
                 brushSlider()
             }
@@ -734,14 +733,13 @@ export default {
                     d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)))
                     return
                 }
-                // debugger
                 if(!vm.diagnosisState && !(tempValue.every((d, i) => d === selection[i]))){
                     d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)))
                     return
                 }
                 if (selection === null) selections.delete(key);
                 else selections.set(key, selection.map(x.get(key).invert));
-
+                // selections.set(key, selection.map(x.get(key).invert));
 
                 if(vm.diagnosisState !== true){
                     vm.lastSelections.set(key, selection.map(x.get(key).invert));
@@ -859,6 +857,11 @@ export default {
                 svg.property("value", selected).dispatch("input");
                 d3.select(".rectBar").lower();
                 brushSlider()
+                d3.selectAll(".handle--custom1").raise()
+                d3.selectAll(".selection").raise()
+                d3.selectAll(".handle--custom").raise()
+                
+
               
             }
             

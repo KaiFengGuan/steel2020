@@ -1298,12 +1298,23 @@ export default {
             arr.upid = d.upid
             return arr
           });
-          let timebins_good = stopsTime_good[0].map((d, i) => {
-            return d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i]))
-          });
-          let timebins_bad = stopsTime_bad[0].map((d, i) => {
-            return d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i]))
-          });
+
+
+          let max_stations = d3.max(stopsTime_good.map(d => d.length));
+          let timebins_good = [];
+          let timebins_bad = [];
+          for (let i = 0; i < max_stations; i++) {
+            timebins_good.push(d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i])));
+            timebins_bad.push(d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i])));
+          }
+
+          // let timebins_good = stopsTime_good[0].map((d, i) => {
+          //   return d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i]))
+          // });
+          // let timebins_bad = stopsTime_bad[0].map((d, i) => {
+          //   return d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i]))
+          // });
+
           let binxScale = timebins_good.map((d, i) => 
             d3.scaleLinear()
               .domain([
@@ -1839,7 +1850,7 @@ export default {
                 return
               }
 
-              console.log('batch_data: ', batch_data)
+              // console.log('batch_data: ', batch_data)
 
               vm.$emit("trainClick", {
                 list: that._trainSelectedList, 
@@ -1851,7 +1862,11 @@ export default {
                 type: "group", 
                 batch: batch_data
               })
-              // vm.hightLight(flagSort(d.mergeItem))
+              
+              
+              let select_upid = d3.map(d.mergeItem, d => d.upid)
+              let sort_res = d3.sort(select_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0)
+              vm.hightLight(sort_res)
             }
           }
           function __pathOver(e, d) {

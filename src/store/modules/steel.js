@@ -71,6 +71,7 @@ let mutations = {
         state.curveSize = size
     },
     hightLight(state, array){
+      console.log(array)
         state.hightlightGroup = array
     },
     changeDiagnosisState(state){

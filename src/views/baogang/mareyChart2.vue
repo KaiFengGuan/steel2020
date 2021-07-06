@@ -7,6 +7,8 @@ import * as d3 from "d3";
 import { Delaunay } from "d3-delaunay";
 import util from "./util.js";
 import { mapGetters, mapMutations } from "vuex";
+import info_state from "assets/images/info_state.svg"
+import info_state1 from "assets/images/info_state1.svg"
 export default {
   data() {
     return {
@@ -164,6 +166,7 @@ export default {
           this._T2Scale = undefined;
           this._QLine = undefined;
           this._T2Line = undefined;
+          this._statistics = undefined;
         }
 
         stateInit(is_merge, changecolor, minrange, minconflict) {
@@ -460,6 +463,15 @@ export default {
 
               })
             }
+
+            let heat_bad = Math.random() * 25;
+            let roll_bad = Math.random() * 30;
+            let cool_bad = Math.random() * 20;
+            this._statistics = [
+              {bad: heat_bad, good: 100-heat_bad},
+              {bad: roll_bad, good: 100-roll_bad},
+              {bad: cool_bad, good: 100-cool_bad}
+            ]
           }
 
           return this;
@@ -1400,7 +1412,7 @@ export default {
           let text_list = ['Heat', 'Roll', 'Cool'];
 
           let diagnosisTextGroup = this._marey_g.append('g')
-            .attr('transform', `translate(${[this._marey_size.w + 95, this._stations_size.h]})`)
+            .attr('transform', `translate(${[this._marey_size.w + 75, this._stations_size.h]})`)
           diagnosisTextGroup.selectAll('.diagnosisTextGroup')
             .data(text_list)
             .enter()
@@ -1408,10 +1420,59 @@ export default {
             .attr('class', 'diagnosisTextGroup')
             .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i, 0]})`)
             .text(d => d)
-            .attr('fill', (d, i) => vm.processColor[i])
+            .attr('fill', (d, i) => d3.color(vm.processColor[i]))  //.darker(0.3)
             .style('font-size', 18)
-            .style('font-weight', 'normal')
+            .style('font-weight', 500)
             .style('font-family', util.conditionPolygonTextAttr.fontFamily)
+          
+          let r = 10;
+          let angle_gap = 0.1;
+          let remain_angle = 2*Math.PI-angle_gap*2;
+          let statisticsInfoGroup = this._marey_g.append('g')
+            .attr('transform', `translate(${[this._marey_size.w + 135, this._stations_size.h-10]})`)
+            .attr('opacity', 0.8)
+          statisticsInfoGroup.selectAll('.statisticsInfoGroup')
+            .data(this._statistics)
+            .enter()
+            .append('path')
+            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i, 0]})`)
+            .attr('d', d => 
+              d3.arc()
+                .innerRadius(r)
+                .outerRadius(r+4)
+                .startAngle(angle_gap+0)
+                .cornerRadius(2)
+                .endAngle(angle_gap+remain_angle*(d.good/100))()
+            )
+            .attr('fill', (d, i) => vm.processColor[i])
+          // statisticsInfoGroup.selectAll('.statisticsInfoGroup')
+          //   .data(this._statistics)
+          //   .enter()
+          //   .append('path')
+          //   .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i, 0]})`)
+          //   .attr('d', d => {
+          //     let start = angle_gap*2+remain_angle*(d.good/100);
+          //     let end = start + remain_angle*(d.bad/100)
+          //     return d3.arc()
+          //       .innerRadius(r)
+          //       .outerRadius(r+5)
+          //       .startAngle(start)
+          //       .endAngle(end)()
+          //   })
+          //   .attr('fill', vm.labelColors[0])
+          statisticsInfoGroup.selectAll('.statisticsInfoGroup')
+            .data(this._statistics)
+            .enter()
+            .append('text')
+            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i, 3]})`)
+            .text(d => Math.round(d.bad))
+            .attr('fill', vm.labelColors[0])
+            .attr('font-size', 11)
+            .style('font-weight', 'bold')
+            .style('font-style', 'italic')
+            .attr('text-anchor', 'middle')
+            .attr('opacity', 0.8)
+          
         }
 
         // 马雷图刷子
@@ -1743,9 +1804,9 @@ export default {
             that._brush_select = new_brush
             that._brush_g.select('.brush').call(that._brush.move, new_brush)
 
-            console.log(d);
-            console.log(that._brush_select);
-            console.log(that._mini_y(d.date_s));
+            // console.log(d);
+            // console.log(that._brush_select);
+            // console.log(that._mini_y(d.date_s));
             
             if (that._mergeClickValue.includes(i)) {
               that._mergeClickValue.splice(that._mergeClickValue.indexOf(i), 1);
@@ -1756,6 +1817,30 @@ export default {
               }
               that._mergeClickValue.push(i);
 
+              let batch_data = [];
+              let data_len = that._mergeresult.length;
+              if (data_len>=5) {
+                if (i <= 2) {
+                  let mergedata = d3.map(that._mergeresult.slice(0, 5), d => d['merge'])
+                  mergedata.forEach(d => batch_data.push(d.map(e => e.upid)))
+                }
+                else if (i > data_len-3) {
+                  let mergedata = d3.map(that._mergeresult.slice(-6), d => d['merge'])
+                  mergedata.forEach(d => batch_data.push(d.map(e => e.upid)))
+                }
+                else {
+                  let mergedata = d3.map(that._mergeresult.slice(i-2, i+3), d => d['merge'])
+                  mergedata.forEach(d => batch_data.push(d.map(e => e.upid)))
+                }
+              } else if (data_len>=3 && data_len<=4) {
+                batch_data = d3.map(d3.map(that._mergeresult.slice(0, 3), d => d['merge']), d => d.upid)
+              }
+              else {
+                return
+              }
+
+              console.log('batch_data: ', batch_data)
+
               vm.$emit("trainClick", {
                 list: that._trainSelectedList, 
                 color: that._trainGroupStyle(d.mergeSelect.slice(-1)[0]), 
@@ -1764,7 +1849,7 @@ export default {
                   ...d3.map(d.mergeSelect, d => d.upid)
                 ],
                 type: "group", 
-                batch: d3.map(d.mergeItem, d => d.upid)
+                batch: batch_data
               })
               // vm.hightLight(flagSort(d.mergeItem))
             }
@@ -2276,21 +2361,31 @@ export default {
         }
         _changeInfoCircleStatus() {
           let that = this;
-          let changebutton = this._info_g.append('g');
+          let changebutton = this._info_g.append('g')
+            .attr('transform', `translate(${[27, 10]})`);
+
+          let button_w = 30
+          let button_gap = 5;
           changebutton.append('rect')
-            .attr('width', 60)
-            .attr('height', 20)
+            .attr('width', button_w)
+            .attr('height', button_w)
             .attr('fill', 'white')
-            .attr('stroke', '#aaa');
-          changebutton.append('text')
-            .attr('transform', `translate(${[0, 10]})`)
-            .attr('id', 'changebutton')
-            .text('uniformity')
+            .attr('rx', 2)
+            .attr('ry', 2)
+            // .attr('stroke', '#aaa');
+          changebutton.append('image')
+            .attr('id', 'info_state')
+            .attr('width', button_w-button_gap)
+            .attr('height', button_w-button_gap)
+            .attr('transform', `translate(${[button_gap/2, button_gap/2]})`)
+            .attr('href', info_state)
 
           changebutton
             .on('click', (event, d) => {
               this._info_state = !this._info_state;
-              this._info_g.select('#changebutton').text(this._info_state ? 'uniformity' : 'proportion')
+              this._info_g.select('#info_state')
+                .attr('href', this._info_state ? info_state : info_state1)
+
               let InfoDetailGroup = this._info_g.select('.InfoDetailGroup');
 
               // uniformity to proportion
@@ -2954,22 +3049,77 @@ export default {
             .attr('stroke', d => d3.color(d.color).darker(0.2))
             .attr('stroke-width', 1)
             .attr('opacity', 0.4)
-
+          
+          // T2 报警线
           moni_process
             .append('path')
-            .attr("fill", "none")
-            .attr("stroke", "#ccc")
-            .attr("stroke-width", 1.5)
+            .attr('class', 'T2_Line')
+            .attr('transform', `translate(${[moni_rect_w/2-5, 0]})`)
+            .attr('fill', 'none')
+            .attr('stroke', '#666')
+            .attr('stroke-width', 1)
+            .attr('stroke-linejoin', 'round')
+            .attr('stroke-dasharray', '3 3')
+            .attr('stroke-linecap', 'round')
+            .attr('d', (d, i) => {
+              let line_data = [];
+              let T2 = d.diag.T2;
+              let count = 0;
+              for (let j = 0; j < T2.length; j++) {
+                let time_span = (this._y(T2[j].et)-this._y(T2[j].st))/T2[j].num;
+                let line_x = -rectScale(T2[j].thresholds);
+                line_data.push({
+                  i: count,
+                  line_x: line_x,
+                  line_y: time_span
+                })
+                line_data.push({
+                  i: count + 1,
+                  line_x: line_x,
+                  line_y: time_span
+                })
+                count += 1;
+              }
+              return d3.line()
+                .x((e, j) => e.line_x)
+                .y((e, j) => e.i*e.line_y)(line_data)
+            })
+          // SPE 报警线
+          moni_process
+            .append('path')
+            .attr('class', 'SPE_Line')
+            .attr('transform', `translate(${[moni_rect_w/2+5, 0]})`)
+            .attr("fill", 'none')
+            .attr("stroke", "#666")
+            .attr("stroke-width", 1)
             .attr("stroke-linejoin", "round")
-            .attr("stroke-dasharray", "10 10")
+            .attr("stroke-dasharray", "3 3")
             .attr("stroke-linecap", "round")
             .attr("d", (d, i) => {
-              console.log(i, d);
-
-              // return d3.line()
-              //   .x(e => rectScale(e.thresholds))
-              //   .y(e => y(e))(d.diag.SPE)
+              let line_data = [];
+              let T2 = d.diag.SPE;
+              let count = 0;
+              for (let j = 0; j < T2.length; j++) {
+                let time_span = (this._y(T2[j].et)-this._y(T2[j].st))/T2[j].num;
+                let line_x = rectScale(T2[j].thresholds);
+                line_data.push({
+                  i: count,
+                  line_x: line_x,
+                  line_y: time_span
+                })
+                line_data.push({
+                  i: count + 1,
+                  line_x: line_x,
+                  line_y: time_span
+                })
+                count += 1;
+              }
+              return d3.line()
+                .x((e, j) => e.line_x)
+                .y((e, j) => e.i*e.line_y)(line_data)
             })
+
+          
           
             
         }
@@ -3123,6 +3273,57 @@ export default {
               d.i*(this._y(d.et)-this._y(d.st))/d.num
             ]})`)
             .attr('height', d => (this._y(d.et)-this._y(d.st))/d.num)
+          
+          this._moni_g.selectAll('.T2_Line')
+            .transition(tran)
+            .attr('d', (d, i) => {
+              let line_data = [];
+              let T2 = d.diag.T2;
+              let count = 0;
+              for (let j = 0; j < T2.length; j++) {
+                let time_span = (this._y(T2[j].et)-this._y(T2[j].st))/T2[j].num;
+                let line_x = -rectScale(T2[j].thresholds);
+                line_data.push({
+                  i: count,
+                  line_x: line_x,
+                  line_y: time_span
+                })
+                line_data.push({
+                  i: count + 1,
+                  line_x: line_x,
+                  line_y: time_span
+                })
+                count += 1;
+              }
+              return d3.line()
+                .x((e, j) => e.line_x)
+                .y((e, j) => e.i*e.line_y)(line_data)
+            })
+          this._moni_g.selectAll('.SPE_Line')
+            .transition(tran)
+            .attr("d", (d, i) => {
+              let line_data = [];
+              let T2 = d.diag.SPE;
+              let count = 0;
+              for (let j = 0; j < T2.length; j++) {
+                let time_span = (this._y(T2[j].et)-this._y(T2[j].st))/T2[j].num;
+                let line_x = rectScale(T2[j].thresholds);
+                line_data.push({
+                  i: count,
+                  line_x: line_x,
+                  line_y: time_span
+                })
+                line_data.push({
+                  i: count + 1,
+                  line_x: line_x,
+                  line_y: time_span
+                })
+                count += 1;
+              }
+              return d3.line()
+                .x((e, j) => e.line_x)
+                .y((e, j) => e.i*e.line_y)(line_data)
+            })
 
         }
 

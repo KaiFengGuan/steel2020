@@ -525,7 +525,7 @@ export default {
                                 .innerRadius(0)
                                 .outerRadius(r.bubble * 0.16);
                     var limit = this._labelLimit,
-                        RectWidth = 400,
+                        RectWidth = 650,
                         arcX = 200,
                         rectX = r.outer + 300,  //rect_doct x
                         maxHeight = 25,   //rect max height
@@ -558,7 +558,7 @@ export default {
                         var sliderG = mainG.append('g')
                             .attr('class', 'sliderG')
                             .attr('transform', `translate(${[rectX, 0]})`),
-                            maxLength = 3,  //batch numbers
+                            maxLength = batchData.length,  //batch numbers
                             minRect = RectWidth/ (maxLength + 0.5),
                             rectArray = new Array(maxLength).fill(minRect).map((d, i) => Math.ceil(maxLength/2) == i + 1 ? 1.5 * d : d),   //batch position
                             rectPosition = Array.from(d3.cumsum(rectArray));

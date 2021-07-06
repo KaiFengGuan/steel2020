@@ -1313,7 +1313,7 @@ export default {
           let binxScale = timebins_good.map((d, i) => 
             d3.scaleLinear()
               .domain([
-                d3.max([timebins_good[i][0].x0, timebins_bad[i][0].x0]), 
+                d3.min([timebins_good[i][0].x0, timebins_bad[i][0].x0]), 
                 d3.max([timebins_good[i][timebins_good[i].length-1].x1, timebins_bad[i][timebins_bad[i].length-1].x1])
               ])
               .range([5, this._stations_size.s_w - 5])
@@ -1857,7 +1857,10 @@ export default {
                 type: "group", 
                 batch: batch_data
               })
-              // vm.hightLight(flagSort(d.mergeItem))
+              
+              let select_upid = d3.map(d.mergeItem, d => d.upid)
+              let sort_res = d3.sort(select_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0)
+              vm.hightLight(sort_res)
             }
           }
           function __pathOver(e, d) {

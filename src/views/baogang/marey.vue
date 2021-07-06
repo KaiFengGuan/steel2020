@@ -11,7 +11,7 @@
 								style="width:110px;margin:10px 0px 10px 20px" size="mini"></el-date-picker>
 						</el-col>
 						<el-col :span="4">
-							<el-button style="margin-top:10px" size="small" plain @click="getHttpData" icon="el-icon-search"></el-button>
+							<!-- <el-button style="margin-top:10px" size="small" plain @click="getHttpData" icon="el-icon-search"></el-button> -->
 						</el-col>
 					</el-row>
 					<el-row>
@@ -36,11 +36,11 @@
 				</el-row>
 				<el-row>
 					<el-card class="myel-card">		 
-						<div class="my-card-title" slot="header">
+						<div class="my-card-title" slot="header" >
 								<span style="margin-left:5px">Tabular View  <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search"></el-button> </span>
 
 						</div>
-						<div class="my-card-body" style="padding-top:5px">
+						<div class="my-card-body" style="padding-top:5px; overflow:scroll">
 							<brushableParallel ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse"></brushableParallel>
 						</div>
 						<!-- <el-col :span="4"> -->
@@ -401,7 +401,7 @@ export default {
 		async changeTime() {
 			await this.getTimeBrushData();
 			await this.getAlgorithmData()
-			this.getHttpData()
+			// this.getHttpData()
 		},
 		newdiagnose() {
 			this.changeDiagnosisState()
@@ -823,7 +823,7 @@ export default {
 			if(this.scatterData.length == 0)return
 			this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
 			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
-			this.getHttpData()
+			// this.getHttpData()
 		}
 	}
 	

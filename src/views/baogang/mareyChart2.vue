@@ -1845,7 +1845,6 @@ export default {
                 return
               }
 
-              console.log('batch_data: ', batch_data)
 
               vm.$emit("trainClick", {
                 list: that._trainSelectedList, 

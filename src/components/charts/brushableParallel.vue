@@ -136,7 +136,8 @@ export default {
             // "cooling_rate1",
             "status_cooling"];
             this.brushdata =  this.brushdata.filter(d => keys.every(e => typeof d[e] === 'number'))
-            var margin = {top: 40, right: 20, bottom: 40, left: 20},
+            // var margin = {top: 40, right: 20, bottom: 40, left: 20},
+            var margin = {top: 40, right: 20, bottom: 50, left: 20},
                 coolingArray = d3.filter(brushdata, (d,i) => d["status_cooling"] == 2),
                 nocoolingArray = d3.filter(brushdata, (d,i) => d["status_cooling"] == 1),
                 allArray = [],
@@ -152,7 +153,9 @@ export default {
                             // .paddingInner(0.5),
                 yCooling = d3.scaleLinear()
                             .domain([0, d3.max(allArray, d => d.length)]).nice()
-                            .range([50, 0]),
+                            // .range([50, 0]),
+                            .range([40, 0]),
+
                 // yCooling = d3.scaleLinear()
                 //             .domain([0, d3.max(allArray, d => d.length)]).nice()
                 //             .range([50, 0]),
@@ -209,7 +212,7 @@ export default {
                     .outerRadius(8)
                     .startAngle(0)
                     .endAngle((d, i) => i ? 2 * Math.PI : - 2 * Math.PI),
-                height = (keys.length + 1) * 98,
+                height = (keys.length +1) * 98,
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
                 y = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
                 liney = d3.scalePoint(keys, [margin.top, height - margin.bottom]),
@@ -354,7 +357,8 @@ export default {
             // rectcooling是否过冷却
             svg.append("g")
                 .attr("class","rectCooling")
-                .attr("transform",`translate(0,${height - 80})`)
+                .attr("transform",`translate(0,${height - 90})`)
+                // .attr("transform",`translate(0,${height - 80})`)
                 .selectAll("rect")
                 // .selectAll("circle")
                 .data(allArray)
@@ -409,23 +413,9 @@ export default {
                                 .attr("height",10)
                     
                     )
-
-
-                //  svg.select(".coolingButton0").append("image")
-                //         .attr("class","successIcon")
-                //         .attr("width","10px")
-                //         .attr("height","10px")
-                //         // .attr("transform",`translate(${})`)
-                //         .attr("href",success)
-                    // .call(g => g.append("image")
-                    //     .attr("class","successIcon")
-                    //     .attr("width","10px")
-                    //     .attr("height","10px")
-                    //     // .attr("transform",`translate(${})`)
-                    //     .attr("href",success)
-                    // )
             svg.append("g")
-                .attr("transform",`translate(${0},${height - 50})`)
+                // .attr("transform",`translate(${0},${height - 50})`)
+                .attr("transform",`translate(${0},${height - 60})`)
                 .call(g =>
                 g.append("rect")
                     .attr("x",20)
@@ -439,20 +429,6 @@ export default {
                     .attr("stroke-width",1)
                     .raise()
                 )
-                // .call(g => 
-                //     g.append("text")
-                //       .attr("x", width - margin.left)
-                //       .attr("y", -20)
-                //       .attr("text-anchor", "end")
-                //     //   .attr("fill", util.tabularTipsTextAttr.fontColor)
-                //       .attr("fill", "#94a7b7")
-                //       .attr("font-family", util.tabularTipsTextAttr.fontFamily)
-                //       .attr("font-size", util.tabularTipsTextAttr.fontSize)
-                //       .attr("font-weight", util.tabularTipsTextAttr.fontWeight)
-                //       .attr("font-style", util.tabularTipsTextAttr.fontStyle)
-                //       .text("sta_cooling")
-                      
-                //   )
             const path = svg.append("g")
                             .attr("fill", "none")
                             .attr("stroke-width", 1)
@@ -905,6 +881,7 @@ export default {
                 .attr("stroke-width", 1)
         },
         changePath(array){	//change Style
+        console.log(array);
             if(array.length === 0)return;
             for(let item in array){
                 this.svg.select(`#paraPath${array[item]}`)

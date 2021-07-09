@@ -782,10 +782,10 @@ export default {
 			// 	// Object.assign(processDetail, detailProData)
 			// }
 			// console.log(processDetail)
-			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-				this.$refs.wheelering.paintChart(diagnosisData,Response.data, processData)
-			})
-			// this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
+			// await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
+			// 	this.$refs.wheelering.paintChart(diagnosisData,Response.data, processData)
+			// })
+			this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
 			// this.paintDetailPro(this.processTurn)
 		},
 

@@ -527,6 +527,7 @@ export default {
                     var limit = this._labelLimit,
                         RectWidth = 650,
                         arcX = 200,
+                        wheel_y = 0,
                         rectX = r.outer + 300,  //rect_doct x
                         maxHeight = 25,   //rect max height
                         rectPadding = {left: 5, right: 5, top: 5, bottom: 2},
@@ -548,16 +549,41 @@ export default {
                         lineToCircle = null,
                         lineToRect = null,
                         lastY = null;
-                        renderyAxis();
 
+                        mainG.append('rect')
+                            .attr('transform', `translate(${[rectX - 2 * maxHeight, -this._height/2]})`)
+                            .attr('width', RectWidth + 2 * maxHeight)
+                            .attr('height', this._height)
+                            .attr('fill', 'white')
+                            .attr('stroke', 'null');
+                        mainG.on('wheel', function(e){
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if(wheel_y < selectInfo.length && wheel_y > 0){
+                                wheel_y += (e.deltaY > 0 ? 1 : -1);
+                            }else if(wheel_y == 0){
+                                wheel_y += (e.deltaY > 0 ? 1 : 0);
+                            }else if(wheel_y == selectInfo.length){
+                                wheel_y += (e.deltaY > 0 ? 0 : -1);
+                            }else{
+                                return 
+                            }
+                            renderyAxis();
+                            renderSort();
+                        })
+
+                        renderyAxis();
                         var lineG = mainG.append('g').attr('class', 'lineG'),
                             arcG = mainG.append('g').attr('class', 'arcG');
                         initLineG.call(this);
                         initArcG();
 
                         var sliderG = mainG.append('g')
-                            .attr('class', 'sliderG')
-                            .attr('transform', `translate(${[rectX, 0]})`),
+                                .attr('class', 'sliderG')
+                                .attr('transform', `translate(${[rectX, 0]})`),
+                            rectG = mainG.append('g')
+                                .attr('class', 'rectG')
+                                .attr('transform', `translate(${[rectX, 0]})`),
                             maxLength = batchData.length,  //batch numbers
                             minRect = RectWidth/ (maxLength + 0.5),
                             rectArray = new Array(maxLength).fill(minRect).map((d, i) => Math.ceil(maxLength/2) == i + 1 ? 1.5 * d : d),   //batch position
@@ -647,8 +673,9 @@ export default {
                             rectHeight.unshift(0)   //定位第一个元素
                             yScaleCache = Array.from(d3.cumsum(rectHeight)).map(d => -wm._height/2 + 2 * maxHeight + d);
                             rectNum = yScaleCache.filter(d => d < wm._height/2 - maxHeight ).length;
-                            opacityCache = (d, i) => indexScale(i) < rectNum ? 1 : 0;
-                            yScale = i => yScaleCache[indexScale(i)];
+                            opacityCache = (d, i) => wheel_y <= indexScale(i) && indexScale(i) < rectNum + wheel_y ? 1 : 0;
+                            var baseHeight = yScaleCache[0] - yScaleCache[wheel_y];
+                            yScale = i => yScaleCache[indexScale(i)] + baseHeight;
                             startXY = d => [R * (Math.sin(xpad[d.month](d.date)+ v)), -R * Math.cos(Math.abs(xpad[d.month](d.date)+ v))];
                             centerScaleY = d => startXY(d)[1] + 25/startXY(d)[0] * startXY(d)[1];
                             lastY = wm._height/2 - maxHeight;
@@ -802,7 +829,7 @@ export default {
                                 .attr('transform', d => `translate(${[rectPosition[d], 0]})`)
                             updateArea();
                             renderAxisG(timeScale);
-                            minRect !== maxHeight ? mainG.selectAll('.rectG').remove() : initRectG();
+                            minRect !== maxHeight ? rectG.selectAll('g').remove() : initRectG();
                         }
                         function initSort(){//init sortG
                             sortG.selectAll('g')
@@ -823,6 +850,7 @@ export default {
                                     .attr('y', this._buttonStyle.textY)
                                     .text(d => sortText[d]))
                                 .on('click', (e, d) =>{
+                                    // wheel_y = 0; //when sort indexes, save wheel_y status or not
                                     indexScale = scaleArray[d];
                                     this._indexScale = d;
                                     renderyAxis()
@@ -872,7 +900,7 @@ export default {
                                     .transition(t)
                                     .attr('transform', (d, i) =>`translate(${[0, yScale(i)]})`)
                                     .attr('opacity', opacityCache)
-                                sliderG.selectAll('.rectElement')
+                                rectG.selectAll('.rectElement')
                                     .transition(t)
                                     .attr('transform', (d, i) =>`translate(${[0, yScale(i) - maxHeight ]})`)
                                     .attr('opacity', opacityCache)
@@ -1065,8 +1093,7 @@ export default {
                             })
                         }
                         function initRectG(){
-                            mainG.append('g')
-                                .attr('transform', d =>`translate(${[rectX, 0]})`)
+                            rectG
                                 .selectAll('.rectG').data(Object.keys(rectPosition).filter((d, i) => i !== Math.ceil(maxLength/2) - 1))
                                 .join('g')
                                 .attr('transform', d =>`translate(${[d == 0 ? 0 : rectPosition[+d -1 ], 0]})`)
@@ -1415,7 +1442,7 @@ export default {
                         }
                         function mouseOver(args){
                             opacityCache = (d, i) => {
-                                if(indexScale(i) < rectNum){
+                                if(wheel_y <= indexScale(i) && indexScale(i) < rectNum + wheel_y){
                                     if(d.indexName){
                                         return args.indexOf(d.indexName) !== -1  ? 1 : 0.4
                                     }else if(d[0].indexName){
@@ -1430,7 +1457,7 @@ export default {
                             renderSort()
                         }
                         function mouseOut(){
-                            opacityCache = (d, i) => indexScale(i) < rectNum ? 1 : 0;
+                            opacityCache = (d, i) => wheel_y <= indexScale(i) && indexScale(i) < rectNum + wheel_y ? 1 : 0;
                             renderSort()
                         }
                         return {

@@ -1,14 +1,25 @@
-.diagnosis_button {
-	position: fixed;
+* { touch-action: pan-y; }
+#condition_view{
+	overflow: hidden;
+	height: 1068px;
+}
+#condition_view .myel-card{
+	position: relative;
+}
+#diagnosis_chart{
+	position: relative;
 	z-index: 66666;
 	bottom: 50px;
-	right: 50px;
+	right: 20px;
+}
+#diagnosis_button{
+	float: right;
 }
 .diagnosis_view {
-	position: fixed;
+	position: relative;
 	z-index: auto;
-	bottom: 10px;
-	right: 15px;
+	height: 540px;
+	bottom: 580px;
 	width: 1595px;
 }
 .diagnosis-enter-active,

@@ -1,5 +1,5 @@
 <template>
-	<div class="custom-marey" style="margin-top : -8px;margin-right:4px">
+	<div class="custom-marey">
 		<el-row :style="cssVars">
 			<el-col :span="4" style="margin-top:8px">
 				<el-row>
@@ -53,7 +53,7 @@
 				v-loading="loadingDataLoading"
 				element-loading-text="loading..."
 				element-loading-spinner="el-icon-loading"
-				element-loading-background="rgba(0, 0, 0, 0.3)">
+				element-loading-background="rgba(0, 0, 0, 0.3)" id="condition_view">
 				<el-row>
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
@@ -124,8 +124,11 @@
 						</div>
 					</el-card>
 				</el-row>
+				<el-row id="diagnosis_chart">
+					<el-button circle  icon="el-icon-more" @click="clickDiagnosisButton" id="diagnosis_button"></el-button>
+				</el-row>
 				<transition name="diagnosis">
-				<el-row v-if="diagnosisVisible" class="diagnosis_view" style="height:540px;">
+				<el-row v-show="diagnosisVisible" class="diagnosis_view">
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
 							<el-col :span="14"><span>Diagnosis View</span></el-col>
@@ -227,7 +230,7 @@
 					</el-card>		
 				</el-row>
 				</transition>
-				<el-button circle class="diagnosis_button" icon="el-icon-more" @click="clickDiagnosisButton"></el-button>
+
 			<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
 				<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
 					<el-card class="my-card-body-detail">
@@ -981,7 +984,9 @@ export default {
 .custom-marey {
 	background: white;
 	margin: -18px;
-	padding: 8px;
+	margin-top : -8px;
+	margin-right:4px;
+	// padding: 8px;
 	overflow: hidden;
 	.el-button--danger {
 		color: #FFF;
@@ -1258,7 +1263,7 @@ export default {
 	// text-align: center;
 	// display: block;
 	font-size: var(--tf_size);
-  font-style: var(--tf_style);
+	font-style: var(--tf_style);
 	font-weight: var(--tf_weight);
 	font-family: var(--tf_family) !important;
 	color: var(--tf_color);

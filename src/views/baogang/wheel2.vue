@@ -1943,6 +1943,8 @@ export default {
                         graph = {nodes:[],links:[]};
                     // this._allIndex = d3.map(sample, d => d.indexName);
                     for (let item in sample){
+                        // console.log(chorddata)
+                        // console.log(sample[item].indexName)
                         let i = chorddata['label'].indexOf(sample[item].indexName),
                             targets = [],
                             id = sample[item].indexName;

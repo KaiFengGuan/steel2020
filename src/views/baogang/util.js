@@ -39,8 +39,13 @@ var labelColor = [ "#c65b24", "#94a7b7"] // red grey
 var noflagColor = '#71797E'
 var delabelColor = ["#e3ad92",   "#b9c6cd"]
 var labelColor2 = [ '#e34649', '#5164f5']
-var processColor =['#fcd8a9','#cce9c7',"#c1c9ee"]; 
-
+var processColor =['#fcd8a9','#cce9c7',"#c1c9ee"];
+var levelColor = ['white', 'white', '#FAD3BF', '#F5A780', '#EF7B40'];
+//  colorScale(index){
+//         var ribbon = d3.interpolate('white','#c65b24')
+//         var linear = d3.scaleLinear().domain([0,100]).range([0,1])
+//         return ribbon(linear(index))
+//       },
 
 var GillSans = "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif"
 var SegoeUI = "Segoe UI"
@@ -124,6 +129,7 @@ export default {
         return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s
     },
 
+    levelColor,
     categorys: categorys,
     categoryColor (index){
         var colors = {}

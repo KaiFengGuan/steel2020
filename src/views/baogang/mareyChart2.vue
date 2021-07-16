@@ -2371,7 +2371,6 @@ export default {
           let that = this;
           let changebutton = this._info_g.append('g')
             .attr('transform', `translate(${[27, 10]})`);
-
           let button_w = 30
           let button_gap = 5;
           changebutton.append('rect')

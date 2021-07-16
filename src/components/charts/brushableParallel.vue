@@ -11,7 +11,6 @@ import { mapGetters, mapMutations} from 'vuex'
 import { forEach, map } from '../../views/baogang/sampledata/stationdata';
 // import success from "../../assets/images/sucess.svg";
 import success from "assets/images/success.svg";
-
 export default {
     data () {
         return {
@@ -93,9 +92,6 @@ export default {
                 }
         },
         },
-
-
-
     methods: {
         deepCopy(obj){
 			if(typeof obj!=='object') return obj;
@@ -165,13 +161,6 @@ export default {
                 vm = this,
                 deselectedColor = "#eeeeee",
                 selectedColor = "#cccccc",
-                // keys = [ "tgtthickness", "tgtplatelength2","tgtwidth", "slab_thickness"],
-                // keys = [ "tgtthickness", "tgtplatelength2","tgtwidth", "slab_thickness","tgtdischargetemp","tgttmplatetemp",
-                // "cooling_start_temp",
-                // // "cooling_stop_temp",
-                // // "cooling_rate1"
-                // ],
-
                 bardata = d3.map(keys, d => d3.map(brushdata, index => index[d])),
                 barbin = d3.map(keys, (d, i) => {
                     var length = 6;
@@ -193,7 +182,6 @@ export default {
                 })
                 barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.extent(d3.map(array, d => d.length))[1]]).range([0, 20]))
                 // barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.extent(d3.map(array, d => d.length))[1]]).range([0, 20]))
-            // debugger
             var newRange = []
             for(let i in bardata){
                 newRange.push([d3.min(bardata[i]), d3.max(bardata[i])])
@@ -215,7 +203,7 @@ export default {
                 height = (keys.length +1) * 98,
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
                 y = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
-                liney = d3.scalePoint(keys, [margin.top, height - margin.bottom]),
+                liney = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
 
                 // y = d3.scalePoint(keys, [margin.top, height - margin.bottom]),
                 xScale = d3.axisBottom(xCooling).tickSizeOuter(0).tickSizeInner(0),
@@ -227,18 +215,21 @@ export default {
                     .defined(([, value]) => value != null)
                     .x(([key, value]) => x.get(key)(value))
                     .y(([key]) => y(key)),
-                    brushLine = d3.line()
-                                //   .defined(d => d)
-                                  .x(d => {
-                                      console.log(d[0]);
-                                      return d[1][0]
+                    brushLineLeft = d3.line()
+                                   .x(d => {
+                                      return d[1][0] - 6
                                   })
-                                  .y(d => liney(d[0])),
-                    // brushLineScale = d3.line()
-                    //             .x(([key, value]) => x.get(key)(value[0]))
-                    //             .y(([key]) => y(key)),
+                                  .y((d,i) => 
+                                  {
+                                      return (liney(d[0]) + 6)}),
+                    brushLineRight = d3.line()
+                                   .x(d => {
+                                      return d[1][1] + 6
+                                  })
+                                  .y((d,i) => 
+                                  {
+                                      return( liney(d[0]) + 6)}),
                 // brushhandle的具体样式
-                // debugger
                 brushHandle = (g, selection) => g
                     .selectAll(".handle--custom")
                     .data([{type: "w"}, {type: "e"}])
@@ -246,7 +237,7 @@ export default {
                             .attr("class", "handle--custom")
                             .attr("fill", "white")
                             .attr("fill-opacity", 1)
-                            .attr("stroke", "#90a4ae")
+                            .attr("stroke",util.brushHandleStroke[0])
                             // .attr("stroke", "red")
                             .attr("stroke-width", 2)
                             .attr("cursor", "ew-resize")
@@ -255,7 +246,7 @@ export default {
                         .attr("transform", selection === null ? null : (d, i) => `translate(${selection[i]},${0})`)
              
             function brushSlider(){
-                svg.selectAll("#parallel .overlay").attr("fill", "#eeeeee").raise()
+                svg.selectAll("#parallel .overlay").attr("fill", util.brushColor[2]).raise()
                 svg.selectAll("#parallel .selection").attr("fill", vm.brushSelectColor).attr("fill-opacity", 0.8).raise()
                 // svg.selectAll("#parallel .parallelPath").raise()
                 svg.selectAll(".handle--custom").raise()
@@ -271,10 +262,10 @@ export default {
                     .style("font-style", util.tabularAxisTextAttr.fontStyle)
             }
             function diagnosisBrushSlider(){
-                    svg.selectAll("#parallel .overlay").attr("fill", "#eeeeee").raise()
+                svg.selectAll("#parallel .overlay").attr("fill", util.brushColor[2]).raise()
                 svg.selectAll("#parallel .selection").attr("fill", vm.brushSelectColor).attr("fill-opacity", 0.8).raise()
                 // svg.selectAll("#parallel .parallelPath").raise()
-                svg.selectAll("#parallel .handle--custom").attr("stroke",util.labelColor[0])
+                svg.selectAll("#parallel .handle--custom").attr("stroke",util.brushHandleStroke[1])
                 svg.selectAll(".handle--custom").raise()
                 svg.selectAll("#parallel .domain").remove()
                 svg.selectAll("#parallel .overlay").attr("rx", "5").attr("ry", "5").attr("stroke", "#bbbbbb").attr("stroke-width", 1)
@@ -299,7 +290,12 @@ export default {
                     [width - margin.right, brushHeight / 2]
                 ])
                 .on("start brush end", brushed)
-                // .on("start ", brushed)
+            // svg.select(".coolingButton0").append("image")
+            //     .attr("class","successIcon")
+            //     .attr("width","10px")
+            //     .attr("height","10px")
+            //     .attr("href",success)
+
 
             svg.append("g")
                 .attr("class","cardG")
@@ -314,12 +310,11 @@ export default {
                 .attr("stroke","#e0e0e0")
                 .attr("stroke-width",1)
                 .attr("stroke-opacity",0)
-                .attr("width",307)
-                .attr("height",80)
+                .attr("width",width-margin.left)
+                // .attr("height",80)
+                .attr("height",90)
                 .attr("rx",10)
                 .attr("ry",10)
-                
-                
             for(let item in keys){
                 var barmargin =  (width - margin.right - margin.left) / barbin[item].length/2;
                 // d => (d3.filter(brushdata, e => e[keys] <= d.x1 && d.x0 <= e[keys] && +e.label=== 0)).length
@@ -388,9 +383,6 @@ export default {
                     .attr("opacity",0.5)
                     .attr("stroke","#000")
                     .attr("stroke-width",1))
-
-
-            
                 d3.select(".rectcooling0").lower()
                 d3.select(".rectcooling1").lower()
                 svg.append("g")
@@ -402,10 +394,6 @@ export default {
                     // .attr("transform", d => `translate(0,${y(d)+6})`)
                     .attr("class",(d,i) => "coolingButton"+ i)
                     .call(g => g.append("rect")
-                                // .attr("class",(d,i) => "coolingButton"+ i)
-                                // .attr("x",(d,i) => x.get("status_cooling")(i + 1) -5.5)
-                                // .attr("y",477)
-                                // .attr("fill","blue")
                                 .attr("fill-opacity",0)
                                 .attr("stroke","#ccc")
                                 .attr("stroke-width",2)
@@ -413,21 +401,23 @@ export default {
                                 .attr("height",10)
                     
                     )
+            svg.append("g").attr("class","lineBrush")
             svg.append("g")
+                .attr('class','bottonRect')
                 // .attr("transform",`translate(${0},${height - 50})`)
                 .attr("transform",`translate(${0},${height - 60})`)
                 .call(g =>
-                g.append("rect")
-                    .attr("x",20)
-                    .attr("y",10)
-                    .attr("width",276)
-                    .attr("height",10)
-                    .attr("fill","#eee")
-                    .attr("rx",5)
-                    .attr("ry",5)
-                    .attr("stroke","#bbb")
-                    .attr("stroke-width",1)
-                    .raise()
+                    g.append("rect")
+                        .attr("x",margin.left)
+                        .attr("y",10)
+                        .attr("width",width - margin.left - margin.right)
+                        .attr("height",10)
+                        .attr("fill",util.brushColor[2])
+                        .attr("rx",5)
+                        .attr("ry",5)
+                        .attr("stroke","#bbb")
+                        .attr("stroke-width",1)
+                        .raise()
                 )
             const path = svg.append("g")
                             .attr("fill", "none")
@@ -447,21 +437,10 @@ export default {
                             .attr("class", "pathColor")
                             .on("mouseover", pathover)
                             .on("mouseout", pathout);
-
-
-            // const pathBrush = svg.select("g")
-            //                     .attr("fill","none")
-            //                      .attr("stroke-width", 1)
-            //                      .attr("class","brushLine")
-            //                      .selectAll("path")
-            //                      .data(vm.)
             var selections
             if(vm.diagnosisState){
                 selections = this.newBrushSelection
             }else{
-                  
-
-
                 selections = this.brushSelection   
             }
         //   debugger
@@ -473,7 +452,6 @@ export default {
                 .join("g")
                 .attr("transform", d => `translate(0,${y(d)+6})`)
                 .attr("id", (d, i) => "parallel" + i)
-                // .attr("fill", "#2c3e50")
                 .each(function(d,i) {
                 //   if(i< 4){ 
                     d3.select(this)
@@ -491,7 +469,6 @@ export default {
                 .attr("class",(d,i) => "brushX" + i)
                 .call(brush.move, (d,i) => selections.get(d).map(x.get(d)))
 
-
             svg.append("g")
                 .selectAll("g")
                 // .data(keys)
@@ -507,14 +484,14 @@ export default {
                                 .attr("stroke",util.labelColor[1])
                                 .attr("rx",5)
                                 .attr("ry",5)
-                                .attr("fill","white"))
+                                .attr("fill",util.buttonColor[0]))
                                
                 .call(g => g.append("text")
                             .attr("class",(d,i) => "textButton" + i)
                             .attr("x", width - margin.left/2 -31)
                             .attr("y", - 35)
                             .attr("text-anchor", "middle")
-                            .attr("fill", "#94a7b7")
+                            .attr("fill",util.buttonTextColor[0])
                             .attr('font-family', util.buttonTextAttr.baseTextAttr.fontFamily)
                             .attr('font-weight', util.buttonTextAttr.baseTextAttr.fontWeight)
                             .attr('font-style', util.buttonTextAttr.baseTextAttr.fontStyle)
@@ -533,81 +510,41 @@ export default {
                             ))
                             .on('click', function(e,d){
                                     objStatus[d] = !objStatus[d]
-                                    svg.select(".rectButton" + keys.indexOf(d)).attr("fill", objStatus[d] ?  "#94a7b7" :  "#ffffff" )
-                                    svg.select(".textButton" + keys.indexOf(d)).attr('fill', objStatus[d] ? "#ffffff": "#94a7b7")
+                                    svg.select(".rectButton" + keys.indexOf(d)).attr("fill", objStatus[d] ?  util.buttonColor[1] :  util.buttonColor[0] )
+                                    svg.select(".textButton" + keys.indexOf(d)).attr('fill', objStatus[d] ? util.buttonTextColor[1]: util.buttonTextColor[0])
                                     svg.select(".card"+ keys.indexOf(d)).attr("stroke-opacity",objStatus[d] ? 1 : 0)
                                     svg.select(".card"+ keys.indexOf(d)).attr("fill",objStatus[d] ? "#f7f7f7" : "white")
                                     svg.select(".card"+ keys.indexOf(d)).attr("fill-opacity",objStatus[d] ? 0.7 : 1)
                                 })
             svg.select(".card" + newkeys.indexOf("status_cooling")).attr("fill","#f7f7f7").attr("stroke-opacity",1)
-            svg.select(".textButton"+ newkeys.indexOf("status_cooling") ).attr('fill', "#ffffff")
-            svg.select(".rectButton"+ newkeys.indexOf("status_cooling")).attr("fill",  "#94a7b7" )
+            svg.select(".textButton"+ newkeys.indexOf("status_cooling") ).attr('fill', util.buttonTextColor[1])
+            svg.select(".rectButton"+ newkeys.indexOf("status_cooling")).attr("fill",  util.buttonColor[1] )
             svg.select(".card"+ keys.indexOf("status_cooling")).attr("fill-opacity",0.7)
-            this.xScale = x
-            this.svg = svg
             if(vm.diagnosisState){
                     for(let item in keys){
                     //     // console.log(item);
                         svg.select(".brushX" + item)
-                            // .append("g")
-                            // .attr("class","previousHandle" + item)
-                            // .call(g => 
-                                            .selectAll(".handle--custom1")
-                                             .data([{type: "w1"}, {type: "e1"}])
-                                             .join(enter => enter.append("path")
-                                                    .attr("class", "handle--custom1")
-                                                    .attr("fill", "white")
-                                                    .attr("fill-opacity", 1)
-                                                    .attr("stroke", "#90a4ae")
-                                                    .attr("stroke-width", 2)
-                                                    // .attr("cursor", "ew-resize")
-                                                    .attr("d", arc))
-                                                    .attr("transform", (d, i) =>
-                                                         `translate(${vm.lastHandle.get(keys[item])[i]},${0})`
-                                                   )
-                            // )
+                            .selectAll(".handle--custom1")
+                            .data([{type: "w1"}, {type: "e1"}])
+                            .join(enter => enter.append("path")
+                                    .attr("class", "handle--custom1")
+                                    .attr("fill", "white")
+                                    .attr("fill-opacity", 1)
+                                    .attr("stroke", util.brushHandleStroke[0])
+                                    .attr("stroke-width", 2)
+                                    // .attr("cursor", "ew-resize")
+                                    .attr("d", arc))
+                                    .attr("transform", (d, i) =>
+                                        `translate(${vm.lastHandle.get(keys[item])[i]},${0})`)
                     }
-                    
-                    // svg.select(".brushParalle")
-                    //     .append("g")
-                    //     .attr("class","previousBrushed")
-                    //     // .append("g")
-                    //     .selectAll("g")
-                    //     .data(keys)
-                    //     .join("g")
-                    //     .attr("class",(d,i) => "previousbrusHandle"+i)
-                    //     .attr("transform", d => `translate(0,${y(d)+6})`)
-                    //     .each((key,i) => {
-                    //         svg.select(".previousbrusHandle"+i).call(
-                    //             g => g.selectAll(".handle--custom1")
-                    //                 .data([{type: "w"}, {type: "e"}])
-                    //                 .join(enter => enter.append("path")
-                    //                                 .attr("class", "handle--custom1")
-                    //                                 .attr("fill", "white")
-                    //                                 .attr("fill-opacity", 1)
-                    //                                 .attr("stroke", "#90a4ae")
-                    //                                 .attr("stroke-width", 1)
-                    //                                 // .attr("cursor", "ew-resize")
-                    //                                 .attr("d", arc))
-                    //                                 .attr("transform", (d, i) => {
-                    //                                 return `translate(${vm.lastHandle.get(key)[i]},${0})`})
-                    //                 )
-                    //         })
-            }
-            if(vm.diagnosisState){
-                diagnosisBrushSlider()
-                
+                diagnosisBrushSlider()              
                 d3.selectAll(".handle--custom1").raise()
                 d3.selectAll(".handle--custom").raise()
-
-
             }else{
                 brushSlider()
             }
+           
 
-
-            // svg.select(".textButton0").attr("fill","red")
-            
             // 折现和散点图之间的联动以及toptip
             function pathover(event,d){
                 const tooltip = vm.svg.append("g")
@@ -718,19 +655,17 @@ export default {
                 }
                 if (selection === null) selections.delete(key);
                 else selections.set(key, selection.map(x.get(key).invert));
-                // selections.set(key, selection.map(x.get(key).invert));
-
+                diagnosisSelected.set(key,selection)
+                // diagnosisSelected.set(key,selection.map(x.get(key).invert))
                 if(vm.diagnosisState !== true){
                     vm.lastSelections.set(key, selection.map(x.get(key).invert));
                     vm.lastHandle.set(key,selection)
                 }
                 if(vm.diagnosisState){
                     if (selection === null){
-                         diagnosisSelected.delete(key);
                         d3.selectAll(".rect" + keys.indexOf(key))
                         .attr("opacity", 0.5)
                     }else{
-                        diagnosisSelected.set(key, selection.map(x.get(key)));
                         let brushRange = d3.map(selection, x.get(key).invert)
                         let previousRange = vm.lastSelections.get(key)
                         d3.selectAll(".rect" + keys.indexOf(key))
@@ -739,6 +674,33 @@ export default {
                         // d3.select(this).call(brushHandle, selection);
                         
                     }
+                    if(d3.selectAll(".brushLineLeft") !== undefined){
+                        d3.selectAll(".brushLineleft").remove()
+                        d3.selectAll(".brushLineRight").remove()
+
+                    }
+                    d3.select(".lineBrush")
+                        .call(
+                            g => g.append("path")
+                                .attr("fill","none")
+                                .attr("stroke-width",1)
+                                // .selectAll("path")
+                                .datum(Array.from(diagnosisSelected))
+                                .attr("stroke","red")
+                                .attr("d" ,d => brushLineLeft(d))
+                                .attr("class","brushLineleft")
+                        )
+                        .call(
+                            g =>g.append("path")
+                                .attr("fill","none")
+                                .attr("stroke","red")
+                                .attr("stroke-width",1)
+                                .datum(Array.from(diagnosisSelected))
+                                .attr("d", d => brushLineRight(d))
+                                .attr("class","brushLineRight")
+                        )
+
+
                     // let currentSelections = Array.from(selections),
                     // previousSelections = Array.from(vm.lastSelections),
                     // secondStateSelections = []
@@ -810,27 +772,6 @@ export default {
                         .attr("height","10px")
                         .attr("href",success)
                 }
-                // console.log(x.get(Array.from(diagnosisSelected)[0][0]));
-                if(vm.diagnosisState){
-                    // console.log(Array.from(diagnosisSelected))
-                    // svg.append("g")
-                    //     .attr("class","lineBrush")
-                    //     .attr("fill","none")
-                    //     .attr("stroke-width",1)
-                    //     // .selectAll("path")
-                    //     .append("path")
-                    //     .datum(Array.from(diagnosisSelected))
-                    //     // .join("path").datum(d => {
-                    //     //     console.log(d)
-                    //     //     return d
-                    //     // })
-                    //     .attr("stroke","red")
-                    //     .attr("d" ,d => {
-                    //         return  brushLine(d)}
-                    //         )
-                }
-                // const linrBrush = 
-                
                 // diagnosisSelected
                 d3.select(this).call(brushHandle, selection);
                 svg.property("value", selected).dispatch("input");
@@ -841,8 +782,6 @@ export default {
                 d3.selectAll(".handle--custom").raise()
                 d3.select(".cardG").lower()
                 d3.select(".bottomButton").raise()
-
-              
             }
             
         },
@@ -881,7 +820,6 @@ export default {
                 .attr("stroke-width", 1)
         },
         changePath(array){	//change Style
-        console.log(array);
             if(array.length === 0)return;
             for(let item in array){
                 this.svg.select(`#paraPath${array[item]}`)

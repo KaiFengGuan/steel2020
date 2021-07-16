@@ -39,7 +39,14 @@ var labelColor = [ "#c65b24", "#94a7b7"] // red grey
 var noflagColor = '#71797E'
 var delabelColor = ["#e3ad92",   "#b9c6cd"]
 var labelColor2 = [ '#e34649', '#5164f5']
-var processColor =['#fcd8a9','#cce9c7',"#c1c9ee"]; 
+var processColor =['#fcd8a9','#cce9c7',"#c1c9ee"];
+var buttonColor = ['#ffffff','#94a7b7']//un_activate,activate
+var buttonTextColor = ['#94a7b7','#ffffff']//un_activate,activate
+var brushHandleStroke = ['#90a4ae','#c65b24']//1st,2st
+
+
+// Tabular brushColor
+var brushColor = ['#90a4ae','#eeeeee','#eeeeee'] //1st/2st/overlay
 
 
 var GillSans = "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif"
@@ -144,16 +151,25 @@ export default {
         }
         return index ? colors[index] : colors
     },
+    
     // labelColor: ['red', d3.schemeCategory10[0]]
     labelColor2: labelColor2,
     labelColor: labelColor,
     noflagColor: noflagColor,
     delabelColor: delabelColor,
     processColor: processColor,
+    brushColor:brushColor,
+    buttonColor:buttonColor,
+    buttonTextColor:buttonTextColor,
+    brushHandleStroke:brushHandleStroke,
     labelColorFunc (index) {
         return index !== 404 ? labelColor[index] : noflagColor
     },
-
+    colorScale(index){
+      var ribbon = d3.interpolate('white','#c65b24')
+      var linear = d3.scaleLinear().domain([0,100]).range([0,1])
+      return ribbon(linear(index))
+    },
     setPoData(matrix) {
         let m = matrix.length
         let n = matrix[0].length

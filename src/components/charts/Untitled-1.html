@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+        <g>
+            <defs>
+                <!-- <filter id="shadow">
+                  <feDropShadow dx="0.2" dy="0.4" stdDeviation="0.2"/>
+                </filter> -->
+                <filter id="shadow2">
+                  <feDropShadow dx="0" dy="0" stdDeviation="0.5"
+                      flood-color="#ccc"/>
+                </filter>
+                <!-- <filter id="shadow2">
+                  <feDropShadow dx="-0.8" dy="-0.8" stdDeviation="0"
+                      flood-color="pink" flood-opacity="0.5"/>
+                </filter> -->
+                <filter id="shadow3">
+                  <feDropShadow dx="-0.8" dy="-0.8" stdDeviation="0"
+                      flood-color="pink" flood-opacity="0.5"/>
+                </filter>
+              </defs>
+            <circle cx="5" cy="5" r="2"
+            style="fill:none;  stroke-width: 1; stroke: pink;filter:url(#shadow2);" />
+      
+            <circle cx="25" cy="50%" r="4"
+                style="fill:pink; filter:url(#shadow3);"/>
+
+
+
+        </g>>
+      
+        <!-- <circle cx="5" cy="50%" r="4"
+            style="fill:none; filter:url(#shadow);"/> -->
+      
+        <!-- <circle cx="15" cy="50%" r="4"
+            style="fill:none; filter:url(#shadow2); stroke-width: 1; stroke: pink"/> -->
+        
+      </svg>
+</body>
+</html>

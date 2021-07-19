@@ -1831,34 +1831,44 @@ export default {
 
               let batch_data = [];
               let data_len = that._mergeresult.length;
-              let batch_date_s, batch_date_e;
+              let batch_date_s = [], batch_date_e = [];
               if (data_len>=5) {
                 if (i <= 2) {
                   let mergedata = d3.map(that._mergeresult.slice(0, 5), d => d['merge'])
                   mergedata.forEach(d => batch_data.push(d.map(e => e.upid)))
-
-                  batch_date_s = mergedata[0][0].stops[0].time;
-                  batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time
+                  // console.log(mergedata)
+                  
+                  mergedata.forEach(d => {
+                    batch_date_s.push(d[0].stops[0].time)
+                    batch_date_e.push(d.slice(-1)[0].stops[0].time)
+                  })
                 }
                 else if (i > data_len-3) {
                   let mergedata = d3.map(that._mergeresult.slice(-6), d => d['merge'])
                   mergedata.forEach(d => batch_data.push(d.map(e => e.upid)))
                   
-                  batch_date_s = mergedata[0][0].stops[0].time;
-                  batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time
+                  mergedata.forEach(d => {
+                    batch_date_s.push(d[0].stops[0].time)
+                    batch_date_e.push(d.slice(-1)[0].stops[0].time)
+                  })
                 }
                 else {
-                  let mergedata = d3.map(that._mergeresult.slice(i-2, i+3), d => d['merge'])
+                  let mergedata = d3.map(that._mergeresult.slice((+i)-2, (+i)+3), d => d['merge'])
                   mergedata.forEach(d => batch_data.push(d.map(e => e.upid)))
                   
-                  batch_date_s = mergedata[0][0].stops[0].time;
-                  batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time
+                  mergedata.forEach(d => {
+                    batch_date_s.push(d[0].stops[0].time)
+                    batch_date_e.push(d.slice(-1)[0].stops[0].time)
+                  })
                 }
               } else if (data_len>=3 && data_len<=4) {
-                batch_data = d3.map(d3.map(that._mergeresult.slice(0, 3), d => d['merge']), d => d.upid)
+                let mergedata = that._mergeresult.slice(0, 3)
+                batch_data = d3.map(d3.map(mergedata, d => d['merge']), d => d.upid)
 
-                batch_date_s = mergedata[0][0].stops[0].time;
-                batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time
+                mergedata.forEach(d => {
+                    batch_date_s.push(d[0].stops[0].time)
+                    batch_date_e.push(d.slice(-1)[0].stops[0].time)
+                  })
               }
               else {
                 return

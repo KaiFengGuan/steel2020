@@ -18,340 +18,358 @@ import util from './util.js';
 import processJson from "@/assets/json/processJson.json"
 import {mapGetters, mapMutations} from "vuex"
 const processIcon = [heaticon , rollicon , coolicon],
-    iconwhite = [heatwhite , rollwhite , coolwhite];
+  iconwhite = [heatwhite , rollwhite , coolwhite];
 export default {
-    props: {
-        contract: {
-            default: false,
-            type: Boolean,
-            require: true
-        }
-    },
+  props: {
+    contract: {
+      default: false,
+      type: Boolean,
+      require: true
+    }
+  },
 	data() {
 		return {
 			menuId: 'wheeling' + Math.random().toString(32).slice(-6),
 			svg: undefined,
 			data:[],
-            jsondata: undefined,
-            chorddata: undefined,
-            batchData: undefined,
-            upid: undefined,
-            wheelChart: undefined
+      jsondata: undefined,
+      chorddata: undefined,
+      batchData: undefined,
+      upid: undefined,
+      wheelChart: undefined
 		}
 	},
 	methods: {
-        ...mapMutations([
-			"changeStatus",
-			"riverStatus"
-		]),
-        paintChart(jsondata, chorddata, batchData) {
-            this.jsondata = jsondata, this.chorddata = chorddata, this.batchData = batchData;
-            const wheeldata = [] , labels = []
-            this.upid = jsondata.upid
-            for(let item in jsondata['INDEX']){
-                labels.push(jsondata['INDEX'][item])
-                wheeldata.push({
-                    name: jsondata['INDEX'][item],
-                    PCASPE: jsondata['CONTQ'][item],
-                    PCAT2: jsondata['CONTJ'][item],
-                    result_value: jsondata['value'][item],
-                    result_low: jsondata['l'][item],
-                    result_high: jsondata['u'][item],
-                    result_extre_high: jsondata['extremum_u'][item],
-                    result_extre_low: jsondata['extremum_l'][item]
-                })
+    ...mapMutations([
+      "changeStatus",
+      "riverStatus"
+    ]),
+    paintChart(jsondata, chorddata, batchData) {
+      this.jsondata = jsondata, this.chorddata = chorddata, this.batchData = batchData;
+      var wheeldata = [] , labels = [], searchLabels = [];
+      this.upid = jsondata.upid
+      // for(let item in jsondata['INDEX']){  //json
+      //     labels.push(jsondata['INDEX'][item])
+      //     wheeldata.push({
+      //         name: jsondata['INDEX'][item],
+      //         PCASPE: jsondata['CONTQ'][item],
+      //         PCAT2: jsondata['CONTJ'][item],
+      //         result_value: jsondata['value'][item],
+      //         result_low: jsondata['l'][item],
+      //         result_high: jsondata['u'][item],
+      //         result_extre_high: jsondata['extremum_u'][item],
+      //         result_extre_low: jsondata['extremum_l'][item]
+      //     })
+      // }
+      for(let item in jsondata['CONTJ']){ //online
+        searchLabels.push(jsondata['one_dimens'][item]['name'])
+        if(processJson.flat().indexOf(jsondata['one_dimens'][item]['name']) == -1)continue
+        labels.push(jsondata['one_dimens'][item]['name'])
+        wheeldata.push({
+          name: jsondata['one_dimens'][item]['name'],
+          PCASPE: jsondata['CONTQ'][item],
+          PCAT2: jsondata['CONTJ'][item],
+          result_value: jsondata['one_dimens'][item]['value'],
+          result_low: jsondata['one_dimens'][item]['l'],
+          result_high: jsondata['one_dimens'][item]['u'],
+          result_extre_high: jsondata['one_dimens'][item]['extremum_u'],
+          result_extre_low: jsondata['one_dimens'][item]['extremum_l'],
+          result_extre_shigh: jsondata['one_dimens'][item]['s_extremum_u'],
+          result_extre_slow: jsondata['one_dimens'][item]['s_extremum_l'],
+        })
+      }
+      // for(let item in jsondata['PCASPE']['xData']){
+      //     labels.push(jsondata['PCASPE']['xData'][item])
+      //     wheeldata.push({
+      //         name:jsondata['PCASPE']['xData'][item],
+      //         PCASPE:jsondata['PCASPE']['sData'][item]?jsondata['PCASPE']['sData'][item]:0,
+      //         PCAT2:jsondata['PCAT2']['sData'][item]?jsondata['PCAT2']['sData'][item]:0,
+      //         // outOfGau:jsondata['outOfGau']['sData'][item],
+      //         result_value:jsondata['result'][item]['value'],
+      //         result_low:jsondata['result'][item]['l'],
+      //         result_high:jsondata['result'][item]['u'],
+      //         result_original_l:jsondata['result'][item]['original_l'],
+      //     })
+      // }
+      const vm=this		
+      const diameter = document.getElementById(this.menuId).offsetHeight;	
+      const width = document.getElementById(this.menuId).offsetWidth;	
+      this.svg !== undefined && this.svg.remove()
+      this.svg=d3.select('#' + this.menuId)
+        .append('svg')
+        .attr('viewBox', `${-50} ${-diameter / 2} ${width} ${diameter}`)
+        .style('width', width)
+        .style('height', diameter);
+      class wheelRound{
+        constructor(container) {
+          this._container = container;
+          this._g = null;
+
+          this._width = 640;
+          this._height = 640;
+          this._radius = {
+            inner: 125,
+            outer: 0,
+            max: 0,
+            bubble: 30,
+            label: 15
+          };
+          this._fontSize = {
+            info: 10,
+            center: 24,
+            month: 9,
+            mark: 8,
+            tick: 8
+          };
+
+          this._data = null;
+          this._chartData = null;
+          this._field = {
+            name: 'name',
+            low: 'result_low',
+            high: 'result_high',
+            elow: 'result_extre_low',
+            ehigh: 'result_extre_high',
+            avg: 'result_value',
+            precipitation: 'PCASPE',
+            humidity: 'PCAT2',
+          }
+
+          this._x = null; // date scale
+          this._xpad = null; //pad scale
+          this._y = null; // temperature scale
+          this._h = null; // humidity scale
+          this._hb = null;// humidity border scale
+          this._barAngle = 0; // one-bar radian
+
+          this._labels=null;
+          this._dailyInfo = null;
+          this._texts = {
+            name: null,
+            avg: null,
+            deviation:null,
+            high: null,
+            low: null,
+            prec: null,
+            humidity: null,
+          };
+
+          this._process=[];
+          this._padprocess = [[],[],[]];
+          this._processindex = ['heat', 'roll', 'cool'];
+          this._labelcolor = ['#fcd8a9', '#cce9c7', '#c1c9ee'];
+          this._flagColor = ["#e3ad92",   "#b9c6cd"];
+          this._padAngle=[];
+          this._linespace=6;
+          this._merge = true;
+          this._horizonView = true;
+          this._indexdata = [];
+          this._allIndex = undefined;    //index name
+          this._indexScale = undefined;
+          this._mouseDis  = undefined;
+          this._barVis = true;
+          this._labelLimit = 0.5;
+          this._stopPropagation = (e, d) => e.stopPropagation();
+
+          this._processClass = e => d => e + d.month,
+          this._indexId = e => d => e + d.indexName,
+
+          //mainG
+          this._borderStyle ={
+            color: '#b9bbbd',
+            rx: 3,
+            ry: 3
+          }
+
+          //contentG
+          this._fliterStatus = false;
+          this._contentG = null;
+          this._heatOrRiver = false;
+          this._padindex = null;
+          this._processData = null;
+
+          //Style 
+          this._cleadStyle = {
+            'opacity': 0.4,
+            'stroke-width': 0.75
+          }
+          this._leadlineStyle = {
+            'opacity': 0.4,
+            'original_strwidth': 0.25,
+            'highlight_strwidth': 0.75
+          }
+          this._circleStyle ={
+            'original_r': 2,
+            'highlight_r': 3.5
+          }
+
+          //chord
+          this._graph = null;
+          this._leavesData = null;
+          this._lineData = null;
+
+          this._mouseEvents = null;
+
+          this._buttonColor = '#94a7b7'; //  #678fba
+          this._buttonStyle = {
+            width: 40,
+            height: 18 ,
+            textX: 20,
+            textY:  12
+          }
+        }
+        getIndex(_){
+          for (let item in this._process){
+            if(this._process[item].indexOf(_)!==-1){
+              return +item
             }
-            // for(let item in jsondata['PCASPE']['xData']){
-            //     labels.push(jsondata['PCASPE']['xData'][item])
-            //     wheeldata.push({
-            //         name:jsondata['PCASPE']['xData'][item],
-            //         PCASPE:jsondata['PCASPE']['sData'][item]?jsondata['PCASPE']['sData'][item]:0,
-            //         PCAT2:jsondata['PCAT2']['sData'][item]?jsondata['PCAT2']['sData'][item]:0,
-            //         // outOfGau:jsondata['outOfGau']['sData'][item],
-            //         result_value:jsondata['result'][item]['value'],
-            //         result_low:jsondata['result'][item]['l'],
-            //         result_high:jsondata['result'][item]['u'],
-            //         result_original_l:jsondata['result'][item]['original_l'],
-            //     })
-            // }
-            const vm=this		
-            const diameter = document.getElementById(this.menuId).offsetHeight;	
-            const width = document.getElementById(this.menuId).offsetWidth;	
-            this.svg !== undefined && this.svg.remove()
-            this.svg=d3.select('#' + this.menuId)
-                .append('svg')
-                .attr('viewBox', `${-50} ${-diameter / 2} ${width} ${diameter}`)
-                .style('width', width)
-                .style('height', diameter);
-            class wheelRound{
-                constructor(container) {
-                    this._container = container;
-                    this._g = null;
+          }
+        }
 
-                    this._width = 640;
-                    this._height = 640;
-                    this._radius = {
-                        inner: 125,
-                        outer: 0,
-                        max: 0,
-                        bubble: 30,
-                        label: 15
-                    };
-                    this._fontSize = {
-                        info: 10,
-                        center: 24,
-                        month: 9,
-                        mark: 8,
-                        tick: 8
-                    };
+        data(_) {
+          return arguments.length ? (this._data = _, this) : this._data;
+        }
 
-                    this._data = null;
-                    this._chartData = null;
-                    this._field = {
-                        name: 'name',
-                        low: 'result_low',
-                        high: 'result_high',
-                        elow: 'result_extre_low',
-                        ehigh: 'result_extre_high',
-                        avg: 'result_value',
-                        precipitation: 'PCASPE',
-                        humidity: 'PCAT2',
-                    }
+        labels(_){
+          return arguments.length ? (this._labels = _, this) : this._labels;
+        }
 
-                    this._x = null; // date scale
-                    this._xpad = null; //pad scale
-                    this._y = null; // temperature scale
-                    this._h = null; // humidity scale
-                    this._hb = null;// humidity border scale
-                    this._barAngle = 0; // one-bar radian
+        process(_){
+          return arguments.length ? (this._process = _, this) : this._process;
+        }
 
-                    this._labels=null;
-                    this._dailyInfo = null;
-                    this._texts = {
-                        name: null,
-                        avg: null,
-                        deviation:null,
-                        high: null,
-                        low: null,
-                        prec: null,
-                        humidity: null,
-                    };
+        field(_) {
+          return arguments.length ? (this._field = _, this) : this._field;
+        }
 
-                    this._process=[];
-                    this._padprocess = [[],[],[]];
-                    this._processindex = ['heat', 'roll', 'cool'];
-                    this._labelcolor = ['#fcd8a9', '#cce9c7', '#c1c9ee'];
-                    this._flagColor = ["#e3ad92",   "#b9c6cd"];
-                    this._padAngle=[];
-                    this._linespace=6;
-                    this._merge = true;
-                    this._horizonView = true;
-                    this._indexdata = [];
-                    this._allIndex = undefined;    //index name
-                    this._indexScale = undefined;
-                    this._mouseDis  = undefined;
-                    this._barVis = true;
-                    this._labelLimit = 0.5;
-                    this._stopPropagation = (e, d) => e.stopPropagation();
+        size(_) {
+          return arguments.length ? (this._width = _[0], this._height = _[1], this) : [this._width, this._height];
+        }
 
-                    this._processClass = e => d => e + d.month,
-                    this._indexId = e => d => e + d.indexName,
+        render() {
+          this._init();
+          if(!vm.contract){
+            this._renderComponents()
+          }else{
+            this._renderOption()
+          }
+          this._renderMerge()
+          return this;
+        }
 
-                    //mainG
-                    this._borderStyle ={
-                        color: '#b9bbbd',
-                        rx: 3,
-                        ry: 3
-                    }
+        _renderOption(){
+          this._merge = false
+        }
 
-                    //contentG
-                    this._fliterStatus = false;
-                    this._contentG = null;
-                    this._heatOrRiver = false;
-                    this._padindex = null;
-                    this._processData = null;
+        _renderBar(){
+          this._g.attr('transform', 'translate(-50,0)');
+          this._fliterScaleData();
+          this._mouseEvents = this._renderMainBar();
+          this._renderMainWheel();
+        }
 
-                    //Style 
-                    this._cleadStyle = {
-                        'opacity': 0.4,
-                        'stroke-width': 0.75
-                    }
-                    this._leadlineStyle = {
-                        'opacity': 0.4,
-                        'original_strwidth': 0.25,
-                        'highlight_strwidth': 0.75
-                    }
-                    this._circleStyle ={
-                        'original_r': 2,
-                        'highlight_r': 3.5
-                    }
+        _renderWheel(){
+          this._initScaleData();
+          this._renderMainWheel();
+          this._g.attr('transform', `translate(${vm.contract ? this._width/3 : this._width/2},0)`)
+        }
 
-                    //chord
-                    this._graph = null;
-                    this._leavesData = null;
-                    this._lineData = null;
+        _renderMerge(){
+          this._g == null ? undefined : this._g.remove();
+          this._g = this._container.append('g')
+          
+          this._initdata();
+          this._merge ? this._renderBar() : this._renderWheel();
+        }
 
-                    this._mouseEvents = null;
+        _renderComponents(){
+          this._container
+            .append('g')
+            .call(g => g.append('image')
+              .attr('class', 'mergeIcon')
+              .attr('width', '25px')
+              .attr('height','25px')
+              .attr('transform', `translate(${[-45, -12.5]})`)
+              .attr('href', mergeLabel))
+            .on('click', (e,d) => {
+              this._merge = !this._merge
+              this._renderMerge()
+              d3.select('.mergeIcon').attr('href', this._merge ? mergeLabel: deMergeLabel);
+            })
+          this._initHeatOrRiver()
+          this._initFilterButton()
+        }
 
-                    this._buttonColor = '#94a7b7'; //  #678fba
-                    this._buttonStyle = {
-                        width: 40,
-                        height: 18 ,
-                        textX: 20,
-                        textY:  12
-                    }
+        _initHeatOrRiver(){
+          const tabColor = this._buttonColor;
+          const semiButton = this._container.append('g').attr('class', 'semiButton')
+            .attr('transform', `translate(${[40, - this._height/2 + 2.5]})`);
+          semiButton.call(g => g.append('rect')
+              .attr('fill', this._heatOrRiver ? tabColor : 'white')
+              .attr('rx', 5)
+              .attr('ry', 5)
+              .attr('stroke', tabColor)
+              .attr('stroke-width', 0.5)
+              .attr('height', this._buttonStyle.height)
+              .attr('width', this._buttonStyle.width))
+            .call(g => g.append('text')
+              .attr('fill', this._heatOrRiver ? 'white' : tabColor)
+              .attr('x', this._buttonStyle.textX)
+              .attr('y', this._buttonStyle.textY)
+              .text('heat'))
+              .on('click', (e, d) => {
+                if(!vm.contract){
+                  this._heatOrRiver = !this._heatOrRiver
+                  vm.riverStatus(this._heatOrRiver)
                 }
-                getIndex(_){
-                    for (let item in this._process){
-                        if(this._process[item].indexOf(_)!==-1){
-                            return +item
-                        }
-                    }
-                }
+                semiButton.select('rect').attr('fill', this._heatOrRiver ? tabColor : 'white')
+                semiButton.select('text').attr('fill', this._heatOrRiver ? 'white' : tabColor)
+              })
+        }
 
-                data(_) {
-                    return arguments.length ? (this._data = _, this) : this._data;
+        _initFilterButton(){
+          const tabColor = this._buttonColor;
+          const filterButton = this._container.append('g').attr('class', 'filterButton')
+            .attr('transform', `translate(${[100, - this._height/2 + 2.5]})`);
+          filterButton
+            .call(g => g.append('rect')
+              .attr('fill', this._fliterStatus ? tabColor : 'white')
+              .attr('rx', 5)
+              .attr('ry', 5)
+              .attr('stroke', tabColor)
+              .attr('stroke-width', 0.5)
+              .attr('height', this._buttonStyle.height)
+              .attr('width', this._buttonStyle.width))
+            .call(g => g.append('text')
+                .attr('fill', this._fliterStatus ? 'white' : tabColor)
+                .attr('x', this._buttonStyle.textX)
+                .attr('y', this._buttonStyle.textY)
+                .text('filter'))
+            .on('click', (e, d) => {
+                if(!vm.contract){
+                    this._fliterStatus = !this._fliterStatus
+                    vm.changeStatus(this._fliterStatus)
                 }
+                // this._renderWheelFilter()
+                filterButton.select('rect').attr('fill', this._fliterStatus ? tabColor : 'white')
+                filterButton.select('text').attr('fill', this._fliterStatus ? 'white' : tabColor)
+            })
+        }
 
-                labels(_){
-                    return arguments.length ? (this._labels = _, this) : this._labels;
-                }
-
-                process(_){
-                    return arguments.length ? (this._process = _, this) : this._process;
-                }
-
-                field(_) {
-                    return arguments.length ? (this._field = _, this) : this._field;
-                }
-
-                size(_) {
-                    return arguments.length ? (this._width = _[0], this._height = _[1], this) : [this._width, this._height];
-                }
-
-                render() {
-                    this._init();
-                    if(!vm.contract){
-                        this._renderComponents()
-                    }else{
-                        this._renderOption()
-                    }
-                    this._renderMerge()
-                    return this;
-                }
-
-                _renderOption(){
-                    this._merge = false
-                }
-
-                _renderBar(){
-                    this._g.attr('transform', 'translate(-50,0)');
-                    this._fliterScaleData();
-                    this._mouseEvents = this._renderMainBar();
-                    this._renderMainWheel();
-                }
-
-                _renderWheel(){
-                    this._initScaleData();
-                    this._renderMainWheel();
-                    this._g.attr('transform', `translate(${vm.contract ? this._width/3 : this._width/2},0)`)
-                }
-
-                _renderMerge(){
-                    this._g == null ? undefined : this._g.remove();
-                    this._g = this._container.append('g')
-                    
-                    this._initdata();
-                    this._merge ? this._renderBar() : this._renderWheel();
-                }
-
-                _renderComponents(){
-                    this._container
-                        .append('g')
-                        .call(g => g.append('image')
-                                .attr('class', 'mergeIcon')
-                                .attr('width', '25px')
-                                .attr('height','25px')
-                                .attr('transform', `translate(${[-45, -12.5]})`)
-                                .attr('href', mergeLabel))
-                        .on('click', (e,d) => {
-                            this._merge = !this._merge
-                            this._renderMerge()
-                            d3.select('.mergeIcon').attr('href', this._merge ? mergeLabel: deMergeLabel);
-                        })
-                    this._initHeatOrRiver()
-                    this._initFilterButton()
-                }
-
-                _initHeatOrRiver(){
-                    const tabColor = this._buttonColor;
-                    const semiButton = this._container.append('g').attr('class', 'semiButton')
-                        .attr('transform', `translate(${[40, - this._height/2 + 2.5]})`);
-                    semiButton.call(g => g.append('rect')
-                            .attr('fill', this._heatOrRiver ? tabColor : 'white')
-                            .attr('rx', 5)
-                            .attr('ry', 5)
-                            .attr('stroke', tabColor)
-                            .attr('stroke-width', 0.5)
-                            .attr('height', this._buttonStyle.height)
-                            .attr('width', this._buttonStyle.width))
-                        .call(g => g.append('text')
-                            .attr('fill', this._heatOrRiver ? 'white' : tabColor)
-                            .attr('x', this._buttonStyle.textX)
-                            .attr('y', this._buttonStyle.textY)
-                            .text('heat'))
-                        .on('click', (e, d) => {
-                            if(!vm.contract){
-                                this._heatOrRiver = !this._heatOrRiver
-                                vm.riverStatus(this._heatOrRiver)
-                            }
-                            semiButton.select('rect').attr('fill', this._heatOrRiver ? tabColor : 'white')
-                            semiButton.select('text').attr('fill', this._heatOrRiver ? 'white' : tabColor)
-                        })
-                }
-
-                _initFilterButton(){
-                    const tabColor = this._buttonColor;
-                    const filterButton = this._container.append('g').attr('class', 'filterButton')
-                        .attr('transform', `translate(${[100, - this._height/2 + 2.5]})`);
-                    filterButton.call(g => g.append('rect')
-                            .attr('fill', this._fliterStatus ? tabColor : 'white')
-                            .attr('rx', 5)
-                            .attr('ry', 5)
-                            .attr('stroke', tabColor)
-                            .attr('stroke-width', 0.5)
-                            .attr('height', this._buttonStyle.height)
-                            .attr('width', this._buttonStyle.width))
-                        .call(g => g.append('text')
-                            .attr('fill', this._fliterStatus ? 'white' : tabColor)
-                            .attr('x', this._buttonStyle.textX)
-                            .attr('y', this._buttonStyle.textY)
-                            .text('filter'))
-                        .on('click', (e, d) => {
-                            if(!vm.contract){
-                                this._fliterStatus = !this._fliterStatus
-                                vm.changeStatus(this._fliterStatus)
-                            }
-                            // this._renderWheelFilter()
-                            filterButton.select('rect').attr('fill', this._fliterStatus ? tabColor : 'white')
-                            filterButton.select('text').attr('fill', this._fliterStatus ? 'white' : tabColor)
-                        })
-                }
-
-                _init() {
-                    const r = this._radius;
-                    
-                    r.max = Math.min(this._width, this._height) / (vm.contract ? 2 :2.5);
-                    r.inner = r.max * 0.40;
-                    r.bubble = r.max * 0.2;
-                    r.outer = r.max - r.bubble *1.1 - r.label;
-                    // const fs = d3.scaleLinear().domain([4, 1024]).range([0, 28]);
-                    // this._fontSize.info = fs(r.max);
-                    // fs.range([8, 36]);
-                    // this._fontSize.center = fs(r.max);
-                    // fs.range([4, 18]);
-                    // this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
-                }
+        _init() {
+          const r = this._radius;
+          
+          r.max = Math.min(this._width, this._height) / (vm.contract ? 2 :2.5);
+          r.inner = r.max * 0.40;
+          r.bubble = r.max * 0.2;
+          r.outer = r.max - r.bubble *1.1 - r.label;
+          // const fs = d3.scaleLinear().domain([4, 1024]).range([0, 28]);
+          // this._fontSize.info = fs(r.max);
+          // fs.range([8, 36]);
+          // this._fontSize.center = fs(r.max);
+          // fs.range([4, 18]);
+          // this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
+        }
 
                 _initdata() {
                     const field = this._field;
@@ -471,8 +489,8 @@ export default {
                     this._contentG = this._g.append('g').attr('class', 'contentG');
                     this._renderWheelContent();
                     this._initInnerOverlay();   //tooptip layer
-                    this._initChordData();      //init chord line data
-                    this._renderWheelChord();   //chord node and line
+                    // this._initChordData();      //init chord line data
+                    // this._renderWheelChord();   //chord node and line
                 }
 
                 _renderPre(){
@@ -2019,8 +2037,9 @@ export default {
                         graph = {nodes:[],links:[]};
                     // this._allIndex = d3.map(sample, d => d.indexName);
                     for (let item in sample){
+                        console.log(sample[item])
                         // console.log(chorddata)
-                        // console.log(sample[item].indexName)
+                        console.log(sample[item].indexName)
                         let i = chorddata['label'].indexOf(sample[item].indexName),
                             targets = [],
                             id = sample[item].indexName;
@@ -2406,24 +2425,31 @@ export default {
                         // console.log(batchData);
                         var name = d.indexName,
                         
+
+                    //     result_value: jsondata['one_dimens'][item]['value'],
+                    // result_low: jsondata['one_dimens'][item]['l'],
+                    // result_high: jsondata['one_dimens'][item]['u'],
+                    // result_extre_high: jsondata['one_dimens'][item]['extremum_u'],
+                    // result_extre_low: jsondata['one_dimens'][item]['extremum_l'],
+                    // result_extre_shigh: jsondata['one_dimens'][item]['s_extremum_u'],
+                    // result_extre_slow: jsondata['one_dimens'][item]['s_extremum_l'],
                         batch = totalData.map(e => {
-                            let i = e.INDEX.indexOf(name);
+                            let i = searchLabels.indexOf(name);
                             let s = {
                                 time: new Date(e.toc),
-                                flag: +e.fqc_label,
+                                flag: e.fqc_label,
                                 Q: e.CONTQ[i],
                                 T2: e.CONTJ[i],
-                                h: e.u[i],
-                                l: e.l[i],
-                                exh: e.extremum_u[i],
-                                exl: e.extremum_l[i],
+                                h: e['one_dimens'][i].u,
+                                l: e['one_dimens'][i].l,
+                                exh: e['one_dimens'][i].extremum_u,
+                                exl: e['one_dimens'][i].extremum_l,
                                 upid: e.upid,
-                                value: e.value[i],
+                                value: e['one_dimens'][i].value,
                                 indexName: name,
-                                process: this.getIndex(name),
+                                process: d.month,
                                 d: f,
-                                ovalue: e.original_value[i],
-
+                                ovalue: e['one_dimens'][i].original_value,
                             };
                             s.self = e.upid == vm.upid ? true : false ,
                             s.max = Math.max(s.h, s.l, s.value),

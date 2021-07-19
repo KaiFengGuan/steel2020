@@ -264,7 +264,8 @@ import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 // import myJsonData from "./sampledata/jsondata.json"
-import correlationData from './sampledata/corr.json'
+import diagnosis_demo from './sampledata/diagnosis.json'
+import diagnosis_data from './sampledata/diagonisisData.json'
 // import myStationData from "./sampledata/stationdata.js"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
@@ -324,6 +325,7 @@ export default {
 			algorithmOptions: [
 				"T-SNE", "UMAP", "ISOMAP", "PCA"
 			],
+			alldiagnosisData: [],
 			algorithmUrls: {
 				"T-SNE": "/newbaogangapi/v1.0/model/VisualizationTsne/",
 				"UMAP": "/newbaogangapi/v1.0/model/VisualizationUMAP/",
@@ -352,9 +354,10 @@ export default {
 			multisize: 20,
 			curvesize: 0.5,
 			sampleCss:{},
-      batchDateStart: undefined,
-      batchDateEnd: undefined,
-      req_count: 0
+			usDiagnosis: {},
+			batchDateStart: undefined,
+			batchDateEnd: undefined,
+			req_count: 0
 		}
 	},
 	computed: {
@@ -689,38 +692,47 @@ export default {
 		async trainClick(value) {
 			this.diagnosisVisible = true;
 			this.upidSelect = []
-      this.chooseList = value.batch;
-      this.batchDateStart = value.date_s;
-      this.batchDateEnd = value.date_e;
+			this.chooseList = value.batch;
+			this.batchDateStart = value.date_s;
+			this.batchDateEnd = value.date_e;
 
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
 			}
-      this.upidSelect = [...new Set(value.upidSelect)].filter(d => this.upidData.get(d) !== undefined)
-      
-      let diagnosisData = (await this.getDiagnosisData(
-        [this.batchDateStart, this.batchDateEnd],   // time_select
-        JSON.stringify([]),   // slabthickness
-        JSON.stringify([]),   // tgtdischargetemp
-        JSON.stringify([]),   // tgtplatethickness
-        JSON.stringify([]),   // tgtwidth
-        JSON.stringify([]),   // tgtplatelength2
-        JSON.stringify([]),   // tgttmplatetemp
-        JSON.stringify([]),   // cooling_start_temp
-        JSON.stringify([]),   // cooling_stop_temp
-        JSON.stringify([]),   // cooling_rate1
-        JSON.stringify([]),   // productcategory
-        JSON.stringify([]),   // steelspec
-        0,   // status_cooling
-        0,   // fqcflag
-      )).data
-      console.log(diagnosisData.sort((a, b) => {
-        let a_t = new Date(a.toc);
-        let b_t = new Date(b.toc);
-        return a_t - b_t
-      }))
-      
-      console.log(value.upidSelect)
+			this.upidSelect = [...new Set(value.upidSelect)]//.filter(d => this.upidData.get(d) !== undefined)
+
+			this.alldiagnosisData = diagnosis_data
+      // (await this.getDiagnosisData(
+			// 	[this.batchDateStart[0], this.batchDateEnd[this.batchDateEnd.length - 1]],   // time_select
+			// 	JSON.stringify([]),   // slabthickness
+			// 	JSON.stringify([]),   // tgtdischargetemp
+			// 	JSON.stringify([]),   // tgtplatethickness
+			// 	JSON.stringify([]),   // tgtwidth
+			// 	JSON.stringify([]),   // tgtplatelength2
+			// 	JSON.stringify([]),   // tgttmplatetemp
+			// 	JSON.stringify([]),   // cooling_start_temp
+			// 	JSON.stringify([]),   // cooling_stop_temp
+			// 	JSON.stringify([]),   // cooling_rate1
+			// 	JSON.stringify([]),   // productcategory
+			// 	JSON.stringify([]),   // steelspec
+			// 	0,   // status_cooling
+			// 	0,   // fqcflag
+			// 	)).data;
+			this.alldiagnosisData.forEach(d => {
+				d.toc = new Date(d.toc)
+			})
+			this.alldiagnosisData.sort((a, b) => a.toc - b.toc)
+			let alldiagnosisUpid = this.alldiagnosisData.map(d => d.upid)
+
+			// this.upidSelect = this.upidSelect.filter(d => this.upidData.get(d) !== undefined)//json
+
+			this.upidSelect = this.upidSelect.filter(d => alldiagnosisUpid.indexOf(d) !== -1)//online
+			for(let item of this.upidSelect){
+				this.usDiagnosis[item] = this.alldiagnosisData[alldiagnosisUpid.indexOf(item)]
+			}
+
+			console.log(this.alldiagnosisData)
+			console.log(value.upidSelect)
 			for(let item of value.upidSelect){
 				try{
 					await this.paintScatterList(item)
@@ -732,42 +744,24 @@ export default {
 			await this.paintUnderCharts(this.upidSelect[0]);
 		},
 		async paintScatterList(upid){
-			// this.$nextTick(function() {this.$refs[upid][0].init()})
-			// let query=[]
-			// for (let item of this.plateTempPropvalue){
-			// 	if(item==='All'){
-			// 		query.push(item)
-			// 	}
-			// }		
-			// if(query.length===0)query=this.plateTempPropvalue
-			// console.log(diagnosisData["result"].length === 0)
-			// if(diagnosisData["result"].length === 0){
-			// 	return false
-      // }
-      
-			
-			var diagnosisData = this.upidData.get(upid)[0]
-      // Vue.set(this.sampleCss, upid, "solid 0.05px " + this.trainBorder(diagnosisData))
-      
+			// var diagnosisData = this.upidData.get(upid)[0]//json
+			var diagnosisData = this.usDiagnosis[upid]//online
 			if(this.corrdata.length !== 0) {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
 				return false
-      }
-      
-      // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.batchDateStart}/${this.batchDateEnd}/`)
-      await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`)
-      .then(Response => {
+			}
+
+			await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`)
+			.then(Response => {
 				this.$nextTick(function() {
-					// this.$refs[upid][0].paintChart(diagnosisData, Response.data)
-					// this.corrdata = Response.data
-          this.$refs[upid][0].paintChart(diagnosisData, correlationData)
-					this.corrdata = correlationData
+					this.$refs[upid][0].paintChart(diagnosisData, Response.data)
+					this.corrdata = Response.data
 				})
 			})
 		},
 		mareyUpdate(){
       // this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
-      this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
+    	this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
 		},
 		mergeUpdate(){
 			this.isMerge = !this.isMerge
@@ -798,7 +792,7 @@ export default {
 			// diagnosisData
 			this.paintRiverLike(upid);
 			// this.platetype(upid);
-    },
+    	},
     clickDiagnosisButton() {
       this.diagnosisVisible = ! this.diagnosisVisible
 
@@ -806,42 +800,21 @@ export default {
     },
 
 		async paintRiverLike(upid) {
-			let query=[]
-			for (let item of this.plateTempPropvalue){
-				if(item==='All'){
-					query.push(item)
-				}
-			}		
-			if(query.length===0)query=this.plateTempPropvalue
-
 			this.selectedUpid =  "UPID " + upid
-			// let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
-			// console.log(this.upidData.get(upid))
-			var diagnosisData = this.upidData.get(upid)[0]
+      // var diagnosisData = this.upidData.get(upid)[0]//json
+			var diagnosisData = this.usDiagnosis[upid]//online
 			this.sampleCss = {}
 			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
-			var processData = this.chooseList.map(d => d.filter(e => this.upidData.get(e) !== undefined).map(e => this.upidData.get(e)[0]))
-			// console.log(processData)
-			// return 
-			// this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
-			this.diagnosisData = diagnosisData
-			// let processDetail = []
-			// for(let item of this.processArray){
-			// 	console.log(item)
-			// 	let detailProData = (await this.getDetailProcess(this.selectedTrainData[this.selectedTrainData.length-1], item, this.plateTempProp.width/1000, 
-			// 		this.plateTempProp.length, this.plateTempProp.thickness/1000,query,this.plateTempProp.deviation)).data
-			// 	processDetail.push(detailProData)
-			// 	// Object.assign(processDetail, detailProData)
-			// }
-      // console.log(processDetail)
-      
+			// var processData = this.chooseList.map(d => d.filter(e => this.upidData.get(e) !== undefined).map(e => this.upidData.get(e)[0]))
+
+      var processData = this.batchDateStart.map((d, i) => this.alldiagnosisData.filter(e => e.toc >= new Date(d) && new Date(this.batchDateEnd[i]) >= e.toc))
       // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.batchDateStart}/${this.batchDateEnd}/`)
       // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`)
       // .then(Response => {
 			// 	this.$refs.wheelering.paintChart(diagnosisData, Response.data, processData)
 			// })
-      this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
-      
+      console.log(processData)
+		  this.$refs.wheelering.paintChart(diagnosisData, this.corrdata, processData)
 			// this.paintDetailPro(this.processTurn)
 		},
 
@@ -960,45 +933,9 @@ export default {
 		// console.log(this.startmonth.getMonth())
 		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
-		// var demo ={
-		// 	"list": [
-		// 		"19301009000",
-		// 		"19301002000"
-		// 	],
-		// 	"upidSelect": [
-		// 		"19301005000"
-		// 	],
-		// 	"type": "group",
-		// 	"batch": [
-		// 		["19301001000",
-		// 		"19301002000",
-		// 		"19301003000",
-		// 		"19301004000",
-		// 		"19301005000",
-		// 		"19301006000",
-		// 		"19301007000",
-		// 		"19301008000"],
-		// 		["19301001000",
-		// 		"19301002000",
-		// 		"19301003000",
-		// 		"19301004000",
-		// 		"19301005000",
-		// 		"19301006000",
-		// 		"19301007000",
-		// 		"19301008000"],
-		// 		["19301001000",
-		// 		"19301002000",
-		// 		"19301003000",
-		// 		"19301004000",
-		// 		"19301005000",
-		// 		"19301006000",
-		// 		"19301007000",
-		// 		"19301008000"],
-		// 	]
-		// }
-		// this.trainClick(demo)
-		this.getplatetype()
-		this.changeTime()
+		this.trainClick(diagnosis_demo)
+		// this.getplatetype()
+		// this.changeTime()
 	},
 	watch: {
 		startDate:function(){

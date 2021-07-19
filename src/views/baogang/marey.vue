@@ -322,12 +322,13 @@ export default {
 			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
-				"T-SNE", "ISOMAP", "UMAP"
+				"T-SNE", "UMAP", "ISOMAP", "PCA"
 			],
 			algorithmUrls: {
 				"T-SNE": "/newbaogangapi/v1.0/model/VisualizationTsne/",
-				"ISOMAP": "/newbaogangapi/v1.0/model/VisualizationMDS/",
-				"UMAP": "/newbaogangapi/v1.0/model/VisualizationPCA/"
+				"UMAP": "/newbaogangapi/v1.0/model/VisualizationUMAP/",
+				"ISOMAP": "/newbaogangapi/v1.0/model/VisualizationISOMAP/",
+				"PCA": "/newbaogangapi/v1.0/model/VisualizationPCA/"
 			},
 			algorithmSelected: "T-SNE",
 			plateTempProp: {
@@ -350,7 +351,10 @@ export default {
 			corrsize: 0.5,
 			multisize: 20,
 			curvesize: 0.5,
-			sampleCss:{}
+			sampleCss:{},
+      batchDateStart: undefined,
+      batchDateEnd: undefined,
+      req_count: 0
 		}
 	},
 	computed: {
@@ -424,7 +428,7 @@ export default {
 			})
 		},
 		brushUpid : vm => d3.map(vm.brushData, d => d.upid),
-		isSwitchActive: vm => !vm.isSwitch
+    isSwitchActive: vm => !vm.isSwitch
 	},
 	created() {
 	},
@@ -563,14 +567,27 @@ export default {
 		},
 
 		// 获取诊断视图数据
-		getDiagnosisData(upid, widthGap, lengthGap, thicknessGap,platetype) {
-			return steel.getDiagnosis({
-				'upid': upid,
-				'width': widthGap,
-				'length': lengthGap, 
-				'thickness': thicknessGap,
-				'platetype':JSON.stringify(platetype),
-			})
+    getDiagnosisData(time_select, slabthickness, tgtdischargetemp, tgtplatethickness, tgtwidth, tgtplatelength2, 
+                     tgttmplatetemp, cooling_start_temp, cooling_stop_temp, cooling_rate1,
+                     productcategory, steelspec, status_cooling, fqcflag) {
+			return steel.getDiagnosis(
+        `/newbaogangapi/v1.0/baogangPlot/diagnosesdatabytime/${time_select[0]}/${time_select[1]}/default/1000`,
+        {
+          'slabthickness': slabthickness,
+          'tgtdischargetemp': tgtdischargetemp,
+          'tgtplatethickness': tgtplatethickness,
+          'tgtwidth': tgtwidth, 
+          'tgtplatelength2': tgtplatelength2,
+          'tgttmplatetemp': tgttmplatetemp,
+          'cooling_start_temp': cooling_start_temp,
+          'cooling_stop_temp': cooling_stop_temp,
+          'cooling_rate1': cooling_rate1,
+          'productcategory': productcategory,
+          'steelspec': steelspec,
+          'status_cooling': status_cooling,
+          'fqcflag': fqcflag
+        }
+      )
 		},
 
 		getDetailProcess(upid, process, width, length, thickness,platetype,deviation) {
@@ -673,12 +690,37 @@ export default {
 			this.diagnosisVisible = true;
 			this.upidSelect = []
       this.chooseList = value.batch;
+      this.batchDateStart = value.date_s;
+      this.batchDateEnd = value.date_e;
 
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
 			}
-			this.upidSelect = [...new Set(value.upidSelect)].filter(d => this.upidData.get(d) !== undefined)
-
+      this.upidSelect = [...new Set(value.upidSelect)].filter(d => this.upidData.get(d) !== undefined)
+      
+      let diagnosisData = (await this.getDiagnosisData(
+        [this.batchDateStart, this.batchDateEnd],   // time_select
+        JSON.stringify([]),   // slabthickness
+        JSON.stringify([]),   // tgtdischargetemp
+        JSON.stringify([]),   // tgtplatethickness
+        JSON.stringify([]),   // tgtwidth
+        JSON.stringify([]),   // tgtplatelength2
+        JSON.stringify([]),   // tgttmplatetemp
+        JSON.stringify([]),   // cooling_start_temp
+        JSON.stringify([]),   // cooling_stop_temp
+        JSON.stringify([]),   // cooling_rate1
+        JSON.stringify([]),   // productcategory
+        JSON.stringify([]),   // steelspec
+        0,   // status_cooling
+        0,   // fqcflag
+      )).data
+      console.log(diagnosisData.sort((a, b) => {
+        let a_t = new Date(a.toc);
+        let b_t = new Date(b.toc);
+        return a_t - b_t
+      }))
+      
+      console.log(value.upidSelect)
 			for(let item of value.upidSelect){
 				try{
 					await this.paintScatterList(item)
@@ -698,20 +740,27 @@ export default {
 			// 	}
 			// }		
 			// if(query.length===0)query=this.plateTempPropvalue
-			// let diagnosisData = (await this.getDiagnosisData(upid, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
 			// console.log(diagnosisData["result"].length === 0)
 			// if(diagnosisData["result"].length === 0){
 			// 	return false
-			// }
+      // }
+      
+			
 			var diagnosisData = this.upidData.get(upid)[0]
-			// Vue.set(this.sampleCss, upid, "solid 0.05px " + this.trainBorder(diagnosisData))
+      // Vue.set(this.sampleCss, upid, "solid 0.05px " + this.trainBorder(diagnosisData))
+      
 			if(this.corrdata.length !== 0) {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
 				return false
-			}
-			await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
+      }
+      
+      // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.batchDateStart}/${this.batchDateEnd}/`)
+      await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`)
+      .then(Response => {
 				this.$nextTick(function() {
-					this.$refs[upid][0].paintChart(diagnosisData, correlationData)
+					// this.$refs[upid][0].paintChart(diagnosisData, Response.data)
+					// this.corrdata = Response.data
+          this.$refs[upid][0].paintChart(diagnosisData, correlationData)
 					this.corrdata = correlationData
 				})
 			})
@@ -772,7 +821,7 @@ export default {
 			this.sampleCss = {}
 			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
 			var processData = this.chooseList.map(d => d.filter(e => this.upidData.get(e) !== undefined).map(e => this.upidData.get(e)[0]))
-			console.log(processData)
+			// console.log(processData)
 			// return 
 			// this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
 			this.diagnosisData = diagnosisData
@@ -784,11 +833,15 @@ export default {
 			// 	processDetail.push(detailProData)
 			// 	// Object.assign(processDetail, detailProData)
 			// }
-			// console.log(processDetail)
-			await baogangAxios("baogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`).then(Response => {
-				this.$refs.wheelering.paintChart(diagnosisData,Response.data, processData)
-			})
-			// this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
+      // console.log(processDetail)
+      
+      // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.batchDateStart}/${this.batchDateEnd}/`)
+      // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`)
+      // .then(Response => {
+			// 	this.$refs.wheelering.paintChart(diagnosisData, Response.data, processData)
+			// })
+      this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
+      
 			// this.paintDetailPro(this.processTurn)
 		},
 
@@ -892,9 +945,12 @@ export default {
 			this.$refs.brushSlider.paintChart(this.timeBrushData)
 		},
 		async getAlgorithmData() {
+      this.req_count += 1;
+
 			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
         this.scatterData=Response.data
-				this.$refs.scatterCate.paintChart(this.scatterData)
+
+				this.$refs.scatterCate.paintChart(this.scatterData, this.req_count)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
         this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 			})

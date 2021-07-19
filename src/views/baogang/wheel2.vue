@@ -960,7 +960,7 @@ export default {
                         }
                         function initSwitch(){ //init switchG
                             switchG.selectAll('g').data([1, 0]).join('g')
-                                .attr('transform', d => `translate(${[rectX +  60 * (1 - d), - this._height/2 + 2.5]})`)//280  - 100
+                                .attr('transform', d => `translate(${[220 +  60 * (1 - d), - this._height/2 + 2.5]})`)//280  - 100
                                 .call(g => g.append('rect')
                                     .attr('fill', transfrom(tabColor, '#fff'))
                                     .attr('rx', 5)
@@ -1000,7 +1000,7 @@ export default {
                         }
                         function initVisG(){
                             visG
-                                .attr('transform', `translate(${[rectX +  RectWidth/3.1, - this._height/2 + 2.5]})`)
+                                .attr('transform', `translate(${[340, - this._height/2 + 2.5]})`)
                             visG.append('rect')
                                     .attr('fill', this._barVis ? tabColor : 'white')
                                     .attr('rx', 5)
@@ -1617,7 +1617,7 @@ export default {
                             .data(this._padindex.filter(d => angle[d].length !== 0))
                             .join('g')
                             .attr('class', 'borderG')
-                        .call(g => g.selectAll('g').data((d, i) => {console.log(borderAngle[d]); return borderAngle[d]})
+                        .call(g => g.selectAll('g').data((d, i) => borderAngle[d])
                             .join('g')
                             .call(g => g.append('line')      //扇形左边界
                                 .attr('y1', this._radius.inner)

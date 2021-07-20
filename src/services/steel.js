@@ -8,3 +8,6 @@ export  function getDiagnosis (api, params) {
 export  function getVisualization (params) {
     return service.post(APIs.GET_Visualization, params)
 }
+export  function getVisCorrelation (url, params) {
+    return service.post(APIs.GET_VisualizationCorrelation + `/${url.startDate}/${url.endDate}/${url.nums}`, params)
+}

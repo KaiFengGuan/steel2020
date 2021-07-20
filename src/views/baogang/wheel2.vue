@@ -489,8 +489,8 @@ export default {
                     this._contentG = this._g.append('g').attr('class', 'contentG');
                     this._renderWheelContent();
                     this._initInnerOverlay();   //tooptip layer
-                    // this._initChordData();      //init chord line data
-                    // this._renderWheelChord();   //chord node and line
+                    this._initChordData();      //init chord line data
+                    this._renderWheelChord();   //chord node and line
                 }
 
                 _renderPre(){
@@ -1066,7 +1066,6 @@ export default {
                         }
                         function initBarG(){  //init BarG
                             var barArea = initBarData();
-                            console.log(barArea)
                             barG
                                 .selectAll('g').data(selectInfo).join('g')
                                 .attr('opacity', opacityCache)
@@ -1082,10 +1081,6 @@ export default {
                                     .join('rect')
                                     .attr('fill', this._flagColor[1])
                                     .attr('stroke', d3.color(this._flagColor[1]).darker(0.6))
-                                    // .attr('y', d => {
-                                    //     console.log(barArea.barXscale[d.index].domain());
-                                    //     console.log(barArea.barXscale[d.index].range());
-                                    // })
                                     .attr('opacity', 0.5)
                                     .attr('y', d => barArea.barXscale[d.index](d.x0))
                                     .attr('width', d => barArea.barYscale[d.index](d.length))
@@ -2037,9 +2032,6 @@ export default {
                         graph = {nodes:[],links:[]};
                     // this._allIndex = d3.map(sample, d => d.indexName);
                     for (let item in sample){
-                        console.log(sample[item])
-                        // console.log(chorddata)
-                        console.log(sample[item].indexName)
                         let i = chorddata['label'].indexOf(sample[item].indexName),
                             targets = [],
                             id = sample[item].indexName;

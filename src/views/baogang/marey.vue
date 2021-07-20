@@ -264,8 +264,6 @@ import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 // import myJsonData from "./sampledata/jsondata.json"
-import diagnosis_demo from './sampledata/diagnosis.json'
-import diagnosis_data from './sampledata/diagonisisData.json'
 // import myStationData from "./sampledata/stationdata.js"
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
@@ -413,8 +411,8 @@ export default {
 			return [this.startmonth, endmonth]
 		},
 		monthdata : vm => sampledata[+vm.startmonth.getMonth()+1],
-		allupid : vm => d3.map(vm.monthdata, d => d.upid),
-		upidData : vm => d3.group(vm.monthdata, d => d.upid),
+		// allupid : vm => d3.map(vm.monthdata, d => d.upid),
+		// upidData : vm => d3.group(vm.monthdata, d => d.upid),
 		startDateString: vm => util.timeFormat(vm.startDate),
 		endDateString: vm => util.timeFormat(vm.endDate),
 		selectDateStart: vm => util.timeFormat(vm.dateselect[0]),
@@ -469,27 +467,15 @@ export default {
 			// return
 			this.plateTempPropvalue=['All']
 			this.loadingDataLoading = true
-			let startDate = this.startDateString;
-			let endDate = this.endDateString;
-			// let startDate="2018-11-01 00:00:00";
-			// let endDate = "2018-11-01 12:00:00";
-			// request
-			// let stationsResponse = this.getStationsData(startDate, endDate);
-			// let jsonResponse = this.getJsonData(startDate, endDate);
-			// let conditionResponse = this.getConditionData(startDate, endDate);
 
 			// response
-			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
-			await this.getStationsData(startDate, endDate).then(Response => {
-				this.stationsData=Response.data
-      })
-
-			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
+			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
+			this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
 			// this.jsonData = this.jsonData.filter(d => {
 			// 	return this.brushUpid.includes(d.upid)
 			// })
 
-			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
+			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data
 			// this.getplatetype();
 			let allDataArr = []
 			for (let item of this.jsonData) {
@@ -592,6 +578,26 @@ export default {
         }
       )
 		},
+
+    getVisCorrelation(url, slabthickness, tgtdischargetemp, tgtplatethickness, tgtwidth,
+          tgtplatelength2, tgttmplatetemp, cooling_start_temp, cooling_stop_temp,
+          cooling_rate1, productcategory, steelspec, status_cooling){
+      return steel.getVisCorrelation(url,{
+        slabthickness,
+        tgtdischargetemp,
+        tgtplatethickness,
+        tgtwidth,
+        tgtplatelength2,
+        tgttmplatetemp,
+        cooling_start_temp,
+        cooling_stop_temp,
+        cooling_rate1,
+        productcategory,
+        steelspec,
+        status_cooling
+      })
+    },
+    
 
 		getDetailProcess(upid, process, width, length, thickness,platetype,deviation) {
 			return steel.getVisualization({
@@ -701,23 +707,22 @@ export default {
 			}
 			this.upidSelect = [...new Set(value.upidSelect)]//.filter(d => this.upidData.get(d) !== undefined)
 
-			this.alldiagnosisData = diagnosis_data
-      // (await this.getDiagnosisData(
-			// 	[this.batchDateStart[0], this.batchDateEnd[this.batchDateEnd.length - 1]],   // time_select
-			// 	JSON.stringify([]),   // slabthickness
-			// 	JSON.stringify([]),   // tgtdischargetemp
-			// 	JSON.stringify([]),   // tgtplatethickness
-			// 	JSON.stringify([]),   // tgtwidth
-			// 	JSON.stringify([]),   // tgtplatelength2
-			// 	JSON.stringify([]),   // tgttmplatetemp
-			// 	JSON.stringify([]),   // cooling_start_temp
-			// 	JSON.stringify([]),   // cooling_stop_temp
-			// 	JSON.stringify([]),   // cooling_rate1
-			// 	JSON.stringify([]),   // productcategory
-			// 	JSON.stringify([]),   // steelspec
-			// 	0,   // status_cooling
-			// 	0,   // fqcflag
-			// 	)).data;
+			this.alldiagnosisData = (await this.getDiagnosisData(
+				[this.batchDateStart[0], this.batchDateEnd[this.batchDateEnd.length - 1]],   // time_select
+				JSON.stringify([]),   // slabthickness
+				JSON.stringify([]),   // tgtdischargetemp
+				JSON.stringify([]),   // tgtplatethickness
+				JSON.stringify([]),   // tgtwidth
+				JSON.stringify([]),   // tgtplatelength2
+				JSON.stringify([]),   // tgttmplatetemp
+				JSON.stringify([]),   // cooling_start_temp
+				JSON.stringify([]),   // cooling_stop_temp
+				JSON.stringify([]),   // cooling_rate1
+				JSON.stringify([]),   // productcategory
+				JSON.stringify([]),   // steelspec
+				0,   // status_cooling
+				0,   // fqcflag
+				)).data;
 			this.alldiagnosisData.forEach(d => {
 				d.toc = new Date(d.toc)
 			})
@@ -733,6 +738,7 @@ export default {
 
 			console.log(this.alldiagnosisData)
 			console.log(value.upidSelect)
+      this.corrdata = []
 			for(let item of value.upidSelect){
 				try{
 					await this.paintScatterList(item)
@@ -740,19 +746,34 @@ export default {
 					console.log(e)
 				}
 			}
-			this.corrdata = []
-			await this.paintUnderCharts(this.upidSelect[0]);
+			await this.paintRiverLike(this.upidSelect[0]);
 		},
 		async paintScatterList(upid){
 			// var diagnosisData = this.upidData.get(upid)[0]//json
 			var diagnosisData = this.usDiagnosis[upid]//online
-			if(this.corrdata.length !== 0) {
+			if(this.corrdata['label']) {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
 				return false
 			}
 
-			await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`)
-			.then(Response => {
+      await this.getVisCorrelation({
+          startDate: this.selectDateStart,
+          endDate: this.selectDateEnd,
+          nums: 1000
+        },   // time_select
+				JSON.stringify([]),   // slabthickness
+				JSON.stringify([]),   // tgtdischargetemp
+				JSON.stringify([]),   // tgtplatethickness
+				JSON.stringify([]),   // tgtwidth
+				JSON.stringify([]),   // tgtplatelength2
+				JSON.stringify([]),   // tgttmplatetemp
+				JSON.stringify([]),   // cooling_start_temp
+				JSON.stringify([]),   // cooling_stop_temp
+				JSON.stringify([]),   // cooling_rate1
+				JSON.stringify([]),   // productcategory
+				JSON.stringify([]),   // steelspec
+				0   // status_cooling
+				).then(Response => {
 				this.$nextTick(function() {
 					this.$refs[upid][0].paintChart(diagnosisData, Response.data)
 					this.corrdata = Response.data
@@ -789,7 +810,6 @@ export default {
 			this.$refs.mareyChart.mouse(value)
 		},
 		paintUnderCharts(upid) {
-			// diagnosisData
 			this.paintRiverLike(upid);
 			// this.platetype(upid);
     	},
@@ -808,13 +828,7 @@ export default {
 			// var processData = this.chooseList.map(d => d.filter(e => this.upidData.get(e) !== undefined).map(e => this.upidData.get(e)[0]))
 
       var processData = this.batchDateStart.map((d, i) => this.alldiagnosisData.filter(e => e.toc >= new Date(d) && new Date(this.batchDateEnd[i]) >= e.toc))
-      // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.batchDateStart}/${this.batchDateEnd}/`)
-      // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`)
-      // .then(Response => {
-			// 	this.$refs.wheelering.paintChart(diagnosisData, Response.data, processData)
-			// })
-      console.log(processData)
-		  this.$refs.wheelering.paintChart(diagnosisData, this.corrdata, processData)
+      if(this.corrdata['label'])this.$refs.wheelering.paintChart(diagnosisData, this.corrdata, processData)
 			// this.paintDetailPro(this.processTurn)
 		},
 
@@ -931,11 +945,9 @@ export default {
 	},
 	mounted() {
 		// console.log(this.startmonth.getMonth())
-		// this.paintDetailPro(2)
 		// this.platetype('18B09019000')
-		this.trainClick(diagnosis_demo)
-		// this.getplatetype()
-		// this.changeTime()
+		this.getplatetype()
+		this.changeTime()
 	},
 	watch: {
 		startDate:function(){

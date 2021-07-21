@@ -28,6 +28,7 @@ export default {
             slabThicknesssStation: 0,
             countpaint:0,
             newBrushSelection:new Map(),
+            
             // objStatus: {"tgtplatethickness":false,"tgtplatelength2":false,"tgtwidth":false,"slab_thickness":false},
             // coolingStation: {"cooling":false,"nocooling":false}, 
             // // diagnosisStation:false,
@@ -217,14 +218,16 @@ export default {
                     .y(([key]) => y(key)),
                     brushLineLeft = d3.line()
                                    .x(d => {
-                                      return d[1][0] - 6
+                                    //   return d[1][0] + 3
+                                      return d[1][0]
                                   })
                                   .y((d,i) => 
                                   {
                                       return (liney(d[0]) + 6)}),
                     brushLineRight = d3.line()
                                    .x(d => {
-                                      return d[1][1] + 6
+                                    //   return d[1][1] + 4
+                                      return d[1][1]
                                   })
                                   .y((d,i) => 
                                   {

@@ -46,7 +46,7 @@ var levelColor = ['white', 'white', '#FAD3BF', '#F5A780', '#EF7B40'];
 //         var linear = d3.scaleLinear().domain([0,100]).range([0,1])
 //         return ribbon(linear(index))
 //       },
-var labelScale = d3.scaleLinear().domain([3, 0]).range(labelColor)
+var labelScale = d3.scaleLinear().domain([3, 0]).range(delabelColor)
 
 var GillSans = "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif"
 var SegoeUI = "Segoe UI"

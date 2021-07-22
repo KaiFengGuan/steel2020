@@ -1351,35 +1351,35 @@ export default {
                                                 .attr('fill', util.labelScale(2))
                                                 // .attr('stroke', d3.color(util.labelScale(2)).darker(0.4))
                                                 .attr('class', 'path4')
-                                                .attr('opacity', 0.2)
+                                                // .attr('opacity', 0.2)
                                                 .datum(d => d)
                                                 .attr('d', mergeArea[4]))
                                             .call(g => g.append('path')
                                                 .attr('fill', util.labelScale(2))
                                                 // .attr('stroke', d3.color(util.labelScale(2)).darker(0.4))
                                                 .attr('class', 'path3')
-                                                .attr('opacity', 0.2)
+                                                // .attr('opacity', 0.2)
                                                 .datum(d => d)
                                                 .attr('d', mergeArea[3]))
                                                 .call(g => g.append('path')
                                                 .attr('fill', util.labelScale(1))
                                                 // .attr('stroke', d3.color(util.labelScale(1)).darker(0.4))
                                                 .attr('class', 'path2')
-                                                .attr('opacity', 0.4)
+                                                // .attr('opacity', 0.4)
                                                 .datum(d => d)
                                                 .attr('d', mergeArea[2]))
                                             .call(g => g.append('path')
                                                 .attr('fill', util.labelScale(1))
                                                 // .attr('stroke', d3.color(util.labelScale(1)).darker(0.4))
                                                 .attr('class', 'path1')
-                                                .attr('opacity', 0.4)
+                                                // .attr('opacity', 0.4)
                                                 .datum(d => d)
                                                 .attr('d', mergeArea[1]))
                                             .call(g => g.append('path')
                                                 .attr('fill', util.labelScale(0))
                                                 // .attr('stroke', d3.color(util.labelScale(0)).darker(0.4))
                                                 .attr('class', 'path0')
-                                                .attr('opacity', 0.8)
+                                                // .attr('opacity', 0.8)
                                                 .datum(d => d)
                                                 .attr('d', mergeArea[0]))
                                             // .call(g => g.append('path')
@@ -1392,7 +1392,7 @@ export default {
                                             .call(g => g.append('path')
                                                 .attr('stroke-width', 2)
                                                 .attr('class', 'line')
-                                                .attr('stroke', (d, i) => d3.color(lc[selectInfo[i].month]).darker(0.6))
+                                                .attr('stroke', (d, i) => d3.color(util.labelScale(0)).darker(0.6))
                                                 .attr('fill', 'none')
                                                 .datum(d => d)
                                                 .attr('d', mergeLine)
@@ -1401,8 +1401,9 @@ export default {
                                             .call(g => g.selectAll('circle')
                                                 .data(d => d).join('circle')
                                                 .attr('transform', d =>`translate(${mergeLocation(d)})`)
-                                                .attr('visibility', d => wm._rangeInsert(d) <= 1 ? 'visible' : 'hidden')
-                                                .attr('fill', d => util.labelScale(wm._rangeInsert(d)))
+                                                .attr('visibility', d => wm._rangeInsert(d) > 1 ? 'visible' : 'hidden')
+                                                // .attr('fill', d => util.labelScale(wm._rangeInsert(d)))
+                                                .attr('fill', 'none')
                                                 .attr('stroke', d => d3.color(util.labelScale(wm._rangeInsert(d))).darker(0.5))
                                                 // .attr('fill', (d, i) => lc[selectInfo[d.d].month])
                                                 // .attr('stroke', (d, i) => d3.color(lc[selectInfo[d.d].month]).darker(1))
@@ -2543,8 +2544,8 @@ export default {
                 
                 _rangeInsert(s){
                     if(s.h >= s.value && s.value >= s.l)return 0;
-                    else if(s.exh >= s.value && s.value >= s.exl)return 1;
-                    else if(s.sxh >= s.value && s.value >= s.sxl)return 2;
+                    else if(s.exh >= s.value && s.h <= s.value || s.value <= s.l && s.value >= s.exl)return 1;
+                    else if(s.sxh >= s.value && s.exh <= s.value || s.value <= s.exl && s.value >= s.sxl)return 2;
                     else return 3;
                 }
             }

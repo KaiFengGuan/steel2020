@@ -738,7 +738,7 @@ export default {
 
 			console.log(this.alldiagnosisData)
 			console.log(value.upidSelect)
-      this.corrdata = []
+    		this.corrdata = []
 			for(let item of value.upidSelect){
 				try{
 					await this.paintScatterList(item)

@@ -1,7 +1,5 @@
 <template>
-	<div>
-		<div :id="menuId" style="height: 100%;width:100%;"></div>
-	</div>
+	<div :id="menuId" style="height: 100%;width:100%;"></div>
 </template>
 
 <script>
@@ -32,11 +30,12 @@ export default {
 			menuId: 'wheeling' + Math.random().toString(32).slice(-6),
 			svg: undefined,
 			data:[],
-      jsondata: undefined,
-      chorddata: undefined,
-      batchData: undefined,
-      upid: undefined,
-      wheelChart: undefined
+            jsondata: undefined,
+            chorddata: undefined,
+            batchData: undefined,
+            upid: undefined,
+            steeltoc: undefined,
+            wheelChart: undefined
 		}
 	},
 	methods: {
@@ -48,6 +47,7 @@ export default {
       this.jsondata = jsondata, this.chorddata = chorddata, this.batchData = batchData;
       var wheeldata = [] , labels = [], searchLabels = [];
       this.upid = jsondata.upid
+      this.steeltoc = jsondata.toc
       // for(let item in jsondata['INDEX']){  //json
       //     labels.push(jsondata['INDEX'][item])
       //     wheeldata.push({
@@ -557,9 +557,18 @@ export default {
                         barVisObject = Object.assign({}, ...selectInfo.map(d => {return {[d.indexName] : this._barVis}})),
                         indexArray = d3.map(selectInfo, (d, i) => i),
                         indexSort = d3.map(selectInfo, d => d.indexName),
-                        tempsort = d3.map(d3.sort(selectInfo, d => -d.over), d => d.indexName),
-                        sortArray = d3.map(indexSort, d => tempsort.indexOf(d)),
-                        indexScale = d3.scaleOrdinal().domain(indexArray).range(sortArray),// index  --- sort
+                        horizenEX = batchData.map(d => this._sliderArray(selectInfo, d))
+                            .map((d, i) => d.map((e, f) =>{ 
+                                    var temp = e.map(g => {
+                                        g.i = i;
+                                        return g
+                                    })
+                                    temp.i = i;
+                                    temp.d = f;
+                                    return temp
+                                }
+                            )),
+                        indexScale = null,// index  --- sort
                         rectHeight = null,
                         yScaleCache = null,
                         yScale = null,  //指标在y轴上的坐标
@@ -568,6 +577,7 @@ export default {
                         lineToCircle = null,
                         lineToRect = null,
                         lastY = null,
+                        scaleArray = null,
                         maxLength = batchData.length,  //batch numbers
                         minRect = RectWidth/ (maxLength + 0.5),
                         rectArray = new Array(maxLength).fill(0).map((d, i) => (batchData[i].length + 1) * 4.75),   //batch position
@@ -575,6 +585,8 @@ export default {
                         rectPosition = Array.from(d3.cumsum(rectArray));
                         RectWidth = rectPosition[rectPosition.length - 1],
                         minRect = RectWidth/ (maxLength + 0.5);
+
+                        initOrdinal.call(this);
 
                         mainG.append('rect')
                             .attr('transform', `translate(${[rectX - 2 * maxHeight, -this._height/2]})`)
@@ -597,7 +609,6 @@ export default {
                             renderyAxis();
                             renderSort();
                             wm._fliterStatus ? wm._renderWheelFilter() : undefined
-                            // wm._fliterStatus ? wm._renderWheelFilter(selectInfo.filter((d, i) => wheel_y <= indexScale(i) && indexScale(i) < rectNum + wheel_y).map(d => d.indexName)) : undefined
                         })
 
                         renderyAxis();
@@ -614,25 +625,7 @@ export default {
                                 .attr('transform', `translate(${[rectX, 0]})`);
                         initDragG();
                         
-                        var sliderData = batchData.map(d => this._sliderArray(selectInfo, d)),
-                            // dataEX = sliderData.map((d, i) => {
-                            //     return new Array(maxLength).fill(wm._deepCopy(d)).map((e, f) =>{
-
-                            //     }
-                            //     )
-                            // }),
-                            horizenEX = sliderData
-                            .map((d, i) => d.map((e, f) =>{ 
-                                    var temp = e.map(g => {
-                                        g.i = i;
-                                        return g
-                                    })
-                                    temp.i = i;
-                                    temp.d = f;
-                                    return temp
-                                }
-                            )),
-                            overlap = 3,    //horizen layer
+                        var overlap = 3,    //horizen layer
                             overlapNum = [-1, -2, -3, 0, 1, 2],
                             overHeight = [-3 , -2 , -1, 1, 2 , 3].map(d => d * (maxHeight - rectPadding.top - rectPadding.bottom)),
                             horizenColor = i => {
@@ -658,12 +651,6 @@ export default {
                             textG = mainG.append('g').attr('class', 'textG').attr('transform', `translate(${[rectX, 0]})`);
                         initMouseG();
 
-                        var tempsort = d3.map(d3.sort(selectInfo, d => -d.humidity), d => d.indexName),
-                            sortArray = d3.map(indexSort, d => tempsort.indexOf(d)),
-                            totalSort = d3.map(d3.sort(selectInfo, d => -d.precipitation), d => d.indexName),
-                            totalArray = d3.map(indexSort, d => totalSort.indexOf(d));
-                        var scaleArray = [indexScale, d3.scaleOrdinal().domain(indexArray).range(sortArray), d3.scaleOrdinal().domain(indexArray).range(totalArray)];
-                        indexScale = this._indexScale !== undefined ? scaleArray[this._indexScale] : scaleArray[2];
                         let sortG = mainG.append('g')
                                 .attr('class', 'sortG'),
                             sortColor = this._buttonColor,
@@ -691,6 +678,33 @@ export default {
 
                         renderSort()
 
+                        function initOrdinal(){
+                            // tempsort = d3.map(d3.sort(selectInfo, d => -d.over), d => d.indexName),
+                            // sortArray = d3.map(indexSort, d => tempsort.indexOf(d)),
+                            // var tempsort = d3.map(d3.sort(selectInfo, d => -d.humidity), d => d.indexName),
+                            //     sortArray = d3.map(indexSort, d => tempsort.indexOf(d)),
+                            //     totalSort = d3.map(d3.sort(selectInfo, d => -d.precipitation), d => d.indexName),
+                            //     totalArray = d3.map(indexSort, d => totalSort.indexOf(d));
+                            // var scaleArray = [d3.scaleOrdinal().domain(indexArray).range(sortArray), d3.scaleOrdinal().domain(indexArray).range(sortArray), d3.scaleOrdinal().domain(indexArray).range(totalArray)];
+                            var timeArray = batchData.map(d => d[0].toc),
+                                batchIndex;
+                            for(let item in timeArray){
+                                if(timeArray[item] >= vm.steeltoc){
+                                    batchIndex = item
+                                    break
+                                }
+                            }
+                            var selfBatch = horizenEX[batchIndex];
+                            var oversort = d3.map(d3.sort(selfBatch, d => -d3.mean(d, e => e.over)), d => d[0].indexName),
+                                overArray = d3.map(indexSort, d => oversort.indexOf(d)),
+                                Qsort = d3.map(d3.sort(selfBatch, d => -d3.mean(d, e => e.Q)), d => d[0].indexName),
+                                QArray = d3.map(indexSort, d => Qsort.indexOf(d)),
+                                T2sort = d3.map(d3.sort(selfBatch, d => -d3.mean(d, e => e.T2)), d => d[0].indexName),
+                                T2Array = d3.map(indexSort, d => T2sort.indexOf(d));
+
+                            scaleArray = [d3.scaleOrdinal().domain(indexArray).range(overArray) , d3.scaleOrdinal().domain(indexArray).range(QArray), d3.scaleOrdinal().domain(indexArray).range(T2Array)];
+                            indexScale = this._indexScale !== undefined ? scaleArray[this._indexScale] : scaleArray[0];
+                        }
                         function renderyAxis(){
                             let invert = d3.scaleOrdinal().domain(indexScale.range()).range(indexScale.domain())
                             rectHeight = indexArray.map(d => (barVisObject[indexSort[invert(+d)]] ? 2 : 1 )* maxHeight + indexSpace)
@@ -706,7 +720,7 @@ export default {
                             lineToRect = (d, i) =>{
                                 let centerY = centerScaleY(d),
                                     endY = yScale(+i);
-                                return [[rectX - arcX + 75, centerY],[rectX - arcX + 85, centerY], [rectX - maxHeight * 2, endY]]
+                                return [[rectX - arcX + 75, centerY],[rectX - arcX + 85, centerY], [rectX - maxHeight , endY]]
                             };
                             lineToCircle = d =>{
                                 let [startX, startY] = startXY(d),
@@ -775,9 +789,9 @@ export default {
                                     .on('mouseover', this._stopPropagation)
                                     .on('mouseout', this._stopPropagation))
                                 .call(g => g.append('rect')
-                                    .attr('transform', (d, i) => `translate(${[rectX - 2 * maxHeight, yScale(i) - maxHeight]})`)
+                                    .attr('transform', (d, i) => `translate(${[rectX -  maxHeight, yScale(i) - maxHeight]})`)
                                     .attr('height', maxHeight)
-                                    .attr('width', RectWidth + 2 * maxHeight)
+                                    .attr('width', RectWidth +  maxHeight)
                                     // .attr('stroke', d => d3.color(lc[d.month]).darker(1.5))
                                     .attr('stroke', this._borderStyle.color)
                                     .attr('stroke-width', 0.75)
@@ -905,7 +919,7 @@ export default {
                                     .text((d, i) => indexScale(i) + 1)
                                 lineG.selectAll('rect')
                                     .transition(t)
-                                    .attr('transform', (d, i) => `translate(${[rectX - 2 * maxHeight, yScale(i) - maxHeight]})`)
+                                    .attr('transform', (d, i) => `translate(${[rectX - maxHeight, yScale(i) - maxHeight]})`)
                                 lineG.selectAll('.lineToRect')
                                     .transition(t)
                                     .attr('d', (d, i) => line(lineToRect(d, i)))
@@ -930,8 +944,8 @@ export default {
                                     .attr('opacity', opacityCache)
                                 barG.selectAll('g')
                                     .transition(t)
-                                    .attr('transform', (d, i) =>`translate(${[0, yScale(i) - maxHeight]})`)
-                                    .attr('opacity', opacityCache)
+                                    .attr('transform', (d, i) =>`translate(${[maxHeight, yScale(i)]})`)
+                                    .attr('opacity', (d, i) => barVisObject[d.indexName] ? opacityCache(d, i) : 0)
                                 sortG.selectAll('rect')
                                     .transition(t)
                                     .attr('fill', sortChange(sortColor, '#fff'));
@@ -946,7 +960,7 @@ export default {
                                         .attr('d', trianIcon)
                                 textG.selectAll('text')
                                     .transition(t)
-                                    .attr('opacity', opacityCache)
+                                    .attr('opacity', (d, i) => barVisObject[d.indexName] ? opacityCache(d, i) : 0)
                                 if(wm._mouseDis !== undefined){
                                     var mouseInfo = mouseText(wm._mouseDis);
                                     textG.selectAll('text')
@@ -1068,8 +1082,8 @@ export default {
                             var barArea = initBarData();
                             barG
                                 .selectAll('g').data(selectInfo).join('g')
-                                .attr('opacity', opacityCache)
-                                .attr('transform', (d, i) =>`translate(${[0, yScale(i) - maxHeight]})`)
+                                .attr('opacity', (d, i) => barVisObject[d.indexName] ? opacityCache(d, i) : 0)
+                                .attr('transform', (d, i) =>`translate(${[maxHeight, yScale(i)]})`)
                                 .call(g => g.append('rect')
                                     .attr('height', maxHeight)
                                     .attr('width', maxHeight)
@@ -1077,16 +1091,27 @@ export default {
                                     .attr('fill', 'none')
                                     .attr('stroke-width', 0.25))
                                 .call(g => g.selectAll('.goodSteel')
-                                    .data((d, i) => barArea.barData[i])
+                                    .data((d, i) => barArea.barGoodData[i])
                                     .join('rect')
+                                    .attr('class', 'goodSteel')
                                     .attr('fill', this._flagColor[1])
                                     .attr('stroke', d3.color(this._flagColor[1]).darker(0.6))
                                     .attr('opacity', 0.5)
                                     .attr('y', d => barArea.barXscale[d.index](d.x0))
                                     .attr('width', d => barArea.barYscale[d.index](d.length))
                                     .attr('height', d => barArea.barXscale[d.index](d.x1) - barArea.barXscale[d.index](d.x0))
-                                    .attr('x', d => maxHeight - barArea.barYscale[d.index](d.length))
-                                )
+                                    .attr('x', d => maxHeight - barArea.barYscale[d.index](d.length)))
+                                .call(g => g.selectAll('.badSteel')
+                                    .data((d, i) => barArea.barBadData[i])
+                                    .join('rect')
+                                    .attr('class', 'badSteel')
+                                    .attr('fill', this._flagColor[0])
+                                    .attr('stroke', d3.color(this._flagColor[0]).darker(0.6))
+                                    .attr('opacity', 0.5)
+                                    .attr('y', d => barArea.barXscale[d.index](d.x0))
+                                    .attr('width', d => barArea.barYscale[d.index](d.length))
+                                    .attr('height', d => barArea.barXscale[d.index](d.x1) - barArea.barXscale[d.index](d.x0))
+                                    .attr('x', d => maxHeight - barArea.barYscale[d.index](d.length)))
                                 // .call(g => g.append('path')
                                 //     .attr('fill', '#b9c6cd')
                                 //     .attr('opacity', 0.8)
@@ -1099,10 +1124,10 @@ export default {
                         function initBarData(){
                             const barValue = selectInfo.map((d, i) => horizenEX.map(e => e[i]).flat()),
                                 barData = barValue.map((d, i) => d3.bin().thresholds(25)(d.map(e => e.value)).map(e => {e.index = i;return e})),
-                                barYscale = barData.map(d => d3.scaleLinear().domain(d3.extent(d, f => f.length)).range([2, maxHeight - 2])),
+                                barYscale = barData.map(d => d3.scaleLinear().domain([0, d3.max(d, f => f.length)]).range([2, maxHeight - 2])),
                                 barXscale = barData.map(d => d3.scaleLinear().domain([d3.min(d, f => f.x0), d3.max(d, f => f.x1)]).range([2, maxHeight - 2])),
                                 barGoodData = barValue.map((d, i) => d3.bin().thresholds(25)((d.filter(e => e.flag == 1)).map(e => e.value)).map(e => {e.index = i;return e})),
-                                barBadData = barValue.map((d, i) => d.filter(e => e.flag == 0));
+                                barBadData = barValue.map((d, i) => d3.bin().thresholds(25)((d.filter(e => e.flag == 0)).map(e => e.value)).map(e => {e.index = i;return e}));
                             return {
                                 barValue,barYscale,barXscale,barGoodData,barBadData,barData
                             }
@@ -1116,7 +1141,7 @@ export default {
                                 .attr('stroke', mouseInfo !==undefined ? '#bbbcbd' : 'none')
                                 .attr('stroke-width', 0.25)
                             textG.selectAll('text').data(selectInfo).join('text')
-                                .attr('opacity', opacityCache)
+                                .attr('opacity', (d, i) => barVisObject[d.indexName] ? opacityCache(d, i) : 0)
                                 .attr('transform', (d, i) =>`translate(${[mouseInfo ?  wm._mouseDis - 10 : 0 , yScale(i) + maxHeight/2]})`)
                                     .text((d, i) => mouseInfo !==undefined ? (+mouseInfo[i]).toFixed(2) : '')
                                     .attr('fill', 'black')
@@ -1214,19 +1239,24 @@ export default {
                                         .domain(d3.extent(data[i][0], (e, f)=> e.time));
                                 return scale
                             });
-                            let yBatch = d3.scaleLinear()
-                                .range([0, maxHeight - rectPadding.top])//有个BUG ，无法改成下面一行
-                                // .range([rectPadding.bootom, maxBarHeight -rectPadding.top])
-                                .domain([0, 1]);
+                            let yBatch = selectInfo.map((d, i) => {
+                                let scale = d3.scaleLinear()
+                                        .range([0, maxHeight - rectPadding.top])
+                                        //有个BUG ，无法改成下面一行
+                                        // .range([rectPadding.bootom, maxBarHeight -rectPadding.top])
+                                        .domain([d3.min(d3.map(data, d => d[i]).flat().map(d => d.min)),
+                                            d3.max(d3.map(data, d => d[i]).flat().map(d => d.max))]);
+                                return scale
+                            });
                             let mergeArea = d3.area()
                                 .x(d => xBatch[d.i](d.time))
-                                .y0((d, i) => -yBatch(d.min))
-                                .y1((d, i) => -yBatch(d.max)),
+                                .y0((d, i) => -yBatch[d.d](d.min))
+                                .y1((d, i) => -yBatch[d.d](d.max)),
                                 mergeLine = d3.line()
                                     .x(d => xBatch[d.i](d.time))
-                                    .y((d, i) => -yBatch(d.value))
+                                    .y((d, i) => -yBatch[d.d](d.value))
                                     .curve(d3.curveLinear),
-                                mergeLocation = d => [xBatch[d.i](d.time), -yBatch(d.value)];
+                                mergeLocation = d => [xBatch[d.i](d.time), -yBatch[d.d](d.value)];
                             timeScale = xBatch;
                             return [mergeArea, mergeLine, mergeLocation]
                         }
@@ -1299,7 +1329,7 @@ export default {
                                                 .datum(d => d)
                                                 .attr('d', mergeArea))
                                             .call(g => g.append('path')
-                                                .attr('stroke-width', 1)
+                                                .attr('stroke-width', 2)
                                                 .attr('class', 'line')
                                                 .attr('stroke', (d, i) => d3.color(lc[selectInfo[i].month]).darker(0.6))
                                                 .attr('fill', 'none')
@@ -1310,10 +1340,13 @@ export default {
                                             .call(g => g.selectAll('circle')
                                                 .data(d => d).join('circle')
                                                 .attr('transform', d =>`translate(${mergeLocation(d)})`)
-                                                .attr('fill', (d, i) => lc[selectInfo[d.d].month])
-                                                .attr('stroke', (d, i) => d3.color(lc[selectInfo[d.d].month]).darker(1))
+                                                .attr('visibility', d => wm._rangeInsert(d) <= 1 ? 'visible' : 'hidden')
+                                                .attr('fill', d => util.labelScale(wm._rangeInsert(d)))
+                                                .attr('stroke', d => d3.color(util.labelScale(wm._rangeInsert(d))).darker(0.5))
+                                                // .attr('fill', (d, i) => lc[selectInfo[d.d].month])
+                                                // .attr('stroke', (d, i) => d3.color(lc[selectInfo[d.d].month]).darker(1))
                                                 .attr('stroke-width', 0.25)
-                                                .attr('r', 2)))
+                                                .attr('r', 1.8)))
                         }
                         function horizenParameter(array, data){	//horizen function
                             let xBatch = array.map((d, i) => {
@@ -2416,15 +2449,6 @@ export default {
                         d.index = f;
                         // console.log(batchData);
                         var name = d.indexName,
-                        
-
-                    //     result_value: jsondata['one_dimens'][item]['value'],
-                    // result_low: jsondata['one_dimens'][item]['l'],
-                    // result_high: jsondata['one_dimens'][item]['u'],
-                    // result_extre_high: jsondata['one_dimens'][item]['extremum_u'],
-                    // result_extre_low: jsondata['one_dimens'][item]['extremum_l'],
-                    // result_extre_shigh: jsondata['one_dimens'][item]['s_extremum_u'],
-                    // result_extre_slow: jsondata['one_dimens'][item]['s_extremum_l'],
                         batch = totalData.map(e => {
                             let i = searchLabels.indexOf(name);
                             let s = {
@@ -2436,6 +2460,8 @@ export default {
                                 l: e['one_dimens'][i].l,
                                 exh: e['one_dimens'][i].extremum_u,
                                 exl: e['one_dimens'][i].extremum_l,
+                                sxh: e['one_dimens'][i].s_extremum_u,
+                                sxl: e['one_dimens'][i].s_extremum_l,
                                 upid: e.upid,
                                 value: e['one_dimens'][i].value,
                                 indexName: name,
@@ -2444,14 +2470,21 @@ export default {
                                 ovalue: e['one_dimens'][i].original_value,
                             };
                             s.self = e.upid == vm.upid ? true : false ,
-                            s.max = Math.max(s.h, s.l, s.value),
-                            s.min = Math.min(s.h, s.l, s.value),
+                            s.max = Math.max(s.h, s.exh, s.value, s.sxh),
+                            s.min = Math.min(s.l, s.exl, s.value, s.sxl),
                             s.over = s.h >= s.value && s.value >= s.l ? 0 : (s.h >= s.value ? s.value - s.l : s.h - s.value);
                             return s
                         })
                         batch.d = f;
                         return batch
                     })
+                }
+                
+                _rangeInsert(s){
+                    if(s.h >= s.value && s.value >= s.l)return 0;
+                    else if(s.exh >= s.value && s.value >= s.exl)return 1;
+                    else if(s.sxh >= s.value && s.value >= s.sxl)return 2;
+                    else return 3;
                 }
             }
             this.wheelChart = new wheelRound(this.svg)

@@ -46,6 +46,7 @@ var levelColor = ['white', 'white', '#FAD3BF', '#F5A780', '#EF7B40'];
 //         var linear = d3.scaleLinear().domain([0,100]).range([0,1])
 //         return ribbon(linear(index))
 //       },
+var labelScale = d3.scaleLinear().domain([3, 0]).range(labelColor)
 
 var GillSans = "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif"
 var SegoeUI = "Segoe UI"
@@ -105,6 +106,7 @@ var diagCardTitleTextAttr = setAttr(GillSans, "none", "10px", "normal", "normal"
 
 // var labelColor = ['#ff005a', '#3888fa', '#88fa38', '#fa3888', '#38faaa']   //多个颜色
 export default {
+    labelScale: labelScale,
     // 除子节点
     removeAllChildren (div) {
         while (

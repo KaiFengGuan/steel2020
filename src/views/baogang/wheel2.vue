@@ -112,6 +112,7 @@ export default {
             outer: 0,
             max: 0,
             bubble: 30,
+            arc: 5,
             label: 15
           };
           this._fontSize = {
@@ -168,7 +169,11 @@ export default {
           this._indexScale = undefined;
           this._mouseDis  = undefined;
           this._barVis = true;
-          this._labelLimit = 0.5;
+          this._labelLimit = {
+            precs: 0.5,
+            humis: 0.5,
+            result: 0.5
+          };
           this._stopPropagation = (e, d) => e.stopPropagation();
 
           this._processClass = e => d => e + d.month,
@@ -199,8 +204,8 @@ export default {
             'highlight_strwidth': 0.75
           }
           this._circleStyle ={
-            'original_r': 2,
-            'highlight_r': 3.5
+            'original_r': 1.5,
+            'highlight_r': 2
           }
 
           //chord
@@ -360,8 +365,10 @@ export default {
           const r = this._radius;
           
           r.max = Math.min(this._width, this._height) / (vm.contract ? 2 :2.5);
-          r.inner = r.max * 0.40;
-          r.bubble = r.max * 0.2;
+          r.inner = r.max * 0.30;
+          r.bubble = r.max * 0.3;
+          r.arc = r.max * 0.032;
+          r.isize = r.max * 0.064;
           r.outer = r.max - r.bubble *1.1 - r.label;
           // const fs = d3.scaleLinear().domain([4, 1024]).range([0, 28]);
           // this._fontSize.info = fs(r.max);
@@ -371,127 +378,128 @@ export default {
           // this._fontSize.month = this._fontSize.mark = this._fontSize.tick = fs(r.max);         
         }
 
-                _initdata() {
-                    const field = this._field;
-                    this._padprocess=[[],[],[]];
-                    this._chartData = this._data.map(d => {
-                        const datum = {
-                            indexName: d[field.name],
-                            date: d[field.name],
-                            month: this.getIndex(d[field.name]),
-                            low: d[field.low],
-                            high: d[field.high],
-                            elow: d[field.elow],
-                            ehigh: d[field.ehigh],
-                            avg: d[field.avg],
-                            precipitation: d[field.precipitation],
-                            humidity: d[field.humidity],
-                            property:[
-                                {'label': 'PCAT2', 'value': d[field.humidity], 'angle': 0.1 },
-                                {'label': 'PCASPE', 'value': d[field.precipitation], 'angle': 0.1},
-                                {'label': 'result', 'value': d[field.precipitation], 'angle': 0.2}
-                            ]
-                        };
-                        const e=datum;
-                        datum.property.map(m => {
-                            m.process = +datum.month
-                        });
-                        datum.property[2].value=e.avg>e.low&e.high>e.avg? 0 : 1.6;
-                        let deviation=e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg)/e.low : (e.avg-e.high)/e.high);
-                        datum.deviation=deviation;
-                        datum.over = e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg) : (e.avg-e.high));
-                        return datum;
-                    });
-                }
+        _initdata() {
+          const field = this._field;
+          this._padprocess=[[],[],[]];
+          this._chartData = this._data.map(d => {
+            const datum = {
+              indexName: d[field.name],
+              date: d[field.name],
+              month: this.getIndex(d[field.name]),
+              low: d[field.low],
+              high: d[field.high],
+              elow: d[field.elow],
+              ehigh: d[field.ehigh],
+              avg: d[field.avg],
+              precipitation: d[field.precipitation],
+              humidity: d[field.humidity],
+              property:[
+                {'label': 'PCAT2', 'value': d[field.humidity], 'angle': 0.1 , limit: 'humis'},
+                {'label': 'PCASPE', 'value': d[field.precipitation], 'angle': 0.1, limit: 'precs'},
+                {'label': 'result', 'value': d[field.precipitation], 'angle': 0.2, limit: 'result'}
+              ]
+            };
+            const e=datum;
+            datum.property.map(m => {
+                m.process = +datum.month
+            });
+            datum.property[2].value=e.avg>e.low&e.high>e.avg? 0 : 1.6;
+            let deviation=e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg)/e.low : (e.avg-e.high)/e.high);
+            datum.deviation=deviation;
+            datum.over = e.avg>e.low&e.high>e.avg? 0 : (e.avg<e.low ? (e.low-e.avg) : (e.avg-e.high));
+            return datum;
+          });
+        }
 
-                _fliterScaleData(){
-                    this._chartData = this._sort(this._chartData);
-                    // this._chartData = d3.sort(this._chartData, d => - Math.abs(d.over))
-                    this._chartData = this._chartData.length > 25 ? this._chartData.slice(0,25) : this._chartData;
-                    const labels = this._chartData.map(d => d.indexName),
-                        lows = this._chartData.map(d => d.elow),
-                        highs = this._chartData.map(d => d.ehigh),
-                        precs = this._chartData.map(d => d.precipitation),
-                        humis = this._chartData.map(d => d.humidity);
-                    this._chartData.map(d => {
-                        this._padprocess[d.month].push(d.indexName)
-                        return d;
-                    });
-                    this._indexdata = this._chartData.slice(0);
-                    const mergeLength = this._indexdata.length < 25 ? this._indexdata.length :25,
-                        pad = 0,
-                        startAngle = Math.PI/6,
-                        angle = (Math.PI - 2 * startAngle - 3 * pad )/mergeLength;
-                    this._barAngle = (Math.PI - 2 * startAngle - 3 * pad) / mergeLength;
-                    const diverangle = (mergeLength - this._indexdata.length) * angle / 2
-                    const a = angle * this._padprocess[0].length + diverangle + Math.PI/6, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
-                    this._padAngle=[
-                        [diverangle + Math.PI/6, a ],
-                        [a + pad, a + b + pad ],
-                        [a + b + 2 * pad, a + b + c + 2 * pad],
-                    ]
-                    this._label=labels
-                    this._initScales(labels, lows, highs, precs, humis);
-                }
+        _fliterScaleData(){
+          this._chartData = this._sort(this._chartData);
+          this._chartData = this._chartData.length > 25 ? this._chartData.slice(0,25) : this._chartData;
+          const labels = this._chartData.map(d => d.indexName),
+            lows = this._chartData.map(d => d.elow),
+            highs = this._chartData.map(d => d.ehigh),
+            precs = this._chartData.map(d => d.precipitation),
+            humis = this._chartData.map(d => d.humidity);
+          this._chartData.map(d => {
+            this._padprocess[d.month].push(d.indexName)
+            return d;
+          });
+          this._indexdata = this._chartData.slice(0);
+          const mergeLength = this._indexdata.length < 25 ? this._indexdata.length :25,
+              pad = 0,
+              startAngle = Math.PI/6,
+              angle = (Math.PI - 2 * startAngle - 3 * pad )/mergeLength;
+          this._barAngle = (Math.PI - 2 * startAngle - 3 * pad) / mergeLength;
+          const diverangle = (mergeLength - this._indexdata.length) * angle / 2
+          const a = angle * this._padprocess[0].length + diverangle + Math.PI/6, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
+          this._padAngle=[
+            [diverangle + Math.PI/6, a ],
+            [a + pad, a + b + pad ],
+            [a + b + 2 * pad, a + b + c + 2 * pad],
+          ]
+          this._label=labels
+          this._initScales(labels, lows, highs, precs, humis);
+        }
 
-                _initScaleData(){
-                    const labels = this._chartData.map(d => d.indexName),
-                        lows = this._chartData.map(d => d.elow),
-                        highs = this._chartData.map(d => d.ehigh),
-                        precs = this._chartData.map(d => d.precipitation),
-                        humis = this._chartData.map(d => d.humidity);
-                    this._chartData.map(d => {
-                        this._padprocess[d.month].push(d.indexName)
-                        return d;
-                    });
-                    const pad = 0;
-                    const angle = (Math.PI * 2 - 3 * pad )/this._data.length
-                    this._barAngle = (Math.PI * 2- 3 * pad) / this._data.length;
-                    const a = angle * this._padprocess[0].length, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
-                    this._padAngle=[
-                        [-a/2, a/2 ],
-                        [a/2 +pad, a/2 + b + pad ],
-                        [a/2 + b + 2 * pad, a/2 + b + c + 2 * pad],
-                    ]
-                    this._label=labels
-                    this._initScales(labels, lows, highs, precs, humis);
-                }
+        _initScaleData(){
+          const labels = this._chartData.map(d => d.indexName),
+            lows = this._chartData.map(d => d.elow),
+            highs = this._chartData.map(d => d.ehigh),
+            precs = this._chartData.map(d => d.precipitation),
+            humis = this._chartData.map(d => d.humidity);
+          this._chartData.map(d => {
+            this._padprocess[d.month].push(d.indexName)
+            return d;
+          });
+          const pad = 0;
+          const angle = (Math.PI * 2 - 3 * pad )/this._data.length
+          this._barAngle = (Math.PI * 2- 3 * pad) / this._data.length;
+          const a = angle * this._padprocess[0].length, b = angle * this._padprocess[1].length , c = angle * this._padprocess[2].length;
+          this._padAngle=[
+            [-a/2, a/2 ],
+            [a/2 +pad, a/2 + b + pad ],
+            [a/2 + b + 2 * pad, a/2 + b + c + 2 * pad],
+          ]
+          this._label=labels
+          this._initScales(labels, lows, highs, precs, humis);
+        }
 
-                _initScales(labels, lows, highs, precs, humis) {
-                    const r = this._radius;
+        _initScales(labels, lows, highs, precs, humis) {
+          const r = this._radius;
 
-                    this._x = d3.scaleBand()
-                        .domain(labels)
-                        .range([-0.3 * Math.PI, 1.66 * Math.PI ]);
-                    
-                    this._xpad = new Array(3).fill(3).map((d, i) => 
-                            d3.scaleBand()
-                            .domain(this._padprocess[i])
-                            .range(this._padAngle[i]))
+          this._x = d3.scaleBand()
+            .domain(labels)
+            .range([-0.3 * Math.PI, 1.66 * Math.PI ]);
+          
+          this._xpad = new Array(3).fill(3).map((d, i) => 
+            d3.scaleBand()
+            .domain(this._padprocess[i])
+            .range(this._padAngle[i]))
 
-                    this._y = d3.scaleRadial()
-                        .domain([d3.min(lows), d3.max(highs)]).nice()
-                        .range([r.inner+0.1*r.bubble, r.outer-0.15*r.bubble]);
+          this._y = d3.scaleRadial()
+            .domain([d3.min(lows), d3.max(highs)]).nice()
+            .range([r.inner+0.1*r.bubble, r.outer-0.15*r.bubble]);
 
-                    const bext = d3.extent(precs)
-                    this._hb = d3.scaleLinear()
-                        .domain(bext)
-                        .range([0 , r.bubble*0.6]);                    
+          const bext = d3.extent(precs);
+          this._labelLimit.precs = d3.quantile(precs, 0.5);
+          this._hb = d3.scaleLinear()
+            .domain(bext)
+            .range([0 , r.bubble*0.6]);
 
-                    const hext = d3.extent(humis);
-                    this._h = d3.scaleLinear()
-                        .domain(hext)
-                        .range([r.outer , r.outer + r.bubble * 0.6]);
-                }
+          this._labelLimit.humis = d3.quantile(humis, 0.5);
+          const hext = d3.extent(humis);
+          this._h = d3.scaleLinear()
+            .domain(hext)
+            .range([r.outer , r.outer + r.bubble * 0.6]);
+        }
 
-                _renderMainWheel() {
-                    this._renderPre();
-                    this._contentG = this._g.append('g').attr('class', 'contentG');
-                    this._renderWheelContent();
-                    this._initInnerOverlay();   //tooptip layer
-                    this._initChordData();      //init chord line data
-                    this._renderWheelChord();   //chord node and line
-                }
+        _renderMainWheel() {
+          this._renderPre();
+          this._contentG = this._g.append('g').attr('class', 'contentG');
+          this._renderWheelContent();
+          this._initInnerOverlay();   //tooptip layer
+          this._initChordData();      //init chord line data
+          this._renderWheelChord();   //chord node and line
+        }
 
                 _renderPre(){
                     const defs1 =this._g.append('defs');
@@ -542,7 +550,7 @@ export default {
                                 .endAngle(2.5 * Math.PI),
                         piearc = d3.arc()
                                 .innerRadius(0)
-                                .outerRadius(r.bubble * 0.16);
+                                .outerRadius(r.arc);
                     var limit = this._labelLimit,
                         RectWidth = 650,
                         arcX = 200,
@@ -766,7 +774,7 @@ export default {
                                     .attr('fill', 'none'))
                                 .call(g => g.append('circle')
                                         .attr('fill', d =>  lc[d.month])
-                                        .attr('r', r.bubble * 0.16)
+                                        .attr('r', r.arc)
                                         .attr('stroke',d => d3.color(lc[d.month]).darker(0.5))
                                         .attr('transform', d =>  `translate(${[rectX - arcX, centerScaleY(d)]})`))
                                 .call(g => g.append('text')
@@ -815,7 +823,7 @@ export default {
                                 .call(g => g.selectAll('path').data(d => pieAngle(d.property))
                                     .join('path')
                                     .attr('d', piearc)
-                                    .attr('fill', d => ((+d.data.value)>limit? lc[+d.data.process] : 'white'))
+                                    .attr('fill', d => ((+d.data.value)> limit[d.data.limit]? lc[+d.data.process] : 'white'))
                                     .style('stroke', d => d3.color(lc[+d.data.process]).darker(2))
                                     .attr('opacity', 1)
                                     .style('stroke-width', 0.25)
@@ -873,7 +881,7 @@ export default {
                             sortG.selectAll('g')
                                 .data([0, 1, 2])
                                 .join('g')
-                                .attr('transform', d => `translate(${[rectX + RectWidth - 160 +  60 * d, -this._height/2 + 2.5]})`)
+                                .attr('transform', d => `translate(${[rectX +   60 * d - maxHeight, -this._height/2 + 2.5]})`)
                                 .call(g => g.append('rect')
                                     .attr('fill',  sortChange(sortColor, '#fff'))
                                     .attr('rx', 5)
@@ -992,7 +1000,7 @@ export default {
                         }
                         function initSwitch(){ //init switchG
                             switchG.selectAll('g').data([1, 0]).join('g')
-                                .attr('transform', d => `translate(${[220 +  60 * (1 - d), - this._height/2 + 2.5]})`)//280  - 100
+                                .attr('transform', d => `translate(${[210 +  60 * (1 - d), - this._height/2 + 2.5]})`)//280  - 100
                                 .call(g => g.append('rect')
                                     .attr('fill', transfrom(tabColor, '#fff'))
                                     .attr('rx', 5)
@@ -1032,7 +1040,7 @@ export default {
                         }
                         function initVisG(){
                             visG
-                                .attr('transform', `translate(${[340, - this._height/2 + 2.5]})`)
+                                .attr('transform', `translate(${[330, - this._height/2 + 2.5]})`)
                             visG.append('rect')
                                     .attr('fill', this._barVis ? tabColor : 'white')
                                     .attr('rx', 5)
@@ -1757,6 +1765,8 @@ export default {
                             .attr('class', 'iconG')
                                 .attr('id', d => `icon${d}`)
                                 .attr('transform', d => `rotate(${(this._padAngle[d][0] + this._padAngle[d][1])/2 * 180 / Math.PI - 5.8})`)
+                                .attr('width', this._radius.isize)
+                                .attr('width', this._radius.isize)
                                 .attr('y', -this._radius.inner*0.97)
                                 .attr('href', d => processIcon[d]),
                             update => update.attr('transform', d => `rotate(${(this._padAngle[d][0] + this._padAngle[d][1])/2 * 180 / Math.PI - 5.8})`)
@@ -2064,7 +2074,7 @@ export default {
                             .endAngle(2.5 * Math.PI),
                         piearc = d3.arc()
                             .innerRadius(0)
-                            .outerRadius(this._radius.bubble * 0.12),
+                            .outerRadius(this._radius.arc),
                         v = this._barAngle/2;
                     this._contentG.selectAll('.outerElementG')
                         .data(this._padindex)
@@ -2081,11 +2091,11 @@ export default {
                                     .join('path')
                                     .attr('d', piearc)
                                     .attr('class', d => `arcpie`+ d.data.process)
-                                    .attr('fill', d => ((+d.data.value) > this._labelLimit? this._labelcolor[+d.data.process] : 'white'))
-                                    .style('stroke', d => this._labelcolor[d.data.process])
-                                    .style('stroke-width', 0.25))
+                                    .attr('fill', d => ((+d.data.value) > this._labelLimit[d.data.limit]? this._labelcolor[+d.data.process] : 'white'))
+                                    .style('stroke', d => ((+d.data.value) > this._labelLimit[d.data.limit]? 'white' : this._labelcolor[+d.data.process]))
+                                    .style('stroke-width', 0.5))
                                 .call(g => g.append('text')
-                                    .attr('transform', d => `rotate(${(this._xpad[d.month](d.indexName) + 1.5 * v) * 180 / Math.PI - 180 }) translate(${[0, this._radius.outer + this._radius.bubble*1.46]})`)
+                                    .attr('transform', d => `rotate(${(this._xpad[d.month](d.indexName) + 1.5 * v) * 180 / Math.PI - 180 }) translate(${[0, this._radius.outer + this._radius.bubble*1.38 + this._radius.arc/2]})`)
                                     .attr('class', this._processClass('arctext'))
                                     .attr('id', this._indexId('arctext'))
                                     .attr('fill', d =>  d3.color(this._labelcolor[d.month]).darker(3.5))
@@ -2555,23 +2565,23 @@ export default {
                             .process(processJson)
                             .labels(labels)
                             .render();
-        },
-        renderChart(){
-            this.paintChart(this.jsondata, this.chorddata, this.batchData)
-        }
+    },
+    renderChart(){
+      this.paintChart(this.jsondata, this.chorddata, this.batchData)
+    }
 	},
 	mounted() {
 	},
-    computed:{
-        ...mapGetters([
-            'corrSize',
-            'multiPara',
-            'curveSize',
-            'trainBorder',
-            'filterStatus',
-            'heatOrRiver'
-        ])
-	},
+  computed:{
+    ...mapGetters([
+      'corrSize',
+      'multiPara',
+      'curveSize',
+      'trainBorder',
+      'filterStatus',
+      'heatOrRiver'
+    ])
+  },
     watch:{
         corrSize:function(){
             this.renderChart()

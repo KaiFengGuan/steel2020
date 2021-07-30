@@ -904,15 +904,15 @@ export default {
                                 })
                         }
                         function mouseText(dis){// calculate abscissa
-                            let sumsearch = d3.leastIndex(rectPosition, d => dis < d),
+                            let sumsearch = d3.leastIndex(rectPosition, d => dis > d),
                                 indexsearch = sumsearch === 0 ? dis : dis - rectPosition[sumsearch],
                                 mouseDate = new Date(timeScale[sumsearch].invert(indexsearch)),
                                 selectDate = horizenEX[sumsearch].map(d => d3.least(d, e => mouseDate > e.time).time),
                                 mouseInfo = horizenEX[sumsearch].map(d => d3.least(d, e => mouseDate > e.time)[wm._horizonView ? 'ovalue' : 'ovalue']);
-                            if(wm._horizonView){
-                                sliderG.selectAll('circle').attr('r', 2)
-                                sliderG.selectAll('circle').attr('r', d => d.time.toString() !== selectDate[0].toString() ? 2 : 3.5)
-                            }
+                            // if(wm._horizonView){
+                            //     sliderG.selectAll('circle').attr('r', 2)
+                            //     sliderG.selectAll('circle').attr('r', d => d.time.toString() !== selectDate[0].toString() ? 2 : 3.5)
+                            // }
                             return mouseInfo
                         }
                         function renderSort(){//render sortG

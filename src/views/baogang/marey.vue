@@ -310,7 +310,7 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2019, 2, 10, 0, 0),
+			startmonth: new Date(2020, 6, 12, 0, 0),
 			time: undefined,
 			selectedTrainData: [],
 			corrdata:[],
@@ -413,19 +413,19 @@ export default {
 		endDateString: vm => util.timeFormat(vm.endDate),
 		selectDateStart: vm => util.timeFormat(vm.dateselect[0]),
 		selectDateEnd: vm => util.timeFormat(vm.dateselect[1]),
-		brushData : function(){
-			var start = new Date('2018-01-04 00:00:00'),
-        end = new Date('2018-01-06 04:00:00');
-      // console.log(this.monthdata);
-			return this.monthdata.filter(d =>{
-				var toc = new Date(d.toc);
+		// brushData : function(){
+		// 	var start = new Date('2018-01-04 00:00:00'),
+        // 	end = new Date('2018-01-06 04:00:00');
+      	// 	// console.log(this.monthdata);
+		// 	return this.monthdata.filter(d =>{
+		// 		var toc = new Date(d.toc);
 				
-				// return toc < end && toc > start
-				return toc > this.startDate && toc < this.endDate
-			})
-		},
-		brushUpid : vm => d3.map(vm.brushData, d => d.upid),
-    isSwitchActive: vm => !vm.isSwitch
+		// 		// return toc < end && toc > start
+		// 		return toc > this.startDate && toc < this.endDate
+		// 	})
+		// },
+		// brushUpid : vm => d3.map(vm.brushData, d => d.upid),
+    	isSwitchActive: vm => !vm.isSwitch
 	},
 	created() {
 	},
@@ -476,7 +476,7 @@ export default {
 			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
 			await this.getStationsData(startDate, endDate).then(Response => {
 				this.stationsData=Response.data
-      })
+      		})
 
 			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
 			// this.jsonData = this.jsonData.filter(d => {
@@ -500,9 +500,11 @@ export default {
 			// this.jsonData = this.jsonData.filter(d => {
 			// 	return this.brushUpid.includes(d.upid)
 			// })
-      if(this.scatterData.length!==0)this.mergeflag()
-      // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData, this.isMerge);
+      		if(this.scatterData.length!==0) {
+				this.mergeflag()
+			}
+      		// console.log("jsonData: ", this.jsonData);
+			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, [], this.isMerge);
 
 			// clear
 			this.selectedTrainData = [];

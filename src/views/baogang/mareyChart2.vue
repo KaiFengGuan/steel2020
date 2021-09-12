@@ -177,6 +177,19 @@ export default {
 
           return this;
         }
+        _getPathColor(datalist) {
+          let quality = d3.sort(d3.groups(datalist, d => d.flag), d=> d[1].length);
+          let last_quality = quality.slice(-1);
+          let pathColor = this._change_color ?  
+            (last_quality[0][0] !== 404 ? vm.labelColors[last_quality[0][0]] : vm.noflagColor) : 
+            this._trainGroupStyle(one_merge_item[0]);
+
+            
+          // console.log(quality)
+          // console.log(last_quality[0][0], pathColor)
+          
+          return pathColor;
+        }
         dataInit(timesdata, stationsdata, brushdata) {
           this._timesdata = timesdata;
           this._stationsdata = stationsdata;
@@ -307,6 +320,7 @@ export default {
 
 
             // 合并相关图元 绘图数据
+            let batch_index_count = 0;
             for (let item in this._mergeresult) {
               let mergeItem = this._mergeresult[item].merge_result.merge;
               let mergeSelect = this._mergeresult[item].merge_result.select;
@@ -379,6 +393,7 @@ export default {
                 let sub_arr = [];
                 let mergeItem_flat = category_data.flat();
 
+                this._getPathColor(mergeItem_flat)
                 let quality = d3.sort(d3.groups(mergeItem_flat, d => d.flag), d=> d[1].length);
                 let last_quality = quality.slice(-1);
                 let pathColor = this._change_color ?  
@@ -446,7 +461,8 @@ export default {
                     link_info_list.push({
                       name: category_name,
                       info_index: key,
-                      batch_index: (+item),
+                      batch_index: batch_index_count,
+                      merge_index: i,
                       pathColor: pathColor === undefined ? 'red' : pathColor,
                       batch_s: new Date(mergeItem[0][0].stops[0].time),
                       date_entry_s: new Date(one_merge_item[0].stops[0].time),
@@ -588,7 +604,7 @@ export default {
               
               // 与合并相关的数据
               this._mergeresult_1.push({
-                batch_index: +item,
+                batch_index: batch_index_count,
                 // 马雷图合并 绘图数据
                 merge_data: merge_data,
                 batch_s: merge_data[0].date_entry_s,
@@ -621,6 +637,7 @@ export default {
                 // proce_num: proce_num,
 
               })
+              batch_index_count++;
             }
             console.log(this._mergeresult_1)
 
@@ -673,7 +690,12 @@ export default {
           let m_w = this._marey_size.w - this._stations_size.p_h - 20;
           let m_h_s = this._stations_size.h + this._stations_size.gap;
           let m_h_e = this._height - this._stations_size.h - this._stations_size.gap - 50;
-          this._stops = d3.merge(this._timesdata.map(d => d.stops.map(s => ({ train: d, stop: s }))));
+          this._stops = d3.merge(
+            this._timesdata.map(
+              d => d.stops.map(
+                s => ({ train: d, stop: s }))
+            )
+          );
           
           this._mini_y = d3.scaleTime()
             .domain([new Date(min_date), new Date(max_date)])
@@ -1222,10 +1244,9 @@ export default {
             .attr('class', 'mareyContentGroup')
             .attr('transform', `translate(${[this._info_size.w, 0]})`);
           
-          
           this._renderMareyLine();
           this._renderMareyStations();
-          this._renderMareyLineTooltip();
+          // this._renderMareyLineTooltip();
         }
         _renderMareyLine() {
           let removeElement = this._marey_g.selectAll('.mareyGroup')._groups[0][0]
@@ -1352,12 +1373,29 @@ export default {
         }
         _renderMareyLineTooltip() {
           let that = this;
-          let stops = d3.merge(this._timesdata.map(d => d.stops.map(s => ({ train: d, stop: s }))));
+          // let stops = d3.merge(this._timesdata.map(d => d.stops.map(s => ({ train: d, stop: s }))));
           let filter = [];
+          let filter_1 = {};
           if (this._is_merge) {
             let merge = d3.map(d3.merge(d3.merge(that._mergeresult_1.map(d => d.merge_data.map(e => e.mergeItem)))) , d =>d.upid);
             let select = d3.map(d3.merge(d3.merge(that._mergeresult_1.map(d => d.merge_data.map(e => e.mergeSelect)))) , d =>d.upid);
             filter = d3.filter(merge , d => select.indexOf(d) === -1 );
+
+            for (let i = 0; i < that._mergeresult_1.length; i++) {
+              let batch = that._mergeresult_1[i];
+              for (let j = 0; j < batch.merge_data.length; j++) {
+                let merge_data = batch.merge_data[j];
+                for (let k = 0; k < merge_data.mergeItem.length; k++) {
+                  let merge_item = merge_data.mergeItem[k];
+                  if (select.indexOf(merge_item.upid) === -1) {
+                    filter_1[merge_item.upid] = {
+                      "batch_index": batch.batch_index,
+                      "merge_index": j
+                    }
+                  }
+                }
+              }
+            }
           }
 
           let MareyGroup = this._marey_g;
@@ -1400,22 +1438,24 @@ export default {
             .attr('fill', 'none')
             .attr('pointer-events', 'all')
             .selectAll('path')
-            .data(stops)
+            .data(this._stops)
             .join('path')
             .attr('d', (d, i) => this._voronoi.renderCell(i))
             .on('mouseover', (event, d) => {
               if(
-                filter.indexOf(d.train.upid) !== -1 
-                // && this._qualityData.indexOf(d.train.upid) === -1
+                filter_1[d.train.upid] !== undefined
                 && this._is_merge
               ) {
+                let batch_index = filter_1[d.train.upid]['batch_index'];
+                let merge_index = filter_1[d.train.upid]['merge_index'];
+                this._setMergeRect([batch_index], [merge_index]);
                 return;
               }
 
               vm.$emit('trainMouse', {upid: [d.train.upid],  mouse: 0});
               let toopcolor = this._trainGroupStyle(d.train);
               mouseoverLine(d.train.upid);
-              mouseOverRect(d.train.upid);
+              changeBin(d.train.upid);
               tooltip
                 .style('display', null)
                 .attr('fill', util.conditionMareyTooltipAttr.line1.fontColor);
@@ -1439,11 +1479,11 @@ export default {
             })
             .on('mouseout', (event, d) => {
               if (
-                filter.indexOf(d.train.upid) !== -1
-                // && this._qualityData.indexOf(d.train.upid) === -1
+                filter_1[d.train.upid] !== undefined
                 && this._is_merge
               ) {
-                  return;
+                this._resetMergeRect();
+                return;
               }
               if (this._trainSelectedList.includes(d.train.upid))
                 return;
@@ -1451,7 +1491,7 @@ export default {
               vm.$emit('trainMouse', {upid: [d.train.upid],  mouse: 1});
               tooltip.style('display', 'none');
               mouseoutLine(d.train.upid);
-              mouseOutPath();
+              resetBin();
               // mergeGopacity()
             })
             .on('click', (event, d) => {
@@ -1511,7 +1551,7 @@ export default {
                 .attr('opacity', 0.4)
             }
           }
-          function mouseOverRect(upid) {
+          function changeBin(upid) {
             let distanceData = d3.pairs(
               that._dataUCL.get(upid)[0].stops, 
               (a, b) => (new Date(b.realTime)).getTime() - (new Date(a.realTime)).getTime());
@@ -1531,7 +1571,7 @@ export default {
               //   .attr('fill', d => distanceData[m] <= d.x1 && d.x0 <= distanceData[m] ? that._trainGroupStyle(that._dataUCL.get(upid)[0]) : "#b9c6cd")
             }
           }
-          function mouseOutPath(){
+          function resetBin(){
             // for(let m in that._stopsTimes){		//reset binRect
             //   MareyGroup.selectAll(`.binRect${m}`)
             //     .attr('fill', '#b9c6cd')
@@ -1543,7 +1583,6 @@ export default {
                 .attr('opacity', 0.4)
             }
           }
-
         }
         _renderMareyStations() {
           let removeElement = this._marey_g.selectAll('.stationsNameGroup')._groups[0][0];
@@ -2018,7 +2057,7 @@ export default {
               x1 = cx + size / 2,
               y1 = d3.max(range) ,
               pos = x1 > y1 ? [y1 - size, y1] : x0 < 0 ? [0, size] : [x0, x1];
-            brushElement.call(this._brush.move, pos);
+            brushElement.call(that._brush.move, pos);
           }
           function brushing(event) {
             const extentX = event.selection;
@@ -2176,10 +2215,10 @@ export default {
             .enter()
             .append("rect")
             .attr('class', 'linkRectMergeItem')
-            // .attr('id', d => `linkRectMergeItem${d.merge_index}`)
-            .attr('id', d => `linkRectMergeItem_${d.steelspec}`)
+            .attr('id', d => `linkRectMergeItem${d.merge_index}`)
+            // .attr('id', d => `linkRectMergeItem_${d.steelspec}`)
             .attr('merge_index', d => d.merge_index)
-            .attr("transform", d => `translate(${[this._info_size.w - 20, this._y(d.date_entry_s)]})`)
+            .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
             .attr("width", 2)
             .attr("height", d => this._y(d.date_entry_e)- this._y(d.date_entry_s))
             .attr("fill", d => d.pathColor)
@@ -2208,9 +2247,10 @@ export default {
             .enter()
             .append('path')
             .attr('class', 'linkRectLine')
-            .attr('id', d => `linkRectLine${d.info_index}`)
+            .attr('id', d => `linkRectLine${d.merge_index}`)
             .attr('batch_index', d => d.batch_index)
             .attr('info_index', d => d.info_index)
+            .attr('merge_index', d => d.merge_index)
             .attr('d', link_path)
             .attr("stroke", d => d.pathColor)
             .attr("fill", "none")
@@ -2243,6 +2283,7 @@ export default {
             .attr('class', 'chartGroup')
             .attr('id', d => `chartGroup_${d.info_index}`)
             .attr('info_index', d => d.info_index)
+            .attr('merge_index', d => d.link_rect.map(e => ''+e.merge_index).join(' '))
             // .attr('id', d => d.steelspec)
             // .on('click', __pathClick)
             .on('mouseover', __pathOver)
@@ -2355,19 +2396,15 @@ export default {
           }
           function __pathOver(e, d) {
             // console.log(d)
-            let batch_index = d3.select(d3.select(this)._groups[0][0].parentNode).attr('batch_index')
+            let batch_index = d3.select(d3.select(this)._groups[0][0].parentNode).attr('batch_index');
+            let merge_index = d3.select(this).attr('merge_index');
             let info_index = d3.select(this).attr('info_index');
 
             initMerge();
 
-            that._info_g.selectAll('.steelspec_link_group')
-              .attr('opacity', 0.4);
-            that._info_g.selectAll('.chartGroup')
-              .attr('opacity', 0.4);
-            that._info_g.selectAll('.linkRectMergeBatch')
-              .attr('opacity', 0.4);
 
-            mouseMerge(batch_index, info_index);
+            that._setMergeRect([batch_index], merge_index.split(' ').map(d => +d));
+            that._setInfoDetail(batch_index, info_index);
 
 
             // that._marey_g.selectAll('.mergeG')
@@ -2380,7 +2417,8 @@ export default {
           function __pathOut(e, d) {
             initMerge();
 
-
+            that._resetMergeRect();
+            that._resetInfoDetail();
 
 
             // mouseOutPath();
@@ -2391,12 +2429,7 @@ export default {
             // }
           }
           function initMerge() {
-            that._info_g.selectAll('.steelspec_link_group')
-              .attr('opacity', 0.8);
-            that._info_g.selectAll('.chartGroup')
-              .attr('opacity', 0.8);
-            that._info_g.selectAll('.linkRectMergeBatch')
-              .attr('opacity', 0.8);
+
 
 
             // that._info_g.selectAll('.lineRect')
@@ -2408,31 +2441,7 @@ export default {
             // that._marey_g.selectAll('.mergeG').attr('opacity', 1);
 
           }
-          function mouseMerge(batch_index, info_index) {
-            that._info_g.select('#linkRectMerge' + batch_index)
-              .selectAll('#steelspec_link_group_' + info_index)
-              .attr("opacity", 0.8)
-            that._info_g.select('#oneBatchChartGroup' + batch_index)
-              .select('#chartGroup_' + info_index)
-              .attr("opacity", 0.8)
-            that._info_g.select('#linkRectMergeBatch' + batch_index)
-              .attr('opacity', 0.8);
 
-
-            // that._info_g.select("#lineRect" + item)
-            //   .attr("stroke-width", 2)
-            //   .attr("stroke-opacity", 0.8)
-            // that._info_g.select(`#linkRectMerge${item}`)
-            //   .attr("opacity", 0.8)
-            // that._info_g.select(`#chartGroup${item}`)
-            //   .attr("opacity", 0.8)
-            // // svg.select("#mergerect"+item).attr("opacity", 0.4)
-            // // svg.selectAll(".mergeG").attr("opacity", 0.4)
-            // that._marey_g.selectAll(`#mergeG${item}`).attr('opacity', 1);
-
-            // // that._moni_g.selectAll('.merge_moni').attr('opacity', 0.4);
-            // // that._moni_g.select(`#merge_moni_${item}`).attr('opacity', 1);
-          }
           function mouseOverPath(i, d) {
             let distanceData = d3.map(d.mergeItem, d => { 
               let timeRect = d3.pairs(d.stops, (a, b) => (new Date(b.realTime)).getTime()- (new Date(a.realTime)).getTime())
@@ -3049,7 +3058,70 @@ export default {
           
             
         }
-        
+
+        // 交互事件定义
+        _setMergeRect(batch_index_list, merge_index_list) {
+          this._marey_g.selectAll('.mergeG')
+            .attr('opacity', 0.4);
+          this._marey_g.selectAll('.mareyLine')
+            .attr('opacity', 0.4);
+
+          for (let batch_index of batch_index_list) {
+            for (let merge_index of merge_index_list) {
+              this._marey_g.select(`#batchG${batch_index} #mergeG${merge_index}`)
+                .attr('opacity', 1);
+            }
+          }
+
+          this._setLinkLine(batch_index_list, merge_index_list);
+        }
+        _resetMergeRect() {
+          this._marey_g.selectAll('.mergeG')
+            .attr('opacity', 1);
+          this._marey_g.selectAll('.mareyLine')
+            .attr('opacity', 1);
+          
+          this._resetLinkLine();
+        }
+        _setLinkLine(batch_index_list, merge_index_list) {
+          this._info_g.selectAll('.linkRectLine')
+            .attr('opacity', 0.4);
+          this._info_g.selectAll('.linkRectMergeBatch')
+            .attr('opacity', 0.4);
+          this._info_g.selectAll('.linkRectMergeItem')
+            .attr('opacity', 0.4);
+
+          for (let batch_index of batch_index_list) {
+            this._info_g.select(`#linkRectMerge${batch_index} #linkRectMergeBatch${batch_index}`)
+              .attr('opacity', 1);
+
+            for (let merge_index of merge_index_list) {
+              this._info_g.select(`#linkRectMerge${batch_index} #linkRectLine${merge_index}`)
+                .attr('opacity', 1);
+              this._info_g.select(`#linkRectMerge${batch_index} #linkRectMergeItem${merge_index}`)
+                .attr('opacity', 1);
+            }
+          }
+        }
+        _resetLinkLine() {
+          this._info_g.selectAll('.linkRectLine')
+            .attr('opacity', 1);
+          
+          this._info_g.selectAll('.linkRectMergeBatch')
+            .attr('opacity', 1);
+          this._info_g.selectAll('.linkRectMergeItem')
+            .attr('opacity', 1);
+        }
+        _setInfoDetail(batch_index, info_index) {
+          this._info_g.selectAll('.chartGroup')
+            .attr('opacity', 0.4);
+          this._info_g.select(`#oneBatchChartGroup${batch_index} #chartGroup_${info_index}`)
+            .attr('opacity', 1);
+        }
+        _resetInfoDetail() {
+          this._info_g.selectAll('.chartGroup')
+            .attr('opacity', 1);
+        }
 
         // 整图过渡动画
         _mareyChartTranslate() {
@@ -3117,7 +3189,7 @@ export default {
             .attr("transform", d => `translate(${[this._info_size.w - 10, this._y(d.batch_s)]})`)
             .attr("height", d => this._y(d.batch_e)- this._y(d.batch_s));
           linkRectMerge.selectAll('.linkRectMergeItem')
-            .attr("transform", d => `translate(${[this._info_size.w - 20, this._y(d.date_entry_s)]})`)
+            .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
             .attr("height", d => this._y(d.date_entry_e) - this._y(d.date_entry_s))
           
           let oneBatchChartGroup = this._info_g.selectAll('.oneBatchChartGroup')
@@ -3132,7 +3204,7 @@ export default {
 
           let link_path = d => {
             let pathHeight = this._y(d.date_entry_e) - this._y(d.date_entry_s);
-            let target_x = this._info_size.w - 20;
+            let target_x = this._info_size.w - 12;
             let target_y = this._y(d.date_entry_s) + pathHeight/2;
             let pos = this._getLinkPosition(position_data, d);
 
@@ -3148,7 +3220,7 @@ export default {
           let chart_x = this._coreX + this._rectWidth;
           let chart_y;
           let path_y0 = data.info_index*(this._detail_rect_w+this._detail_gap);
-          
+
           chart_y = position_data[data.batch_index][0] + path_y0;
           
           return [chart_x, chart_y];

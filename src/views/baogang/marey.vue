@@ -652,7 +652,7 @@ export default {
       //   .catch(error => {
       //       this.getNotification("getJsonData:"+error)
       //     })
-      return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyTimesDataApi/all/${startDate}/${endDate}/100`,
+      return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyTimesDataApi/all/${startDate}/${endDate}/60`,
         {"steelspec": "all", "tgtplatethickness": '["all"]'})
         .catch(error => {
           this.getNotification("getJsonData:"+error)

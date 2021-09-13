@@ -1449,6 +1449,8 @@ export default {
                 let batch_index = filter_1[d.train.upid]['batch_index'];
                 let merge_index = filter_1[d.train.upid]['merge_index'];
                 this._setMergeRect([batch_index], [merge_index]);
+                this._setMergeBin([batch_index], [merge_index]);
+                this._emitToScatter([batch_index], [merge_index], 0);
                 return;
               }
 
@@ -1482,7 +1484,11 @@ export default {
                 filter_1[d.train.upid] !== undefined
                 && this._is_merge
               ) {
+                let batch_index = filter_1[d.train.upid]['batch_index'];
+                let merge_index = filter_1[d.train.upid]['merge_index'];
                 this._resetMergeRect();
+                this._resetMergeBin();
+                this._emitToScatter([batch_index], [merge_index], 1);
                 return;
               }
               if (this._trainSelectedList.includes(d.train.upid))
@@ -2283,9 +2289,10 @@ export default {
             .attr('class', 'chartGroup')
             .attr('id', d => `chartGroup_${d.info_index}`)
             .attr('info_index', d => d.info_index)
+            .attr('batch_index', d => d.link_rect[0].batch_index)
             .attr('merge_index', d => d.link_rect.map(e => ''+e.merge_index).join(' '))
             // .attr('id', d => d.steelspec)
-            // .on('click', __pathClick)
+            .on('click', __pathClick)
             .on('mouseover', __pathOver)
             .on('mouseout', __pathOut);
           
@@ -2306,179 +2313,77 @@ export default {
           this._renderInfoDetailCircle1(chartGroup);
 
           function __pathClick(e, d) {
-            let i = d3.select(this).attr('index');
+            let info_index = d3.select(this).attr('info_index');
+            let batch_index = d3.select(this).attr('batch_index');
+            let merge_index = d3.select(this).attr('merge_index');
+            let merge_index_list = merge_index.split(' ').map(d => +d);
+            let info_id = batch_index + '_' + info_index;
+
+            // console.log(d);
 
             let brush_h = that._brush_select[1] - that._brush_select[0];
-            let new_brush_s = that._mini_y(d.date_s);
+            let new_brush_s = that._mini_y(d.link_rect[0].batch_s) - 2;
             let new_brush_e = new_brush_s + brush_h;
             let new_brush = [new_brush_s, new_brush_e]
             that._brush_select = new_brush
             that._brush_g.select('.brush').call(that._brush.move, new_brush)
 
-            // console.log(d);
-            // console.log(that._brush_select);
+            // console.log(that._brush_select)
             // console.log(that._mini_y(d.date_s));
             
-            if (that._mergeClickValue.includes(i)) {
-              that._mergeClickValue.splice(that._mergeClickValue.indexOf(i), 1);
+            if (that._mergeClickValue.includes(info_id)) {
+              that._mergeClickValue.splice(that._mergeClickValue.indexOf(info_id), 1);
               vm.hightLight([]);
             } else {
               if (that._mergeClickValue.length !== 0) {
                 that._mergeClickValue = [];
               }
-              that._mergeClickValue.push(i);
+              that._mergeClickValue.push(info_id);
 
-              let batch_data = [];
-              let data_len = that._mergeresult.length;
-              let batch_date_s, batch_date_e;
-              if (data_len>=5) {
-                if (i <= 2) {
-                  let mergedata = d3.map(that._mergeresult.slice(0, 5), d => d['merge'])
-                  mergedata.forEach(d => batch_data.push(d.map(e => e.upid)))
-
-                  batch_date_s = mergedata[0][0].stops[0].time;
-                  batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time
-                }
-                else if (i > data_len-3) {
-                  let mergedata = d3.map(that._mergeresult.slice(-6), d => d['merge'])
-                  mergedata.forEach(d => batch_data.push(d.map(e => e.upid)))
-                  
-                  batch_date_s = mergedata[0][0].stops[0].time;
-                  batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time
-                }
-                else {
-                  let mergedata = d3.map(that._mergeresult.slice(i-2, i+3), d => d['merge'])
-                  mergedata.forEach(d => batch_data.push(d.map(e => e.upid)))
-                  
-                  batch_date_s = mergedata[0][0].stops[0].time;
-                  batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time
-                }
-              } else if (data_len>=3 && data_len<=4) {
-                batch_data = d3.map(d3.map(that._mergeresult.slice(0, 3), d => d['merge']), d => d.upid)
-
-                batch_date_s = mergedata[0][0].stops[0].time;
-                batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time
-              }
-              else {
-                return
-              }
-
-              console.log(batch_date_s, batch_date_e)
-              // console.log('batch_data: ', batch_data)
-              // console.log(formatDate(d.date_s))
-
-              vm.$emit("trainClick", {
-                list: that._trainSelectedList, 
-                color: that._trainGroupStyle(d.mergeSelect.slice(-1)[0]), 
-                upidSelect: [
-                  ... d3.map(d3.filter(d.mergeItem, d => d.flag === 0), d => d.upid),
-                  ...d3.map(d.mergeSelect, d => d.upid)
-                ],
-                type: "group", 
-                batch: batch_data,
-                date_s: batch_date_s,
-                date_e: batch_date_e
-              })
+              that._trainClickHandle(info_id.split('_')[0]);   // 点击后干点啥
               
-              let select_upid = d3.map(d.mergeItem, d => d.upid)
-              let sort_res = d3.sort(select_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0)
-              vm.hightLight(sort_res)
+              let merge_items_upid = that.__getSelectPlate([batch_index], merge_index_list).map(d => d.upid);
+              let sort_res = d3.sort(merge_items_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0);
+              vm.hightLight(sort_res);
             }
           }
-          function formatDate(date) {
-            let YY = date.getFullYear() + '-';
-            let MM = (date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1) + '-';
-            let DD = (date.getDate() < 10 ? '0' + (date.getDate()) : date.getDate());
-            let hh = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':';
-            let mm = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes()) + ':';
-            let ss = (date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds());
-            return YY + MM + DD +" "+ hh + mm + ss;
-          }
           function __pathOver(e, d) {
-            // console.log(d)
             let batch_index = d3.select(d3.select(this)._groups[0][0].parentNode).attr('batch_index');
             let merge_index = d3.select(this).attr('merge_index');
             let info_index = d3.select(this).attr('info_index');
 
-            initMerge();
-
-
             that._setMergeRect([batch_index], merge_index.split(' ').map(d => +d));
             that._setInfoDetail(batch_index, info_index);
 
+            let merge_index_list = d.link_rect.map(e => e.merge_index);
+            that._setMergeBin([batch_index], merge_index_list);
+            that._emitToScatter([batch_index], merge_index_list, 0);
 
-            // that._marey_g.selectAll('.mergeG')
-            //   .attr('opacity', 0.4);
-            // mouseOverPath(i, d);
             // if(that._mergeClickValue.indexOf(i) == -1) {
             //   vm.$emit("trainMouse", {upid: d3.map(d.mergeItem, d => d.upid),  mouse: 0});
             // }
           }
           function __pathOut(e, d) {
-            initMerge();
+            let batch_index = d3.select(d3.select(this)._groups[0][0].parentNode).attr('batch_index');
+            let merge_index_list = d.link_rect.map(e => e.merge_index);
 
             that._resetMergeRect();
             that._resetInfoDetail();
 
+            that._resetMergeBin();
+            that._emitToScatter([batch_index], merge_index_list, 1);
 
-            // mouseOutPath();
+            
             // mergeGopacity(d);
             // var i = d3.select(this).attr('index');
             // if(that._mergeClickValue.indexOf(i) == -1) {
             //   vm.$emit("trainMouse", {upid: d3.map(d.mergeItem, d => d.upid),  mouse: 1});
             // }
           }
-          function initMerge() {
-
-
-
-            // that._info_g.selectAll('.lineRect')
-            //   .attr("stroke-width", 2)
-            //   .attr("stroke-opacity", 0.4)
-            // that._info_g.selectAll('.linkRectMerge')
-            //   .attr("opacity", 0.4)
-            // // // svg.selectAll(".mergerect").attr("opacity", 0.4)
-            // that._marey_g.selectAll('.mergeG').attr('opacity', 1);
-
-          }
 
           function mouseOverPath(i, d) {
-            let distanceData = d3.map(d.mergeItem, d => { 
-              let timeRect = d3.pairs(d.stops, (a, b) => (new Date(b.realTime)).getTime()- (new Date(a.realTime)).getTime())
-              timeRect.flag = d.flag
-              timeRect.upid = d.upid
-              return timeRect
-            })
-            var distanceRect = distanceData.filter(d => +d.flag == 0)
-            var gooddistance = distanceData.filter(d => +d.flag == 1)
-            if (distanceRect.length > 0) {
-              for (let m in distanceRect[0]) {
-                that._container.selectAll(`.bad_binRect${m}`)
-                  .attr("opacity", d => 
-                    d3.map(distanceRect, d => d[m]).filter(e => e <= d.x1 && d.x0 <= e).length > 0 ? 1 : 0.4
-                  )
-              }
-            } 
-            if (gooddistance.length > 0) {
-              for(let m in gooddistance[0]){
-                that._container.selectAll(`.good_binRect${m}`)
-                  .attr("opacity", d => 
-                    d3.map(gooddistance, d => d[m]).filter(e => e<= d.x1 && d.x0 <=e).length > 0 ? 1 : 0.4
-                  )
-              }
-            }
-            that._marey_g.select('.mareyLineGroup').selectAll('.mareyLine')
-              .attr('opacity', 0.4);
-          }
-          function mouseOutPath() {
-            for(let m in that._stopsTimes){		//reset binRect
-              that._container.selectAll(`.good_binRect${m}`)
-                .attr("opacity", 0.4)
-              that._container.selectAll(`.bad_binRect${m}`)
-                .attr("opacity", 0.4)
-            }
-            that._marey_g.select('.mareyLineGroup').selectAll('.mareyLine')
-              .attr('opacity', 1);
+            
+            
           }
           function mergeGopacity(d) {	//brush变更后 copy mergeG state
             if(that._mergeClickValue.length !== 0) {
@@ -3121,6 +3026,111 @@ export default {
         _resetInfoDetail() {
           this._info_g.selectAll('.chartGroup')
             .attr('opacity', 1);
+        }
+        __getSelectPlate(batch_index_list, merge_index_list) {
+          let selected_plates = [];
+          for (let batch_index of batch_index_list) {
+            let current_batch = this._mergeresult_1[batch_index];
+            for (let merge_index of merge_index_list) {
+              let current_merge = current_batch.merge_data[merge_index];
+              selected_plates.push(current_merge.mergeItem);
+            }
+          }
+
+          return selected_plates.flat();
+        }
+        _setMergeBin(batch_index_list, merge_index_list) {
+          let selected_plates = this.__getSelectPlate(batch_index_list, merge_index_list);
+          let distanceData = d3.map(selected_plates, d => {
+            let timeRect = d3.pairs(d.stops, (a, b) => (new Date(b.realTime)).getTime()- (new Date(a.realTime)).getTime())
+            timeRect.flag = d.flag;
+            timeRect.upid = d.upid;
+            return timeRect;
+          })
+          
+          let bad_distance = distanceData.filter(d => +d.flag == 0);
+          let good_distance = distanceData.filter(d => +d.flag == 1);
+          if (bad_distance.length > 0) {
+            for (let m in bad_distance[0]) {
+              this._container.selectAll(`.bad_binRect${m}`)
+                .attr("opacity", d => 
+                  d3.map(bad_distance, d => d[m]).filter(e => e <= d.x1 && d.x0 <= e).length > 0 ? 1 : 0.4
+                )
+            }
+          }
+          if (good_distance.length > 0) {
+            for(let m in good_distance[0]){
+              this._container.selectAll(`.good_binRect${m}`)
+                .attr("opacity", d => 
+                  d3.map(good_distance, d => d[m]).filter(e => e<= d.x1 && d.x0 <=e).length > 0 ? 1 : 0.4
+                )
+            }
+          }
+        }
+        _resetMergeBin() {
+          for(let m in this._stopsTimes){		//reset binRect
+            this._container.selectAll(`.good_binRect${m}`)
+              .attr("opacity", 0.4)
+            this._container.selectAll(`.bad_binRect${m}`)
+              .attr("opacity", 0.4)
+          }
+        }
+        _emitToScatter(batch_index_list, merge_index_list, status) {
+          let selected_plates = this.__getSelectPlate(batch_index_list, merge_index_list);
+          vm.$emit("trainMouse", {upid: d3.map(selected_plates, d => d.upid),  mouse: status});
+        }
+        _trainClickHandle(batch_index) {
+          let batch_data = [];
+          let data_len = this._mergeresult_1.length;
+          let batch_date_s, batch_date_e;
+          let mergedata;
+          let mergeSelect;
+
+          if (data_len >= 5) {
+            if (batch_index <= 2) {
+              mergedata = this._mergeresult_1.slice(0, 5)
+                .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
+              mergeSelect = this._mergeresult_1.slice(0, 5)
+                .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
+            }
+            else if (batch_index > data_len-3) {
+              mergedata = this._mergeresult_1.slice(-6)
+                .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
+              mergeSelect = this._mergeresult_1.slice(-6)
+                .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
+            }
+            else {
+              mergedata = this._mergeresult_1.slice(batch_index-2, batch_index+3)
+                .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
+              mergeSelect = this._mergeresult_1.slice(batch_index-2, batch_index+3)
+                .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
+            }
+          } else if (data_len>=3 && data_len<=4) {
+            mergedata = this._mergeresult_1.slice(0, 3)
+              .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
+            mergeSelect = this._mergeresult_1.slice(0, 3)
+              .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
+          }
+          else {
+            return
+          }
+
+          mergedata.forEach(d => batch_data.push(d.map(e => e.upid)));
+          batch_date_s = mergedata[0][0].stops[0].time;
+          batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time;
+
+          vm.$emit("trainClick", {
+            list: this._trainSelectedList, 
+            color: this._trainGroupStyle(mergeSelect.flat().slice(-1)[0]), 
+            upidSelect: [
+              ...mergedata.flat().filter(d => d.flag === 0).map(d => d.upid), 
+              ...mergeSelect.flat().map(d => d.upid)
+            ],
+            type: "group", 
+            batch: batch_data,
+            date_s: batch_date_s,
+            date_e: batch_date_e
+          })
         }
 
         // 整图过渡动画

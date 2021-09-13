@@ -449,6 +449,7 @@ export default {
 			this.paintUnderCharts(upid)
 		},
 		async changeTime() {
+      this.req_count = 0;
 			await this.getTimeBrushData();
 			await this.getAlgorithmData()
 			this.getHttpData()

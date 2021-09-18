@@ -39,8 +39,14 @@ var labelColor = [ "#c65b24", "#94a7b7"] // red grey
 var noflagColor = '#71797E'
 var delabelColor = ["#e3ad92",   "#b9c6cd"]
 var labelColor2 = [ '#e34649', '#5164f5']
-var processColor =['#fcd8a9','#cce9c7',"#c1c9ee"]; 
-
+var processColor =['#fcd8a9','#cce9c7',"#c1c9ee"];
+var levelColor = ['white', 'white', '#FAD3BF', '#F5A780', '#EF7B40'];
+//  colorScale(index){
+//         var ribbon = d3.interpolate('white','#c65b24')
+//         var linear = d3.scaleLinear().domain([0,100]).range([0,1])
+//         return ribbon(linear(index))
+//       },
+var labelScale = d3.scaleLinear().domain([3, 0]).range(delabelColor)
 
 var GillSans = "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif"
 var SegoeUI = "Segoe UI"
@@ -100,6 +106,7 @@ var diagCardTitleTextAttr = setAttr(GillSans, "none", "10px", "normal", "normal"
 
 // var labelColor = ['#ff005a', '#3888fa', '#88fa38', '#fa3888', '#38faaa']   //多个颜色
 export default {
+    labelScale: labelScale,
     // 除子节点
     removeAllChildren (div) {
         while (
@@ -124,6 +131,7 @@ export default {
         return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s
     },
 
+    levelColor,
     categorys: categorys,
     categoryColor (index){
         var colors = {}

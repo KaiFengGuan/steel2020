@@ -124,8 +124,8 @@
 						</div>
 					</el-card>
 				</el-row>
-				<transition name="diagnosis">
-				<el-row v-if="diagnosisVisible" class="diagnosis_view" style="height:540px;">
+				<!-- <transition name="diagnosis"> -->
+				<el-row class="diagnosis_view" style="height:0px;">
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
 							<el-col :span="14"><span>Diagnosis View</span></el-col>
@@ -209,24 +209,24 @@
 								</div>
 							</el-row>
 						</el-col>
-							<el-col :span="20">
-								<el-card class="myel-card myelTab myel-upid">
-									<!-- <div slot="header">
-										<el-row>
-											<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
-											<span class="upidtext">{{selectedUpid}}</span></el-col>
-											<el-col :span="16" style="background-color:white"></el-col>
-										</el-row>
-									</div> -->
-									<div class="my-card-body" >
-										<wheeler ref="wheelering" style="height:490px" :contract="false"></wheeler>
-									</div>
-								</el-card>
-							</el-col>
+						<el-col :span="20">
+							<el-card class="myel-card myelTab myel-upid">
+								<!-- <div slot="header">
+									<el-row>
+										<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
+										<span class="upidtext">{{selectedUpid}}</span></el-col>
+										<el-col :span="16" style="background-color:white"></el-col>
+									</el-row>
+								</div> -->
+								<div class="my-card-body" >
+									<wheeler ref="wheelering" style="height:490px" :contract="false"></wheeler>
+								</div>
+							</el-card>
+						</el-col>
 						</div>
 					</el-card>		
 				</el-row>
-				</transition>
+				<!-- </transition> -->
 				<el-button circle class="diagnosis_button" icon="el-icon-more" @click="clickDiagnosisButton"></el-button>
 			<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
 				<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
@@ -245,10 +245,7 @@
 </template>
 
 <script>
-
-
-
-
+import anime from 'animejs'
 import * as d3 from 'd3';
 import util from './util.js';
 // import mareyChart from './mareyChart_copy.vue';
@@ -260,12 +257,7 @@ import smallWheel from './wheel2.vue';
 import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
-// import myJsonData from "./sampledata/jsondata.json"
-import correlationData from './sampledata/corr.json'
-// import myStationData from "./sampledata/stationdata.js"
 import * as steel from 'services/steel.js'
-import sampledata from "./sampledata/index.js"
-// console.log(sampledata)
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
 export default {
@@ -310,7 +302,7 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2020, 6, 12, 0, 0),
+			startmonth: new Date(2019, 2, 1, 0, 0),
 			time: undefined,
 			selectedTrainData: [],
 			corrdata:[],
@@ -321,6 +313,7 @@ export default {
 			algorithmOptions: [
 				"T-SNE", "UMAP", "ISOMAP", "PCA"
 			],
+			alldiagnosisData: [],
 			algorithmUrls: {
 				"T-SNE": "/newbaogangapi/v1.0/model/VisualizationTsne/",
 				"UMAP": "/newbaogangapi/v1.0/model/VisualizationUMAP/",
@@ -349,6 +342,7 @@ export default {
 			multisize: 20,
 			curvesize: 0.5,
 			sampleCss:{},
+			usDiagnosis: {},
       batchDateStart: undefined,
       batchDateEnd: undefined,
       req_count: 0
@@ -406,26 +400,27 @@ export default {
 
 			return [this.startmonth, endmonth]
 		},
-		monthdata : vm => sampledata[+vm.startmonth.getMonth()+1],
-		allupid : vm => d3.map(vm.monthdata, d => d.upid),
-		upidData : vm => d3.group(vm.monthdata, d => d.upid),
+		// monthdata : vm => sampledata[+vm.startmonth.getMonth()+1],
+		// allupid : vm => d3.map(vm.monthdata, d => d.upid),
+		// upidData : vm => d3.group(vm.monthdata, d => d.upid),
 		startDateString: vm => util.timeFormat(vm.startDate),
 		endDateString: vm => util.timeFormat(vm.endDate),
 		selectDateStart: vm => util.timeFormat(vm.dateselect[0]),
 		selectDateEnd: vm => util.timeFormat(vm.dateselect[1]),
-		// brushData : function(){
-		// 	var start = new Date('2018-01-04 00:00:00'),
-        // 	end = new Date('2018-01-06 04:00:00');
-      	// 	// console.log(this.monthdata);
-		// 	return this.monthdata.filter(d =>{
-		// 		var toc = new Date(d.toc);
+		brushData : function(){
+			var start = new Date('2018-01-04 00:00:00'),
+          end = new Date('2018-01-06 04:00:00');
+      return []
+      		// console.log(this.monthdata);
+			// return this.monthdata.filter(d =>{
+			// 	var toc = new Date(d.toc);
 				
-		// 		// return toc < end && toc > start
-		// 		return toc > this.startDate && toc < this.endDate
-		// 	})
-		// },
-		// brushUpid : vm => d3.map(vm.brushData, d => d.upid),
-    	isSwitchActive: vm => !vm.isSwitch
+			// 	// return toc < end && toc > start
+			// 	return toc > this.startDate && toc < this.endDate
+			// })
+		},
+    brushUpid : vm => d3.map(vm.brushData, d => d.upid),
+    isSwitchActive: vm => !vm.isSwitch
 	},
 	created() {
 	},
@@ -464,27 +459,19 @@ export default {
 			// return
 			this.plateTempPropvalue=['All']
 			this.loadingDataLoading = true
-			let startDate = this.startDateString;
-			let endDate = this.endDateString;
-			// let startDate="2018-11-01 00:00:00";
-			// let endDate = "2018-11-01 12:00:00";
 			// request
 			// let stationsResponse = this.getStationsData(startDate, endDate);
 			// let jsonResponse = this.getJsonData(startDate, endDate);
 			// let conditionResponse = this.getConditionData(startDate, endDate);
 
 			// response
-			// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
-			await this.getStationsData(startDate, endDate).then(Response => {
-				this.stationsData=Response.data
-      		})
-
-			this.jsonData = (await this.getJsonData(startDate, endDate)).data;
+			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
+			this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
 			// this.jsonData = this.jsonData.filter(d => {
 			// 	return this.brushUpid.includes(d.upid)
 			// })
 
-			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
+			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
 			// this.getplatetype();
 			let allDataArr = []
 			for (let item of this.jsonData) {
@@ -501,10 +488,10 @@ export default {
 			// this.jsonData = this.jsonData.filter(d => {
 			// 	return this.brushUpid.includes(d.upid)
 			// })
-      		if(this.scatterData.length!==0) {
+      if(this.scatterData.length!==0) {
 				this.mergeflag()
 			}
-      		// console.log("jsonData: ", this.jsonData);
+      // console.log("jsonData: ", this.jsonData);
 			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, [], this.isMerge);
 
 			// clear
@@ -588,7 +575,26 @@ export default {
           'fqcflag': fqcflag
         }
       )
-		},
+    },
+    
+    getVisCorrelation(url, slabthickness, tgtdischargetemp, tgtplatethickness, tgtwidth,
+          tgtplatelength2, tgttmplatetemp, cooling_start_temp, cooling_stop_temp,
+          cooling_rate1, productcategory, steelspec, status_cooling){
+      return steel.getVisCorrelation(url,{
+        slabthickness,
+        tgtdischargetemp,
+        tgtplatethickness,
+        tgtwidth,
+        tgtplatelength2,
+        tgttmplatetemp,
+        cooling_start_temp,
+        cooling_stop_temp,
+        cooling_rate1,
+        productcategory,
+        steelspec,
+        status_cooling
+      })
+    },
 
 		getDetailProcess(upid, process, width, length, thickness,platetype,deviation) {
 			return steel.getVisualization({
@@ -604,8 +610,8 @@ export default {
 				})
 		},
 		async getplatetype() {
-			return baogangAxios(`/newbaogangapi/v1.0/model/VisualizationPlatetypes/`).
-			then(res=>{
+			return baogangAxios(`/newbaogangapi/v1.0/model/VisualizationPlatetypes/`)
+			.then(res=>{
 				let data=res.data.flat()
 				data.sort()
 				this.plateoptions=[]
@@ -685,21 +691,43 @@ export default {
 			// // this.changeScatterColor();
 			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
 		},
-
+    animeTransition(){
+                if(this.diagnosisVisible){
+                anime({
+                        targets: ['.diagnosis_view'],
+                        // translateY: '-300px',
+                        height:'540px',
+                        easing: 'easeInOutQuad',
+                        // direction: 'alternate',
+                        // loop: true
+                });
+            }else{
+                anime({
+                        targets: ['.diagnosis_view'],
+                        // translateY: '-300px',
+                        height:'0px',
+                easing: 'easeInOutQuad',
+                // direction: 'alternate',
+                // loop: true
+                });
+            }
+        },
 		async trainClick(value) {
 			this.diagnosisVisible = true;
 			this.upidSelect = []
       this.chooseList = value.batch;
       this.batchDateStart = value.date_s;
       this.batchDateEnd = value.date_e;
+      
+      
 
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
 			}
-      this.upidSelect = [...new Set(value.upidSelect)].filter(d => this.upidData.get(d) !== undefined)
+      this.upidSelect = [...new Set(value.upidSelect)]//.filter(d => this.upidData.get(d) !== undefined)
       
-      let diagnosisData = (await this.getDiagnosisData(
-        [this.batchDateStart, this.batchDateEnd],   // time_select
+      this.alldiagnosisData = (await this.getDiagnosisData(
+        [this.batchDateStart[0], this.batchDateEnd[this.batchDateEnd.length - 1]],   // time_select
         JSON.stringify([]),   // slabthickness
         JSON.stringify([]),   // tgtdischargetemp
         JSON.stringify([]),   // tgtplatethickness
@@ -713,58 +741,89 @@ export default {
         JSON.stringify([]),   // steelspec
         0,   // status_cooling
         0,   // fqcflag
-      )).data
-      console.log(diagnosisData.sort((a, b) => {
-        let a_t = new Date(a.toc);
-        let b_t = new Date(b.toc);
-        return a_t - b_t
-      }))
+      )).data;
+      this.alldiagnosisData.forEach(d => {
+				d.toc = new Date(d.toc)
+      })
+      this.alldiagnosisData.sort((a, b) => a.toc - b.toc);
+      let alldiagnosisUpid = this.alldiagnosisData.map(d => d.upid);
+
+      this.upidSelect = this.upidSelect.filter(d => alldiagnosisUpid.indexOf(d) !== -1)//online
+      // console.log(this.upidSelect);
+      // console.log(value.upidSelect);
+
+			for(let item of this.upidSelect){
+				this.usDiagnosis[item] = this.alldiagnosisData[alldiagnosisUpid.indexOf(item)];
+      }
       
-      console.log(value.upidSelect)
-			for(let item of value.upidSelect){
+      
+
+      this.corrdata = [];
+      for(let item of this.upidSelect){
 				try{
 					await this.paintScatterList(item)
 				}catch(e){
 					console.log(e)
 				}
 			}
-			this.corrdata = []
-			await this.paintUnderCharts(this.upidSelect[0]);
+      await this.paintUnderCharts(this.upidSelect[0]);
+      
+      this.animeTransition();
+      
 		},
 		async paintScatterList(upid){
-			// this.$nextTick(function() {this.$refs[upid][0].init()})
-			// let query=[]
-			// for (let item of this.plateTempPropvalue){
-			// 	if(item==='All'){
-			// 		query.push(item)
-			// 	}
-			// }		
-			// if(query.length===0)query=this.plateTempPropvalue
-			// console.log(diagnosisData["result"].length === 0)
-			// if(diagnosisData["result"].length === 0){
-			// 	return false
-      // }
-      
-			
-			var diagnosisData = this.upidData.get(upid)[0]
-      // Vue.set(this.sampleCss, upid, "solid 0.05px " + this.trainBorder(diagnosisData))
-      
-			if(this.corrdata.length !== 0) {
-				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData,this.corrdata)})
+      // var diagnosisData = this.upidData.get(upid)[0]   //json
+      var diagnosisData = this.usDiagnosis[upid];   //online
+      if(this.corrdata['label']) {
+				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData, this.corrdata)})
 				return false
-      }
+			}
       
-      // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.batchDateStart}/${this.batchDateEnd}/`)
-      await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`)
-      .then(Response => {
+      await this.getVisCorrelation({
+          startDate: this.selectDateStart,
+          endDate: this.selectDateEnd,
+          nums: 1000
+        },   // time_select
+				JSON.stringify([]),   // slabthickness
+				JSON.stringify([]),   // tgtdischargetemp
+				JSON.stringify([]),   // tgtplatethickness
+				JSON.stringify([]),   // tgtwidth
+				JSON.stringify([]),   // tgtplatelength2
+				JSON.stringify([]),   // tgttmplatetemp
+				JSON.stringify([]),   // cooling_start_temp
+				JSON.stringify([]),   // cooling_stop_temp
+				JSON.stringify([]),   // cooling_rate1
+				JSON.stringify([]),   // productcategory
+				JSON.stringify([]),   // steelspec
+				0   // status_cooling
+				).then(Response => {
 				this.$nextTick(function() {
-					// this.$refs[upid][0].paintChart(diagnosisData, Response.data)
-					// this.corrdata = Response.data
-          this.$refs[upid][0].paintChart(diagnosisData, correlationData)
-					this.corrdata = correlationData
+					this.$refs[upid][0].paintChart(diagnosisData, Response.data)
+					this.corrdata = Response.data
 				})
 			})
-		},
+    },
+    
+		async paintRiverLike(upid) {
+			this.selectedUpid =  "UPID " + upid
+      // var diagnosisData = this.upidData.get(upid)[0]//json
+			var diagnosisData = this.usDiagnosis[upid]//online
+			this.sampleCss = {}
+			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
+
+      // console.log(this.alldiagnosisData.map(d => d.toc))
+      // console.log(this.batchDateStart)
+      // console.log(this.batchDateEnd)
+
+      var processData = this.batchDateStart.map((d, i) => this.alldiagnosisData.filter(e => e.toc >= new Date(d) && new Date(this.batchDateEnd[i]) >= e.toc))
+      processData = processData.filter(e => e.length != 0)
+
+      // console.log(processData)
+
+      if(this.corrdata['label']) this.$refs.wheelering.paintChart(diagnosisData, this.corrdata, processData)
+			// this.paintDetailPro(this.processTurn)
+    },
+    
 		mareyUpdate(){
       // this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
       this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
@@ -793,7 +852,10 @@ export default {
 		parallMouse(value){
 			this.$refs.scatterCate.mouse(value)
 			this.$refs.mareyChart.mouse(value)
-		},
+    },
+    changeDiagnosisVisible() {
+			this.diagnosisVisible = !this.diagnosisVisible;
+    },
 		paintUnderCharts(upid) {
 			// diagnosisData
 			this.paintRiverLike(upid);
@@ -801,49 +863,8 @@ export default {
     },
     clickDiagnosisButton() {
       this.diagnosisVisible = ! this.diagnosisVisible
-
-      // this.$refs.mareyChart.diagnosisClick(this.diagnosisVisible)
+       this.animeTransition()
     },
-
-		async paintRiverLike(upid) {
-			let query=[]
-			for (let item of this.plateTempPropvalue){
-				if(item==='All'){
-					query.push(item)
-				}
-			}		
-			if(query.length===0)query=this.plateTempPropvalue
-
-			this.selectedUpid =  "UPID " + upid
-			// let diagnosisData = (await this.getDiagnosisData(this.selectedTrainData[this.selectedTrainData.length-1], this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query)).data
-			// console.log(this.upidData.get(upid))
-			var diagnosisData = this.upidData.get(upid)[0]
-			this.sampleCss = {}
-			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
-			var processData = this.chooseList.map(d => d.filter(e => this.upidData.get(e) !== undefined).map(e => this.upidData.get(e)[0]))
-			// console.log(processData)
-			// return 
-			// this.chooseList.map(d => processData.push(this.upidData.get(d)[0]))
-			this.diagnosisData = diagnosisData
-			// let processDetail = []
-			// for(let item of this.processArray){
-			// 	console.log(item)
-			// 	let detailProData = (await this.getDetailProcess(this.selectedTrainData[this.selectedTrainData.length-1], item, this.plateTempProp.width/1000, 
-			// 		this.plateTempProp.length, this.plateTempProp.thickness/1000,query,this.plateTempProp.deviation)).data
-			// 	processDetail.push(detailProData)
-			// 	// Object.assign(processDetail, detailProData)
-			// }
-      // console.log(processDetail)
-      
-      // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.batchDateStart}/${this.batchDateEnd}/`)
-      // await baogangAxios("newbaogangapi/v1.0/model/VisualizationCorrelation/"+`${this.selectDateStart}/${this.selectDateEnd}/`)
-      // .then(Response => {
-			// 	this.$refs.wheelering.paintChart(diagnosisData, Response.data, processData)
-			// })
-      this.$refs.wheelering.paintChart(diagnosisData, correlationData, processData)
-      
-			// this.paintDetailPro(this.processTurn)
-		},
 
 		async paintDetailPro(processNumber) {
 			this.processInTurn = [null, null]
@@ -957,46 +978,6 @@ export default {
 		},
 	},
 	mounted() {
-		// console.log(this.startmonth.getMonth())
-		// this.paintDetailPro(2)
-		// this.platetype('18B09019000')
-		// var demo ={
-		// 	"list": [
-		// 		"19301009000",
-		// 		"19301002000"
-		// 	],
-		// 	"upidSelect": [
-		// 		"19301005000"
-		// 	],
-		// 	"type": "group",
-		// 	"batch": [
-		// 		["19301001000",
-		// 		"19301002000",
-		// 		"19301003000",
-		// 		"19301004000",
-		// 		"19301005000",
-		// 		"19301006000",
-		// 		"19301007000",
-		// 		"19301008000"],
-		// 		["19301001000",
-		// 		"19301002000",
-		// 		"19301003000",
-		// 		"19301004000",
-		// 		"19301005000",
-		// 		"19301006000",
-		// 		"19301007000",
-		// 		"19301008000"],
-		// 		["19301001000",
-		// 		"19301002000",
-		// 		"19301003000",
-		// 		"19301004000",
-		// 		"19301005000",
-		// 		"19301006000",
-		// 		"19301007000",
-		// 		"19301008000"],
-		// 	]
-		// }
-		// this.trainClick(demo)
 		this.getplatetype()
 		this.changeTime()
 	},

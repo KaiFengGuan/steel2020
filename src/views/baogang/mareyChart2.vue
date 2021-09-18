@@ -331,57 +331,6 @@ export default {
                 continue;
               }
 
-              // // 每个批次 子母工序 统计（用于左边圆圈） 原来的写法：一个合并块对应一个圆圈
-              // let fu_arr = [], m_arr = [], c_arr = [], t_arr = [];
-              // let sub_arr = [];
-              // let mergeItem_flat = mergeItem.flat();
-              // for (let i in mergeItem_flat) {
-              //   let item_data = mergeItem_flat[i];
-              //   let item_data_stops = item_data.stops;
-              //   let single_arr = [];
-
-              //   fu_arr.push(item_data.fuTotalTimeAfter * 1000);
-              //   m_arr.push(item_data.mtotalTime * 1000);
-              //   c_arr.push(item_data.ccTotalTime * 1000);
-              //   t_arr.push(new Date(item_data_stops[5].time)) // 节奏指标：出炉时间
-
-              //   for (let j in this._stationsdata.slice(0, -1)) {
-              //     let stations_item = this._stationsdata[j];
-              //     let time_spend = 0;
-              //     for (let k in item_data_stops.slice(0, -1)) {
-              //       if (stations_item.key === item_data_stops[k].station.key) {
-              //         time_spend = (new Date(item_data_stops[(+k)+1].time)).getTime() - (new Date(item_data_stops[k].time))
-              //       }
-              //     }
-              //     single_arr.push(time_spend)
-              //   }
-              //   sub_arr.push(single_arr)
-              // }
-              // t_arr = d3.pairs(t_arr, (a, b) => b - a);
-              // let fu_mean = d3.mean(fu_arr), fu_std = d3.deviation(fu_arr);
-              // let m_mean  = d3.mean(m_arr),  m_std = d3.deviation(m_arr);
-              // let c_mean  = d3.mean(c_arr),  c_std = d3.deviation(c_arr);
-              // let t_mean  = d3.mean(t_arr),  t_std = d3.deviation(t_arr);
-              // let sub_mean = [], stage_sub_avg_angle = [];
-              // for (let i = 0; i < 16; i++) {
-              //   let a = [];
-              //   sub_arr.forEach(d => a.push(d[i]));
-
-              //   let m_a = d3.mean(a);
-              //   sub_mean.push(m_a);
-              //   stage_sub_avg_angle.push({
-              //     stage_i: (i>=0&&i<=5) ? 0 : (i>=6&&i<=13) ? 1 : (i>=14&&i<=16) ? 2 : undefined,
-              //     data: m_a/sub_extent[i][1]
-              //   });
-              // }
-              // let fu_stage_sub_avg_angle = stage_sub_avg_angle.slice(0, 5);
-              // fu_stage_sub_avg_angle.forEach((d, j) => d['sub_j'] = j);
-              // let m_stage_sub_avg_angle = stage_sub_avg_angle.slice(6, 13);
-              // m_stage_sub_avg_angle.forEach((d, j) => d['sub_j'] = j);
-              // let c_stage_sub_avg_angle = stage_sub_avg_angle.slice(14, 16);
-              // c_stage_sub_avg_angle.forEach((d, j) => d['sub_j'] = j);
-              // stage_sub_avg_angle = [...fu_stage_sub_avg_angle, ...m_stage_sub_avg_angle, ...c_stage_sub_avg_angle];
-              
               // 每个批次 子母工序 统计（用于左边圆圈） 新的写法：合并块的种类对应一个圆圈
               let one_batch_info = []
               let one_batch_category = d3.groups(mergeItem, d => d[0].steelspec)
@@ -1448,9 +1397,26 @@ export default {
               ) {
                 let batch_index = filter_1[d.train.upid]['batch_index'];
                 let merge_index = filter_1[d.train.upid]['merge_index'];
+                let selected_plates = that.__getSelectPlate([batch_index], [merge_index]);
+
+                let curr_batch_all_mergeindex = []
+                let curr_batch_infos = this._info_g.selectAll(`#oneBatchChartGroup${batch_index} .chartGroup`);
+                curr_batch_infos._groups[0].forEach(
+                  d => curr_batch_all_mergeindex.push(d3.select(d).attr('merge_index')));
+                let info_index;
+                curr_batch_all_mergeindex.forEach((d, i) => {
+                  if (d.includes(''+merge_index)) {
+                    info_index = i;
+                  }
+                });
+
                 this._setMergeRect([batch_index], [merge_index]);
-                this._setMergeBin([batch_index], [merge_index]);
-                this._emitToScatter([batch_index], [merge_index], 0);
+                this._setMergeBin(selected_plates);
+                this._emitToScatter(selected_plates, 0);
+                // this._setInfoDetail(batch_index, info_index);
+                if (info_index != undefined) {
+                  this._setInfoDetail(batch_index, info_index);
+                }
                 return;
               }
 
@@ -1486,9 +1452,13 @@ export default {
               ) {
                 let batch_index = filter_1[d.train.upid]['batch_index'];
                 let merge_index = filter_1[d.train.upid]['merge_index'];
+                let selected_plates = that.__getSelectPlate([batch_index], [merge_index]);
+
                 this._resetMergeRect();
                 this._resetMergeBin();
-                this._emitToScatter([batch_index], [merge_index], 1);
+                this._emitToScatter(selected_plates, 1);
+                this._resetInfoDetail();
+                this._keepClickedStatus();
                 return;
               }
               if (this._trainSelectedList.includes(d.train.upid))
@@ -2310,7 +2280,7 @@ export default {
             .attr('fill', 'white')
             .attr('filter', 'url(#shadow-card)');
           
-          this._renderInfoDetailCircle1(chartGroup);
+          this._renderInfoDetailCircle(chartGroup);
 
           function __pathClick(e, d) {
             let info_index = d3.select(this).attr('info_index');
@@ -2319,30 +2289,31 @@ export default {
             let merge_index_list = merge_index.split(' ').map(d => +d);
             let info_id = batch_index + '_' + info_index;
 
-            // console.log(d);
-
             let brush_h = that._brush_select[1] - that._brush_select[0];
             let new_brush_s = that._mini_y(d.link_rect[0].batch_s) - 2;
             let new_brush_e = new_brush_s + brush_h;
             let new_brush = [new_brush_s, new_brush_e]
             that._brush_select = new_brush
-            that._brush_g.select('.brush').call(that._brush.move, new_brush)
-
-            // console.log(that._brush_select)
-            // console.log(that._mini_y(d.date_s));
+            that._brush_g.select('.brush').call(that._brush.move, new_brush);
+            let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
             
-            if (that._mergeClickValue.includes(info_id)) {
-              that._mergeClickValue.splice(that._mergeClickValue.indexOf(info_id), 1);
+            if (that._mergeClickValue[info_id] != undefined) {
+              delete that._mergeClickValue[info_id];
               vm.hightLight([]);
+              // vm.$emit("clickDiagnosisButton");
             } else {
-              if (that._mergeClickValue.length !== 0) {
+              if (Object.keys(that._mergeClickValue).length !== 0) {
                 that._mergeClickValue = [];
               }
-              that._mergeClickValue.push(info_id);
+              that._mergeClickValue[info_id] = {
+                batch_index: batch_index,
+                info_index: info_index,
+                merge_index_list: merge_index_list
+              };
 
-              that._trainClickHandle(info_id.split('_')[0]);   // 点击后干点啥
+              that._trainClickHandle(info_id.split('_')[0]);   // 点击后往父组件发送数据
               
-              let merge_items_upid = that.__getSelectPlate([batch_index], merge_index_list).map(d => d.upid);
+              let merge_items_upid = selected_plates.map(d => d.upid);
               let sort_res = d3.sort(merge_items_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0);
               vm.hightLight(sort_res);
             }
@@ -2350,35 +2321,41 @@ export default {
           function __pathOver(e, d) {
             let batch_index = d3.select(d3.select(this)._groups[0][0].parentNode).attr('batch_index');
             let merge_index = d3.select(this).attr('merge_index');
+            let merge_index_list = d.link_rect.map(e => e.merge_index);
             let info_index = d3.select(this).attr('info_index');
+            let info_id = batch_index + '_' + info_index;
+            let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
 
             that._setMergeRect([batch_index], merge_index.split(' ').map(d => +d));
             that._setInfoDetail(batch_index, info_index);
 
-            let merge_index_list = d.link_rect.map(e => e.merge_index);
-            that._setMergeBin([batch_index], merge_index_list);
-            that._emitToScatter([batch_index], merge_index_list, 0);
+            that._setMergeBin(selected_plates);
+            that._emitToScatter(selected_plates, 0);
 
-            // if(that._mergeClickValue.indexOf(i) == -1) {
-            //   vm.$emit("trainMouse", {upid: d3.map(d.mergeItem, d => d.upid),  mouse: 0});
-            // }
+            if(that._mergeClickValue[info_id] == undefined) {
+              that._emitToScatter(selected_plates, 0);
+            }
           }
           function __pathOut(e, d) {
             let batch_index = d3.select(d3.select(this)._groups[0][0].parentNode).attr('batch_index');
             let merge_index_list = d.link_rect.map(e => e.merge_index);
+            let info_index = d3.select(this).attr('info_index');
+            let info_id = batch_index + '_' + info_index;
+            let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
 
             that._resetMergeRect();
             that._resetInfoDetail();
 
             that._resetMergeBin();
-            that._emitToScatter([batch_index], merge_index_list, 1);
+            that._emitToScatter(selected_plates, 1);
 
-            
+            that._keepClickedStatus();
+
             // mergeGopacity(d);
             // var i = d3.select(this).attr('index');
-            // if(that._mergeClickValue.indexOf(i) == -1) {
-            //   vm.$emit("trainMouse", {upid: d3.map(d.mergeItem, d => d.upid),  mouse: 1});
-            // }
+            if(that._mergeClickValue[info_id] == undefined) {
+              that._emitToScatter(selected_plates, 1);
+            }
           }
 
           function mouseOverPath(i, d) {
@@ -2386,7 +2363,7 @@ export default {
             
           }
           function mergeGopacity(d) {	//brush变更后 copy mergeG state
-            if(that._mergeClickValue.length !== 0) {
+            if(Object.keys(that._mergeClickValue).length !== 0) {
               that._marey_g.selectAll('.mergeG').attr('opacity', 0.4)
               for(let j in that._mergeClickValue) {
                 mouseMerge(that._mergeClickValue[j])
@@ -2395,7 +2372,7 @@ export default {
             }
           }
         }
-        _renderInfoDetailCircle1(chartGroup) {
+        _renderInfoDetailCircle(chartGroup) {
           let that = this;
           
           // 角度相关参数
@@ -3039,8 +3016,7 @@ export default {
 
           return selected_plates.flat();
         }
-        _setMergeBin(batch_index_list, merge_index_list) {
-          let selected_plates = this.__getSelectPlate(batch_index_list, merge_index_list);
+        _setMergeBin(selected_plates) {
           let distanceData = d3.map(selected_plates, d => {
             let timeRect = d3.pairs(d.stops, (a, b) => (new Date(b.realTime)).getTime()- (new Date(a.realTime)).getTime())
             timeRect.flag = d.flag;
@@ -3075,14 +3051,13 @@ export default {
               .attr("opacity", 0.4)
           }
         }
-        _emitToScatter(batch_index_list, merge_index_list, status) {
-          let selected_plates = this.__getSelectPlate(batch_index_list, merge_index_list);
+        _emitToScatter(selected_plates, status) {
           vm.$emit("trainMouse", {upid: d3.map(selected_plates, d => d.upid),  mouse: status});
         }
         _trainClickHandle(batch_index) {
           let batch_data = [];
+          let batch_date_s = [], batch_date_e = [];
           let data_len = this._mergeresult_1.length;
-          let batch_date_s, batch_date_e;
           let mergedata;
           let mergeSelect;
 
@@ -3115,9 +3090,11 @@ export default {
             return
           }
 
-          mergedata.forEach(d => batch_data.push(d.map(e => e.upid)));
-          batch_date_s = mergedata[0][0].stops[0].time;
-          batch_date_e = mergedata.slice(-1)[0].slice(-1)[0].stops[0].time;
+          mergedata.forEach(d => {
+            batch_data.push(d.map(e => e.upid));
+            batch_date_s.push(d[0].stops[0].time);
+            batch_date_e.push(d.slice(-1)[0].stops[0].time);
+          });
 
           vm.$emit("trainClick", {
             list: this._trainSelectedList, 
@@ -3131,6 +3108,20 @@ export default {
             date_s: batch_date_s,
             date_e: batch_date_e
           })
+        }
+        _keepClickedStatus() {
+          if(Object.keys(this._mergeClickValue).length !== 0) {
+            for (let key in this._mergeClickValue) {
+              let batch_index = this._mergeClickValue[key].batch_index;
+              let info_index = this._mergeClickValue[key].info_index;
+              let merge_index_list = this._mergeClickValue[key].merge_index_list;
+              let selected_plates = this.__getSelectPlate([batch_index], merge_index_list);
+
+              this._setInfoDetail(batch_index, info_index);
+              this._setMergeRect([batch_index], merge_index_list);
+              this._setMergeBin(selected_plates);
+            }
+          }
         }
 
         // 整图过渡动画

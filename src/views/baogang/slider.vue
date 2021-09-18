@@ -9,7 +9,6 @@ import * as d3 from 'd3'
 import util from './util.js'
 
 import { mapGetters, mapMutations } from 'vuex'
-import { forEach } from './sampledata/stationdata.js'
 export default {
   data() {
     return {

@@ -205,6 +205,8 @@ export default {
                 x = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
                 y = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
                 liney = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
+                xScale_text = new Map(Array.from(keys, key => [key, d3.scaleLinear([barbin[keys.indexOf(key)][0].x0, barbin[keys.indexOf(key)].slice(-1)[0].x1], [margin.left, width - margin.right])])),
+                yScale_text = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
 
                 // y = d3.scalePoint(keys, [margin.top, height - margin.bottom]),
                 xScale = d3.axisBottom(xCooling).tickSizeOuter(0).tickSizeInner(0),
@@ -594,7 +596,7 @@ export default {
                 const box = text.node().getBBox();
                 let x = event.offsetX - 78,
                     y = event.offsetY + 10;					
-                path.attr("d", `
+               path.attr("d", `
                     M${box.x - 10},${box.y - 10}
                     H${box.width / 2 - 5}l5,15l5,-15
                     H${box.width + 10}
@@ -607,6 +609,62 @@ export default {
                 // vm.svg.selectAll(`.pathColor`)
                 //     .attr("stroke-opacity", 0.01)
                 //     .attr("stroke-width", 0.25)
+                 for(let item in keys){
+                    let yscale = yScale_text
+                    let xScale = xScale_text
+                    const tooltip1 = vm.svg.append("g")
+                        .attr("class", "tooltip1")
+                        .style("font", "12px DIN");
+                    const path1 = tooltip1.append("path")
+                        .attr("fill", "white");
+                    const text1 = tooltip1.append("text");
+                    const line1 = text1.append('tspan')
+                        .attr("x",0)
+                        .attr("y",0)
+                        .style('font-family', util.tabularTooltipAttr.line1.fontFamily)
+                        .style('font-size', util.tabularTooltipAttr.line1.fontSize)
+                        .style('font-weight', util.tabularTooltipAttr.line1.fontWeight)
+                        .style('font-style', util.tabularTooltipAttr.line1.fontStyle)
+                        // .style('color',vm.deGroupStyle(d))
+                    tooltip1
+                        .style("display", null)
+                        .attr("fill",vm.deGroupStyle(d));
+                        line1.text(d[keys[item]]);
+                    path1
+                        .attr("stroke", "#ccc")
+                        // .attr("fill", vm.deGroupStyle(d));
+                        // .attr("fill", '#000');
+                    const box1 = text1.node().getBBox()
+                    let numberX = xScale.get(keys[item])(d[keys[item]])
+                    let numberY = yscale(keys[item]);
+                    // path1.attr("d", `
+                    //     M${box1.x - 10},${box1.y - 10}
+                    //     H${box1.width / 2 - 5}l5,-15l5,15
+                    //     H${box1.width + 10}
+                    //     v${box1.height + 20}
+                    //     h-${box1.width + 20}
+                    //     z
+                    // `)
+                    // H${box1.width / 2 - 5}
+                   path1.attr("d", `
+                        M${box1.x - 10},${box1.y - 5}
+                        H${box1.width / 2 - 7}l7,-12l7,12
+                        H${box1.width + 10}
+                        v${box1.height + 10}
+                        h-${box1.width + 20}
+                        z
+                    `);
+                    //  H${box1.width / 2 - 5}l5,-15l5,15
+                    // l${box1.width/6},${-box1.width/3}
+                    // l${box1.width/6},${box1.width/3}
+                    // text1.attr("transform", `translate(${[box1.x,box1.y - 50]})`);
+                    tooltip1.attr("transform", `translate(${[numberX - 13,numberY + 43]})`);
+                }
+
+
+
+
+
                 vm.svg.selectAll(`.pathColor`)
                     .attr("stroke-opacity", 0)
                     .attr("stroke-width", 0)
@@ -638,6 +696,7 @@ export default {
                     .attr("stroke-opacity", 0.6)
                     .attr("stroke-width", 1)
                 vm.svg.selectAll(".tooltip").remove()
+                vm.svg.selectAll(".tooltip1").remove() 
                 vm.mouseList !==undefined ? vm.mouse(vm.mouseList) : false
                 vm.$emit("parallMouse", {upid: [d.upid],  mouse: 1});
             }

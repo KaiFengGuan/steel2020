@@ -136,7 +136,7 @@ export default {
                         prec: null,
                         humidity: null,
                     };
-
+                    
                     this._process=[];
                     this._padprocess = [[],[],[]];
                     this._processindex = ['heat', 'roll', 'cool'];
@@ -693,6 +693,14 @@ export default {
                         function initLineG(){
                             lineG.selectAll('g').data(selectInfo).join('g')
                                 .attr('opacity', opacityCache)
+                                .on('mouseover', (e, d) => {
+                                    console.log(e);
+                                    console.log(d);
+                                    return  this._overed(e, d.indexName, d.month)
+                                })
+                                .on('mouseout', (e, d) => {
+                                    this._outed(e, d.indexName, d.month)
+                                })
                                 .call(g => g.append('path')
                                     .attr('stroke', d => d3.color(lc[d.month]).darker(0.5))
                                     .datum(lineToCircle)
@@ -721,8 +729,9 @@ export default {
                                     .attr('d', (d, i) => line(lineToRect(d, i)))
                                     .attr('stroke-width', 1)
                                     .attr('fill', 'none')
-                                    .on('mouseover', this._stopPropagation)
-                                    .on('mouseout', this._stopPropagation))
+                                    // .on('mouseover', this._stopPropagation)
+                                    // .on('mouseout', this._stopPropagation)
+                                    )
                                 .call(g => g.append('rect')
                                     .attr('transform', (d, i) => `translate(${[rectX - 2 * maxHeight, yScale(i) - maxHeight]})`)
                                     .attr('height', maxHeight)
@@ -733,14 +742,15 @@ export default {
                                     .attr('rx', this._borderStyle.rx)
                                     .attr('ry', this._borderStyle.ry)
                                     .attr('fill', 'none')
-                                    .on('mouseover', this._stopPropagation)
-                                    .on('mouseout', this._stopPropagation))
-                                .on('mouseover', (e, d) => {
-                                    this._overed(e, d.indexName, d.month)
-                                })
-                                .on('mouseout', (e, d) => {
-                                    this._outed(e, d.indexName, d.month)
-                                })
+                                    // .on('mouseover', this._stopPropagation)
+                                    // .on('mouseout', this._stopPropagation)
+                                )
+                                // .on('mouseover', (e, d) => {
+                                //     this._overed(e, d.indexName, d.month)
+                                // })
+                                // .on('mouseout', (e, d) => {
+                                //     this._outed(e, d.indexName, d.month)
+                                // })
                         }
                         function initArcG(){
                             arcG.selectAll('g').data(selectInfo)
@@ -1783,7 +1793,7 @@ export default {
                                 .attr('stroke-width', lineStrokeWidth)
                                 .attr('opacity', this._leadlineStyle.opacity))
                 }
-
+                //processCircle 高亮
                 _initProcessCircle(){
                     const wheel = this._container,
                         wm = this,
@@ -2005,21 +2015,28 @@ export default {
                         .selectAll('g')
                         .data(root.leaves())
                         .join('g')
-                            .attr('transform', d => {
-                                d.x=xpad[+d.data.group](d.data.id) + v +1/3*(Math.PI);
-                                return `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y},0)`
-                                })
+                        .attr('transform', d => {
+                            d.x=xpad[+d.data.group](d.data.id) + v +1/3*(Math.PI);
+                            return `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y},0)`
+                        })
+                        .on('mouseover', (e, d) => {
+                            this._overed(e, d.data.id, d.data.group)
+                        })
+                        .on('mouseout', (e, d) => {
+                            this._outed(e, d.data.id, d.data.group)
+                        })
                         .call(g =>g.append('path')
                             .attr('transform', d => `translate(${-d.y},0)  rotate(${-90-v* 180 / Math.PI})`)
                             .attr('fill', 'white')
                             .attr('opacity', 0)
-                            .attr('d', this._line(r.inner, r.max)))
-                            .on('mouseover', (e, d) => {
-                                this._overed(e, d.data.id, d.data.group)
-                            })
-                            .on('mouseout', (e, d) => {
-                                this._outed(e, d.data.id, d.data.group)
-                            })
+                            .attr('d', this._line(r.inner, r.max))
+                        )
+                        // .on('mouseover', (e, d) => {
+                        //     this._overed(e, d.data.id, d.data.group)
+                        // })
+                        // .on('mouseout', (e, d) => {
+                        //     this._outed(e, d.data.id, d.data.group)
+                        // })
                     const labelcol=(d , i) => d3.color(lc[+d[0].data.group]).darker(0.6);
                     const linedata = root.leaves().flatMap(leaf => leaf.outgoing);
                     this._leavesData = root.leaves();
@@ -2132,6 +2149,7 @@ export default {
                 }
 
                 _outed(e, name, key) {
+                    console.log('这是移动开的测试');
                     this._initcss()
                     this._axisout(name, key);
                     let rlines = this._multiplyTarget(name);
@@ -2142,6 +2160,7 @@ export default {
                 }
 
                 _overed(e, name, key){
+                    console.log('这是测试');
                     const data = this._chartData.filter(d => d.indexName===name)[0];
                     this._hightlightcss()
                     this._axisenter(name, key);

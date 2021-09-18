@@ -124,8 +124,8 @@
 						</div>
 					</el-card>
 				</el-row>
-				<transition name="diagnosis">
-				<el-row v-if="diagnosisVisible" class="diagnosis_view" style="height:540px;">
+				<!-- <transition name="diagnosis"> -->
+				<el-row   class="diagnosis_view" style="height:0px;">
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
 							<el-col :span="14"><span>Diagnosis View</span></el-col>
@@ -226,7 +226,7 @@
 						</div>
 					</el-card>		
 				</el-row>
-				</transition>
+				<!-- </transition> -->
 				<el-button circle class="diagnosis_button" icon="el-icon-more" @click="clickDiagnosisButton"></el-button>
 			<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
 				<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
@@ -266,6 +266,7 @@ import correlationData from './sampledata/corr.json'
 import * as steel from 'services/steel.js'
 import sampledata from "./sampledata/index.js"
 // console.log(sampledata)
+import anime from 'animejs'
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
 export default {
@@ -665,11 +666,36 @@ export default {
 			// // this.changeScatterColor();
 			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
 		},
-
+		animeTransition(){
+				if(this.diagnosisVisible){
+				anime({
+						targets: ['.diagnosis_view'],
+						// translateY: '-300px',
+						height:'540px',
+						easing: 'easeInOutQuad',
+						// direction: 'alternate',
+						// loop: true
+				});
+			}else{
+				anime({
+						targets: ['.diagnosis_view'],
+						// translateY: '-300px',
+						height:'0px',
+				easing: 'easeInOutQuad',
+				// direction: 'alternate',
+				// loop: true
+				});
+		  	}
+		},
 		async trainClick(value) {
-			this.diagnosisVisible = true;
+			// console.log('123123123');
+	 		// console.log('third',this.diagnosisVisible);
+			this.diagnosisVisible = !this.diagnosisVisible;
+		
+			
+			
 			this.upidSelect = []
-      this.chooseList = value.batch;
+      		this.chooseList = value.batch;
 
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
@@ -685,6 +711,8 @@ export default {
 			}
 			this.corrdata = []
 			await this.paintUnderCharts(this.upidSelect[0]);
+			await this.animeTransition();
+			
 		},
 		async paintScatterList(upid){
 			// this.$nextTick(function() {this.$refs[upid][0].init()})
@@ -749,7 +777,25 @@ export default {
     },
     clickDiagnosisButton() {
       this.diagnosisVisible = ! this.diagnosisVisible
-
+      if(this.diagnosisVisible){
+        anime({
+          targets: ['.diagnosis_view'],
+          // translateY: '-300px',
+          height:'540px',
+          easing: 'easeInOutQuad',
+          // direction: 'alternate',
+        //   loop: true
+        });
+      }else{
+        anime({
+          targets: ['.diagnosis_view'],
+          // translateY: '-300px',
+          height:'0px',
+          easing: 'easeInOutQuad',
+          // direction: 'alternate',
+          // loop: true
+        });
+      }
       // this.$refs.mareyChart.diagnosisClick(this.diagnosisVisible)
     },
 

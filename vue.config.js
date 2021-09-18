@@ -12,15 +12,6 @@ module.exports = {
     devServer: {
         port: 8889,
         proxy: {
-            '/baogangapi': {
-                target: 'http://219.216.81.96:5000',
-                // target: 'http://219.216.80.46:5555',
-                // target: 'http://202.118.21.236:7205',
-                changeOrigin: true,
-                pathRewrite: {
-                    '^/baogangapi': '/api'
-                }
-            },
             '/newbaogangapi': {
               target: 'http://219.216.80.146:5502',
               // target: 'http://202.118.21.236:7205',
@@ -29,30 +20,6 @@ module.exports = {
                   '^/newbaogangapi': '/api'
               }
           },
-
-            'myf': {
-                // target: 'http://219.216.80.62:8088',
-                target: 'http://219.216.80.18:8088',
-                // target: 'http://202.118.21.236:7106',
-                // target: 'http://localhost:8080',
-                changeOrigin: true,
-                pathRewrite: {
-                    // '^/myf': 'web-ssm/myf'
-                    '^/myf': '/myf'
-                }
-            }
-            // '/api': {
-            //     target: 'http://node-serve:8002',
-            //     changeOrigin: true
-            // },
-            // '/baogangapi': {
-            //     // target: 'http://219.216.81.86:5000',
-            //     target: 'http://python-serve:5000',
-            //     changeOrigin: true,
-            //     pathRewrite: {
-            //         '^/baogangapi': 'api'
-            //     }
-            // }
         }
     },
     chainWebpack: config => {

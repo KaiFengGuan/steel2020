@@ -2982,7 +2982,7 @@ export default {
           let rectScale = d3.scaleLinear()
             .domain([0, 10])
             .range([0, moni_rect_w/2-10])
-
+          console.log('this._mergeresult_1',this._mergeresult_1);
           let monitorRectGroup = this._moni_g.append('g')
             .attr('class', 'monitorRectGroup');
           

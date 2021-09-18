@@ -408,7 +408,6 @@ export default {
             svg.append("g").attr("class","lineBrush")
             svg.append("g")
                 .attr('class','bottonRect')
-            svg.append("g")
                 // .attr("transform",`translate(${0},${height - 50})`)
                 .attr("transform",`translate(${0},${height - 60})`)
                 .call(g =>

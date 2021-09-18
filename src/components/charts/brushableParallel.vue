@@ -8,7 +8,6 @@ import * as d3 from 'd3'
 import util from 'src/views/baogang/util.js';
 // import util from '../../views/baogang/util.js'
 import { mapGetters, mapMutations} from 'vuex'
-import { forEach, map } from '../../views/baogang/sampledata/stationdata';
 // import success from "../../assets/images/sucess.svg";
 import success from "assets/images/success.svg";
 export default {
@@ -409,6 +408,7 @@ export default {
             svg.append("g").attr("class","lineBrush")
             svg.append("g")
                 .attr('class','bottonRect')
+            svg.append("g")
                 // .attr("transform",`translate(${0},${height - 50})`)
                 .attr("transform",`translate(${0},${height - 60})`)
                 .call(g =>
@@ -882,6 +882,7 @@ export default {
                 .attr("stroke-width", 1)
         },
         changePath(array){	//change Style
+        // console.log(array);
             if(array.length === 0)return;
             for(let item in array){
                 this.svg.select(`#paraPath${array[item]}`)

@@ -107,6 +107,7 @@ var diagCardTitleTextAttr = setAttr(GillSans, "none", "10px", "normal", "normal"
 
 // var labelColor = ['#ff005a', '#3888fa', '#88fa38', '#fa3888', '#38faaa']   //多个颜色
 export default {
+    labelScale: labelScale,
     // 除子节点
     removeAllChildren (div) {
         while (
@@ -131,6 +132,7 @@ export default {
         return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s
     },
 
+    levelColor,
     categorys: categorys,
     categoryColor (index){
         var colors = {}

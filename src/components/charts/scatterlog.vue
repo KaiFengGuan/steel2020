@@ -24,24 +24,49 @@ export default {
 			GaleArray:[],
 			mouseAttrs:{"color": "#666666", "r": 3, "stroke": 0.5},
 			clickAttrs:{"color": "#666666", "r": 4.5, "stroke": 1.25},
-			mouseList: undefined
+      mouseList: undefined,
+      req_count: 0
 		}
 	},
 	methods: {
-		paintChart(jsondata) {
-			const vm=this
-			const w = document.getElementById(this.menuId).offsetWidth, h = document.getElementById(this.menuId).offsetHeight,marginH = 15, marginW = 15;
+		paintChart(jsondata, req_count) {
+      const vm=this;
+      
+			this.scatterdata = []
+      this.scatterdata = Object.values(jsondata)
+      this.scatterdata = this.scatterdata.sort((a, b) => {
+        let a_t = new Date(a.toc);
+        let b_t = new Date(b.toc);
+        return a_t - b_t
+      })
+      
+      this.req_count = req_count;
+      if (this.req_count == 1) {
+        this.paintScatter();
+      }
+      else {
+        this.transScatter();
+      }
+    },
+    paintScatter() {
+      const vm=this
+
+			const scatterdata=this.scatterdata
+      const w = document.getElementById(this.menuId).offsetWidth,
+        h = document.getElementById(this.menuId).offsetHeight,
+        marginH = 15,
+        marginW = 15;
+      const x_extent = d3.extent(scatterdata, d => d.x);
+      const y_extent = d3.extent(scatterdata, d => d.y);
+			const scaleX = d3.scaleLinear().range([marginW, w-marginW]).domain(x_extent);
+      const scaleY = d3.scaleLinear().range([h-marginH, h -w + marginH]).domain(y_extent);
+      
 			this.svg !== undefined && this.svg.remove()
 			this.svg=d3.select("#scatterlog")
 				.append("svg")
 				.attr("class",'scatterlogger')
 				.attr("width", w)
 				.attr("height", h);	
-			this.scatterdata = []
-			this.scatterdata = Object.values(jsondata)
-			const scatterdata=this.scatterdata
-			const scaleX = d3.scaleLinear().range([marginW, w-marginW]).domain(d3.extent(scatterdata, d => d.x));
-			const scaleY = d3.scaleLinear().range([h-marginH, h -w + marginH]).domain(d3.extent(scatterdata, d => d.y));
 			var scattertooltip = g => {
 				g.call(g =>g.append("g").attr("class" , "scatter")
 					.selectAll("circle.dot")
@@ -130,7 +155,7 @@ export default {
 						vm.changeDot([label.upid], this.mouseAttrs)
 						vm.$emit("scatterMouse", {upid: [d.upid],  mouse: 0});
 					})
-					.on("mouseout", (event, d)=> {					
+					.on("mouseout", (event, d)=> {
 						this.paintArc(this.GaleArray)
 						this.resetDot()
 						d3.selectAll(".scattertooltip").remove();
@@ -146,7 +171,24 @@ export default {
 			function zoomed({transform}) {
 				d3.select(".scatter").attr("transform", transform);
 			}
-		},
+    },
+    transScatter() {
+      var tran = d3.transition().delay(50).duration(500);
+
+      const scatterdata=this.scatterdata
+      const w = document.getElementById(this.menuId).offsetWidth,
+        h = document.getElementById(this.menuId).offsetHeight,
+        marginH = 15, 
+        marginW = 15;
+			const scaleX = d3.scaleLinear().range([marginW, w-marginW]).domain(d3.extent(scatterdata, d => d.x));
+      const scaleY = d3.scaleLinear().range([h-marginH, h -w + marginH]).domain(d3.extent(scatterdata, d => d.y));
+      
+      this.svg.selectAll("circle.dot")
+        .data(scatterdata)
+        .transition(tran)
+				.attr("cx", d => scaleX(d.x))
+				.attr("cy", d => scaleY(d.y))
+    },
 		paintArc([dateStart,dateEnd]){
 			this.GaleArray=[dateStart,dateEnd];
 			const vm=this;

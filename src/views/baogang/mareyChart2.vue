@@ -161,6 +161,8 @@ export default {
           this._inner_arc_r2 = this._inner_arc_r1 + this._inner_arc_width;
           this._outer_arc_r1 = this._inner_arc_r2 + this._inner_outer_gap;
           this._outer_arc_r2 = this._outer_arc_r1 + this._outer_arc_width;
+          this._inner_err_w = 1.5;
+          this._outer_err_w = 1;
 
           this._QScale = undefined;
           this._T2Scale = undefined;
@@ -212,6 +214,18 @@ export default {
           });
 
           // if (this._is_merge)
+          const computeExtend = d => [0, d3.quantile(d, 0.95)];
+          const computeSubStageAngle = angle => {
+            let fu_angle = angle.slice(0, 5);
+            fu_angle.forEach((d, j) => d['sub_j'] = j);
+            let m_angle = angle.slice(6, 13);
+            m_angle.forEach((d, j) => d['sub_j'] = j);
+            let c_angle = angle.slice(14, 16);
+            c_angle.forEach((d, j) => d['sub_j'] = j);
+            
+            return [...fu_angle, ...m_angle, ...c_angle];
+          }
+          
           if (true)
           {
             // this._mergeresult = this._mergeTimesData(this._timesdata, this._stationsdata);
@@ -267,10 +281,10 @@ export default {
             m_arr = m_arr.filter(d => d!==0)
             c_arr = c_arr.filter(d => d!==0)
             t_arr = d3.pairs(t_arr, (a, b) => b - a)
-            let fu_extent = [0, d3.quantile(fu_arr, 0.75)];
-            let m_extent = [0, d3.quantile(m_arr, 0.75)];
-            let c_extent = [0, d3.quantile(c_arr, 0.75)];
-            let t_extent = [0, d3.quantile(t_arr, 0.75)];
+            let fu_extent = computeExtend(fu_arr);
+            let m_extent = computeExtend(m_arr);
+            let c_extent = computeExtend(c_arr);
+            let t_extent = computeExtend(t_arr);
 
             let sub_extent = [];
             let sub_extent_for_stations = [];
@@ -278,7 +292,7 @@ export default {
               let a = [];
               sub_arr.forEach(d => a.push(d[i]));
               let res = a.filter(e => e !== 0)
-              sub_extent.push([0, d3.quantile(res, 0.75)]);
+              sub_extent.push(computeExtend(res));
               sub_extent_for_stations.push(d3.mean(res));
             }
             sub_extent_for_stations = [
@@ -376,27 +390,30 @@ export default {
                 let m_mean  = d3.mean(m_arr),  m_std = d3.deviation(m_arr);
                 let c_mean  = d3.mean(c_arr),  c_std = d3.deviation(c_arr);
                 let t_mean  = d3.mean(t_arr),  t_std = d3.deviation(t_arr);
-                let sub_mean = [], stage_sub_avg_angle = [];
+                let sub_mean = [], stage_sub_avg_angle = [], stage_sub_std_angle = [];
                 for (let i = 0; i < 16; i++) {
                   let a = [];
                   sub_arr.forEach(d => a.push(d[i]));
 
                   let m_a = d3.mean(a);
+                  let std_a = d3.deviation(a);
                   sub_mean.push(m_a);
                   stage_sub_avg_angle.push({
                     stage_i: (i>=0&&i<=5) ? 0 : (i>=6&&i<=13) ? 1 : (i>=14&&i<=16) ? 2 : undefined,
                     data: m_a/sub_extent[i][1]
                   });
+                  stage_sub_std_angle.push({
+                    stage_i: (i>=0&&i<=5) ? 0 : (i>=6&&i<=13) ? 1 : (i>=14&&i<=16) ? 2 : undefined,
+                    data: std_a/sub_extent[i][1]
+                  });
                 }
                 let pr_angle = t_mean/t_extent[1]
+                let pr_std_angle = t_std/t_extent[1]
                 let stage_avg_angle = [fu_mean/fu_extent[1], m_mean/m_extent[1], c_mean/c_extent[1]]
-                let fu_stage_sub_avg_angle = stage_sub_avg_angle.slice(0, 5);
-                fu_stage_sub_avg_angle.forEach((d, j) => d['sub_j'] = j);
-                let m_stage_sub_avg_angle = stage_sub_avg_angle.slice(6, 13);
-                m_stage_sub_avg_angle.forEach((d, j) => d['sub_j'] = j);
-                let c_stage_sub_avg_angle = stage_sub_avg_angle.slice(14, 16);
-                c_stage_sub_avg_angle.forEach((d, j) => d['sub_j'] = j);
-                stage_sub_avg_angle = [...fu_stage_sub_avg_angle, ...m_stage_sub_avg_angle, ...c_stage_sub_avg_angle];
+                let stage_std_angle = [fu_std/fu_extent[1], m_std/m_extent[1], c_std/c_extent[1]]
+
+                stage_sub_avg_angle = computeSubStageAngle(stage_sub_avg_angle);
+                stage_sub_std_angle = computeSubStageAngle(stage_sub_std_angle);
 
                 let link_info_list = [];
                 for (let i = 0; i < mergeItem.length; i++) {
@@ -420,13 +437,14 @@ export default {
                   }
                 }
                 
+                // 角度数组含义：[平均值, 标准差]
                 one_batch_info.push({
                   info_index: key,
                   pathColor: pathColor,
                   steelspec: category_name,
-                  pr_angle: pr_angle,
-                  stage_avg_angle: stage_avg_angle,
-                  stage_sub_avg_angle: stage_sub_avg_angle,
+                  pr_angle: [pr_angle, pr_std_angle],
+                  stage_angle: stage_avg_angle.map((d, i) => [d, stage_std_angle[i]]),
+                  stage_sub_angle: stage_sub_avg_angle.map((d, i) => [d, stage_sub_std_angle[i]]),
                   link_rect: link_info_list
                 })
               }
@@ -1716,16 +1734,13 @@ export default {
           });
           
           let max_stations = d3.max(stopsTime_good.map(d => d.length));
-          let timebins_good = [];
-          let timebins_bad = [];
-          for (let i = 0; i < max_stations; i++) {
-            timebins_good.push(d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i])));
-            timebins_bad.push(d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i])));
-          }
+          let timebins_good = [];
+          let timebins_bad = [];
+          for (let i = 0; i < max_stations; i++) {
+            timebins_good.push(d3.bin().thresholds(20)(d3.map(stopsTime_good, (e,f) => e[i])));
+            timebins_bad.push(d3.bin().thresholds(20)(d3.map(stopsTime_bad, (e,f) => e[i])));
+          }
 
-
-
-          
           let binxScale = timebins_good.map((d, i) => 
             d3.scaleLinear()
               .domain([
@@ -2357,20 +2372,6 @@ export default {
               that._emitToScatter(selected_plates, 1);
             }
           }
-
-          function mouseOverPath(i, d) {
-            
-            
-          }
-          function mergeGopacity(d) {	//brush变更后 copy mergeG state
-            if(Object.keys(that._mergeClickValue).length !== 0) {
-              that._marey_g.selectAll('.mergeG').attr('opacity', 0.4)
-              for(let j in that._mergeClickValue) {
-                mouseMerge(that._mergeClickValue[j])
-                mouseOverPath(that._mergeClickValue[j], d)
-              }
-            }
-          }
         }
         _renderInfoDetailCircle(chartGroup) {
           let that = this;
@@ -2391,6 +2392,7 @@ export default {
 
           this._uniform_FillContent(chartGroup);  // 画填充
           this._uniform_StageStroke(chartGroup);   // 画格
+          this._uniform_ErrorLine(chartGroup);    // 画误差线
           this._StageText(chartGroup);
 
           // 角度计算 -> 图元模态：均匀分布
@@ -2466,19 +2468,19 @@ export default {
               .innerRadius(this._inner_arc_r1)
               .outerRadius(this._inner_arc_r2)
               .startAngle(this._arc_start)
-              .endAngle(this._arc_start + pr_angle * (d.pr_angle>=1?1:d.pr_angle))())
+              .endAngle(this._arc_start + pr_angle * (d.pr_angle[0]>=1?1:d.pr_angle[0]))())
             .attr('class', 'inner_pr_fill')
-            .attr('fill', d => d.pr_angle>=1?`url(#hatching_pattern_${0})`:circlecolor[0]);
+            .attr('fill', d => d.pr_angle[0]>=1?`url(#hatching_pattern_${0})`:circlecolor[0]);
             
           // 填充内环
           FillArcGroup.selectAll('.innerFill')
-            .data(datum => datum.stage_avg_angle)
+            .data(datum => datum.stage_angle)
             .enter()
             .append('path')
             .attr('d', (d, i) => {
               let start_angle = all_stage_angle[i].stage_start;
               let end_angle = all_stage_angle[i].stage_end;
-              let arc_angle = start_angle + (end_angle-start_angle) * (d>=1?1:d);
+              let arc_angle = start_angle + (end_angle-start_angle) * (d[0]>=1?1:d[0]);
               return d3.arc()
                 .innerRadius(this._inner_arc_r1)
                 .outerRadius(this._inner_arc_r2)
@@ -2486,17 +2488,17 @@ export default {
                 .endAngle(arc_angle)()
             })
             .attr('class', 'inner_stage_fill')
-            .attr('fill', (d, i) => d>=1?`url(#hatching_pattern_${i+1})`:circlecolor[i+1]);
+            .attr('fill', (d, i) => d[0]>=1?`url(#hatching_pattern_${i+1})`:circlecolor[i+1]);
             
           // 填充外环
           let outerFill = FillArcGroup.selectAll('.outerFill')
-            .data(datum => datum.stage_sub_avg_angle)
+            .data(datum => datum.stage_sub_angle)
             .enter()
             .append('path')
             .attr('d', d => {
-              let start_angle = all_stage_angle[d.stage_i].stage_sub[d.sub_j][0];
-              let end_angle = all_stage_angle[d.stage_i].stage_sub[d.sub_j][1];
-              let arc_angle = start_angle + (end_angle - start_angle) * (d.data>=1?1:d.data);
+              let start_angle = all_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][0];
+              let end_angle = all_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][1];
+              let arc_angle = start_angle + (end_angle - start_angle) * (d[0].data>=1?1:d[0].data);
               return d3.arc()
                 .innerRadius(this._outer_arc_r1)
                 .outerRadius(this._outer_arc_r2)
@@ -2504,8 +2506,7 @@ export default {
                 .endAngle(arc_angle)()
             })
             .attr('class', 'inner_sub_fill')
-            .attr('fill', d => d.data>=1?`url(#hatching_sub_pattern_${d.stage_i+1})`:circlecolor[d.stage_i + 1]);
-
+            .attr('fill', d => d[0].data>=1?`url(#hatching_sub_pattern_${d[0].stage_i+1})`:circlecolor[d[0].stage_i + 1]);
         }
         _uniform_StageStroke(chartGroup) {
           let all_stage_angle = this._uniformity_angle;
@@ -2556,6 +2557,77 @@ export default {
               .endAngle(d[1])())
             .attr('class', 'outer_sub_stroke')
             .call(path_attr);
+        }
+        _uniform_ErrorLine(chartGroup) {
+          let circlecolor = this._deepCopy(vm.processColor);
+          circlecolor.unshift('#cccccc');  // 时间颜色
+          let all_stage_angle = this._uniformity_angle;
+          let pr_angle = this._uniformity_pr_angle;
+          let error_end_len = (this._inner_arc_r2 - this._inner_arc_r1) / 4;
+
+          let ErrorLineGroup = chartGroup.append('g')
+            .attr('class', 'ErrorLineGroup')
+            .attr('transform', `translate(${[this._circleR, this._circleR]})`);
+            
+          // // 节奏
+          // FillArcGroup.append('path')
+          //   .attr('d', d => d3.arc()
+          //     .innerRadius(this._inner_arc_r1)
+          //     .outerRadius(this._inner_arc_r2)
+          //     .startAngle(this._arc_start)
+          //     .endAngle(this._arc_start + pr_angle * (d.pr_angle[0]>=1?1:d.pr_angle[0]))())
+          //   .attr('class', 'inner_pr_fill')
+          //   .attr('fill', d => d.pr_angle[0]>=1?`url(#hatching_pattern_${0})`:circlecolor[0]);
+            
+          // 内环误差线
+          let innerErrorLine = ErrorLineGroup.selectAll('.innerErrorLine')
+            .data(datum => datum.stage_angle)
+            .enter()
+            .append('g')
+            .attr('class', 'innerErrorLine')
+
+          innerErrorLine
+            .append('path')
+            .attr('class', 'inner_stage_error_line')
+            .attr('fill', (d, i) => d3.color(circlecolor[i+1]).darker(0.3))
+            .attr('d', (d, i) => {
+              let line_r = (this._inner_arc_r2 + this._inner_arc_r1) / 2 - this._inner_err_w/2;
+              let start_angle = all_stage_angle[i].stage_start + (all_stage_angle[i].stage_end - all_stage_angle[i].stage_start) * (d[0]>=1?1:d[0]);
+              let arc_angle = (all_stage_angle[i].stage_end - all_stage_angle[i].stage_start) * d[1];
+              return d3.arc()
+                .innerRadius(line_r - this._inner_err_w/2)
+                .outerRadius(line_r + this._inner_err_w/2)
+                .startAngle(start_angle - arc_angle/2)
+                .endAngle(start_angle + arc_angle/2)()
+            });
+          innerErrorLine
+            .append('path')
+            .attr('class', 'inner_stage_error_line_end1')
+            .attr('fill', (d, i) => d3.color(circlecolor[i+1]).darker(0.3))
+            .attr('d', (d, i) => {
+              let line_r = (this._inner_arc_r2 + this._inner_arc_r1) / 2 - this._inner_err_w/2;
+              let start_angle = all_stage_angle[i].stage_start + (all_stage_angle[i].stage_end - all_stage_angle[i].stage_start) * (d[0]>=1?1:d[0]);
+              let arc_angle = (all_stage_angle[i].stage_end - all_stage_angle[i].stage_start) * d[1];
+              return d3.arc()
+                .innerRadius(line_r - error_end_len)
+                .outerRadius(line_r + error_end_len)
+                .startAngle(start_angle + arc_angle/2)
+                .endAngle(start_angle + arc_angle/2 + 0.025)()
+            });
+          innerErrorLine
+            .append('path')
+            .attr('class', 'inner_stage_error_line_end2')
+            .attr('fill', (d, i) => d3.color(circlecolor[i+1]).darker(0.3))
+            .attr('d', (d, i) => {
+              let line_r = (this._inner_arc_r2 + this._inner_arc_r1) / 2 - this._inner_err_w/2;
+              let start_angle = all_stage_angle[i].stage_start + (all_stage_angle[i].stage_end - all_stage_angle[i].stage_start) * (d[0]>=1?1:d[0]);
+              let arc_angle = (all_stage_angle[i].stage_end - all_stage_angle[i].stage_start) * d[1];
+              return d3.arc()
+                .innerRadius(line_r - error_end_len)
+                .outerRadius(line_r + error_end_len)
+                .startAngle(start_angle - arc_angle/2)
+                .endAngle(start_angle - arc_angle/2 - 0.025)()
+            });
         }
         _StageText(chartGroup) {
           let circlecolor = this._deepCopy(vm.processColor);
@@ -2700,8 +2772,8 @@ export default {
               .transition(tran)
               .attrTween('d', (d,i) => {
                 let interpolate = d3.interpolate(
-                  that._arc_start + old_pr_angle * (d.pr_angle>=1?1:d.pr_angle),
-                  that._arc_start + new_pr_angle * (d.pr_angle>=1?1:d.pr_angle)
+                  that._arc_start + old_pr_angle * (d.pr_angle[0]>=1?1:d.pr_angle[0]),
+                  that._arc_start + new_pr_angle * (d.pr_angle[0]>=1?1:d.pr_angle[0])
                 );
                 return function(t) {
                   return d3.arc()
@@ -2714,8 +2786,8 @@ export default {
             FillArcGroup.selectAll('.inner_stage_fill')
               .transition(tran)
               .attrTween('d', (d, i) => {
-                let old_angle_span = (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * (d>=1?1:d);
-                let new_angle_span = (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * (d>=1?1:d);
+                let old_angle_span = (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * (d[0]>=1?1:d[0]);
+                let new_angle_span = (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * (d[0]>=1?1:d[0]);
 
                 let start_interpolate = d3.interpolate(old_stage_angle[i].stage_start, new_stage_angle[i].stage_start);
                 let end_interpolate = d3.interpolate(
@@ -2733,13 +2805,13 @@ export default {
             FillArcGroup.selectAll('.inner_sub_fill')
               .transition(tran)
               .attrTween('d', (d, i) => {
-                let old_angle_span = (old_stage_angle[d.stage_i].stage_sub[d.sub_j][1] - old_stage_angle[d.stage_i].stage_sub[d.sub_j][0]) * (d.data>=1?1:d.data);
-                let new_angle_span = (new_stage_angle[d.stage_i].stage_sub[d.sub_j][1] - new_stage_angle[d.stage_i].stage_sub[d.sub_j][0]) * (d.data>=1?1:d.data);
+                let old_angle_span = (old_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][1] - old_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][0]) * (d[0].data>=1?1:d[0].data);
+                let new_angle_span = (new_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][1] - new_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][0]) * (d[0].data>=1?1:d[0].data);
 
-                let start_interpolate = d3.interpolate(old_stage_angle[d.stage_i].stage_sub[d.sub_j][0], new_stage_angle[d.stage_i].stage_sub[d.sub_j][0]);
+                let start_interpolate = d3.interpolate(old_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][0], new_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][0]);
                 let end_interpolate = d3.interpolate(
-                  old_stage_angle[d.stage_i].stage_sub[d.sub_j][0] + old_angle_span,
-                  new_stage_angle[d.stage_i].stage_sub[d.sub_j][0] + new_angle_span,
+                  old_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][0] + old_angle_span,
+                  new_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][0] + new_angle_span,
                 );
                 return function(t) {
                   return d3.arc()

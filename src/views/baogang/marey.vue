@@ -125,7 +125,7 @@
 					</el-card>
 				</el-row>
 				<!-- <transition name="diagnosis"> -->
-				<el-row class="diagnosis_view" style="height:0px;">
+				<el-row class="diagnosis_view" id="diagnosis_view_id" style="height:0px;">
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
 							<el-col :span="14"><span>Diagnosis View</span></el-col>
@@ -692,34 +692,36 @@ export default {
 			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
 		},
     animeTransition(){
-                if(this.diagnosisVisible){
-                anime({
-                        targets: ['.diagnosis_view'],
-                        // translateY: '-300px',
-                        height:'540px',
-                        easing: 'easeInOutQuad',
-                        // direction: 'alternate',
-                        // loop: true
-                });
-            }else{
-                anime({
-                        targets: ['.diagnosis_view'],
-                        // translateY: '-300px',
-                        height:'0px',
-                easing: 'easeInOutQuad',
-                // direction: 'alternate',
-                // loop: true
-                });
-            }
-        },
+      // console.log('in animeTransition!!!!')
+      if (this.diagnosisVisible) {
+        // document.getElementById('diagnosis_view_id').style.height = '540px';
+        anime({
+          targets: ['.diagnosis_view'],
+          // translateY: '-300px',
+          height:'540px',
+          easing: 'easeInOutQuad',
+          // direction: 'alternate',
+          // loop: true
+        });
+      } else {
+        // document.getElementById('diagnosis_view_id').style.height = '0px';
+        anime({
+          targets: ['.diagnosis_view'],
+          // translateY: '-300px',
+          height:'0px',
+          easing: 'easeInOutQuad',
+          // direction: 'alternate',
+          // loop: true
+        });
+      }
+    },
+
 		async trainClick(value) {
 			this.diagnosisVisible = true;
 			this.upidSelect = []
       this.chooseList = value.batch;
       this.batchDateStart = value.date_s;
       this.batchDateEnd = value.date_e;
-      
-      
 
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
@@ -755,8 +757,8 @@ export default {
 			for(let item of this.upidSelect){
 				this.usDiagnosis[item] = this.alldiagnosisData[alldiagnosisUpid.indexOf(item)];
       }
-      
-      
+
+      // console.log( 'before paint: ', document.getElementById('diagnosis_view_id').style.height );
 
       this.corrdata = [];
       for(let item of this.upidSelect){
@@ -765,10 +767,15 @@ export default {
 				}catch(e){
 					console.log(e)
 				}
-			}
+      }
+      
+      // console.log( 'after paint scatterlist: ', document.getElementById('diagnosis_view_id').style.height );
+
       await this.paintUnderCharts(this.upidSelect[0]);
       
-      this.animeTransition();
+      this.animeTransition();
+      
+    //   console.log( 'after paint: ', document.getElementById('diagnosis_view_id').style.height );
       
 		},
 		async paintScatterList(upid){
@@ -862,8 +869,8 @@ export default {
 			// this.platetype(upid);
     },
     clickDiagnosisButton() {
-      this.diagnosisVisible = ! this.diagnosisVisible
-       this.animeTransition()
+      this.diagnosisVisible = ! this.diagnosisVisible;
+      this.animeTransition();
     },
 
 		async paintDetailPro(processNumber) {

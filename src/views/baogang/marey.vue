@@ -120,13 +120,13 @@
 							</el-col>
 						</div>
 						<div class="my-card-body">
-							<marey-chart style="text-align: center; height: 1028px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse"></marey-chart>
+							<marey-chart style="text-align: center; height: 1028px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse" @clickDiagnosisButton="clickDiagnosisButton"></marey-chart>
 						</div>
 					</el-card>
 				</el-row>
 				<!-- <transition name="diagnosis"> -->
-				<el-row class="diagnosis_view" id="diagnosis_view_id" style="height:0px;">
-					<el-card class="myel-card">
+				<el-row>
+					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height:0px;">
 						<div class="my-card-title" slot="header">
 							<el-col :span="14"><span>Diagnosis View</span></el-col>
 							<el-col :span="1" style="font-size: 12px;margin:2px 0px">CurveSize</el-col>
@@ -722,6 +722,7 @@ export default {
       this.chooseList = value.batch;
       this.batchDateStart = value.date_s;
       this.batchDateEnd = value.date_e;
+      this.animeTransition();
 
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
@@ -773,7 +774,6 @@ export default {
 
       await this.paintUnderCharts(this.upidSelect[0]);
       
-      this.animeTransition();
       
     //   console.log( 'after paint: ', document.getElementById('diagnosis_view_id').style.height );
       

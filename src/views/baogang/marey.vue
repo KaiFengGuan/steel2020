@@ -266,6 +266,8 @@ import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 // import myJsonData from "./sampledata/jsondata.json"
 // import myStationData from "./sampledata/stationdata.js"
 import * as steel from 'services/steel.js'
+import diagnosis_demo from './sampledata/diagonisisData.json'
+import diagnosis_value from './sampledata/diagnosis.json'
 import sampledata from "./sampledata/index.js"
 // console.log(sampledata)
 import { mapGetters, mapMutations} from 'vuex'
@@ -707,22 +709,23 @@ export default {
 			}
 			this.upidSelect = [...new Set(value.upidSelect)]//.filter(d => this.upidData.get(d) !== undefined)
 
-			this.alldiagnosisData = (await this.getDiagnosisData(
-				[this.batchDateStart[0], this.batchDateEnd[this.batchDateEnd.length - 1]],   // time_select
-				JSON.stringify([]),   // slabthickness
-				JSON.stringify([]),   // tgtdischargetemp
-				JSON.stringify([]),   // tgtplatethickness
-				JSON.stringify([]),   // tgtwidth
-				JSON.stringify([]),   // tgtplatelength2
-				JSON.stringify([]),   // tgttmplatetemp
-				JSON.stringify([]),   // cooling_start_temp
-				JSON.stringify([]),   // cooling_stop_temp
-				JSON.stringify([]),   // cooling_rate1
-				JSON.stringify([]),   // productcategory
-				JSON.stringify([]),   // steelspec
-				0,   // status_cooling
-				0,   // fqcflag
-				)).data;
+			this.alldiagnosisData = diagnosis_demo
+				// (await this.getDiagnosisData(
+				// [this.batchDateStart[0], this.batchDateEnd[this.batchDateEnd.length - 1]],   // time_select
+				// JSON.stringify([]),   // slabthickness
+				// JSON.stringify([]),   // tgtdischargetemp
+				// JSON.stringify([]),   // tgtplatethickness
+				// JSON.stringify([]),   // tgtwidth
+				// JSON.stringify([]),   // tgtplatelength2
+				// JSON.stringify([]),   // tgttmplatetemp
+				// JSON.stringify([]),   // cooling_start_temp
+				// JSON.stringify([]),   // cooling_stop_temp
+				// JSON.stringify([]),   // cooling_rate1
+				// JSON.stringify([]),   // productcategory
+				// JSON.stringify([]),   // steelspec
+				// 0,   // status_cooling
+				// 0,   // fqcflag
+				// )).data;
 			this.alldiagnosisData.forEach(d => {
 				d.toc = new Date(d.toc)
 			})
@@ -946,7 +949,8 @@ export default {
 	mounted() {
 		// console.log(this.startmonth.getMonth())
 		// this.platetype('18B09019000')
-		this.getplatetype()
+		this.trainClick(diagnosis_value)
+		// this.getplatetype()
 		this.changeTime()
 	},
 	watch: {

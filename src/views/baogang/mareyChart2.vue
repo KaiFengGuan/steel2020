@@ -2938,6 +2938,7 @@ export default {
           function __transErrLine(Group, new_pr_angle, old_pr_angle, new_stage_angle, old_stage_angle) {
             let tran = d3.transition().delay(50).duration(500);
             let ErrorLineGroup = Group.selectAll('.ErrorLineGroup');
+            let error_end_len = (that._inner_arc_r2 - that._inner_arc_r1) / 4;
 
             ErrorLineGroup.selectAll('.inner_stage_error_line')
               .transition(tran)
@@ -2948,7 +2949,6 @@ export default {
 
                 let old_start_angle = old_stage_angle[i].stage_start + (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * d[0];
                 let old_arc_angle = (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * d[1];
-              
                 let new_start_angle = new_stage_angle[i].stage_start + (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * d[0];
                 let new_arc_angle = (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * d[1];
 
@@ -2961,6 +2961,62 @@ export default {
                   .startAngle(start_interpolate(t))
                   .endAngle(end_interpolate(t))()
                 }
+              })
+            ErrorLineGroup.selectAll('.inner_stage_error_line_end1')
+              .transition(tran)
+              .attrTween('d', (d,i) => {
+                if (d[0] >= 1) return ''
+
+                let line_r = (that._inner_arc_r2 + that._inner_arc_r1) / 2 - that._inner_err_w/2;
+                
+                let old_start_angle = old_stage_angle[i].stage_start + (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * d[0];
+                let old_arc_angle = (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * d[1];
+                let new_start_angle = new_stage_angle[i].stage_start + (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * d[0];
+                let new_arc_angle = (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * d[1];
+
+                let start_interpolate = d3.interpolate(old_start_angle+old_arc_angle/2, new_start_angle+new_arc_angle/2);
+                let end_interpolate = d3.interpolate(old_start_angle+old_arc_angle/2 + 0.025, new_start_angle+new_arc_angle/2 + 0.025);
+                return function(t) {
+                  return d3.arc()
+                  .innerRadius(line_r - error_end_len)
+                  .outerRadius(line_r + error_end_len)
+                  .startAngle(start_interpolate(t))
+                  .endAngle(end_interpolate(t))()
+                }
+              })
+            ErrorLineGroup.selectAll('.inner_stage_error_line_end2')
+              .transition(tran)
+              .attrTween('d', (d,i) => {
+                if (d[0] >= 1) return ''
+
+                let line_r = (that._inner_arc_r2 + that._inner_arc_r1) / 2 - that._inner_err_w/2;
+                
+                let old_start_angle = old_stage_angle[i].stage_start + (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * d[0];
+                let old_arc_angle = (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * d[1];
+                let new_start_angle = new_stage_angle[i].stage_start + (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * d[0];
+                let new_arc_angle = (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * d[1];
+
+                let start_interpolate = d3.interpolate(old_start_angle-old_arc_angle/2, new_start_angle-new_arc_angle/2);
+                let end_interpolate = d3.interpolate(old_start_angle-old_arc_angle/2 - 0.025, new_start_angle-new_arc_angle/2 - 0.025);
+                return function(t) {
+                  return d3.arc()
+                  .innerRadius(line_r - error_end_len)
+                  .outerRadius(line_r + error_end_len)
+                  .startAngle(start_interpolate(t))
+                  .endAngle(end_interpolate(t))()
+                }
+              })
+          }
+          function __transQuantileLine(Group, new_pr_angle, old_pr_angle, new_stage_angle, old_stage_angle) {
+            let tran = d3.transition().delay(50).duration(500);
+            let QuantileLineGroup = Group.selectAll('.QuantileLineGroup');
+
+            ErrorLineGroup.selectAll('.quantile_line')
+              .transition(tran)
+              .attrTween('d', (d,i) => {
+                if (!d[0] || d[0] >= 1 || d[3] >= 1) return ''
+
+                
               })
           }
         }

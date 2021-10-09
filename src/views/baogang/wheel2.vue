@@ -869,9 +869,9 @@ export default {
                             rectArray = new Array(maxLength).fill(minRect).map((d, i) => Math.ceil(maxLength/2) == i + 1 ? RectWidth - (maxLength - 1) * minRect : d);   
                             rectPosition = d3.cumsum(rectArray)
                             d3.selectAll('.dragG')
-                                .transition(d3.transition()
-                                    .duration(200)
-                                    .ease(d3.easeLinear))
+                                // .transition(d3.transition()
+                                //     .duration(200)
+                                //     .ease(d3.easeLinear))
                                 .attr('transform', d => `translate(${[rectPosition[d], 0]})`)
                             updateArea();
                             renderAxisG(timeScale);

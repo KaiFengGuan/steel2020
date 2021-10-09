@@ -14,45 +14,20 @@ module.exports = {
         proxy: {
             '/baogangapi': {
                 target: 'http://219.216.81.96:5000',
-                // target: 'http://219.216.80.46:5555',
-                // target: 'http://202.118.21.236:7205',
                 changeOrigin: true,
                 pathRewrite: {
                     '^/baogangapi': '/api'
                 }
             },
             '/newbaogangapi': {
-              target: 'http://219.216.80.146:5502',
+              target: 'http://219.216.80.146:5502',  // 613服务器后台
               // target: 'http://202.118.21.236:7205',
+              // target: 'http://localhost:5502',     // 宝钢出差 后台
               changeOrigin: true,
               pathRewrite: {
-                  '^/newbaogangapi': '/api'
+                '^/newbaogangapi': '/api'
               }
-          },
-
-            'myf': {
-                // target: 'http://219.216.80.62:8088',
-                target: 'http://219.216.80.18:8088',
-                // target: 'http://202.118.21.236:7106',
-                // target: 'http://localhost:8080',
-                changeOrigin: true,
-                pathRewrite: {
-                    // '^/myf': 'web-ssm/myf'
-                    '^/myf': '/myf'
-                }
-            }
-            // '/api': {
-            //     target: 'http://node-serve:8002',
-            //     changeOrigin: true
-            // },
-            // '/baogangapi': {
-            //     // target: 'http://219.216.81.86:5000',
-            //     target: 'http://python-serve:5000',
-            //     changeOrigin: true,
-            //     pathRewrite: {
-            //         '^/baogangapi': 'api'
-            //     }
-            // }
+          }
         }
     },
     chainWebpack: config => {

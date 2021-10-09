@@ -8,7 +8,6 @@ import * as d3 from 'd3'
 import util from 'src/views/baogang/util.js';
 // import util from '../../views/baogang/util.js'
 import { mapGetters, mapMutations} from 'vuex'
-import { forEach, map } from '../../views/baogang/sampledata/stationdata';
 // import success from "../../assets/images/sucess.svg";
 import success from "assets/images/success.svg";
 

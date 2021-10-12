@@ -34,7 +34,7 @@ export default {
   },
   methods: {
     ...mapMutations(['hightLight']),
-    paintPre(timesdata, stationsdata, changecolor, brushdata, isMerge) {
+    paintPre(timesdata, stationsdata, brushdata, changecolor, isMerge) {
       const vm = this;
       
       vm.timesdata = timesdata;
@@ -313,7 +313,6 @@ export default {
             return arr
           });
 
-          // if (this._is_merge)
           const computeSubStageAngle = angle => {
             let fu_angle = angle.slice(0, 5);
             fu_angle.forEach((d, j) => d['sub_j'] = j);
@@ -331,213 +330,222 @@ export default {
             return [d_25, d_val, d_75];
           }
           
-          if (true)
-          {
-            this._mergeresult = this._mergeTimesData_1(this._timesdata, this._stationsdata);
+          this._mergeresult = this._mergeTimesData_1(this._timesdata, this._stationsdata);
 
-            let merge_upid = this._mergeresult.map(item => item.merge_result.merge.flat()).flat().map(d => d.upid)
-            for (let i = 0; i < this._timesdata.length; i++) {
-              let item = this._timesdata[i];
-              if (merge_upid.indexOf(item.upid) === -1) {
-                this._filterdata.push(item)
-              }
+
+          // 过滤合并的钢板
+          let merge_upid = this._mergeresult.map(item => item.merge_result.merge.flat()).flat().map(d => d.upid)
+          this._timesdata.forEach(d => {
+            merge_upid.indexOf(d.upid) === -1 ? this._filterdata.push(d) : undefined;
+          })
+
+          // 左边圆形 母工序子工序 标尺范围计算
+          let merge_plates = [];
+          this._mergeresult.forEach(d => {
+            let merge = d.merge_result.merge
+            let cannot_merge = d.cannot_merge
+            merge.forEach(e => merge_plates.push(...e))
+            if (cannot_merge !== undefined) {
+              cannot_merge.forEach(e => merge_plates.push(e))
             }
-
-
-            // 左边圆形 母工序子工序 标尺范围计算
-            let merge_plates = [];
-            this._mergeresult.forEach(d => {
-              let merge = d.merge_result.merge
-              let cannot_merge = d.cannot_merge
-              merge.forEach(e => merge_plates.push(...e))
-              if (cannot_merge !== undefined) {
-                cannot_merge.forEach(e => merge_plates.push(e))
-              }
-            })
-            let [t_extent, fu_extent, m_extent, c_extent,
-              sub_extent] = this.__getAllDataExtend(merge_plates, 0.99, true, true);
-            
-            let cate_extend = {};
-            let category_data = d3.groups(merge_plates, d => d.steelspec)
-            for (let key = 0; key < category_data.length; key++) {
-              let one_cate_name = category_data[key][0];
-              let one_cate_data = category_data[key][1];
-
-              let [t, fu, m, c] = this.__getAllDataExtend(one_cate_data, 0.99, false, false);
-              cate_extend[one_cate_name] = {t: t, fu: fu, m: m, c: c}
-            }
-            console.log(cate_extend);
-
-
-            // 合并相关图元 绘图数据
-            let batch_index_count = 0;
-            for (let item in this._mergeresult) {
-              let mergeItem = this._mergeresult[item].merge_result.merge;
-              let mergeSelect = this._mergeresult[item].merge_result.select;
-              let cannotMerge = this._mergeresult[item].cannot_merge;
-              // let Outliters = this._mergeresult[item]['outliers'];
-
-              if (mergeItem.length === 0) {
-                continue;
-              }
-
-              // 每个批次 子母工序 统计（用于左边圆圈） 新的写法：合并块的种类对应一个圆圈
-              let one_batch_info = []
-              let one_batch_category = d3.groups(mergeItem, d => d[0].steelspec)
-              for (let key = 0; key < one_batch_category.length; key++) {
-                let category_name = one_batch_category[key][0];
-                let category_data = one_batch_category[key][1];
-                let mergeItem_flat = category_data.flat();
-                let pathColor = this.__getPathColor(mergeItem_flat);
-                let labelStatistics = this.__getLabelStatistics(mergeItem_flat);  // good, bad, no_flag
-
-                let fu_arr = [], m_arr = [], c_arr = [], t_arr = [];
-                let sub_arr = [];
-
-                for (let i in mergeItem_flat) {
-                  let item_data = mergeItem_flat[i];
-                  let item_data_stops = item_data.stops;
-                  let single_arr = [];
-
-                  fu_arr.push(item_data.fuTotalTimeAfter * 1000);
-                  m_arr.push(item_data.mtotalTime * 1000);
-                  c_arr.push(item_data.ccTotalTime * 1000);
-                  t_arr.push(new Date(item_data_stops[5].time)) // 节奏指标：出炉时间
-
-                  for (let j in this._stationsdata.slice(0, -1)) {
-                    let stations_item = this._stationsdata[j];
-                    let time_spend = 0;
-                    for (let k in item_data_stops.slice(0, -1)) {
-                      if (stations_item.key === item_data_stops[k].station.key) {
-                        time_spend = (new Date(item_data_stops[(+k)+1].time)).getTime() - (new Date(item_data_stops[k].time))
-                      }
-                    }
-                    single_arr.push(time_spend)
-                  }
-                  sub_arr.push(single_arr)
-                }
-                t_arr = d3.pairs(t_arr, (a, b) => b - a);
-                let fu_mean = d3.mean(fu_arr), fu_std = d3.deviation(fu_arr);
-                let m_mean  = d3.mean(m_arr),  m_std = d3.deviation(m_arr);
-                let c_mean  = d3.mean(c_arr),  c_std = d3.deviation(c_arr);
-                let t_mean  = d3.mean(t_arr),  t_std = d3.deviation(t_arr);
-                let fu_quantile = getQuantile(fu_arr).map(d => d/cate_extend[category_name].fu[1]);
-                let m_quantile = getQuantile(m_arr).map(d => d/cate_extend[category_name].m[1]);
-                let c_quantile = getQuantile(c_arr).map(d => d/cate_extend[category_name].c[1]);
-                let t_quantile = getQuantile(t_arr).map(d => d/cate_extend[category_name].t[1]);
-
-                let sub_mean = [], stage_sub_avg_angle = [], stage_sub_std_angle = [];
-                for (let i = 0; i < 16; i++) {
-                  let a = [];
-                  sub_arr.forEach(d => a.push(d[i]));
-
-                  let m_a = d3.mean(a);
-                  let std_a = d3.deviation(a);
-                  sub_mean.push(m_a);
-                  stage_sub_avg_angle.push({
-                    stage_i: (i>=0&&i<=5) ? 0 : (i>=6&&i<=13) ? 1 : (i>=14&&i<=16) ? 2 : undefined,
-                    data: m_a/sub_extent[i][1]
-                  });
-                  stage_sub_std_angle.push({
-                    stage_i: (i>=0&&i<=5) ? 0 : (i>=6&&i<=13) ? 1 : (i>=14&&i<=16) ? 2 : undefined,
-                    data: std_a/sub_extent[i][1]
-                  });
-                }
-                let pr_angle = t_mean/t_extent[1]
-                let pr_std_angle = t_std/t_extent[1]
-                let stage_avg_angle = [fu_mean/fu_extent[1], m_mean/m_extent[1], c_mean/c_extent[1]]
-                let stage_std_angle = [fu_std/fu_extent[1], m_std/m_extent[1], c_std/c_extent[1]]
-
-                stage_sub_avg_angle = computeSubStageAngle(stage_sub_avg_angle);
-                stage_sub_std_angle = computeSubStageAngle(stage_sub_std_angle);
-
-                let link_info_list = [];
-                for (let i = 0; i < mergeItem.length; i++) {
-                  let one_merge_item = mergeItem[i];
-                  if (one_merge_item[0].steelspec == category_name) {
-                    let merge_color = this.__getPathColor(one_merge_item);
-                    link_info_list.push({
-                      name: category_name,
-                      info_index: key,
-                      batch_index: batch_index_count,
-                      merge_index: i,
-                      pathColor: merge_color === undefined ? 'red' : merge_color,
-                      batch_s: new Date(mergeItem[0][0].stops[0].time),
-                      date_entry_s: new Date(one_merge_item[0].stops[0].time),
-                      date_entry_e: new Date(one_merge_item[one_merge_item.length - 1].stops[0].time)
-                    })
-                  }
-                }
-                
-                // 角度数组含义：[平均值, 标准差]
-                one_batch_info.push({
-                  info_index: key,
-                  pathColor: pathColor,
-                  steelspec: category_name,
-                  pr_angle: [pr_angle, pr_std_angle],
-                  pr_quantile: t_quantile,
-                  stage_angle: stage_avg_angle.map((d, i) => [d, stage_std_angle[i]]),
-                  stage_quantile: [fu_quantile,  m_quantile, c_quantile],
-                  stage_sub_angle: stage_sub_avg_angle.map((d, i) => [d, stage_sub_std_angle[i]]),
-                  link_rect: link_info_list,
-                  label_statistics: [labelStatistics]
-                })
-              }
-
-              let merge_data = [];
-              for (let key = 0; key < mergeItem.length; key++) {
-                let one_merge_item = mergeItem[key];
-                let one_merge_select = mergeSelect[key];
-
-                let pathColor = this.__getPathColor(one_merge_item);
-
-                let quality = d3.sort(d3.groups(one_merge_item, d => d.flag), d=> d[1].length);
-                if(this._change_color && quality[1] !== undefined) {
-                  this._qualityData.push(...d3.map(quality[0][1], d=> d.upid));
-                }
-
-                merge_data.push({
-                  merge_index: key,
-                  mergeItem: one_merge_item,
-                  mergeSelect: one_merge_select,
-                  // Outliters: Outliters,
-                  pathColor: pathColor,
-                  steelspec: one_merge_item[0].steelspec,
-                  batch_s: new Date(mergeItem[0][0].stops[0].time),
-                  date_entry_s: new Date(one_merge_item[0].stops[0].time),
-                  date_exit_s: new Date(one_merge_item[0].stops.slice(-1)[0].time),
-                  date_entry_e: new Date(one_merge_item[one_merge_item.length - 1].stops[0].time),
-                  date_exit_e: new Date(one_merge_item[one_merge_item.length - 1].stops.slice(-1)[0].time)
-                })
-              }
-
-              let batchColor = this.__getPathColor(d3.merge(mergeItem));
-
-              // 与合并相关的数据
-              this._mergeresult_1.push({
-                batch_index: batch_index_count,
-                // 马雷图合并 绘图数据
-                merge_data: merge_data,
-                batch_s: merge_data[0].date_entry_s,
-                batch_e: merge_data[merge_data.length - 1].date_entry_e,
-                batchColor: batchColor,
-
-                // 批次信息 绘图数据
-                one_batch_info: one_batch_info
-              })
-              batch_index_count++;
-            }
-            console.log(this._mergeresult_1)
-
-            let heat_bad = Math.random() * 25;
-            let roll_bad = Math.random() * 30;
-            let cool_bad = Math.random() * 20;
-            this._statistics = [
-              {bad: heat_bad, good: 100-heat_bad},
-              {bad: roll_bad, good: 100-roll_bad},
-              {bad: cool_bad, good: 100-cool_bad}
-            ]
+          })
+          let [t_extent, fu_extent, m_extent, c_extent,
+            sub_extent] = this.__getAllDataExtend(merge_plates, 0.99, true, true);
+          
+          let cate_extend = {};
+          let category_data = d3.groups(merge_plates, d => d.steelspec)
+          for (let key = 0; key < category_data.length; key++) {
+            let one_cate_name = category_data[key][0];
+            let one_cate_data = category_data[key][1];
+          
+            let [t, fu, m, c] = this.__getAllDataExtend(one_cate_data, 0.99, false, false);
+            cate_extend[one_cate_name] = {t: t, fu: fu, m: m, c: c}
           }
+          console.log(cate_extend);
+
+
+          // 合并相关图元 绘图数据
+          let batch_index_count = 0;
+          for (let item in this._mergeresult) {
+            let mergeItem = this._mergeresult[item].merge_result.merge;
+            let mergeSelect = this._mergeresult[item].merge_result.select;
+            let cannotMerge = this._mergeresult[item].cannot_merge;
+            // let Outliters = this._mergeresult[item]['outliers'];
+
+            if (mergeItem.length === 0) {
+              continue;
+            }
+
+            // 每个批次 子母工序 统计（用于左边圆圈） 新的写法：合并块的种类对应一个圆圈
+            let one_batch_info = []
+            let one_batch_category = d3.groups(mergeItem, d => d[0].steelspec)
+            for (let key = 0; key < one_batch_category.length; key++) {
+              let category_name = one_batch_category[key][0];
+              let category_data = one_batch_category[key][1];
+              let mergeItem_flat = category_data.flat();
+              let pathColor = this.__getPathColor(mergeItem_flat);
+              let labelStatistics = this.__getLabelStatistics(mergeItem_flat);  // good, bad, no_flag
+
+              let fu_arr = [], m_arr = [], c_arr = [], t_arr = [];
+              let sub_arr = [];
+              let stage_for_pre_plate = [];
+
+              for (let i in mergeItem_flat) {
+                let item_data = mergeItem_flat[i];
+                let item_data_stops = item_data.stops;
+                let single_arr = [];
+
+                let fu_time = item_data.fuTotalTimeAfter * 1000;
+                let m_time = item_data.mtotalTime * 1000;
+                let c_time = item_data.ccTotalTime * 1000;
+                let pr_time = new Date(item_data_stops[5].time);
+                fu_arr.push(fu_time);
+                m_arr.push(m_time);
+                c_arr.push(c_time);
+                t_arr.push(pr_time); // 节奏指标：出炉时间
+                stage_for_pre_plate.push({
+                  upid: item_data.upid,
+                  stage_angle: [fu_time / fu_extent[1], m_time / m_extent[1], c_time / c_extent[1]],
+                  // pr_angle: pr_time / t_extent[1],  // 节奏是两块板之间的出炉时间间隔，单块板不存在节奏？
+                  toc: new Date(item_data.toc)
+                })
+
+                for (let j in this._stationsdata.slice(0, -1)) {
+                  let stations_item = this._stationsdata[j];
+                  let time_spend = 0;
+                  for (let k in item_data_stops.slice(0, -1)) {
+                    if (stations_item.key === item_data_stops[k].station.key) {
+                      time_spend = (new Date(item_data_stops[(+k)+1].time)).getTime() - (new Date(item_data_stops[k].time))
+                    }
+                  }
+                  single_arr.push(time_spend)
+                }
+                sub_arr.push(single_arr)
+              }
+              stage_for_pre_plate.sort((a, b) => a.toc - b.toc);
+              t_arr = d3.pairs(t_arr, (a, b) => b - a);
+              let fu_mean = d3.mean(fu_arr), fu_std = d3.deviation(fu_arr);
+              let m_mean  = d3.mean(m_arr),  m_std = d3.deviation(m_arr);
+              let c_mean  = d3.mean(c_arr),  c_std = d3.deviation(c_arr);
+              let t_mean  = d3.mean(t_arr),  t_std = d3.deviation(t_arr);
+              let fu_quantile = getQuantile(fu_arr).map(d => d/cate_extend[category_name].fu[1]);
+              let m_quantile = getQuantile(m_arr).map(d => d/cate_extend[category_name].m[1]);
+              let c_quantile = getQuantile(c_arr).map(d => d/cate_extend[category_name].c[1]);
+              let t_quantile = getQuantile(t_arr).map(d => d/cate_extend[category_name].t[1]);
+
+              let sub_mean = [], stage_sub_avg_angle = [], stage_sub_std_angle = [];
+              for (let i = 0; i < 16; i++) {
+                let a = [];
+                sub_arr.forEach(d => a.push(d[i]));
+
+                let m_a = d3.mean(a);
+                let std_a = d3.deviation(a);
+                sub_mean.push(m_a);
+                stage_sub_avg_angle.push({
+                  stage_i: (i>=0&&i<=5) ? 0 : (i>=6&&i<=13) ? 1 : (i>=14&&i<=16) ? 2 : undefined,
+                  data: m_a/sub_extent[i][1]
+                });
+                stage_sub_std_angle.push({
+                  stage_i: (i>=0&&i<=5) ? 0 : (i>=6&&i<=13) ? 1 : (i>=14&&i<=16) ? 2 : undefined,
+                  data: std_a/sub_extent[i][1]
+                });
+              }
+              let pr_angle = t_mean/t_extent[1]
+              let pr_std_angle = t_std/t_extent[1]
+              let stage_avg_angle = [fu_mean/fu_extent[1], m_mean/m_extent[1], c_mean/c_extent[1]]
+              let stage_std_angle = [fu_std/fu_extent[1], m_std/m_extent[1], c_std/c_extent[1]]
+
+              stage_sub_avg_angle = computeSubStageAngle(stage_sub_avg_angle);
+              stage_sub_std_angle = computeSubStageAngle(stage_sub_std_angle);
+
+              let link_info_list = [];
+              for (let i = 0; i < mergeItem.length; i++) {
+                let one_merge_item = mergeItem[i];
+                if (one_merge_item[0].steelspec == category_name) {
+                  let merge_color = this.__getPathColor(one_merge_item);
+                  link_info_list.push({
+                    name: category_name,
+                    info_index: key,
+                    batch_index: batch_index_count,
+                    merge_index: i,
+                    pathColor: merge_color === undefined ? 'red' : merge_color,
+                    batch_s: new Date(mergeItem[0][0].stops[0].time),
+                    date_entry_s: new Date(one_merge_item[0].stops[0].time),
+                    date_entry_e: new Date(one_merge_item[one_merge_item.length - 1].stops[0].time)
+                  })
+                }
+              }
+                
+              // 角度数组含义：[平均值, 标准差]
+              one_batch_info.push({
+                info_index: key,
+                pathColor: pathColor,
+                steelspec: category_name,
+                pr_angle: [pr_angle, pr_std_angle],
+                pr_quantile: t_quantile,
+                stage_angle: stage_avg_angle.map((d, i) => [d, stage_std_angle[i]]),
+                stage_quantile: [fu_quantile,  m_quantile, c_quantile],
+                stage_sub_angle: stage_sub_avg_angle.map((d, i) => [d, stage_sub_std_angle[i]]),
+                stage_for_pre_plate: stage_for_pre_plate,
+                link_rect: link_info_list,
+                label_statistics: [labelStatistics]
+              })
+            }
+
+            let merge_data = [];
+            for (let key = 0; key < mergeItem.length; key++) {
+              let one_merge_item = mergeItem[key];
+              let one_merge_select = mergeSelect[key];
+
+              let pathColor = this.__getPathColor(one_merge_item);
+
+              let quality = d3.sort(d3.groups(one_merge_item, d => d.flag), d=> d[1].length);
+              if(this._change_color && quality[1] !== undefined) {
+                this._qualityData.push(...d3.map(quality[0][1], d=> d.upid));
+              }
+
+              merge_data.push({
+                merge_index: key,
+                mergeItem: one_merge_item,
+                mergeSelect: one_merge_select,
+                // Outliters: Outliters,
+                pathColor: pathColor,
+                steelspec: one_merge_item[0].steelspec,
+                batch_s: new Date(mergeItem[0][0].stops[0].time),
+                date_entry_s: new Date(one_merge_item[0].stops[0].time),
+                date_exit_s: new Date(one_merge_item[0].stops.slice(-1)[0].time),
+                date_entry_e: new Date(one_merge_item[one_merge_item.length - 1].stops[0].time),
+                date_exit_e: new Date(one_merge_item[one_merge_item.length - 1].stops.slice(-1)[0].time)
+              })
+            }
+
+            let batchColor = this.__getPathColor(d3.merge(mergeItem));
+
+            // 与合并相关的数据
+            this._mergeresult_1.push({
+              batch_index: batch_index_count,
+              // 马雷图合并 绘图数据
+              merge_data: merge_data,
+              batch_s: merge_data[0].date_entry_s,
+              batch_e: merge_data[merge_data.length - 1].date_entry_e,
+              batchColor: batchColor,
+
+              // 批次信息 绘图数据
+              one_batch_info: one_batch_info
+            })
+            batch_index_count++;
+          }
+          console.log(this._mergeresult_1)
+
+          let heat_bad = Math.random() * 25;
+          let roll_bad = Math.random() * 30;
+          let cool_bad = Math.random() * 20;
+          this._statistics = [
+            {bad: heat_bad, good: 100-heat_bad},
+            {bad: roll_bad, good: 100-roll_bad},
+            {bad: cool_bad, good: 100-cool_bad}
+          ]
+
 
           return this;
         }
@@ -599,8 +607,8 @@ export default {
             .range([0 , m_w]);
           this._y = d3.scaleTime()
             .domain([this._mini_y.invert(this._brush_select[0]), this._mini_y.invert(this._brush_select[1])])
-            .range([m_h_s, m_h_e])
-            // .range([0, 1]);
+            // .range([m_h_s, m_h_e])
+            .range([0, 1]); // 开始绘制后可以出现瀑布效果
           this._line = d3.line()
             .x(d => this._x(d.station.distance))
             .y((d, i, arr) => this._y(new Date(arr[i].time)) - this._y(new Date(arr[0].time)));
@@ -2088,7 +2096,7 @@ export default {
 
         // 左边批次信息
         _renderInfoChart() {
-          if (!this._is_merge) return;
+          // if (!this._is_merge) return;
 
           this._info_g === undefined ? undefined : this._info_g.remove();
           this._info_g = this._container.append('g')
@@ -2098,7 +2106,7 @@ export default {
           this._renderInfoLinkMergeArea();
           this._renderInfoDetail();
 
-          this._changeInfoCircleStatus();
+          this._changeInfoCircleStatusButton();
         }
         _renderInfoLinkMergeArea() {
           let InfoLinkGroup = this._info_g.append('g')
@@ -2312,11 +2320,11 @@ export default {
           // console.log('proportion: ', this._proportion_angle);
 
           this._uniform_FillContent(chartGroup);  // 画填充
+          this._is_merge ? this._uniform_ErrorLine(chartGroup) : undefined;    // 画误差线
           this._uniform_StageStroke(chartGroup);   // 画格
-          this._uniform_ErrorLine(chartGroup);    // 画误差线
           this._uniform_QuantileLine(chartGroup);    // 分位线
           // this._StageText(chartGroup);            // 工序文字
-          this._renderCenterRect(chartGroup);
+          this._renderCenterRect(chartGroup);   // 中间正方形
 
           // 角度计算 -> 图元模态：均匀分布
           function __uniformityArcAngle() {
@@ -2375,61 +2383,106 @@ export default {
             return res;
           }
         }
+        _infoChartFillContent_mergeStatus(chartGroup) {
+        }
+        _infoChartFillContent_noMergeStatus(chartGroup) {
+
+        }
         _uniform_FillContent(chartGroup) {
+          const that = this;
           let circlecolor = this._deepCopy(vm.processColor);
           circlecolor.unshift('#cccccc');  // 时间颜色
-          let all_stage_angle = this._uniformity_angle;
-          let pr_angle = this._uniformity_pr_angle;
+          let all_stage_angle = this._uniformity_angle, pr_angle = this._uniformity_pr_angle;
 
-          let FillArcGroup = chartGroup.append('g')
-            .attr('class', 'FillArcGroup')
-            .attr('transform', `translate(${[this._circleR, this._circleR]})`);
-            
-          // 节奏
-          FillArcGroup.append('path')
-            .attr('d', d => d3.arc()
-              .innerRadius(this._inner_arc_r1)
-              .outerRadius(this._inner_arc_r2)
-              .startAngle(this._arc_start)
-              .endAngle(this._arc_start + pr_angle * (d.pr_angle[0]>=1?1:d.pr_angle[0]))())
-            .attr('class', 'inner_pr_fill')
-            .attr('fill', d => d.pr_angle[0]>=1?`url(#hatching_pattern_${0})`:circlecolor[0]);
-            
-          // 填充内环
-          FillArcGroup.selectAll('.innerFill')
-            .data(datum => datum.stage_angle)
-            .enter()
-            .append('path')
-            .attr('d', (d, i) => {
-              let start_angle = all_stage_angle[i].stage_start;
-              let end_angle = all_stage_angle[i].stage_end;
-              let arc_angle = start_angle + (end_angle-start_angle) * (d[0]>=1?1:d[0]);
-              return d3.arc()
-                .innerRadius(this._inner_arc_r1)
-                .outerRadius(this._inner_arc_r2)
-                .startAngle(start_angle)
-                .endAngle(arc_angle)()
-            })
-            .attr('class', 'inner_stage_fill')
-            .attr('fill', (d, i) => d[0]>=1?`url(#hatching_pattern_${i+1})`:circlecolor[i+1]);
-            
-          // 填充外环
-          let outerFill = FillArcGroup.selectAll('.outerFill')
-            .data(datum => datum.stage_sub_angle)
-            .enter()
-            .append('path')
-            .attr('d', d => {
-              let start_angle = all_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][0];
-              let end_angle = all_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][1];
-              let arc_angle = start_angle + (end_angle - start_angle) * (d[0].data>=1?1:d[0].data);
-              return d3.arc()
-                .innerRadius(this._outer_arc_r1)
-                .outerRadius(this._outer_arc_r2)
-                .startAngle(start_angle)
-                .endAngle(arc_angle)()
-            })
-            .attr('class', 'inner_sub_fill')
-            .attr('fill', d => d[0].data>=1?`url(#hatching_sub_pattern_${d[0].stage_i+1})`:circlecolor[d[0].stage_i + 1]);
+          let FillArcGroup = chartGroup
+            .append('g')
+              .attr('class', 'FillArcGroup')
+              .attr('transform', `translate(${[this._circleR, this._circleR]})`);
+          
+          prFill(); // 节奏
+          this._is_merge ? mergeStageFill() : noMergeStageFill(); // 填充内环
+          subStageFill(); // 填充外环
+
+          
+          function prFill() {
+            FillArcGroup
+              .append('path')
+              .attr('d', d => d3.arc()
+                .innerRadius(that._inner_arc_r1)
+                .outerRadius(that._inner_arc_r2)
+                .startAngle(that._arc_start)
+                .endAngle(that._arc_start + pr_angle * (d.pr_angle[0]>=1?1:d.pr_angle[0]))())
+              .attr('class', 'inner_pr_fill')
+              .attr('fill', d => d.pr_angle[0]>=1?`url(#hatching_pattern_${0})`:circlecolor[0]);
+          }
+          function mergeStageFill() {
+            FillArcGroup.selectAll('.innerFill')
+              .data(datum => datum.stage_angle)
+              .enter()
+              .append('path')
+              .attr('d', (d, i) => {
+                let start_angle = all_stage_angle[i].stage_start;
+                let end_angle = all_stage_angle[i].stage_end;
+                let arc_angle = start_angle + (end_angle-start_angle) * (d[0]>=1?1:d[0]);
+                return d3.arc()
+                  .innerRadius(that._inner_arc_r1)
+                  .outerRadius(that._inner_arc_r2)
+                  .startAngle(start_angle)
+                  .endAngle(arc_angle)()
+              })
+              .attr('class', 'inner_stage_fill')
+              .attr('fill', (d, i) => d[0]>=1?`url(#hatching_pattern_${i+1})`:circlecolor[i+1]);
+          }
+          function noMergeStageFill() {
+            const stage_width = that._inner_arc_width;
+            const bar_stroke_width = 0;
+            FillArcGroup.selectAll('.per_plate_fill')
+              .data(d => d.stage_for_pre_plate.map((e, i) => {
+                return {upid: e.upid, stage_angle: e.stage_angle, n: d.stage_for_pre_plate.length, k: i}  // k: 第k块板
+              }))
+              .enter()
+              .append('g')
+                .attr('class', d => 'per_plate_fill_' + d.upid)
+                .selectAll('.pre_plate_stage_fill')
+                .data(d => d.stage_angle.map((e, i) => {return {i: i, data: e, n: d.n, k: d.k}}))
+                .enter()
+                .append('path')
+                .attr('d', (d, i) => {
+                  let bar_width = stage_width / d.n;
+                  let bar_r1 = that._inner_arc_r1 + d.k * bar_width + bar_stroke_width;
+                  let bar_r2 = that._inner_arc_r1 + (d.k + 1) * bar_width - bar_stroke_width;
+
+                  let angle_span = all_stage_angle[i].stage_end - all_stage_angle[i].stage_start;
+                  let bar_span = angle_span * (d.data > 1 ? 1 : d.data);
+                  return d3.arc()
+                    .innerRadius(bar_r1)
+                    .outerRadius(bar_r2)
+                    .startAngle(all_stage_angle[i].stage_start)
+                    .endAngle(all_stage_angle[i].stage_start + bar_span)()
+                })
+                .attr('fill', (d, i) => circlecolor[i+1])
+                // .attr('stroke-width', bar_stroke_width)
+                // .attr('stroke', (d, i) => d3.color(circlecolor[i+1]).darker(0.5))
+                
+          }
+          function subStageFill() {
+            FillArcGroup.selectAll('.outerFill')
+              .data(datum => datum.stage_sub_angle)
+              .enter()
+              .append('path')
+                .attr('d', d => {
+                  let start_angle = all_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][0];
+                  let end_angle = all_stage_angle[d[0].stage_i].stage_sub[d[0].sub_j][1];
+                  let arc_angle = start_angle + (end_angle - start_angle) * (d[0].data>=1?1:d[0].data);
+                  return d3.arc()
+                    .innerRadius(that._outer_arc_r1)
+                    .outerRadius(that._outer_arc_r2)
+                    .startAngle(start_angle)
+                    .endAngle(arc_angle)()
+                })
+                .attr('class', 'inner_sub_fill')
+                .attr('fill', d => d[0].data>=1?`url(#hatching_sub_pattern_${d[0].stage_i+1})`:circlecolor[d[0].stage_i + 1]);
+          }
         }
         _uniform_StageStroke(chartGroup) {
           let all_stage_angle = this._uniformity_angle;
@@ -2605,7 +2658,6 @@ export default {
                 .endAngle(arc_end_angle)()
             });
 
-          let c_r = (this._quantile_r2 + this._quantile_r1) / 2;
           quantileLineGroup
             .append('circle')
             .attr('class', 'quantile_circle')
@@ -2613,25 +2665,21 @@ export default {
             .attr('stroke', (d, i) => d3.color(circlecolor[i+1]).darker(0.5))
             .attr('stroke-width', 1)
             .attr("r", (d, i) => (!d[0] || d[0] >= 1 || d[3] >= 1) ? 0 : 2)
-            .attr("cy", (d, i) => {
-              if (!d[0]) return 0
-              let start_angle = all_stage_angle[i].stage_start;
-              let end_angle = all_stage_angle[i].stage_end;
-              let c_angle = start_angle + (end_angle-start_angle) * d[1];
-              return -(Math.cos(c_angle) * c_r);
-            })
-            .attr("cx", (d, i) => {
-              if (!d[0]) return 0
-              let start_angle = all_stage_angle[i].stage_start;
-              let end_angle = all_stage_angle[i].stage_end;
-              let c_angle = start_angle + (end_angle-start_angle) * d[1];
-              return Math.sin(c_angle) * c_r;
-            });
+            .attr("cy", (d, i) => this.__computeQuantileCicleCxCy(d, i, all_stage_angle, false))
+            .attr("cx", (d, i) => this.__computeQuantileCicleCxCy(d, i, all_stage_angle, true));
+        }
+        __computeQuantileCicleCxCy = (d, i, all_stage_angle, cx) => {
+          if (!d[0]) return 0
+          let c_r = (this._quantile_r2 + this._quantile_r1) / 2;
+          let start_angle = all_stage_angle[i].stage_start;
+          let end_angle = all_stage_angle[i].stage_end;
+          let c_angle = start_angle + (end_angle-start_angle) * d[1];
+          return cx ? Math.sin(c_angle) * c_r : -(Math.cos(c_angle) * c_r)
         }
         _renderCenterRect(chartGroup) {
           let color = [vm.labelColors[1], vm.labelColors[0], vm.noflagColor]; // good, bad, noflag
           let rect_w = 20;
-          let gap = 1;
+          let gap = 1.5;
 
           let CenterRectGroup = chartGroup.selectAll('CenterRectGroup')
             .data(d => d.label_statistics)
@@ -2647,7 +2695,7 @@ export default {
             .attr("fill", (_, i) => color[i])
             .attr("fill-opacity", 0.4)
             .attr("stroke", (_, i) => d3.color(color[i]).darker(0.5))
-            .attr('stroke-width', 0.2)
+            .attr('stroke-width', 0.5)
             .attr("d", d => `M${d.point.join("L")}Z`)
             .attr("transform", d => `translate(${d.pos[0]}, ${d.pos[1]})`)
           
@@ -2758,7 +2806,7 @@ export default {
             .style("font-style", util.conditionRadiaTextAttr.fontStyle)
 						.style("font-size", util.conditionRadiaTextAttr.fontSize)
         }
-        _changeInfoCircleStatus() {
+        _changeInfoCircleStatusButton() {
           let that = this;
           let changebutton = this._info_g.append('g')
             .attr('transform', `translate(${[27, 10]})`);
@@ -2792,6 +2840,7 @@ export default {
                 __transStroke(InfoDetailGroup, this._proportion_pr_angle, this._uniformity_pr_angle, this._proportion_angle, this._uniformity_angle);
                 __transFill(InfoDetailGroup, this._proportion_pr_angle, this._uniformity_pr_angle, this._proportion_angle, this._uniformity_angle);
                 __transErrLine(InfoDetailGroup, this._proportion_pr_angle, this._uniformity_pr_angle, this._proportion_angle, this._uniformity_angle);
+                __transQuantileLine(InfoDetailGroup, this._proportion_pr_angle, this._uniformity_pr_angle, this._proportion_angle, this._uniformity_angle);
                 __transText(InfoDetailGroup, this._proportion_pr_angle, this._proportion_angle);
               }
               // proportion to uniformity
@@ -2799,6 +2848,7 @@ export default {
                 __transStroke(InfoDetailGroup, this._uniformity_pr_angle, this._proportion_pr_angle, this._uniformity_angle, this._proportion_angle);
                 __transFill(InfoDetailGroup, this._uniformity_pr_angle, this._proportion_pr_angle, this._uniformity_angle, this._proportion_angle);
                 __transErrLine(InfoDetailGroup, this._uniformity_pr_angle, this._proportion_pr_angle, this._uniformity_angle, this._proportion_angle);
+                __transQuantileLine(InfoDetailGroup, this._uniformity_pr_angle, this._proportion_pr_angle, this._uniformity_angle, this._proportion_angle);
                 __transText(InfoDetailGroup, this._uniformity_pr_angle, this._uniformity_angle);
               }
             })
@@ -3011,13 +3061,31 @@ export default {
             let tran = d3.transition().delay(50).duration(500);
             let QuantileLineGroup = Group.selectAll('.QuantileLineGroup');
 
-            ErrorLineGroup.selectAll('.quantile_line')
+            QuantileLineGroup.selectAll('.quantile_line')
               .transition(tran)
               .attrTween('d', (d,i) => {
                 if (!d[0] || d[0] >= 1 || d[3] >= 1) return ''
 
-                
+                let old_arc_start_angle = old_stage_angle[i].stage_start + (old_stage_angle[i].stage_end-old_stage_angle[i].stage_start) * d[0];
+                let old_arc_end_angle = old_stage_angle[i].stage_start + (old_stage_angle[i].stage_end-old_stage_angle[i].stage_start) * d[2];
+                let new_arc_start_angle = new_stage_angle[i].stage_start + (new_stage_angle[i].stage_end-new_stage_angle[i].stage_start) * d[0];
+                let new_arc_end_angle = new_stage_angle[i].stage_start + (new_stage_angle[i].stage_end-new_stage_angle[i].stage_start) * d[2];
+
+                let start_interpolate = d3.interpolate(old_arc_start_angle, new_arc_start_angle);
+                let end_interpolate = d3.interpolate(old_arc_end_angle, new_arc_end_angle);
+                return function(t) {
+                  return d3.arc()
+                  .cornerRadius(1.5)
+                  .innerRadius(that._quantile_r1)
+                  .outerRadius(that._quantile_r2)
+                  .startAngle(start_interpolate(t))
+                  .endAngle(end_interpolate(t))()
+                }
               })
+            QuantileLineGroup.selectAll('.quantile_circle')
+              .transition(tran)
+              .attr("cy", (d, i) => that.__computeQuantileCicleCxCy(d, i, new_stage_angle, false))
+              .attr("cx", (d, i) => that.__computeQuantileCicleCxCy(d, i, new_stage_angle, true));
           }
         }
 
@@ -3373,9 +3441,7 @@ export default {
         _mareyChartTranslate() {
           this._translateMareyLine();
 
-          if (this._is_merge) {
-            this._translateInfoChart();
-          }
+          this._translateInfoChart();
 
           // this._translateMonitorChart();
         }

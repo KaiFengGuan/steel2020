@@ -492,7 +492,7 @@ export default {
 				this.mergeflag()
 			}
       // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, [], this.isMerge);
+			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, [], this.isSwitch, this.isMerge);
 
 			// clear
 			this.selectedTrainData = [];
@@ -692,26 +692,17 @@ export default {
 			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
 		},
     animeTransition(){
-      // console.log('in animeTransition!!!!')
       if (this.diagnosisVisible) {
-        // document.getElementById('diagnosis_view_id').style.height = '540px';
         anime({
           targets: ['.diagnosis_view'],
-          // translateY: '-300px',
           height:'540px',
-          easing: 'easeInOutQuad',
-          // direction: 'alternate',
-          // loop: true
+          easing: 'easeInOutQuad'
         });
       } else {
-        // document.getElementById('diagnosis_view_id').style.height = '0px';
         anime({
           targets: ['.diagnosis_view'],
-          // translateY: '-300px',
           height:'0px',
-          easing: 'easeInOutQuad',
-          // direction: 'alternate',
-          // loop: true
+          easing: 'easeInOutQuad'
         });
       }
     },
@@ -832,7 +823,6 @@ export default {
     },
     
 		mareyUpdate(){
-      // this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
       this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
 		},
 		mergeUpdate(){

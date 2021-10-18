@@ -23,7 +23,7 @@ export default {
 			svg: undefined,
       timesdata: undefined,
       stationsdata: undefined,
-      brushdata: undefined,
+      monitordata: undefined,
       changecolor: true,
       isMerge: true,
 
@@ -34,12 +34,12 @@ export default {
   },
   methods: {
     ...mapMutations(['hightLight']),
-    paintPre(timesdata, stationsdata, brushdata, changecolor, isMerge) {
+    paintPre(timesdata, stationsdata, monitordata, changecolor, isMerge) {
       const vm = this;
       
       vm.timesdata = timesdata;
       vm.stationsdata = stationsdata;
-      vm.brushdata = brushdata;
+      vm.monitordata = monitordata;
       vm.changecolor = changecolor;
       vm.isMerge = isMerge;
 
@@ -66,7 +66,7 @@ export default {
           this._mergeresult_1 = [];
           this._filterdata = undefined;
           this._dataUCL = undefined;
-          this._brushUCL = undefined;
+          this._monitoringdata = undefined;
           this._stopsTimes = undefined;
           this._allupid = undefined;
           this._stops = undefined;
@@ -166,10 +166,11 @@ export default {
           this._quantile_r2 = this._inner_arc_r1 - 4
           this._quantile_r1 = this._quantile_r2 - 3;
 
+          // 右边诊断视图相关
+          this._moni_rect_w = 360 / 3;
+          this._Q_T2_gap = 10;
           this._QScale = undefined;
           this._T2Scale = undefined;
-          this._QLine = undefined;
-          this._T2Line = undefined;
           this._statistics = undefined;
         }
 
@@ -292,10 +293,9 @@ export default {
 
           return [good, bad, no_flag]
         }
-        dataInit(timesdata, stationsdata, brushdata) {
+        dataInit(timesdata, stationsdata, monitordata) {
           this._timesdata = timesdata;
           this._stationsdata = stationsdata;
-          this._brushdata = brushdata;
 
           this._trainGroupStyle = 
             this._change_color ? 
@@ -306,7 +306,6 @@ export default {
           this._allupid = d3.map(this._timesdata, d => d.upid);
           this._categorysdata = d3.group(this._timesdata , d => d.productcategory);
           this._dataUCL = d3.group(this._timesdata, d => d.upid);
-          this._brushUCL = d3.group(this._brushdata, d => d.upid);
           this._stopsTimes = d3.map(this._timesdata, d => {
             let arr = d3.pairs(d.stops, (a,b) => new Date(b.realTime).getTime() - new Date(a.realTime).getTime())
             arr.upid = d.upid
@@ -361,7 +360,7 @@ export default {
             let [t, fu, m, c] = this.__getAllDataExtend(one_cate_data, 0.99, false, false);
             cate_extend[one_cate_name] = {t: t, fu: fu, m: m, c: c}
           }
-          console.log(cate_extend);
+          // console.log(cate_extend);
 
 
           // 合并相关图元 绘图数据
@@ -546,6 +545,37 @@ export default {
             {bad: cool_bad, good: 100-cool_bad}
           ]
 
+          // console.log('马雷：', this._timesdata);
+          // console.log('监控：', monitordata);
+
+          
+          this._monitoringdata = {};
+          let all_diag = [[], [], []];
+          let process = ['Heat', 'Roll', 'Cool'];
+          let n = this._timesdata.length;
+          for (let i = 0; i < n; i++) {
+            let item = this._timesdata[i];
+            let cur_moni = monitordata[item.upid];
+
+            for (let j = 0; j < process.length; j++) {
+              let key = process[j];
+              all_diag[j].push({
+                upid: item.upid,
+                toc: item.toc,
+                endtime: new Date(item.stops.slice(-1)[0].time),
+                nextendtime: i+1 === n ? 0 : new Date(this._timesdata[i+1].stops.slice(-1)[0].time),
+                index: j,
+                Q_UCL:  cur_moni ? cur_moni[process[j] + '_QUCL']  : 0,
+                Q:      cur_moni ? cur_moni[process[j] + '_Q']     : 0,
+                T2_UCL: cur_moni ? cur_moni[process[j] + '_T2UCL'] : 0,
+                T2:     cur_moni ? cur_moni[process[j] + '_T2']    : 0,
+              })
+            }
+          }
+
+          this._monitoringdata['diag'] = all_diag;
+          console.log(this._monitoringdata);
+
 
           return this;
         }
@@ -607,8 +637,8 @@ export default {
             .range([0 , m_w]);
           this._y = d3.scaleTime()
             .domain([this._mini_y.invert(this._brush_select[0]), this._mini_y.invert(this._brush_select[1])])
-            // .range([m_h_s, m_h_e])
-            .range([0, 1]); // 开始绘制后可以出现瀑布效果
+            .range([m_h_s, m_h_e])
+            // .range([0, 1]); // 开始绘制后可以出现瀑布效果
           this._line = d3.line()
             .x(d => this._x(d.station.distance))
             .y((d, i, arr) => this._y(new Date(arr[i].time)) - this._y(new Date(arr[0].time)));
@@ -618,6 +648,20 @@ export default {
           this._voronoi = Delaunay
             .from(this._stops, d => this._x(d.stop.station.distance), d => this._y(new Date(d.stop.time)))
             .voronoi([0, this._stations_size.h, this._marey_size.w, this._stations_size.h + this._y_height]);
+
+          // 
+          let Q_max = [], T2_max = [];
+          this._QScale = [];
+          this._T2Scale = [];
+          for (let i = 0; i < this._monitoringdata.diag.length; i++) { // 工序
+            let proc = this._monitoringdata.diag[i];
+            Q_max[i] = d3.max(proc, d => Math.max(d.Q, d.Q_UCL));
+            T2_max[i] = d3.max(proc, d => Math.max(d.T2, d.T2_UCL));
+          }
+          for (let i = 0; i < 3; i++) {
+            this._QScale[i] = d3.scaleLinear().domain([0, Q_max[i]]).range([0, this._moni_rect_w/2-10]);
+            this._T2Scale[i] = d3.scaleLinear().domain([0, T2_max[i]]).range([0, this._moni_rect_w/2-10]);
+          }
 
           return this;
         }
@@ -635,7 +679,7 @@ export default {
 
           this._renderInfoChart();
 
-          // this._renderMonitorChart();
+          this._renderMonitorChart();
 
           this._renderMareyChart();
 
@@ -1270,12 +1314,14 @@ export default {
         _renderMareyLineTooltip() {
           let that = this;
           // let stops = d3.merge(this._timesdata.map(d => d.stops.map(s => ({ train: d, stop: s }))));
-          let filter = [];
-          let filter_1 = {};
-          if (this._is_merge) {
+          let filter = {};
+          let filter_with_select = {};
+          // if (this._is_merge) {
+          if (true) {   // 不管和不合并，都将filter计算出来
             let merge = d3.map(d3.merge(d3.merge(that._mergeresult_1.map(d => d.merge_data.map(e => e.mergeItem)))) , d =>d.upid);
             let select = d3.map(d3.merge(d3.merge(that._mergeresult_1.map(d => d.merge_data.map(e => e.mergeSelect)))) , d =>d.upid);
             filter = d3.filter(merge , d => select.indexOf(d) === -1 );
+            filter_with_select = merge;
 
             for (let i = 0; i < that._mergeresult_1.length; i++) {
               let batch = that._mergeresult_1[i];
@@ -1284,10 +1330,14 @@ export default {
                 for (let k = 0; k < merge_data.mergeItem.length; k++) {
                   let merge_item = merge_data.mergeItem[k];
                   if (select.indexOf(merge_item.upid) === -1) {
-                    filter_1[merge_item.upid] = {
+                    filter[merge_item.upid] = {
                       "batch_index": batch.batch_index,
                       "merge_index": j
                     }
+                  }
+                  filter_with_select[merge_item.upid] = {
+                    "batch_index": batch.batch_index,
+                    "merge_index": j
                   }
                 }
               }
@@ -1338,12 +1388,9 @@ export default {
             .join('path')
             .attr('d', (d, i) => this._voronoi.renderCell(i))
             .on('mouseover', (event, d) => {
-              if(
-                filter_1[d.train.upid] !== undefined
-                && this._is_merge
-              ) {
-                let batch_index = filter_1[d.train.upid]['batch_index'];
-                let merge_index = filter_1[d.train.upid]['merge_index'];
+              if(filter[d.train.upid] !== undefined && this._is_merge ) {
+                let batch_index = filter[d.train.upid]['batch_index'];
+                let merge_index = filter[d.train.upid]['merge_index'];
                 let selected_plates = that.__getSelectPlate([batch_index], [merge_index]);
 
                 let curr_batch_all_mergeindex = []
@@ -1365,6 +1412,11 @@ export default {
                   this._setInfoDetail(batch_index, info_index);
                 }
                 return;
+              }
+              
+              if (filter_with_select[d.train.upid] !== undefined && !this._is_merge) {
+                let batch_index = filter_with_select[d.train.upid]['batch_index'];
+                this._setNoMergeInfoArc(batch_index, d.train.upid);
               }
 
               vm.$emit('trainMouse', {upid: [d.train.upid],  mouse: 0});
@@ -1393,12 +1445,9 @@ export default {
               tooltip.attr('transform', `translate(${this._x(d.stop.station.distance) - box.width / 2}, ${this._y(new Date(d.stop.time)) + 37})`);
             })
             .on('mouseout', (event, d) => {
-              if (
-                filter_1[d.train.upid] !== undefined
-                && this._is_merge
-              ) {
-                let batch_index = filter_1[d.train.upid]['batch_index'];
-                let merge_index = filter_1[d.train.upid]['merge_index'];
+              if (filter[d.train.upid] !== undefined && this._is_merge) {
+                let batch_index = filter[d.train.upid]['batch_index'];
+                let merge_index = filter[d.train.upid]['merge_index'];
                 let selected_plates = that.__getSelectPlate([batch_index], [merge_index]);
 
                 this._resetMergeRect();
@@ -1411,6 +1460,11 @@ export default {
               if (this._trainSelectedList.includes(d.train.upid))
                 return;
               
+              if (filter_with_select[d.train.upid] !== undefined && !this._is_merge) {
+                let batch_index = filter_with_select[d.train.upid]['batch_index'];
+                this._resetNoMergeInfoArc(batch_index, d.train.upid);
+              }
+
               vm.$emit('trainMouse', {upid: [d.train.upid],  mouse: 1});
               tooltip.style('display', 'none');
               mouseoutLine(d.train.upid);
@@ -1442,6 +1496,7 @@ export default {
               });
             })
           
+          const diagColor = (d, ucl) => d > ucl ? vm.labelColors[0] : vm.labelColors[1];
           function mouseoverLine(uclid) {
             let flag = that._dataUCL.get(uclid)[0].flag;
             d3.select('#id' + uclid)
@@ -1449,9 +1504,13 @@ export default {
               .selectAll('rect')
               .attr('stroke', 'black');
             
-            d3.selectAll('#diagnosis_value_' + uclid)
-              .attr('fill', d => d3.color(d.color).darker(0.2))
-              .attr('stroke', d => d3.color(d.color).darker(1))
+            d3.selectAll('#Q_diagnosis_value_' + uclid)
+              .attr('fill', d => d3.color(diagColor(d['Q'], d['Q_UCL'])).darker(0.2))
+              .attr('stroke', d => d3.color(diagColor(d['Q'], d['Q_UCL'])).darker(1))
+              .attr('stroke-width', 2)
+            d3.selectAll('#T2_diagnosis_value_' + uclid)
+              .attr('fill', d => d3.color(diagColor(d['T2'], d['T2_UCL'])).darker(0.2))
+              .attr('stroke', d => d3.color(diagColor(d['T2'], d['T2_UCL'])).darker(1))
               .attr('stroke-width', 2)
           }
           function mouseoutLine(uclid) {
@@ -1460,10 +1519,15 @@ export default {
               .selectAll('rect')
               .attr('stroke', 'none');
             
-            d3.selectAll('#diagnosis_value_' + uclid)
-              .attr('fill', d => d.color)
-              .attr('stroke', d => d3.color(d.color).darker(0.2))
+            d3.selectAll('#Q_diagnosis_value_' + uclid)
+              .attr('fill', d => diagColor(d['Q'], d['Q_UCL']))
+              .attr('stroke', d => d3.color(diagColor(d['Q'], d['Q_UCL'])).darker(0.2))
               .attr('stroke-width', 1)
+            d3.selectAll('#T2_diagnosis_value_' + uclid)
+              .attr('fill', d => diagColor(d['T2'], d['T2_UCL']))
+              .attr('stroke', d => d3.color(diagColor(d['T2'], d['T2_UCL'])).darker(0.2))
+              .attr('stroke-width', 1)
+            
 
             for(let m in that._stopsTimes) {		//reset binRect
               // that._marey_g.selectAll(`.binRect${m}`)
@@ -2383,11 +2447,6 @@ export default {
             return res;
           }
         }
-        _infoChartFillContent_mergeStatus(chartGroup) {
-        }
-        _infoChartFillContent_noMergeStatus(chartGroup) {
-
-        }
         _uniform_FillContent(chartGroup) {
           const that = this;
           let circlecolor = this._deepCopy(vm.processColor);
@@ -2442,7 +2501,8 @@ export default {
               }))
               .enter()
               .append('g')
-                .attr('class', d => 'per_plate_fill_' + d.upid)
+                .attr('class', 'per_plate_fill')
+                .attr('id', d => 'per_plate_fill_' + d.upid)
                 .selectAll('.pre_plate_stage_fill')
                 .data(d => d.stage_angle.map((e, i) => {return {i: i, data: e, n: d.n, k: d.k}}))
                 .enter()
@@ -3096,165 +3156,115 @@ export default {
             .attr('class', 'monitorContentGroup')
             .attr('transform', `translate(${[this._info_size.w + this._marey_size.w + 35, 0]})`);
 
-          this._renderMonitorContent_new();
+          this._renderMonitorContent();
         }
-        _renderMonitorContent_new() {
-          let rect_radius = 3;
-          let monitorWidth = 360;
-          let moni_rect_w = monitorWidth/3;
-          let rectScale = d3.scaleLinear()
-            .domain([0, 10])
-            .range([0, moni_rect_w/2-10])
-
-          let monitorRectGroup = this._moni_g.append('g')
-            .attr('class', 'monitorRectGroup');
+        _renderMonitorContent() {
+          const that = this;
+          let process = ['Heat', 'Roll', 'Cool'];
           
-          let monitorRect = monitorRectGroup.selectAll('monitorRect')
-            .data(this._mergeresult_1)
+          let monitorDiagGroup = this._moni_g.append('g')
+            .attr('class', 'monitorDiagGroup');
+          
+          let monitorProcess = monitorDiagGroup.selectAll('monitorProcess')
+            .data(this._monitoringdata.diag)
             .enter()
             .append('g')
-            .attr('class', 'merge_moni')
-            .attr('id', (d, i) => 'merge_moni_'+i)
-            .attr('transform', d => `translate(${20}, ${this._y(d.proce_end_date_s)})`)
+            .attr('class', 'monitorProcess')
+            .attr('id', (d, i) => 'monitorProcess_' + process[i])
+            .attr('transform', (d, i) => `translate(${(this._moni_rect_w + 10) * i}, 0)`)
           
-          let moni_process = monitorRect.selectAll('.moni_process_rect')
-            .data(d => d.proce_num)
-            .enter()
-            .append('g')
-            .attr('transform', (d, i) => `translate(${(moni_rect_w+10) * (+d.d - 1)}, 0)`)
-          moni_process
-            .append('rect')
-            .attr('class', 'moni_process_rect')
-            .attr('width', moni_rect_w)
-            .attr('height', d => this._y(d.h_e)-this._y(d.h_s))
-            .attr('rx', rect_radius)
-            .attr('ry', rect_radius)
-            .attr('fill', d => d.color)
-            .attr('opacity', 0.1)
-            .attr('stroke', '#CED3D6')
-            .attr('stroke-width', 1)
-          moni_process
-            .append('rect')
-						.attr('class', 'moni_process_rect')
-            .attr('width', moni_rect_w)
-            .attr('height', d => this._y(d.h_e)-this._y(d.h_s))
-            .attr('rx', rect_radius)
-            .attr('ry', rect_radius)
-            .attr('stroke', d => d3.color(d.color).darker(0.1))
-            .attr('stroke-width', 1)
-            .attr('stroke-opacity', 0.4)
-            .attr('fill', 'none')
-            .attr('filter', 'url(#shadow-card)');
+          // let moni_process = monitorRect.selectAll('.moni_process_rect')
+          //   .data(d => d.proce_num)
+          //   .enter()
+          //   .append('g')
+          //   .attr('transform', (d, i) => `translate(${(moni_rect_w+10) * (+d.d - 1)}, 0)`)
+          // moni_process
+          //   .append('rect')
+          //   .attr('class', 'moni_process_rect')
+          //   .attr('width', moni_rect_w)
+          //   .attr('height', d => this._y(d.h_e)-this._y(d.h_s))
+          //   .attr('rx', rect_radius)
+          //   .attr('ry', rect_radius)
+          //   .attr('fill', d => d.color)
+          //   .attr('opacity', 0.1)
+          //   .attr('stroke', '#CED3D6')
+          //   .attr('stroke-width', 1)
+          // moni_process
+          //   .append('rect')
+					// 	.attr('class', 'moni_process_rect')
+          //   .attr('width', moni_rect_w)
+          //   .attr('height', d => this._y(d.h_e)-this._y(d.h_s))
+          //   .attr('rx', rect_radius)
+          //   .attr('ry', rect_radius)
+          //   .attr('stroke', d => d3.color(d.color).darker(0.1))
+          //   .attr('stroke-width', 1)
+          //   .attr('stroke-opacity', 0.4)
+          //   .attr('fill', 'none')
+          //   .attr('filter', 'url(#shadow-card)');
           
-          moni_process.selectAll('.diagnosis_value')
-            .data(d => d.diag.T2)
-            .enter()
-            .append('rect')
-            .attr('class', 'T2_diagnosis_value')
-            .attr('id', d => 'diagnosis_value_' + d.upid)
-            .attr('transform', (d, i) => `translate(${[
-              -rectScale(d.value)+moni_rect_w/2-5, 
-              d.i*(this._y(d.et)-this._y(d.st))/d.num
-            ]})`)
-            .attr('width', d => rectScale(d.value))
-            .attr('height', d => (this._y(d.et)-this._y(d.st))/d.num)
-            .attr('fill', d => d.color)
-            .attr('stroke', d => d3.color(d.color).darker(0.2))
-            .attr('stroke-width', 1)
-            .attr('opacity', 0.4)
-          
-          moni_process.selectAll('.diagnosis_value')
-            .data(d => d.diag.SPE)
-            .enter()
-            .append('rect')
-            .attr('class', 'SPE_diagnosis_value')
-            .attr('id', d => 'diagnosis_value_' + d.upid)
-            .attr('transform', (d, i) => `translate(${[
-              moni_rect_w/2+5, 
-              d.i*(this._y(d.et)-this._y(d.st))/d.num
-            ]})`)
-            .attr('width', d => rectScale(d.value))
-            .attr('height', d => (this._y(d.et)-this._y(d.st))/d.num)
-            .attr('fill', d => d.color)
-            .attr('stroke', d => d3.color(d.color).darker(0.2))
-            .attr('stroke-width', 1)
-            .attr('opacity', 0.4)
-          
-          // T2 报警线
-          moni_process
-            .append('path')
-            .attr('class', 'T2_Line')
-            .attr('transform', `translate(${[moni_rect_w/2-5, 0]})`)
-            .attr('fill', 'none')
-            .attr('stroke', '#666')
-            .attr('stroke-width', 1)
-            .attr('stroke-linejoin', 'round')
-            .attr('stroke-dasharray', '3 3')
-            .attr('stroke-linecap', 'round')
-            .attr('d', (d, i) => {
-              let line_data = [];
-              let T2 = d.diag.T2;
-              let count = 0;
-              for (let j = 0; j < T2.length; j++) {
-                let time_span = (this._y(T2[j].et)-this._y(T2[j].st))/T2[j].num;
-                let line_x = -rectScale(T2[j].thresholds);
-                line_data.push({
-                  i: count,
-                  line_x: line_x,
-                  line_y: time_span
-                })
-                line_data.push({
-                  i: count + 1,
-                  line_x: line_x,
-                  line_y: time_span
-                })
-                count += 1;
-              }
-              return d3.line()
-                .x((e, j) => e.line_x)
-                .y((e, j) => e.i*e.line_y)(line_data)
-            })
-          // SPE 报警线
-          moni_process
-            .append('path')
-            .attr('class', 'SPE_Line')
-            .attr('transform', `translate(${[moni_rect_w/2+5, 0]})`)
-            .attr("fill", 'none')
-            .attr("stroke", "#666")
-            .attr("stroke-width", 1)
-            .attr("stroke-linejoin", "round")
-            .attr("stroke-dasharray", "3 3")
-            .attr("stroke-linecap", "round")
-            .attr("d", (d, i) => {
-              let line_data = [];
-              let T2 = d.diag.SPE;
-              let count = 0;
-              for (let j = 0; j < T2.length; j++) {
-                let time_span = (this._y(T2[j].et)-this._y(T2[j].st))/T2[j].num;
-                let line_x = rectScale(T2[j].thresholds);
-                line_data.push({
-                  i: count,
-                  line_x: line_x,
-                  line_y: time_span
-                })
-                line_data.push({
-                  i: count + 1,
-                  line_x: line_x,
-                  line_y: time_span
-                })
-                count += 1;
-              }
-              return d3.line()
-                .x((e, j) => e.line_x)
-                .y((e, j) => e.i*e.line_y)(line_data)
-            })
 
-          
-          
-            
+          paintDiagnosis(monitorProcess, 'Q');
+          paintDiagnosis(monitorProcess, 'T2');
+
+          function paintDiagnosis(Group, type) {
+            let Scale;
+            if (type === 'Q') Scale = that._QScale;
+            else if (type === 'T2') Scale = that._T2Scale;
+            else return
+
+            const diagColor = (d, ucl) => d > ucl ? vm.labelColors[0] : vm.labelColors[1];
+            Group.selectAll(`.${type}_diagnosis_value`)
+              .data(d => d)
+              .enter()
+              .append('rect')
+              .attr('class', `${type}_diagnosis_value`)
+              .attr('id', d => `${type}_diagnosis_value_` + d.upid)
+              .attr('transform', (d, i) => `translate(${[
+                type === 'Q' ? -Scale[d.index](d[type]) + that._moni_rect_w/2-5 : that._moni_rect_w/2 + 5, 
+                that._y(d.endtime)]})`)
+              .attr('width', d => Scale[d.index](d[type]))
+              .attr('height', d => {
+                let h = that._y(d.nextendtime) - that._y(d.endtime);
+                return h < 0 ? 3 : h;
+              })
+              .attr('fill', d => diagColor(d[type], d[type+'_UCL']))
+              .attr('stroke', d => d3.color(diagColor(d[type], d[type+'_UCL'])).darker(0.2))
+              .attr('stroke-width', 1)
+              .attr('opacity', 0.4)
+            // 报警线
+            Group
+              .append('path')
+              .attr('class', `${type}_Line`)
+              .attr('transform', `translate(${[that._moni_rect_w/2 + (type === 'Q' ? 5 : -5), 0]})`)
+              .attr("fill", 'none')
+              .attr("stroke", "#666")
+              .attr("stroke-width", 1)
+              .attr("stroke-linejoin", "round")
+              .attr("stroke-dasharray", "3 3")
+              .attr("stroke-linecap", "round")
+              .attr("d", (d, i) => {
+                let line_data = [];
+                for (let j = 0; j < d.length; j++) {
+                  let h = that._y(d[j].nextendtime) - that._y(d[j].endtime);
+                  let e = that._y(d[j].endtime);
+                  let line_x = Scale[d[j].index](d[j][type+'_UCL']) * (type === 'Q' ? 1 : -1);
+                  line_data.push({
+                    line_x: line_x,
+                    line_y: e
+                  })
+                  line_data.push({
+                    line_x: line_x,
+                    line_y: e + (h < 0 ? 3 : h)
+                  })
+                }
+                return d3.line()
+                  .x(e => e.line_x)
+                  .y(e => e.line_y)(line_data)
+              })
+          }
         }
 
-        // 交互事件定义
+        // 交互事件, 改变各图元的样式
         _setMergeRect(batch_index_list, merge_index_list) {
           this._marey_g.selectAll('.mergeG')
             .attr('opacity', 0.4);
@@ -3436,6 +3446,18 @@ export default {
             }
           }
         }
+        _setNoMergeInfoArc(batch_index, upid) {
+          const batchGroup = this._info_g.select(`#oneBatchChartGroup${batch_index}`);
+          batchGroup.selectAll('.per_plate_fill')
+            .attr('opacity', 0.2)
+          batchGroup.select(`#per_plate_fill_${upid}`)
+            .attr('opacity', 1)
+        }
+        _resetNoMergeInfoArc(batch_index) {
+          const batchGroup = this._info_g.select(`#oneBatchChartGroup${batch_index}`);
+          batchGroup.selectAll('.per_plate_fill')
+            .attr('opacity', 1)
+        }
 
         // 整图过渡动画
         _mareyChartTranslate() {
@@ -3443,7 +3465,7 @@ export default {
 
           this._translateInfoChart();
 
-          // this._translateMonitorChart();
+          this._translateMonitorChart();
         }
         _translateMareyLine() {
           let line_tran = d3.transition()
@@ -3605,90 +3627,60 @@ export default {
           return [chart_x, chart_y];
         }
         _translateMonitorChart() {
+          const that = this;
           let tran = d3.transition()
             .delay(50)
             .duration(500);
-          
-          let monitorWidth = 360;
-          let moni_rect_w = monitorWidth/3;
-          let rectScale = d3.scaleLinear()
-            .domain([0, 10])
-            .range([0, moni_rect_w/2-10])
 
-          this._moni_g.selectAll('.merge_moni')
-            .transition(tran)
-            .attr('transform', d => `translate(${20}, ${this._y(d.proce_end_date_s)})`)
-          this._moni_g.selectAll('.moni_process_rect')
-            .transition(tran)
-            .attr('height', d => this._y(d.h_e)-this._y(d.h_s))
-          
-          this._moni_g.selectAll('.T2_diagnosis_value')
-            .transition(tran)
-            .attr('transform', (d, i) => `translate(${[
-              -rectScale(d.value)+moni_rect_w/2-5,
-              d.i*(this._y(d.et)-this._y(d.st))/d.num
-            ]})`)
-            .attr('height', d => (this._y(d.et)-this._y(d.st))/d.num)
-          
-          this._moni_g.selectAll('.SPE_diagnosis_value')
-            .transition(tran)
-            .attr('transform', (d, i) => `translate(${[
-              moni_rect_w/2+5, 
-              d.i*(this._y(d.et)-this._y(d.st))/d.num
-            ]})`)
-            .attr('height', d => (this._y(d.et)-this._y(d.st))/d.num)
-          
-          this._moni_g.selectAll('.T2_Line')
-            .transition(tran)
-            .attr('d', (d, i) => {
-              let line_data = [];
-              let T2 = d.diag.T2;
-              let count = 0;
-              for (let j = 0; j < T2.length; j++) {
-                let time_span = (this._y(T2[j].et)-this._y(T2[j].st))/T2[j].num;
-                let line_x = -rectScale(T2[j].thresholds);
-                line_data.push({
-                  i: count,
-                  line_x: line_x,
-                  line_y: time_span
-                })
-                line_data.push({
-                  i: count + 1,
-                  line_x: line_x,
-                  line_y: time_span
-                })
-                count += 1;
-              }
-              return d3.line()
-                .x((e, j) => e.line_x)
-                .y((e, j) => e.i*e.line_y)(line_data)
-            })
-          this._moni_g.selectAll('.SPE_Line')
-            .transition(tran)
-            .attr("d", (d, i) => {
-              let line_data = [];
-              let T2 = d.diag.SPE;
-              let count = 0;
-              for (let j = 0; j < T2.length; j++) {
-                let time_span = (this._y(T2[j].et)-this._y(T2[j].st))/T2[j].num;
-                let line_x = rectScale(T2[j].thresholds);
-                line_data.push({
-                  i: count,
-                  line_x: line_x,
-                  line_y: time_span
-                })
-                line_data.push({
-                  i: count + 1,
-                  line_x: line_x,
-                  line_y: time_span
-                })
-                count += 1;
-              }
-              return d3.line()
-                .x((e, j) => e.line_x)
-                .y((e, j) => e.i*e.line_y)(line_data)
-            })
+          // this._moni_g.selectAll('.merge_moni')
+          //   .transition(tran)
+          //   .attr('transform', d => `translate(${20}, ${this._y(d.proce_end_date_s)})`)
+          // this._moni_g.selectAll('.moni_process_rect')
+          //   .transition(tran)
+          //   .attr('height', d => this._y(d.h_e)-this._y(d.h_s))
 
+          transDiagnosis('Q');
+          transDiagnosis('T2');
+
+
+          function transDiagnosis(type) {
+            let Scale;
+            if (type === 'Q') Scale = that._QScale;
+            else if (type === 'T2') Scale = that._T2Scale;
+            else return
+
+            that._moni_g.selectAll(`.${type}_diagnosis_value`)
+              .transition(tran)
+              .attr('transform', (d, i) => `translate(${[
+                type === 'Q' ? -Scale[d.index](d[type]) + that._moni_rect_w/2-5 : that._moni_rect_w/2 + 5, 
+                that._y(d.endtime)]})`)
+              .attr('height', d => {
+                let h = that._y(d.nextendtime) - that._y(d.endtime);
+                return h < 0 ? 3 : h;
+              })
+
+            that._moni_g.selectAll(`.${type}_Line`)
+              .transition(tran)
+              .attr("d", (d, i) => {
+                let line_data = [];
+                for (let j = 0; j < d.length; j++) {
+                  let h = that._y(d[j].nextendtime) - that._y(d[j].endtime);
+                  let e = that._y(d[j].endtime);
+                  let line_x = Scale[d[j].index](d[j][type+'_UCL']) * (type === 'Q' ? 1 : -1);
+                  line_data.push({
+                    line_x: line_x,
+                    line_y: e
+                  })
+                  line_data.push({
+                    line_x: line_x,
+                    line_y: e + (h < 0 ? 3 : h)
+                  })
+                }
+                return d3.line()
+                  .x(e => e.line_x)
+                  .y(e => e.line_y)(line_data)
+              })
+          }
         }
 
         _deepCopy(obj) {
@@ -3709,7 +3701,7 @@ export default {
       vm.conditionView = new ConditionView(vm.svg);
       vm.conditionView
         .stateInit(vm.isMerge, vm.changecolor, vm.minrange, vm.minconflict)
-        .dataInit(vm.timesdata, vm.stationsdata, vm.brushdata)
+        .dataInit(vm.timesdata, vm.stationsdata, vm.monitordata)
         .chartSizeInit(WIDTH, HEIGHT)
         .scaleInit()
         ._shadowInit()

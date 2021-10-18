@@ -345,7 +345,8 @@ export default {
 			usDiagnosis: {},
       batchDateStart: undefined,
       batchDateEnd: undefined,
-      req_count: 0
+      req_count: 0,
+      monitorData: {}
 		}
 	},
 	computed: {
@@ -466,10 +467,32 @@ export default {
 
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-			this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
+      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      let monitorData = (await this.getMonitorData({
+        startDate: this.startDateString,
+        endDate: this.endDateString,
+        type: 'default',
+        limit: 1000},
+        JSON.stringify([]),   // slabthickness
+				JSON.stringify([]),   // tgtdischargetemp
+				JSON.stringify([]),   // tgtplatethickness
+				JSON.stringify([]),   // tgtwidth
+				JSON.stringify([]),   // tgtplatelength2
+				JSON.stringify([]),   // tgttmplatetemp
+				JSON.stringify([]),   // cooling_start_temp
+				JSON.stringify([]),   // cooling_stop_temp
+				JSON.stringify([]),   // cooling_rate1
+				JSON.stringify([]),   // productcategory
+				JSON.stringify([]),   // steelspec
+        0,   // status_cooling
+        0    // fqcflag
+      )).data;
+      monitorData.forEach(d => {
+        this.monitorData[d.upid] = d
+      })
+			// console.log('原始：', this.jsonData)
+			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
+			console.log('监控：', this.monitorData)
 
 			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
 			// this.getplatetype();
@@ -492,7 +515,7 @@ export default {
 				this.mergeflag()
 			}
       // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, [], this.isSwitch, this.isMerge);
+			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.monitorData, this.isSwitch, this.isMerge);
 
 			// clear
 			this.selectedTrainData = [];
@@ -596,6 +619,26 @@ export default {
       })
     },
 
+    getMonitorData(url, slabthickness, tgtdischargetemp, tgtplatethickness, tgtwidth,
+      tgtplatelength2, tgttmplatetemp, cooling_start_temp, cooling_stop_temp,
+      cooling_rate1, productcategory, steelspec, status_cooling, fqcflag) {
+      return steel.getMonitorData(url, {
+        slabthickness,
+        tgtdischargetemp,
+        tgtplatethickness,
+        tgtwidth,
+        tgtplatelength2,
+        tgttmplatetemp,
+        cooling_start_temp,
+        cooling_stop_temp,
+        cooling_rate1,
+        productcategory,
+        steelspec,
+        status_cooling,
+        fqcflag
+      })
+    },
+
 		getDetailProcess(upid, process, width, length, thickness,platetype,deviation) {
 			return steel.getVisualization({
 				'upid': upid,
@@ -626,7 +669,8 @@ export default {
 						})
 				}
 			})
-		},
+    },
+
 		async platetype(upid) {
 			await this.getplatetype()
 			baogangAxios(`/baogangapi/v1.0/model/Platetypes/${upid}/`).

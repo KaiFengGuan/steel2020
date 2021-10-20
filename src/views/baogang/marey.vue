@@ -257,6 +257,8 @@ import smallWheel from './wheel2.vue';
 import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
+import mergeTimesData from '../../data/layout/mergeTimesData.js'
+import {mareyChartBatchSpec} from '../../data/layout/monitor.js'
 import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
@@ -270,7 +272,8 @@ export default {
 			minconflict: 4,
 			symbolvalue:0.05,
 			linesize:0.25,
-			diagnosisData:[],
+      diagnosisData:[],
+      mergeresult: undefined,
 			processName:'',
 			plateoptions:[{
 					value: 'All',
@@ -451,71 +454,36 @@ export default {
 			this.getHttpData()
 		},
 		async getHttpData() {
-			// this.jsonData = myJsonData
-			// this.mergeflag()
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
-			// this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
-			// return
 			this.plateTempPropvalue=['All']
-			this.loadingDataLoading = true
-			// request
-			// let stationsResponse = this.getStationsData(startDate, endDate);
-			// let jsonResponse = this.getJsonData(startDate, endDate);
-			// let conditionResponse = this.getConditionData(startDate, endDate);
-
+      this.loadingDataLoading = true
+      
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
       this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      let monitorData = (await this.getMonitorData({
-        startDate: this.startDateString,
-        endDate: this.endDateString,
-        type: 'default',
-        limit: 1000},
-        JSON.stringify([]),   // slabthickness
-				JSON.stringify([]),   // tgtdischargetemp
-				JSON.stringify([]),   // tgtplatethickness
-				JSON.stringify([]),   // tgtwidth
-				JSON.stringify([]),   // tgtplatelength2
-				JSON.stringify([]),   // tgttmplatetemp
-				JSON.stringify([]),   // cooling_start_temp
-				JSON.stringify([]),   // cooling_stop_temp
-				JSON.stringify([]),   // cooling_rate1
-				JSON.stringify([]),   // productcategory
-				JSON.stringify([]),   // steelspec
-        0,   // status_cooling
-        0    // fqcflag
-      )).data;
-      monitorData.forEach(d => {
-        this.monitorData[d.upid] = d
-      })
-			// console.log('原始：', this.jsonData)
+      this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
+
+      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+			console.log('原始：', this.jsonData)
 			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
 			console.log('监控：', this.monitorData)
 
-			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
-			// this.getplatetype();
-			let allDataArr = []
-			for (let item of this.jsonData) {
-					let upid = item['upid']
-					allDataArr.push(flagData[upid])
-			}
-			for (let i = 0; i < this.jsonData.length; i++) {
-				this.jsonData[i]['flag'] = allDataArr[i]
-			}
+			// let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
+			// let allDataArr = []
+			// for (let item of this.jsonData) {
+			// 		let upid = item['upid']
+			// 		allDataArr.push(flagData[upid])
+			// }
+			// for (let i = 0; i < this.jsonData.length; i++) {
+			// 	this.jsonData[i]['flag'] = allDataArr[i]
+			// }
 
 			// paint
 			this.loadingDataLoading = false
 			this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
       if(this.scatterData.length!==0) {
 				this.mergeflag()
 			}
-      // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.monitorData, this.isSwitch, this.isMerge);
+			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.mergeresult, this.monitorData, this.isSwitch, this.isMerge);
 
 			// clear
 			this.selectedTrainData = [];
@@ -619,26 +587,6 @@ export default {
       })
     },
 
-    getMonitorData(url, slabthickness, tgtdischargetemp, tgtplatethickness, tgtwidth,
-      tgtplatelength2, tgttmplatetemp, cooling_start_temp, cooling_stop_temp,
-      cooling_rate1, productcategory, steelspec, status_cooling, fqcflag) {
-      return steel.getMonitorData(url, {
-        slabthickness,
-        tgtdischargetemp,
-        tgtplatethickness,
-        tgtwidth,
-        tgtplatelength2,
-        tgttmplatetemp,
-        cooling_start_temp,
-        cooling_stop_temp,
-        cooling_rate1,
-        productcategory,
-        steelspec,
-        status_cooling,
-        fqcflag
-      })
-    },
-
 		getDetailProcess(upid, process, width, length, thickness,platetype,deviation) {
 			return steel.getVisualization({
 				'upid': upid,
@@ -709,7 +657,6 @@ export default {
           this.getNotification("getJsonData:"+error)
         })
 		},
-
 		getStationsData(startDate, endDate) {
 			// return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoStationDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/`)
 			// 	.catch(function(error){
@@ -720,7 +667,20 @@ export default {
 				.catch(function(error){
 					this.getNotification("getStationsData:"+error)
 				})
-		},
+    },
+    getAllBatchMonitorData(mergeresult, startDate, endDate) {
+
+      let batchSpec = mareyChartBatchSpec(mergeresult);
+      console.log(batchSpec);
+
+      return steel.getMonitorData(
+        {startDate: startDate, endDate: endDate, type: 'default', limit: 1000},
+        batchSpec)
+        .catch(error => {
+          this.getNotification("getBatchMonitorData: " + error);
+        })
+    },
+
 		changeColor(){
 			this.changeLabelColor()
 			this.switchChange(this.isSwitch)

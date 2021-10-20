@@ -23,6 +23,7 @@ export default {
 			svg: undefined,
       timesdata: undefined,
       stationsdata: undefined,
+      mergeresult: undefined,
       monitordata: undefined,
       changecolor: true,
       isMerge: true,
@@ -34,11 +35,12 @@ export default {
   },
   methods: {
     ...mapMutations(['hightLight']),
-    paintPre(timesdata, stationsdata, monitordata, changecolor, isMerge) {
+    paintPre(timesdata, stationsdata, mergeresult, monitordata, changecolor, isMerge) {
       const vm = this;
       
       vm.timesdata = timesdata;
       vm.stationsdata = stationsdata;
+      vm.mergeresult = mergeresult,
       vm.monitordata = monitordata;
       vm.changecolor = changecolor;
       vm.isMerge = isMerge;
@@ -293,9 +295,10 @@ export default {
 
           return [good, bad, no_flag]
         }
-        dataInit(timesdata, stationsdata, monitordata) {
+        dataInit(timesdata, stationsdata, mergeresult, monitordata) {
           this._timesdata = timesdata;
           this._stationsdata = stationsdata;
+          this._mergeresult = mergeresult;
 
           this._trainGroupStyle = 
             this._change_color ? 
@@ -328,9 +331,6 @@ export default {
             let d_val = Math.max(...bin_data[0]);
             return [d_25, d_val, d_75];
           }
-          
-          this._mergeresult = this._mergeTimesData_1(this._timesdata, this._stationsdata);
-
 
           // 过滤合并的钢板
           let merge_upid = this._mergeresult.map(item => item.merge_result.merge.flat()).flat().map(d => d.upid)
@@ -534,7 +534,7 @@ export default {
             })
             batch_index_count++;
           }
-          console.log(this._mergeresult_1)
+          // console.log(this._mergeresult_1)
 
           let heat_bad = Math.random() * 25;
           let roll_bad = Math.random() * 30;
@@ -809,372 +809,6 @@ export default {
               .attr("filter","url(#shadow-card)")
           
           return this;
-        }
-        _mergeTimesData(json, stations) {
-          const categorys = d3.group(json , d => d.productcategory);
-          const mergecategorys = [];	// merge categorys
-          const minrange = this._minrange;
-          const minconflict = this._minconflict;
-          const mergeIndex = {};	// merge station maxlength
-          const mergeresult = [];
-          // const mpassnumber = (+stations.slice(-4)[0].name.replace(mpass,''))
-          for (let item of [...categorys]) {
-            item[1].length > minrange ? mergecategorys.push(item[0]) : undefined
-          }
-          // for (let item of  mergecategorys) {
-          //   let indexdata=d3.groups(categorys.get(item) , d => d.stops.length)
-          //   mergeIndex[item] = indexdata[d3.maxIndex(indexdata ,  d => d[1].length)][0]
-          // }
-
-          for(var item = 0; item < json.length - minrange; item++) {
-            const categoryindex = mergecategorys.indexOf(json[item].productcategory)
-
-            //filter data
-            if(categoryindex === -1)	continue
-            var index = item
-            while(json[index] !== undefined && json[index].stops.length === json[item].stops.length && json[item].productcategory === json[index].productcategory){
-              index++
-            }
-            if( index - item < minrange) continue
-
-            // merge length
-            const mergedata = json.slice(item, index)
-
-            // //mPass expand
-            // for (var key = 0 ; key < mergedata.length-1 ; key++){
-            // 	if(mergedata[key].stops.slice(-1)[0].station.zone === '3'){
-            // 		let mpassindex = (+mergedata[key].stops.slice(-4)[0].station.name.replace(mpass,''))
-            // 		if(mpassindex === mpassnumber) continue
-            // 		const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber , -3)
-            // 		for (let stopkey in stationsstops3){
-            // 			mergedata[key].stops.splice( -3 , 0 , {
-            // 				"time" : mergedata[key].stops.slice(-4)[0].time,
-            // 				"realTime" : mergedata[key].stops.slice(-4)[0].realTime,
-            // 				"station" : stationsstops3[stopkey]
-            // 			})
-            // 		}
-            // 		continue
-            // 	}
-            // 	let mpassindex = (+mergedata[key].stops.slice(-1)[0].station.name.replace(mpass,''))
-            // 	const stationsstops3 = stations.slice(-3 + mpassindex - mpassnumber)
-            // 	for (let stopkey in stationsstops3){
-            // 		mergedata[key].stops.push({
-            // 			"time" : mergedata[key].stops.slice(-1)[0].time,
-            // 			"realTime" : mergedata[key].stops.slice(-1)[0].realTime,
-            // 			"station" : stationsstops3[stopkey]
-            // 		})
-            // 	}
-            // }
-            
-            const indexarray=[]
-            for (var key = 0 ; key < mergedata.length; key++) {
-              // let singlearray=d3.pairs(mergedata[key].stops , (a,b) => {
-              const steeltime = []
-              for (var i = 0 ; i < mergedata[key].stops.length - 1 ; i++){
-                // let sample = {}
-                let stoptime = new Date(mergedata[key].stops[(+i)+1].time) - new Date(mergedata[key].stops[(+i)].time)
-                // sample[mergedata[key].stops[(+i)].station.name] = stoptime < 0 ? 0 : stoptime 
-                steeltime.push(stoptime < 0 ? 0 : stoptime )
-              }
-              indexarray.push(steeltime)
-            }
-            // console.log(indexarray)
-
-            const steeldisTotal = d3.pairs(mergedata , (a,b) => {
-              const steeldistance=[]
-              for (let key in stations){
-                const search = false
-                for (let i in a.stops){
-                  if(a.stops[i]["station"].name === stations[key].name){
-                    for (let j in b.stops){
-                      if(b.stops[j]["station"].name === stations[key].name){
-                        steeldistance.push(new Date(b.stops[j].time) - new Date(a.stops[i].time))
-                        search=true
-                      }
-                    }
-                  }
-                }
-                search !== true ? steeldistance.push(0) : undefined
-              }
-              return steeldistance
-            })
-            // console.log(steeldisTotal)
-
-            //data mean distance
-            const dis_upper = []
-            const dis_lower = []
-            for (let key in json[item].stops) {
-              dis_upper.push(d3.quantile(steeldisTotal, 0.75, d => d[key]))
-              dis_lower.push(d3.quantile(steeldisTotal, 0.25, d => d[key] ))
-            }
-            // console.log(meandis)
-
-            // merge selection
-            const mergeselect = []
-            const outliers = []
-            const mergeflag = 0;
-            for (let i in steeldisTotal) {
-              const outrange = 0
-              const one_out = []
-              let out_flag = false
-              for (let j in json[item].stops) {
-                steeldisTotal[i][j] > dis_upper[j] ? ((steeldisTotal[i][j] - dis_upper[j])/dis_upper[j] > 1.1 & dis_upper[j] !== 0 ) ? outrange+=5 : outrange+=2 : undefined;
-                steeldisTotal[i][j] < 0 ? outrange += 20 : undefined;
-
-                if ((steeldisTotal[i][j] - dis_upper[j])/dis_upper[j] > 1.1 & dis_upper[j] !== 0) {
-                  out_flag = true
-                  one_out.push(mergedata[i].stops[j])
-                }
-              }
-              out_flag ? outliers.push(one_out) : undefined;
-              if (outrange >= 15)  mergeselect.push(mergedata[+i+1])
-              if (mergeselect.length > minconflict -1 ) {
-                mergeflag = (+i) +1
-                break
-              }
-              // mergeselect.push(mergedata[i+1])
-            }
-            // console.log(mergeselect)
-            if(mergeflag !== 0){
-              if(mergeflag < minrange){
-                item ++
-                continue
-              }
-              var mergeDistanceTime = d3.pairs(d3.map(mergedata.slice(0 , 0 + mergeflag), d => new Date(d.stops.slice(-1)[0].time).getTime()) , (a,b) => b - a),
-                distanceIndex = 0;
-              for(var number = 0 ; number < mergeDistanceTime.length-1 ; number++){
-                if(mergeDistanceTime[number] > 3 * d3.min(mergeDistanceTime)){
-                  distanceIndex = number
-                  break
-                }
-              }
-              // console.log(mergeDistanceTime)
-              if(distanceIndex !== 0){
-                item = item + distanceIndex + 1
-                continue
-              }
-              mergeresult.push({
-                "merge" : mergedata.slice(0, 0+mergeflag),
-                "select" : mergeselect,
-                "outliers": outliers.slice(0, 0+mergeflag),
-                "index" : [item , mergeflag ],
-                "data" : [item , item + mergeflag ],
-                "wave" : indexarray.slice(0 , 0 + mergeflag)
-              })
-              item = item + mergeflag
-              continue
-            }
-            if(index - item < minrange){
-              item ++
-              continue
-            }
-            // console.log(mergedata)
-            var mergeDistanceTime = d3.pairs(d3.map(mergedata, d => new Date(d.stops.slice(-1)[0].time).getTime()) , (a,b) => b - a),
-              distanceIndex = 0;
-            for(var number = 0 ; number < mergeDistanceTime.length-1 ; number++){
-              if(mergeDistanceTime[number] > 3 * d3.min(mergeDistanceTime)){
-                distanceIndex = number
-                break
-              }
-            }
-            // console.log(mergeDistanceTime)
-            if(distanceIndex !== 0){
-              item = item + distanceIndex + 1
-              continue
-            }
-            mergeresult.push({
-              "merge" : mergedata,
-              "select" : mergeselect,
-              "outliers": outliers,
-              "index" : [item , index - item],
-              "data" : [item , index ],
-              "wave" : indexarray
-            })
-            item = index -1
-          }
-          // console.log(mergeresult)
-          return mergeresult
-        }
-        _mergeTimesData_1(json, stations) {
-          const minrange = this._minrange;
-          const minconflict = this._minconflict;
-
-          // console.log(json);
-          // console.log(stations);
-          // console.log( json.map(d => d.stops.map(e => e.station.key)) )
-
-          // 批次划分
-          let batch_plates = [];
-          let plates_stops = json.map(d => d.stops);
-          for (let i = 0; i < plates_stops.length; i++) {
-            let batch_count = i + 1;
-            let time_diff_init = compute_tr(plates_stops[i], plates_stops[batch_count]);
-
-            while (plates_stops[i] !== undefined 
-              && plates_stops[batch_count] !== undefined
-              && plates_stops[i].length === plates_stops[batch_count].length)
-            {
-              let time_diff = compute_tr(plates_stops[batch_count-1], plates_stops[batch_count]);
-              
-              // console.log(batch_count, time_diff, Math.abs(time_diff - time_diff_init) )
-
-              if (Math.abs(time_diff - time_diff_init) > 20) {
-                break;
-              }
-
-              batch_count += 1;
-            }
-
-            if (batch_count - i > minrange) {
-              batch_plates.push(json.slice(i, batch_count))
-            }
-            i = batch_count;
-          }
-          // console.log(batch_plates)
-
-
-          // 对每个批次内的板进行合并  batch_plates.length
-          let mergeresult = []
-          for (let batch_index = 0; batch_index < batch_plates.length; batch_index++) {
-            let one_batch = batch_plates[batch_index];
-
-            let res = merge_plates(one_batch);
-            // console.log(one_batch)
-            // console.log(res)
-            mergeresult.push(res);
-            
-          }
-          // console.log(mergeresult)
-
-
-          
-          // 合并主逻辑
-          function merge_plates(one_batch) {
-            let categorys = d3.group(one_batch , d => d.steelspec)
-            let mergecategorys = []
-            let mergeIndex = {}	// merge station maxlength
-
-            for (let item of [...categorys]) {
-              item[1].length > minrange ? mergecategorys.push(item[0]) : undefined
-            }
-            for (let item of  mergecategorys) {
-              let indexdata = d3.groups(categorys.get(item) , d => d.stops.length)
-              mergeIndex[item] = indexdata[d3.maxIndex(indexdata ,  d => d[1].length)][0]
-            }
-
-
-            // 计算两块板之间的距离矩阵
-            let dis_matrix = d3.pairs(one_batch, (a, b) => {
-              let one_arr = []
-              let stops_len = a.stops.length
-              for (let i = 0; i < stops_len; i++) {
-                let a_t = new Date(a.stops[i].time);
-                let b_t = new Date(b.stops[i].time);
-                one_arr.push(b_t - a_t)
-              }
-
-              return one_arr
-            })
-
-            // console.log('-----------------------------------------')
-            // console.log('one batch: ', one_batch)
-            // console.log('dis matrix: ', dis_matrix)
-
-            let dis_upper = [];
-            let dis_lower = [];
-            for (let i = 0; i < dis_matrix[0].length; i++) {
-              dis_upper.push(d3.quantile(dis_matrix, 0.80, d => d[i]))
-              dis_lower.push(d3.quantile(dis_matrix, 0.80, d => d[i]))
-            }
-
-            // console.log('dis_upper: ', dis_upper)
-
-
-            // 开始合并
-            let merge_select = [];
-            let merge_item = [];
-            let merge_index = [];
-            let cannot_merge = [];
-            let outliers = []
-            for (let i = 0; i < one_batch.length-1; i++) {
-              let index = i;
-              let m_item = [];
-              let m_select = [];
-
-              let curr_steelspec = one_batch[i].steelspec
-              if (!can_merge(one_batch[i], {
-                steelspec: mergecategorys.indexOf(curr_steelspec) === -1 ? "aaa" : curr_steelspec
-                })
-              )
-              {
-                cannot_merge.push(one_batch[i]);
-                continue;
-              }
-
-              while (one_batch[index] !== undefined 
-                && dis_matrix[index] !== undefined
-                && can_merge(one_batch[index], {steelspec: curr_steelspec}))
-              {
-                let outrange = 0;
-
-                for (let j = 0; j < one_batch[index].stops.length; j++) {
-                  dis_matrix[index][j] > dis_upper[j] ? 
-                  (dis_matrix[index][j]-dis_upper[j])/dis_upper[j] > 1.1 && dis_upper[j] !== 0 ?
-                  outrange += 5 :
-                  outrange += 2 :
-                  undefined;
-
-                  dis_matrix[index][j] < 0 ? outrange += 20 : undefined;
-                }
-
-                m_item.push(one_batch[index])
-                if (outrange >= 15)  m_select.push(one_batch[index])
-                if (m_select.length > minconflict - 1) break;
-                
-                index += 1
-              }
-
-              if (m_item.length >= minrange) {
-                merge_item.push(m_item)
-                merge_select.push(m_select)
-              } else {
-                m_item.forEach(d => cannot_merge.push(d))
-              }
-
-              i = index;
-            }
-
-            return {
-              'merge_result': { 'merge': merge_item, 'select': merge_select},
-              'cannot_merge': cannot_merge
-            }
-          }
-
-          // 判断是否满足合并条件
-          function can_merge(one_plate, condition) {
-            if (one_plate.steelspec === condition.steelspec)
-            {
-              return true
-            }
-            else
-            {
-              return false
-            }
-          }
-
-          // 计算相邻两块板的生产节奏间隔，单位为分钟
-          function compute_tr(stop1, stop2) {
-            if (stop1 === undefined || stop2 === undefined) {
-              return 0
-            }
-
-            let stop1_tr = new Date(stop1[5].time);
-            let stop2_tr = new Date(stop2[5].time);
-
-            return (stop2_tr.getTime() - stop1_tr.getTime())/60000
-          }
-
-          return mergeresult
         }
 
         // 马雷图主图
@@ -3219,9 +2853,13 @@ export default {
               .append('rect')
               .attr('class', `${type}_diagnosis_value`)
               .attr('id', d => `${type}_diagnosis_value_` + d.upid)
-              .attr('transform', (d, i) => `translate(${[
+              .attr('transform', (d, i) => {
+                let pos = -Scale[d.index](d[type]);
+                console.log(i, pos);
+                return `translate(${[
                 type === 'Q' ? -Scale[d.index](d[type]) + that._moni_rect_w/2-5 : that._moni_rect_w/2 + 5, 
-                that._y(d.endtime)]})`)
+                that._y(d.endtime)]})`
+              })
               .attr('width', d => Scale[d.index](d[type]))
               .attr('height', d => {
                 let h = that._y(d.nextendtime) - that._y(d.endtime);
@@ -3701,7 +3339,7 @@ export default {
       vm.conditionView = new ConditionView(vm.svg);
       vm.conditionView
         .stateInit(vm.isMerge, vm.changecolor, vm.minrange, vm.minconflict)
-        .dataInit(vm.timesdata, vm.stationsdata, vm.monitordata)
+        .dataInit(vm.timesdata, vm.stationsdata, vm.mergeresult, vm.monitordata)
         .chartSizeInit(WIDTH, HEIGHT)
         .scaleInit()
         ._shadowInit()

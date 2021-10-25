@@ -111,33 +111,39 @@ function merge_plates(one_batch, minrange, minconflict) {
 
 export default function mergeTimesData(json, stations, minrange, minconflict) {
   // 批次划分
+  const BatchInterval = 20; // min
   let batch_plates = [];
   let plates_stops = json.map(d => d.stops);
-  for (let i = 0; i < plates_stops.length; i++) {
+  for (let i = 0; i < plates_stops.length;) {
     let batch_count = i + 1;
-    let time_diff_init = compute_tr(plates_stops[i], plates_stops[batch_count]);
+    // let time_diff_init = compute_tr(plates_stops[i], plates_stops[batch_count]);
 
     while (plates_stops[i] !== undefined 
       && plates_stops[batch_count] !== undefined
-      && plates_stops[i].length === plates_stops[batch_count].length)
-    {
+      // && plates_stops[i].length === plates_stops[batch_count].length
+    ) {
       let time_diff = compute_tr(plates_stops[batch_count-1], plates_stops[batch_count]);
 
-      if (Math.abs(time_diff - time_diff_init) > 20) break;
+      if (Math.abs(time_diff) > BatchInterval) break;
 
       batch_count += 1;
     }
 
-    if (batch_count - i > minrange) {
-      batch_plates.push(json.slice(i, batch_count))
-    }
+    // if (batch_count - i > minrange) {
+    //   batch_plates.push(json.slice(i, batch_count))
+    // }
+    batch_plates.push(json.slice(i, batch_count));
+
     i = batch_count;
   }
+  // console.log(batch_plates)
+  // console.log(d3.sum(batch_plates.map(d => d.length)))
 
   // 对每个批次内的板进行合并  batch_plates.length
   let mergeresult = []
   for (let batch_index = 0; batch_index < batch_plates.length; batch_index++) {
     let one_batch = batch_plates[batch_index];
+    console.log(one_batch);
 
     let res = merge_plates(one_batch, minrange, minconflict);
     mergeresult.push(res);

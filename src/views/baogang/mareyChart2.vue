@@ -25,6 +25,7 @@ export default {
       stationsdata: undefined,
       mergeresult: undefined,
       monitordata: undefined,
+      eventIconData: undefined,
       changecolor: true,
       isMerge: true,
 
@@ -35,13 +36,15 @@ export default {
   },
   methods: {
     ...mapMutations(['hightLight']),
-    paintPre(timesdata, stationsdata, mergeresult, monitordata, changecolor, isMerge) {
+    paintPre(data, changecolor, isMerge) {
       const vm = this;
       
-      vm.timesdata = timesdata;
-      vm.stationsdata = stationsdata;
-      vm.mergeresult = mergeresult,
-      vm.monitordata = monitordata;
+      vm.timesdata = data.timesData;
+      vm.stationsdata = data.stationsData;
+      vm.mergeresult = data.mergeResult,
+      vm.monitordata = data.monitorData;
+      vm.eventIconData = data.eventIconData;
+
       vm.changecolor = changecolor;
       vm.isMerge = isMerge;
 
@@ -69,6 +72,7 @@ export default {
           this._filterdata = undefined;
           this._dataUCL = undefined;
           this._monitoringdata = undefined;
+          this._eventIconData = undefined;
           this._stopsTimes = undefined;
           this._allupid = undefined;
           this._stops = undefined;
@@ -295,10 +299,11 @@ export default {
 
           return [good, bad, no_flag]
         }
-        dataInit(timesdata, stationsdata, mergeresult, monitordata) {
+        dataInit(timesdata, stationsdata, mergeresult, monitordata, eventIconData) {
           this._timesdata = timesdata;
           this._stationsdata = stationsdata;
           this._mergeresult = mergeresult;
+          this._eventIconData = eventIconData;
 
           this._trainGroupStyle = 
             this._change_color ? 
@@ -565,16 +570,16 @@ export default {
                 endtime: new Date(item.stops.slice(-1)[0].time),
                 nextendtime: i+1 === n ? 0 : new Date(this._timesdata[i+1].stops.slice(-1)[0].time),
                 index: j,
-                Q_UCL:  cur_moni ? cur_moni[process[j] + '_QUCL']  : 0,
-                Q:      cur_moni ? cur_moni[process[j] + '_Q']     : 0,
-                T2_UCL: cur_moni ? cur_moni[process[j] + '_T2UCL'] : 0,
-                T2:     cur_moni ? cur_moni[process[j] + '_T2']    : 0,
+                Q_UCL:  cur_moni ? cur_moni[process[j] + '_QUCL']  ? cur_moni[process[j] + '_QUCL']  : 0 : 0,
+                Q:      cur_moni ? cur_moni[process[j] + '_Q']     ? cur_moni[process[j] + '_Q'] > cur_moni[process[j] + '_QUCL'] * 1.5 ? cur_moni[process[j] + '_QUCL'] * 1.5 : cur_moni[process[j] + '_Q'] : 0 : 0,
+                T2_UCL: cur_moni ? cur_moni[process[j] + '_T2UCL'] ? cur_moni[process[j] + '_T2UCL'] : 0 : 0,
+                T2:     cur_moni ? cur_moni[process[j] + '_T2']    ? cur_moni[process[j] + '_T2'] > cur_moni[process[j] + '_T2UCL'] * 1.5 ? cur_moni[process[j] + '_T2UCL'] * 1.5 : cur_moni[process[j] + '_T2'] : 0 : 0,
               })
             }
           }
 
           this._monitoringdata['diag'] = all_diag;
-          console.log(this._monitoringdata);
+          // console.log(this._monitoringdata);
 
 
           return this;
@@ -831,6 +836,7 @@ export default {
 
           this._renderMareyLineNoMerge(MareyGroup);
           this._renderMareyLineMerge(MareyGroup);
+          this._renderEventIconData(MareyGroup);
         }
         _renderMareyLineNoMerge(MareyGroup) {
           let paintdata = this._is_merge ? this._filterdata : this._timesdata;
@@ -944,6 +950,21 @@ export default {
           //       .attr('stroke', 'currentColor')
           //       .attr('d', d => this._line(d.stops)));
           // }
+        }
+        _renderEventIconData(MareyGroup) {
+          const mareyEventIconCroup = MareyGroup
+            .append('g')
+            .attr('class', 'mareyEventIconCroup')
+          
+          mareyEventIconCroup.selectAll('eventIcon')
+            .data(this._eventIconData)
+            .enter()
+            .append('circle')
+            .attr('transform', d => `translate(${[this._x(d.distance), this._y(new Date(d.time))]})`)
+            .attr('r', 10)
+            .attr('color', 'red')
+            .attr('class', 'eventIcon')
+            .attr('id', d => `eventIcon_${d.upid}`)
         }
         _renderMareyLineTooltip() {
           let that = this;
@@ -1109,25 +1130,25 @@ export default {
               if (this._trainSelectedList.includes(d.train.upid)) {
                 this._trainSelectedList = this._trainSelectedList.filter(v => v !== d.train.upid)
                 mouseoutLine(d.train.upid) // 取消选中
-              } else {
-              // 选中
+              } else { // 选中
                 if(this._trainSelectedList.length !==0) {
                   mouseoutLine(this._trainSelectedList[this._trainSelectedList.length-1])
-                  mouseOutPath()
+                  resetBin();
                 }
                 this._trainSelectedList.push(d.train.upid);
                 mouseoverLine(d.train.upid)
-                mouseOverRect(d.train.upid)
+                changeBin(d.train.upid);
+
+                let upidSelect = d3.map(
+                  d3.filter(this._timesdata.slice(this._allupid.indexOf(d.train.upid)), d => d.flag === 0), 
+                  d => d.upid)
+                vm.$emit("trainClick", {
+                  list: this._trainSelectedList,
+                  upidSelect: upidSelect,
+                  type: "single",
+                  batch: upidSelect
+                });
               }
-              let upidSelect = d3.map(
-                d3.filter(this._timesdata.slice(this._allupid.indexOf(d.train.upid)), d => d.flag === 0), 
-                d => d.upid)
-              vm.$emit("trainClick", {
-                list: this._trainSelectedList,
-                upidSelect: upidSelect,
-                type: "single",
-                batch: upidSelect
-              });
             })
           
           const diagColor = (d, ucl) => d > ucl ? vm.labelColors[0] : vm.labelColors[1];
@@ -2854,8 +2875,6 @@ export default {
               .attr('class', `${type}_diagnosis_value`)
               .attr('id', d => `${type}_diagnosis_value_` + d.upid)
               .attr('transform', (d, i) => {
-                let pos = -Scale[d.index](d[type]);
-                console.log(i, pos);
                 return `translate(${[
                 type === 'Q' ? -Scale[d.index](d[type]) + that._moni_rect_w/2-5 : that._moni_rect_w/2 + 5, 
                 that._y(d.endtime)]})`
@@ -3104,6 +3123,8 @@ export default {
           this._translateInfoChart();
 
           this._translateMonitorChart();
+
+          this._translateEventIcon();
         }
         _translateMareyLine() {
           let line_tran = d3.transition()
@@ -3320,6 +3341,16 @@ export default {
               })
           }
         }
+        _translateEventIcon() {
+          let line_tran = d3.transition()
+            .delay(50)
+            .duration(500);
+          
+          const mareyEventIconCroup = this._marey_g.select('.mareyEventIconCroup');
+          mareyEventIconCroup.selectAll('.eventIcon')
+            .transition(line_tran)
+            .attr('transform', d => `translate(${[this._x(d.distance), this._y(new Date(d.time))]})`)
+        }
 
         _deepCopy(obj) {
           if (typeof obj !== "object") return obj;
@@ -3339,7 +3370,7 @@ export default {
       vm.conditionView = new ConditionView(vm.svg);
       vm.conditionView
         .stateInit(vm.isMerge, vm.changecolor, vm.minrange, vm.minconflict)
-        .dataInit(vm.timesdata, vm.stationsdata, vm.mergeresult, vm.monitordata)
+        .dataInit(vm.timesdata, vm.stationsdata, vm.mergeresult, vm.monitordata, vm.eventIconData)
         .chartSizeInit(WIDTH, HEIGHT)
         .scaleInit()
         ._shadowInit()

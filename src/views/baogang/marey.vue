@@ -259,9 +259,14 @@ import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import mergeTimesData from '../../data/layout/mergeTimesData.js'
 import {mareyChartBatchSpec} from '../../data/layout/monitor.js'
+import {filterMareyChartEventIcon} from '../../data/layout/mareyChartEventIcon.js'
 import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
+
+import jsonData from '../data/jsonData.json'
+import monitorData from '../data/monitorData.json'
+
 export default {
 	components: { mareyChart, timeBrush, brushableParallel, scatterlog, wheeler , smallWheel, slider},
 	data() {
@@ -459,13 +464,16 @@ export default {
       
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      this.jsonData = jsonData
+      console.log('原始：', this.jsonData)
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
-
-      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
-			console.log('原始：', this.jsonData)
+      let eventIconData = filterMareyChartEventIcon(this.jsonData);
+      // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      this.monitorData = monitorData
 			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
-			console.log('监控：', this.monitorData)
+      // console.log('监控：', this.monitorData)
+      console.log(eventIconData)
 
 			// let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
 			// let allDataArr = []
@@ -483,7 +491,13 @@ export default {
       if(this.scatterData.length!==0) {
 				this.mergeflag()
 			}
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.mergeresult, this.monitorData, this.isSwitch, this.isMerge);
+			this.$refs.mareyChart.paintPre({
+        timesData: this.jsonData, 
+        stationsData: this.stationsData, 
+        mergeResult: this.mergeresult,
+        monitorData: this.monitorData,
+        eventIconData: eventIconData
+        }, this.isSwitch, this.isMerge);
 
 			// clear
 			this.selectedTrainData = [];
@@ -669,10 +683,7 @@ export default {
 				})
     },
     getAllBatchMonitorData(mergeresult, startDate, endDate) {
-
       let batchSpec = mareyChartBatchSpec(mergeresult);
-      console.log(batchSpec);
-
       return steel.getMonitorData(
         {startDate: startDate, endDate: endDate, type: 'default', limit: 1000},
         batchSpec)

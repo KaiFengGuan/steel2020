@@ -1,7 +1,7 @@
 import * as d3 from 'd3'
 import {convertTime} from '../../utils/index.js'
 
-const OprationThreshold = 0.00090;  // 单位: m, 范围: -0.004m ~ 0.004m
+const OprationThreshold = 0.00100;  // 单位: m, 范围: -0.004m ~ 0.004m
 
 function hasOperation(curr, next) {
   let curr_zp = curr.station.zeropoint ? curr.station.zeropoint : undefined;
@@ -41,7 +41,8 @@ export function filterMareyChartEventIcon(timesData) {
         toc: convertTime(toc),
         flag: next_item.flag,
         distance: next_rmF3.station.distance,
-        time: convertTime((new Date(next_rmF3.time).getTime() + new Date(curr_rmF3.time).getTime()) / 2)
+        // time: convertTime((new Date(next_rmF3.time).getTime() + new Date(curr_rmF3.time).getTime()) / 2)
+        time: next_rmF3.time
       });
     }
 
@@ -54,7 +55,8 @@ export function filterMareyChartEventIcon(timesData) {
         toc: convertTime(toc),
         flag: next_item.flag,
         distance: next_fmL3.station.distance,
-        time: convertTime((new Date(next_fmL3.time).getTime() + new Date(curr_fmL3.time).getTime()) / 2)
+        // time: convertTime((new Date(next_fmL3.time).getTime() + new Date(curr_fmL3.time).getTime()) / 2)
+        time: next_fmL3.time
       });
     }
   }

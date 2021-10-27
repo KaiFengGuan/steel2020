@@ -310,7 +310,7 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2019, 2, 1, 0, 0),
+			startmonth: new Date(2021, 2, 10, 0, 0),
 			time: undefined,
 			selectedTrainData: [],
 			corrdata:[],
@@ -405,7 +405,7 @@ export default {
 			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
 			// 	endmonth.setMonth(1)
       // }
-      endmonth.setDate(endmonth.getDate() + 5)
+      endmonth.setDate(endmonth.getDate() + 10)
 
 			return [this.startmonth, endmonth]
 		},
@@ -473,7 +473,7 @@ export default {
       this.monitorData = monitorData
 			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
       // console.log('监控：', this.monitorData)
-      console.log(eventIconData)
+      // console.log(eventIconData)
 
 			// let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
 			// let allDataArr = []

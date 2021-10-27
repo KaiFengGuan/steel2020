@@ -31,11 +31,15 @@ function merge_plates(one_batch, minrange, minconflict) {
   // 计算两块板之间的距离矩阵
   let dis_matrix = d3.pairs(one_batch, (a, b) => {
     let one_arr = []
-    let stops_len = a.stops.length
+    let stops_len = 17 //a.stops.length
     for (let i = 0; i < stops_len; i++) {
-      let a_t = new Date(a.stops[i].time);
-      let b_t = new Date(b.stops[i].time);
-      one_arr.push(b_t - a_t)
+      try {
+        let a_t = new Date(a.stops[i].time);
+        let b_t = new Date(b.stops[i].time);
+        one_arr.push(b_t - a_t);
+      } catch {
+        one_arr.push(0);
+      }
     }
 
     return one_arr
@@ -54,7 +58,7 @@ function merge_plates(one_batch, minrange, minconflict) {
   let merge_index = [];
   let cannot_merge = [];
   let outliers = []
-  for (let i = 0; i < one_batch.length-1; i++) {
+  for (let i = 0; i < one_batch.length;) {
     let index = i;
     let m_item = [];
     let m_select = [];
@@ -63,15 +67,16 @@ function merge_plates(one_batch, minrange, minconflict) {
     if (!can_merge(one_batch[i], {
       steelspec: mergecategorys.indexOf(curr_steelspec) === -1 ? "aaa" : curr_steelspec
       })
-    )
-    {
+    ) {
       cannot_merge.push(one_batch[i]);
+      i++;
       continue;
     }
 
     while (one_batch[index] !== undefined 
       && dis_matrix[index] !== undefined
-      && can_merge(one_batch[index], {steelspec: curr_steelspec}))
+      && one_batch[i].stops.length === one_batch[index].stops.length  // 工序长度相等
+      && can_merge(one_batch[index], {steelspec: curr_steelspec}))    // steelspec相等
     {
       let outrange = 0;
 
@@ -87,7 +92,7 @@ function merge_plates(one_batch, minrange, minconflict) {
 
       m_item.push(one_batch[index])
       if (outrange >= 15)  m_select.push(one_batch[index])
-      if (m_select.length > minconflict - 1) break;
+      if (m_select.length > minconflict - 1) break;   // 超出容许数量，结束当前合并
       
       index += 1
     }
@@ -99,7 +104,7 @@ function merge_plates(one_batch, minrange, minconflict) {
       m_item.forEach(d => cannot_merge.push(d))
     }
 
-    i = index;
+    i = index + 1;
   }
 
   return {
@@ -136,19 +141,18 @@ export default function mergeTimesData(json, stations, minrange, minconflict) {
 
     i = batch_count;
   }
-  // console.log(batch_plates)
-  // console.log(d3.sum(batch_plates.map(d => d.length)))
+  console.log(batch_plates)
+  console.log(d3.sum(batch_plates.map(d => d.length)))
 
   // 对每个批次内的板进行合并  batch_plates.length
   let mergeresult = []
   for (let batch_index = 0; batch_index < batch_plates.length; batch_index++) {
     let one_batch = batch_plates[batch_index];
-    console.log(one_batch);
 
     let res = merge_plates(one_batch, minrange, minconflict);
     mergeresult.push(res);
     
   }
-
+  // console.log(mergeresult)
   return mergeresult;
 }

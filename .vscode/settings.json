@@ -2,12 +2,13 @@
     // tab缩进大小,默认为2
     "tabWidth": 2,
     // 使用tab缩进，默认false
-    "useTabs": false,
+    "useTabs": true,
     "prettier.arrowParens": "avoid",
     "prettier.bracketSpacing": false,
     "prettier.printWidth": 100,
     "prettier.useTabs": true,
     "prettier.trailingComma": "none",
     "prettier.endOfLine": "crlf",
-    "arrowParens": "avoid"
+    "arrowParens": "avoid",
+    "editor.tabSize": 2
 }

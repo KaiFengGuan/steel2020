@@ -11,7 +11,12 @@ function compute_tr(stop1, stop2) {
 
 // 判断是否满足合并条件
 function can_merge(one_plate, condition) {
-  return one_plate.steelspec === condition.steelspec ? true : false;
+  if (one_plate.steelspec === condition.steelspec // steelspec相等
+    && one_plate.stops.length === condition.stops.length        // 工序长度相等
+  ) {
+    return true;
+  }
+  return false;
 }
 
 // 合并主逻辑
@@ -53,58 +58,66 @@ function merge_plates(one_batch, minrange, minconflict) {
   }
 
   // 开始合并
+  /**
+   *    TMD !!! 这里边界条件要想清楚，特别是合并/不合并的情况下最后一个怎么切.
+   *    否则数据会出现重复的板
+   */
   let merge_select = [];
   let merge_item = [];
   let merge_index = [];
   let cannot_merge = [];
-  let outliers = []
   for (let i = 0; i < one_batch.length;) {
-    let index = i;
+    let index = i + 1;
+    let cannot_m = [];
+
+    // 先过滤一堆不能合并的
+    let prev_index = index - 1;
+    while (one_batch[index] !== undefined 
+      && !can_merge(one_batch[index], {
+        steelspec: mergecategorys.indexOf(one_batch[prev_index].steelspec) === -1 ? "aaa" : one_batch[prev_index].steelspec,
+        stops: one_batch[prev_index].stops})
+    ) {
+      prev_index += 1;
+      index = prev_index + 1;
+    }
+    cannot_m = one_batch.slice(i, prev_index);  // !!!
+
+    // 终于到了能合并的区域
+    i = prev_index;
     let m_item = [];
     let m_select = [];
-
-    let curr_steelspec = one_batch[i].steelspec
-    if (!can_merge(one_batch[i], {
-      steelspec: mergecategorys.indexOf(curr_steelspec) === -1 ? "aaa" : curr_steelspec
-      })
-    ) {
-      cannot_merge.push(one_batch[i]);
-      i++;
-      continue;
-    }
-
     while (one_batch[index] !== undefined 
-      && dis_matrix[index] !== undefined
-      && one_batch[i].stops.length === one_batch[index].stops.length  // 工序长度相等
-      && can_merge(one_batch[index], {steelspec: curr_steelspec}))    // steelspec相等
+      && dis_matrix[index - 1] !== undefined
+      && can_merge(one_batch[index], {steelspec: one_batch[i].steelspec, stops: one_batch[i].stops}))    
     {
       let outrange = 0;
 
       for (let j = 0; j < one_batch[index].stops.length; j++) {
-        dis_matrix[index][j] > dis_upper[j] ? 
-        (dis_matrix[index][j]-dis_upper[j])/dis_upper[j] > 1.1 && dis_upper[j] !== 0 ?
-        outrange += 5 :
-        outrange += 2 :
-        undefined;
+        dis_matrix[index - 1][j] > dis_upper[j]
+        ? (dis_matrix[index - 1][j]-dis_upper[j])/dis_upper[j] > 1.1 && dis_upper[j] !== 0
+        ? outrange += 5
+        : outrange += 2
+        : undefined;
 
-        dis_matrix[index][j] < 0 ? outrange += 20 : undefined;
+        dis_matrix[index - 1][j] < 0 ? outrange += 20 : undefined;
       }
 
-      m_item.push(one_batch[index])
-      if (outrange >= 15)  m_select.push(one_batch[index])
+      if (outrange >= 15)  m_select.push(one_batch[index]);
+      index += 1;     // !!!
+
       if (m_select.length > minconflict - 1) break;   // 超出容许数量，结束当前合并
-      
-      index += 1
     }
+    m_item = one_batch.slice(i, index);   // !!!
 
     if (m_item.length >= minrange) {
-      merge_item.push(m_item)
-      merge_select.push(m_select)
+      merge_item.push(m_item);
+      merge_select.push(m_select);
+      cannot_m.length > 0 ? cannot_merge.push(cannot_m) : undefined;
     } else {
-      m_item.forEach(d => cannot_merge.push(d))
+      cannot_merge.push([...cannot_m, ...m_item]);
     }
 
-    i = index + 1;
+    i = index;    // !!!
   }
 
   return {
@@ -141,8 +154,8 @@ export default function mergeTimesData(json, stations, minrange, minconflict) {
 
     i = batch_count;
   }
-  console.log(batch_plates)
-  console.log(d3.sum(batch_plates.map(d => d.length)))
+  // console.log(batch_plates)
+  // console.log(d3.sum(batch_plates.map(d => d.length)))
 
   // 对每个批次内的板进行合并  batch_plates.length
   let mergeresult = []
@@ -154,5 +167,13 @@ export default function mergeTimesData(json, stations, minrange, minconflict) {
     
   }
   // console.log(mergeresult)
+  // console.log( mergeresult.map(d => [...d.cannot_merge.flat(), ...d.merge_result.merge.flat()].map(e => e.upid)) )
+  // console.log( mergeresult.map(d => {
+  //   let all = [...d.cannot_merge.flat(), ...d.merge_result.merge.flat()];
+  //   let map = new Map();
+  //   all.forEach(e => map.set(e.upid, e));
+  //   return Array.from(map);
+  // }) )
+
   return mergeresult;
 }

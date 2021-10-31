@@ -27,15 +27,54 @@ function __getPathColor(datalist) {
 
   return pathColor;
 }
+function divideTimeArea(items) {
+  let res = [];
+  for (let item of items) {
+    item.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    res.push([
+      new Date(item[0].stops[0].time),
+      new Date(item.slice(-1)[0].stops[0].time)
+    ]);
+  }
+  return res;
+}
+function divideSteelPlates(mergeItem, cannotMerge) {
+  let timesInterval = divideTimeArea(mergeItem);
+
+  let divRes = [];
+  for (let i = 0; i < timesInterval.length + 1; i++) {
+    divRes.push([]);
+  }
+  for (let i = 0; i <= timesInterval.length; i++) {
+    for (let j = 0; j < cannotMerge.length; j++) {
+      let time = new Date(cannotMerge[j].stops[0].time);
+      if (i === 0) {
+        if (time.getTime() <= timesInterval[0][0].getTime()) {
+          divRes[i].push(cannotMerge[j]);
+        }
+      } else if (i === timesInterval.length) {
+        if (time.getTime() >= timesInterval.slice(-1)[0][1].getTime()) {
+          divRes[i].push(cannotMerge[j]);
+        }
+      } else {
+        if (time.getTime() >= timesInterval[i - 1][1].getTime() 
+          && time.getTime() <= timesInterval[i][0].getTime()) {
+            divRes[i].push(cannotMerge[j]);
+          }
+      }
+    }
+  }
+  return divRes.filter(d => d.length !== 0);
+}
 
 export function getOneBatchInfo(
   key,
   batch_index_count,
   category_name,
+  realMergeItem,
   mergeItem, 
   mergeItem_flat, 
-  stationsdata, 
-  pathColor, 
+  stationsdata,
   labelStatistics, 
   extend, 
   cate_extend,
@@ -114,17 +153,23 @@ export function getOneBatchInfo(
 
   let link_info_list = [];
   if (isOther) {
-    mergeItem_flat.sort((a, b) => new Date(a.stops[0].time) - new Date(b.stops[0].time));
-    link_info_list.push({
-      name: category_name,
-      info_index: key,
-      batch_index: batch_index_count,
-      merge_index: -1,
-      pathColor: __getPathColor(mergeItem_flat),
-      batch_s: new Date(mergeItem_flat[0].stops[0].time),
-      date_entry_s: new Date(mergeItem_flat[0].stops[0].time),
-      date_entry_e: new Date(mergeItem_flat[mergeItem_flat.length - 1].stops[0].time)
-    })
+    let afterDivide = divideSteelPlates(realMergeItem, mergeItem_flat);
+    for (let i = 0; i < afterDivide.length; i++) {
+      let one_merge_item = afterDivide[i]
+        .sort((a, b) => new Date(a.stops[0].time).getTime() - new Date(b.stops[0].time).getTime());
+      let merge_color = __getPathColor(one_merge_item);
+
+      link_info_list.push({
+        name: category_name + i,
+        info_index: key,
+        batch_index: batch_index_count,
+        merge_index: -1,
+        pathColor: merge_color === undefined ? 'red' : merge_color,
+        batch_s: new Date(afterDivide[0][0].stops[0].time),
+        date_entry_s: new Date(one_merge_item[0].stops[0].time),
+        date_entry_e: new Date(one_merge_item[one_merge_item.length - 1].stops[0].time)
+      })
+    }
   } else {
     for (let i = 0; i < mergeItem.length; i++) {
       let one_merge_item = mergeItem[i];
@@ -147,7 +192,7 @@ export function getOneBatchInfo(
   // 角度数组含义：[平均值, 标准差]
   return {
     info_index: key,
-    pathColor: pathColor,
+    pathColor: __getPathColor(mergeItem_flat),
     steelspec: category_name,
     pr_angle: [pr_angle, pr_std_angle],
     pr_quantile: t_quantile,

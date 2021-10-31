@@ -324,7 +324,7 @@ export default {
           });
 
 
-          // console.log(this._mergeresult);
+          console.log('马雷图合并结果：', this._mergeresult);
 
           // 过滤合并的钢板
           let merge_upid = this._mergeresult.map(item => item.merge_result.merge.flat()).flat().map(d => d.upid)
@@ -336,7 +336,7 @@ export default {
           let merge_plates = [];
           this._mergeresult.forEach(d => {
             let merge = d.merge_result.merge
-            let cannot_merge = d.cannot_merge
+            let cannot_merge = d.cannot_merge.flat();
             merge.forEach(e => merge_plates.push(...e))
             if (cannot_merge !== undefined) {
               cannot_merge.forEach(e => merge_plates.push(e))
@@ -377,16 +377,16 @@ export default {
               let category_name = one_batch_category[key][0];
               let category_data = one_batch_category[key][1];
               let mergeItem_flat = category_data.flat();
-              let pathColor = this.__getPathColor(mergeItem_flat);
               let labelStatistics = this.__getLabelStatistics(mergeItem_flat);  // good, bad, no_flag
 
-              let res = getOneBatchInfo(key,
+              let res = getOneBatchInfo(
+                key,
                 batch_index_count,
                 category_name,
                 mergeItem,
+                mergeItem,
                 mergeItem_flat,
                 this._stationsdata,
-                pathColor,
                 labelStatistics,
                 {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
                 cate_extend[category_name],
@@ -399,10 +399,10 @@ export default {
               one_batch_category.length,
               batch_index_count,
               "cannotMerge",
-              [],
+              mergeItem,
               cannotMerge,
+              cannotMerge.flat(),
               this._stationsdata,
-              this.__getPathColor(cannotMerge),
               this.__getLabelStatistics(cannotMerge),
               {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
               {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
@@ -432,7 +432,7 @@ export default {
             let batchColor = this.__getPathColor(d3.merge(mergeItem));
 
             // 当前批次的所有钢板的诊断数据
-            let batch_all_plate = [...mergeItem.flat(), ...cannotMerge]
+            let batch_all_plate = [...mergeItem.flat(), ...cannotMerge.flat()]
               .sort((a, b) => new Date(a.stops[0].time) - new Date(b.stops[0].time));
             let all_diag = [[], [], []];
             let process = ['Heat', 'Roll', 'Cool'];
@@ -483,7 +483,7 @@ export default {
           ]
 
           // console.log('马雷：', this._timesdata);
-          console.log('监控：', monitordata);
+          // console.log('监控：', monitordata);
 
           
           this._monitoringdata = {};
@@ -511,7 +511,7 @@ export default {
           }
 
           this._monitoringdata['diag'] = all_diag;
-          console.log(this._monitoringdata);
+          // console.log(this._monitoringdata);
 
           // getMonitorData(this._mergeresult, this._timesdata, monitordata);
 
@@ -1825,9 +1825,9 @@ export default {
             .attr("stroke-width", 2)
             // .attr("height", d => this._y(d.batch_e)- this._y(d.batch_s))
             .attr("stroke", d => d.batchColor)
-              .attr("stroke-linejoin", "round")
-              .attr("stroke-dasharray", "5.5 5.5")
-              .attr("stroke-linecap", "round")
+              // .attr("stroke-linejoin", "round")
+              // .attr("stroke-dasharray", "5.5 5.5")
+              // .attr("stroke-linecap", "round")
           
           linkRectMerge.selectAll('linkRectMergeItem')
             .data(d => d.merge_data)
@@ -3269,7 +3269,7 @@ export default {
           let linkRectMerge = this._info_g.selectAll('.linkRectMerge')
             .transition(line_tran);
           linkRectMerge.selectAll('.linkRectMergeBatch')
-            .attr("transform", d => `translate(${[this._info_size.w - 10, this._y(d.batch_s)]})`)
+            .attr("transform", d => `translate(${[this._info_size.w - 8, this._y(d.batch_s)]})`)
             .attr("y2", d => this._y(d.batch_e)- this._y(d.batch_s))
           linkRectMerge.selectAll('.linkRectMergeItem')
             .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)

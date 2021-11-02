@@ -364,52 +364,51 @@ export default {
             let mergeItem = this._mergeresult[item].merge_result.merge;
             let mergeSelect = this._mergeresult[item].merge_result.select;
             let cannotMerge = this._mergeresult[item].cannot_merge;
-            // let Outliters = this._mergeresult[item]['outliers'];
-
-            if (mergeItem.length === 0) {
-              continue;
-            }
 
             // 每个批次 子母工序 统计（用于左边圆圈） 新的写法：一个合并块的种类对应一个圆圈
-            let one_batch_info = []
-            let one_batch_category = d3.groups(mergeItem, d => d[0].steelspec)
-            for (let key = 0; key < one_batch_category.length; key++) {
-              let category_name = one_batch_category[key][0];
-              let category_data = one_batch_category[key][1];
-              let mergeItem_flat = category_data.flat();
-              let labelStatistics = this.__getLabelStatistics(mergeItem_flat);  // good, bad, no_flag
+            let one_batch_info = [];
+            let merge_data = [];
+            let cannot_merge_data = [];
+            let one_batch_category = [];
+            
+            if (mergeItem.length !== 0) {
+              one_batch_category = d3.groups(mergeItem, d => d[0].steelspec)
+              for (let key = 0; key < one_batch_category.length; key++) {
+                let category_name = one_batch_category[key][0];
+                let category_data = one_batch_category[key][1];
+                let mergeItem_flat = category_data.flat();
+                let labelStatistics = this.__getLabelStatistics(mergeItem_flat);  // good, bad, no_flag
 
-              let res = getOneBatchInfo(
-                key,
-                batch_index_count,
-                category_name,
-                mergeItem,
-                mergeItem,
-                mergeItem_flat,
-                this._stationsdata,
-                labelStatistics,
-                {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
-                cate_extend[category_name],
-                false);
+                let res = getOneBatchInfo(
+                  key,
+                  batch_index_count,
+                  category_name,
+                  mergeItem,
+                  mergeItem_flat,
+                  this._stationsdata,
+                  labelStatistics,
+                  {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
+                  cate_extend[category_name]);
 
-              one_batch_info.push(res);
+                one_batch_info.push(res);
+              }
             }
+
+            // console.log(batch_index_count);
+
             // 不能合并的钢板单独统计
             one_batch_info.push(getOneBatchInfo(
               one_batch_category.length,
               batch_index_count,
               "cannotMerge",
-              mergeItem,
               cannotMerge,
               cannotMerge.flat(),
               this._stationsdata,
               this.__getLabelStatistics(cannotMerge),
               {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
-              {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
-              true
+              {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent}
             ))
 
-            let merge_data = [];
             for (let key = 0; key < mergeItem.length; key++) {
               let one_merge_item = mergeItem[key];
               let one_merge_select = mergeSelect[key];
@@ -428,8 +427,13 @@ export default {
                 date_exit_e: new Date(one_merge_item[one_merge_item.length - 1].stops.slice(-1)[0].time)
               })
             }
+            if (one_batch_info.slice(-1)[0].steelspec === "cannotMerge") {
+              cannot_merge_data = one_batch_info.slice(-1)[0].link_rect;
+            }
 
-            let batchColor = this.__getPathColor(d3.merge(mergeItem));
+            let batchColor = mergeItem.length !== 0
+              ? this.__getPathColor(mergeItem.flat())
+              : this.__getPathColor(cannotMerge.flat());
 
             // 当前批次的所有钢板的诊断数据
             let batch_all_plate = [...mergeItem.flat(), ...cannotMerge.flat()]
@@ -461,6 +465,7 @@ export default {
               batch_index: batch_index_count,
               // 马雷图合并 绘图数据
               merge_data: merge_data,
+              cannot_merge: cannot_merge_data,
               batch_s: new Date(batch_all_plate[0].stops[0].time),
               batch_e: new Date(batch_all_plate[batch_all_plate.length - 1].stops[0].time),
               batchColor: batchColor,
@@ -471,7 +476,7 @@ export default {
             })
             batch_index_count++;
           }
-          console.log(this._mergeresult_1)
+          console.log("处理成绘图数据：", this._mergeresult_1)
 
           let heat_bad = Math.random() * 25;
           let roll_bad = Math.random() * 30;
@@ -1809,9 +1814,9 @@ export default {
             .join('g')
             .attr('class', 'linkRectMerge')
             .attr('id', d => `linkRectMerge${d.batch_index}`)
-            // .attr('transform', d => `translate(${[0, this._y(d.batch_s)]})`)
             .attr("opacity", 0.4)
           
+          // 批次提示线
           linkRectMerge
             .append("line")
             .attr('class', 'linkRectMergeBatch')
@@ -1823,24 +1828,38 @@ export default {
             .attr("x2", 1)
             .attr("y2", d => this._y(d.batch_e)- this._y(d.batch_s))
             .attr("stroke-width", 2)
-            // .attr("height", d => this._y(d.batch_e)- this._y(d.batch_s))
             .attr("stroke", d => d.batchColor)
-              // .attr("stroke-linejoin", "round")
-              // .attr("stroke-dasharray", "5.5 5.5")
-              // .attr("stroke-linecap", "round")
-          
+
+          // 批次内合并块提示线
           linkRectMerge.selectAll('linkRectMergeItem')
             .data(d => d.merge_data)
             .enter()
             .append("rect")
             .attr('class', 'linkRectMergeItem')
             .attr('id', d => `linkRectMergeItem${d.merge_index}`)
-            // .attr('id', d => `linkRectMergeItem_${d.steelspec}`)
             .attr('merge_index', d => d.merge_index)
             .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
             .attr("width", 2)
             .attr("height", d => this._y(d.date_entry_e)- this._y(d.date_entry_s))
             .attr("fill", d => d.pathColor)
+          
+          // 批次内不能合并块提示线
+          linkRectMerge.selectAll('linkRectCannotMergeItem')
+            .data(d => d.cannot_merge)
+            .enter()
+            .append("line")
+            .attr('class', 'linkRectMergeItem')
+            .attr('id', d => `linkRectMergeItem_${d.name}`)
+            .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
+            .attr("x1", 1)
+            .attr("y1", 0)
+            .attr("x2", 1)
+            .attr("y2", d => this._y(d.date_entry_e)- this._y(d.date_entry_s))
+            .attr("stroke-width", 2)
+            .attr("stroke", d => d.pathColor)
+              .attr("stroke-linejoin", "round")
+              .attr("stroke-dasharray", "3 3")
+              .attr("stroke-linecap", "round")
           
           let link_path = d => {
             let pathHeight = this._y(d.date_entry_e) - this._y(d.date_entry_s);
@@ -1866,7 +1885,11 @@ export default {
             .enter()
             .append('path')
             .attr('class', 'linkRectLine')
-            .attr('id', d => `linkRectLine${d.merge_index}`)
+            .attr('id', d => `linkRectLine${
+              d.name.slice(0, 11) === "cannotMerge"
+              ? '_' + d.name
+              : d.merge_index
+            }`)
             .attr('batch_index', d => d.batch_index)
             .attr('info_index', d => d.info_index)
             .attr('merge_index', d => d.merge_index)
@@ -1874,9 +1897,9 @@ export default {
             .attr("stroke", d => d.pathColor)
             .attr("fill", "none")
             .attr("stroke-width", 2)
-              .attr("stroke-linejoin", d => d.name === "cannotMerge" ? "round" : "")
-              .attr("stroke-dasharray", d => d.name === "cannotMerge" ? "4 4" : "")
-              .attr("stroke-linecap", d => d.name === "cannotMerge" ? "round" : "")
+              .attr("stroke-linejoin", d => d.name.slice(0, 11) === "cannotMerge" ? "round" : "")
+              .attr("stroke-dasharray", d => d.name.slice(0, 11) === "cannotMerge" ? "4 4" : "")
+              .attr("stroke-linecap", d => d.name.slice(0, 11) === "cannotMerge" ? "round" : "")
           
         }
         _renderInfoDetail() {
@@ -1907,17 +1930,15 @@ export default {
             .attr('info_index', d => d.info_index)
             .attr('batch_index', d => d.link_rect[0].batch_index)
             .attr('merge_index', d => d.link_rect.map(e => ''+e.merge_index).join(' '))
-            // .attr('id', d => d.steelspec)
             .on('click', __pathClick)
-            .on('mouseover', __pathOver)
-            .on('mouseout', __pathOut);
+            .on('mouseenter', __pathOver)
+            .on('mouseleave', __pathOut);
           
           chartGroup
             .append('g')
             .attr('class', 'infoBackground')
             .append('rect')
 						.attr('class', 'lineRect')
-						// .attr('id', d => 'lineRect' + d.batch_index)
             .attr('width', this._detail_rect_w)
             .attr('height', this._detail_rect_w)
             .attr('stroke', d => d.pathColor)
@@ -1935,12 +1956,14 @@ export default {
             let merge_index_list = merge_index.split(' ').map(d => +d);
             let info_id = batch_index + '_' + info_index;
 
+            // 移动整个画面，将当前的batch放在第一个位置
             let brush_h = that._brush_select[1] - that._brush_select[0];
             let new_brush_s = that._mini_y(d.link_rect[0].batch_s) - 2;
             let new_brush_e = new_brush_s + brush_h;
             let new_brush = [new_brush_s, new_brush_e]
             that._brush_select = new_brush
             that._brush_g.select('.brush').call(that._brush.move, new_brush);
+
             let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
             
             if (that._mergeClickValue[info_id] != undefined) {
@@ -1956,8 +1979,9 @@ export default {
                 info_index: info_index,
                 merge_index_list: merge_index_list
               };
+              console.log(info_id)
 
-              that._trainClickHandle(info_id.split('_')[0]);   // 点击后往父组件发送数据
+              that._trainClickHandle(info_id.split('_').map(d => (+d)));   // 点击后往父组件发送数据
               
               let merge_items_upid = selected_plates.map(d => d.upid);
               let sort_res = d3.sort(merge_items_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0);
@@ -1970,38 +1994,70 @@ export default {
             let merge_index_list = d.link_rect.map(e => e.merge_index);
             let info_index = d3.select(this).attr('info_index');
             let info_id = batch_index + '_' + info_index;
-            let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
 
-            that._setMergeRect([batch_index], merge_index.split(' ').map(d => +d));
             that._setInfoDetail(batch_index, info_index);
 
-            that._setMergeBin(selected_plates);
-            that._emitToScatter(selected_plates, 0);
+            if (d.steelspec !== "cannotMerge") {
+              let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
 
-            if(that._mergeClickValue[info_id] == undefined) {
+              that._setMergeRect([batch_index], merge_index.split(' ').map(d => +d));
+
+              that._setMergeBin(selected_plates);
               that._emitToScatter(selected_plates, 0);
+
+              if(that._mergeClickValue[info_id] == undefined) {
+                that._emitToScatter(selected_plates, 0);
+              }
+            } else {
+              let selected_plates = d.link_rect_data.flat();
+
+              that._reduceOpacity();
+              for (let upid of selected_plates.map(d => d.upid)) {
+                that.__setMareyLine(upid);
+              }
+
+              that._setLinkLine([batch_index], d.link_rect.map(e => '_' + e.name));
+          
+              that._setMergeBin(selected_plates);
+              that._emitToScatter(selected_plates, 0);
+              
+              if(that._mergeClickValue[info_id] == undefined) {
+                that._emitToScatter(selected_plates, 0);
+              }
             }
+
+            
           }
           function __pathOut(e, d) {
             let batch_index = d3.select(d3.select(this)._groups[0][0].parentNode).attr('batch_index');
             let merge_index_list = d.link_rect.map(e => e.merge_index);
             let info_index = d3.select(this).attr('info_index');
             let info_id = batch_index + '_' + info_index;
-            let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
-
-            that._resetMergeRect();
+            
             that._resetInfoDetail();
 
-            that._resetMergeBin();
-            that._emitToScatter(selected_plates, 1);
+            if (d.steelspec !== "cannotMerge") {
+              let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
+              that._resetMergeRect();
 
-            that._keepClickedStatus();
-
-            // mergeGopacity(d);
-            // var i = d3.select(this).attr('index');
-            if(that._mergeClickValue[info_id] == undefined) {
               that._emitToScatter(selected_plates, 1);
+              if(that._mergeClickValue[info_id] == undefined) {
+                that._emitToScatter(selected_plates, 1);
+              }
+            } else {
+              that._raiseOpacity();
+              let selected_plates = d.link_rect_data.flat();
+              for (let upid of selected_plates.map(d => d.upid)) {
+                that.__resetMareyLine(upid);
+              }
+              that._resetLinkLine();
+              that._emitToScatter(selected_plates, 1);
+              if(that._mergeClickValue[info_id] == undefined) {
+                that._emitToScatter(selected_plates, 1);
+              }
             }
+            that._resetMergeBin();
+            that._keepClickedStatus();
           }
         }
         _renderInfoDetailCircle(chartGroup) {
@@ -2937,7 +2993,7 @@ export default {
             else if (type === 'T2') Scale = that._T2Scale;
             else return
 
-            console.log(type)
+            // console.log(type)
 
             const diagColor = (d, ucl) => {
               // console.log(d > ucl, d, ucl)
@@ -2998,11 +3054,20 @@ export default {
         }
 
         // 交互事件, 改变各图元的样式
-        _setMergeRect(batch_index_list, merge_index_list) {
+        _reduceOpacity() {
           this._marey_g.selectAll('.mergeG')
             .attr('opacity', 0.4);
           this._marey_g.selectAll('.mareyLine')
             .attr('opacity', 0.4);
+        }
+        _raiseOpacity() {
+          this._marey_g.selectAll('.mergeG')
+            .attr('opacity', 1);
+          this._marey_g.selectAll('.mareyLine')
+            .attr('opacity', 1);
+        }
+        _setMergeRect(batch_index_list, merge_index_list) {
+          this._reduceOpacity();
 
           for (let batch_index of batch_index_list) {
             for (let merge_index of merge_index_list) {
@@ -3014,11 +3079,7 @@ export default {
           this._setLinkLine(batch_index_list, merge_index_list);
         }
         _resetMergeRect() {
-          this._marey_g.selectAll('.mergeG')
-            .attr('opacity', 1);
-          this._marey_g.selectAll('.mareyLine')
-            .attr('opacity', 1);
-          
+          this._raiseOpacity();
           this._resetLinkLine();
         }
         _setLinkLine(batch_index_list, merge_index_list) {
@@ -3112,60 +3173,153 @@ export default {
         _emitToScatter(selected_plates, status) {
           vm.$emit("trainMouse", {upid: d3.map(selected_plates, d => d.upid),  mouse: status});
         }
-        _trainClickHandle(batch_index) {
-          let batch_data = [];
+        _trainClickHandle(id) {
+          const batch_index = id[0], info_index = id[1];
+          let batch_all_upid = [];
           let batch_date_s = [], batch_date_e = [];
-          let data_len = this._mergeresult_1.length;
-          let mergedata;
-          let mergeSelect;
 
-          if (data_len >= 5) {
-            if (batch_index <= 2) {
-              mergedata = this._mergeresult_1.slice(0, 5)
-                .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
-              mergeSelect = this._mergeresult_1.slice(0, 5)
-                .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
-            }
-            else if (batch_index > data_len-3) {
-              mergedata = this._mergeresult_1.slice(-6)
-                .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
-              mergeSelect = this._mergeresult_1.slice(-6)
-                .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
-            }
-            else {
-              mergedata = this._mergeresult_1.slice(batch_index-2, batch_index+3)
-                .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
-              mergeSelect = this._mergeresult_1.slice(batch_index-2, batch_index+3)
-                .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
-            }
-          } else if (data_len>=3 && data_len<=4) {
-            mergedata = this._mergeresult_1.slice(0, 3)
-              .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
-            mergeSelect = this._mergeresult_1.slice(0, 3)
-              .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
-          }
-          else {
-            return
+          // // 简单粗暴，但是并不是这样取。。。。
+          // let mergeData;
+          // let mergeSelect;
+          // let data_len = this._mergeresult_1.length;
+          // if (data_len >= 5) {
+          //   if (batch_index <= 2) {
+          //     mergeData = this._mergeresult_1.slice(0, 5)
+          //       .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
+          //     mergeSelect = this._mergeresult_1.slice(0, 5)
+          //       .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
+          //   }
+          //   else if (batch_index > data_len-3) {
+          //     mergeData = this._mergeresult_1.slice(-6)
+          //       .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
+          //     mergeSelect = this._mergeresult_1.slice(-6)
+          //       .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
+          //   }
+          //   else {
+          //     mergeData = this._mergeresult_1.slice(batch_index-2, batch_index+3)
+          //       .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
+          //     mergeSelect = this._mergeresult_1.slice(batch_index-2, batch_index+3)
+          //       .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
+          //   }
+          // } else if (data_len>=3 && data_len<=4) {
+          //   mergeData = this._mergeresult_1.slice(0, 3)
+          //     .map(d => d['merge_data'].map(e => e['mergeItem']).flat());
+          //   mergeSelect = this._mergeresult_1.slice(0, 3)
+          //     .map(d => d['merge_data'].map(e => e['mergeSelect']).flat());
+          // }
+          // else {
+          //   return
+          // }
+          // console.log(mergeData);
+
+
+          let [mergeData, mergeSelect] = this.__selectDataBlockForDiag(batch_index, info_index);
+          console.log(mergeData);
+          console.log(mergeSelect);
+
+          if (mergeData.length === 0) {
+            vm.getNotification("批次数据计算失败，无法获得诊断时间区间！")
+            return;
           }
 
-          mergedata.forEach(d => {
-            batch_data.push(d.map(e => e.upid));
+
+
+          mergeData.forEach(d => {
+            batch_all_upid.push(d.map(e => e.upid));
             batch_date_s.push(d[0].stops[0].time);
             batch_date_e.push(d.slice(-1)[0].stops[0].time);
           });
+
+          // console.log(batch_all_upid);
+          // console.log(batch_date_s);
+          // console.log(batch_date_e);
 
           vm.$emit("trainClick", {
             list: this._trainSelectedList, 
             color: this._trainGroupStyle(mergeSelect.flat().slice(-1)[0]), 
             upidSelect: [
-              ...mergedata.flat().filter(d => d.flag === 0).map(d => d.upid), 
+              ...mergeData.flat().filter(d => d.flag === 0).map(d => d.upid), 
               ...mergeSelect.flat().map(d => d.upid)
             ],
             type: "group", 
-            batch: batch_data,
+            batch: batch_all_upid,
             date_s: batch_date_s,
             date_e: batch_date_e
           })
+        }
+        __selectDataBlockForDiag(batch_index, info_index) {
+          const DIAG_NUM = 5;
+          const CANNOT_THRESHOLD = 5;   // 不能合并的板的阈值
+          const N = this._mergeresult_1.length;
+          let mergeData = [];
+          let mergeSelect = [];
+
+          let curr_batch = this._mergeresult_1[batch_index];
+          let merge_index = curr_batch.one_batch_info[info_index].link_rect.map(d => d.merge_index)
+          
+          console.log(curr_batch, merge_index)
+          
+          if (merge_index.length >= DIAG_NUM) {   // 最理想的情况: 所连接的合并块 >= 5, 可以直接取
+            for (const i of merge_index.slice(0, DIAG_NUM)) {
+              mergeData.push(curr_batch.merge_data[i].mergeItem);
+              mergeSelect.push(curr_batch.merge_data[i].mergeSelect);
+            }
+          }
+          else if (merge_index.length < DIAG_NUM) {
+            let cannot_len = curr_batch.cannot_merge.map(d => d.merge_data).filter(d => d.length >= CANNOT_THRESHOLD);
+            if (curr_batch.merge_data.length + cannot_len.length >= DIAG_NUM) { // 也能在当前批次直接取,
+              __selectCurrentBatchData(curr_batch, mergeData, mergeSelect);
+            }
+            else {  // 要到隔壁批次取数据 (T_T)
+              // vm.getNotification("要到隔壁取数据 (T_T)| ")
+              // 先取了自己的
+              __selectCurrentBatchData(curr_batch, mergeData, mergeSelect);
+              
+              if (batch_index === 0) {  // 点到的是第1个批次
+                let batch_point = batch_index;
+                while (mergeData.length < 5 && batch_point < N) {
+                  let temp = this._mergeresult_1[++batch_point];
+                  __selectCurrentBatchData(temp, mergeData, mergeSelect);
+                }
+              } else {
+                let batch_point = batch_index;
+                while (mergeData.length < 5 && batch_point >= 0) {
+                  let temp = this._mergeresult_1[--batch_point];
+                  __selectCurrentBatchData(temp, mergeData, mergeSelect);
+                }
+                batch_point = batch_index;
+                while (mergeData.length < 5 && batch_point < N) {
+                  let temp = this._mergeresult_1[++batch_point];
+                  __selectCurrentBatchData(temp, mergeData, mergeSelect);
+                }
+              }
+            }
+          }
+          else {
+            vm.getNotification("发生了肾么事？！")
+          }
+
+          // 选择一个批次内所有能拿去诊断的数据块（在这里可以写数量不够的板怎么合到合并块中去的逻辑）
+          function __selectCurrentBatchData(curr_batch, mergeData, mergeSelect) {
+            for (const item of curr_batch.merge_data) {
+              if (mergeData.length >= DIAG_NUM) return;
+              mergeData.push(item.mergeItem);
+              mergeSelect.push(item.mergeSelect);
+            }
+            
+            for (const data of curr_batch.cannot_merge) {
+              if (mergeData.length >= DIAG_NUM) return;
+              if (data.merge_data.length >= CANNOT_THRESHOLD) {
+                mergeData.push(data.merge_data);
+              }
+            }
+          }
+
+          const sortHandle = (a, b) => new Date(a[0].stops[0].time).getTime() - new Date(b[0].stops[0].time).getTime();
+          mergeData.sort(sortHandle);
+          mergeSelect.sort(sortHandle);
+
+          return [mergeData, mergeSelect];
         }
         _keepClickedStatus() {
           if(Object.keys(this._mergeClickValue).length !== 0) {
@@ -3195,6 +3349,7 @@ export default {
         }
         __setMareyLine(uclid) {
           d3.select('#id' + uclid)
+            .attr('opacity', 1)
             .attr('stroke-width', this._highLightStrokeWidth)
             .selectAll('rect')
             .attr('stroke', 'black');
@@ -3274,6 +3429,9 @@ export default {
           linkRectMerge.selectAll('.linkRectMergeItem')
             .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
             .attr("height", d => this._y(d.date_entry_e) - this._y(d.date_entry_s))
+          linkRectMerge.selectAll('.linkRectCannotMergeItem')
+            .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
+            .attr("y2", d => this._y(d.date_entry_e)- this._y(d.date_entry_s))
           
           let oneBatchChartGroup = this._info_g.selectAll('.oneBatchChartGroup')
             .transition(line_tran);
@@ -3520,7 +3678,15 @@ export default {
 				d3.select(`#miniBar${value.upid}`)
 					.attr("fill", d=>  vm.conditionView._trainGroupStyle(d))
 			}
-		}
+    },
+    getNotification(notice){
+			const h = this.$createElement;
+			this.$notify({
+				title: '消息通知',
+				message: h('i', { style: 'color: teal'}, notice)
+			});
+			this.loadingDataLoading = false
+		},
       
   },
   mounted() {},

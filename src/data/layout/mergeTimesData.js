@@ -19,6 +19,50 @@ function can_merge(one_plate, condition) {
   return false;
 }
 
+// 将剩下的不能合并的钢板划分
+function divideTimeArea(items) {
+  let res = [];
+  for (let item of items) {
+    item.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    res.push([
+      new Date(item[0].stops[0].time),
+      new Date(item.slice(-1)[0].stops[0].time)
+    ]);
+  }
+  return res;
+}
+function divideSteelPlates(mergeItem, cannotMerge) {
+  if (mergeItem.length === 0) return cannotMerge;
+
+  let timesInterval = divideTimeArea(mergeItem);
+
+  let divRes = [];
+  cannotMerge = cannotMerge.flat();
+  for (let i = 0; i < timesInterval.length + 1; i++) {
+    divRes.push([]);
+  }
+  for (let i = 0; i <= timesInterval.length; i++) {
+    for (let j = 0; j < cannotMerge.length; j++) {
+      let time = new Date(cannotMerge[j].stops[0].time);
+      if (i === 0) {
+        if (time.getTime() <= timesInterval[0][0].getTime()) {
+          divRes[i].push(cannotMerge[j]);
+        }
+      } else if (i === timesInterval.length) {
+        if (time.getTime() >= timesInterval.slice(-1)[0][1].getTime()) {
+          divRes[i].push(cannotMerge[j]);
+        }
+      } else {
+        if (time.getTime() >= timesInterval[i - 1][1].getTime() 
+          && time.getTime() <= timesInterval[i][0].getTime()) {
+            divRes[i].push(cannotMerge[j]);
+          }
+      }
+    }
+  }
+  return divRes.filter(d => d.length !== 0);
+}
+
 // 合并主逻辑
 function merge_plates(one_batch, minrange, minconflict) {
   let categorys = d3.group(one_batch , d => d.steelspec)
@@ -122,7 +166,7 @@ function merge_plates(one_batch, minrange, minconflict) {
 
   return {
     'merge_result': { 'merge': merge_item, 'select': merge_select},
-    'cannot_merge': cannot_merge
+    'cannot_merge': divideSteelPlates(merge_item, cannot_merge)
   }
 }
 

@@ -257,9 +257,16 @@ import smallWheel from './wheel2.vue';
 import slider from './slider.vue'
 import brushableParallel from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
+import mergeTimesData from '../../data/layout/mergeTimesData.js'
+import {mareyChartBatchSpec} from '../../data/layout/monitor.js'
+import {filterMareyChartEventIcon} from '../../data/layout/mareyChartEventIcon.js'
 import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
+
+import jsonData from '../data/jsonData.json'
+import monitorData from '../data/monitorData.json'
+
 export default {
 	components: { mareyChart, timeBrush, brushableParallel, scatterlog, wheeler , smallWheel, slider},
 	data() {
@@ -270,7 +277,8 @@ export default {
 			minconflict: 4,
 			symbolvalue:0.05,
 			linesize:0.25,
-			diagnosisData:[],
+      diagnosisData:[],
+      mergeresult: undefined,
 			processName:'',
 			plateoptions:[{
 					value: 'All',
@@ -302,12 +310,12 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2019, 2, 1, 0, 0),
+			startmonth: new Date(2021, 2, 10, 0, 0),
 			time: undefined,
 			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
-			interval: 2,
+			interval: 4,
 			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
@@ -345,7 +353,8 @@ export default {
 			usDiagnosis: {},
       batchDateStart: undefined,
       batchDateEnd: undefined,
-      req_count: 0
+      req_count: 0,
+      monitorData: {}
 		}
 	},
 	computed: {
@@ -396,7 +405,7 @@ export default {
 			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
 			// 	endmonth.setMonth(1)
       // }
-      endmonth.setDate(endmonth.getDate() + 5)
+      endmonth.setDate(endmonth.getDate() + 10)
 
 			return [this.startmonth, endmonth]
 		},
@@ -450,49 +459,45 @@ export default {
 			this.getHttpData()
 		},
 		async getHttpData() {
-			// this.jsonData = myJsonData
-			// this.mergeflag()
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
-			// this.$refs.mareyChart.paintPre(this.jsonData,myStationData, this.isSwitch, this.brushData)
-			// return
 			this.plateTempPropvalue=['All']
-			this.loadingDataLoading = true
-			// request
-			// let stationsResponse = this.getStationsData(startDate, endDate);
-			// let jsonResponse = this.getJsonData(startDate, endDate);
-			// let conditionResponse = this.getConditionData(startDate, endDate);
-
+      this.loadingDataLoading = true
+      
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-			this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
+      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      this.jsonData = jsonData
+      console.log('原始：', this.jsonData)
+      this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
+      let eventIconData = filterMareyChartEventIcon(this.jsonData);
+      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      this.monitorData = monitorData
+			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
+      // console.log('监控：', this.monitorData)
+      // console.log(eventIconData)
 
-			let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
-			// this.getplatetype();
-			let allDataArr = []
-			for (let item of this.jsonData) {
-					let upid = item['upid']
-					allDataArr.push(flagData[upid])
-			}
-			for (let i = 0; i < this.jsonData.length; i++) {
-				this.jsonData[i]['flag'] = allDataArr[i]
-			}
+			// let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
+			// let allDataArr = []
+			// for (let item of this.jsonData) {
+			// 		let upid = item['upid']
+			// 		allDataArr.push(flagData[upid])
+			// }
+			// for (let i = 0; i < this.jsonData.length; i++) {
+			// 	this.jsonData[i]['flag'] = allDataArr[i]
+			// }
 
 			// paint
 			this.loadingDataLoading = false
 			this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
-			// this.jsonData = this.jsonData.filter(d => {
-			// 	return this.brushUpid.includes(d.upid)
-			// })
       if(this.scatterData.length!==0) {
 				this.mergeflag()
 			}
-      // console.log("jsonData: ", this.jsonData);
-			this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, [], this.isMerge);
+			this.$refs.mareyChart.paintPre({
+        timesData: this.jsonData, 
+        stationsData: this.stationsData, 
+        mergeResult: this.mergeresult,
+        monitorData: this.monitorData,
+        eventIconData: eventIconData
+        }, this.isSwitch, this.isMerge);
 
 			// clear
 			this.selectedTrainData = [];
@@ -646,7 +651,8 @@ export default {
 						})
 				}
 			})
-		},
+    },
+
 		async platetype(upid) {
 			await this.getplatetype()
 			baogangAxios(`/baogangapi/v1.0/model/Platetypes/${upid}/`).
@@ -685,7 +691,6 @@ export default {
           this.getNotification("getJsonData:"+error)
         })
 		},
-
 		getStationsData(startDate, endDate) {
 			// return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoStationDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/`)
 			// 	.catch(function(error){
@@ -696,7 +701,17 @@ export default {
 				.catch(function(error){
 					this.getNotification("getStationsData:"+error)
 				})
-		},
+    },
+    getAllBatchMonitorData(mergeresult, startDate, endDate) {
+      let batchSpec = mareyChartBatchSpec(mergeresult);
+      return steel.getMonitorData(
+        {startDate: startDate, endDate: endDate, type: 'default', limit: 1000},
+        batchSpec)
+        .catch(error => {
+          this.getNotification("getBatchMonitorData: " + error);
+        })
+    },
+
 		changeColor(){
 			this.changeLabelColor()
 			this.switchChange(this.isSwitch)
@@ -712,26 +727,17 @@ export default {
 			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
 		},
     animeTransition(){
-      // console.log('in animeTransition!!!!')
       if (this.diagnosisVisible) {
-        // document.getElementById('diagnosis_view_id').style.height = '540px';
         anime({
           targets: ['.diagnosis_view'],
-          // translateY: '-300px',
           height:'540px',
-          easing: 'easeInOutQuad',
-          // direction: 'alternate',
-          // loop: true
+          easing: 'easeInOutQuad'
         });
       } else {
-        // document.getElementById('diagnosis_view_id').style.height = '0px';
         anime({
           targets: ['.diagnosis_view'],
-          // translateY: '-300px',
           height:'0px',
-          easing: 'easeInOutQuad',
-          // direction: 'alternate',
-          // loop: true
+          easing: 'easeInOutQuad'
         });
       }
     },
@@ -852,8 +858,7 @@ export default {
     },
     
 		mareyUpdate(){
-      // this.$refs.mareyChart.renderChart(this.isMerge, this.minrange, this.minconflict)
-    	this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
+      this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
 		},
 		mergeUpdate(){
 			this.isMerge = !this.isMerge
@@ -888,8 +893,10 @@ export default {
 			// this.platetype(upid);
     	},
     clickDiagnosisButton() {
-      this.diagnosisVisible = ! this.diagnosisVisible;
-      this.animeTransition();
+      if (this.diagnosisVisible) {  // 如果还没收起诊断面板
+        this.diagnosisVisible = false;
+        this.animeTransition();
+      }
     },
 
 		async paintDetailPro(processNumber) {

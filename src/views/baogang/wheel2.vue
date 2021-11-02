@@ -69,7 +69,6 @@ export default {
 					result_extre_slow: jsondata['one_dimens'][item]['s_extremum_l'],
 				})
 			}
-			diagnosticSort(batchData)
 			const vm = this		
 			this.svg !== undefined && this.svg.remove()
 			this.svg=d3.select('#' + this.menuId)
@@ -583,6 +582,7 @@ export default {
 								pieAngle = d3.pie().value(d => d.angle).startAngle(0.5* Math.PI).endAngle(2.5 * Math.PI),
 								piearc = d3.arc().innerRadius(0).outerRadius(r.arc),
 								dataInfo = this._indexdata;
+						diagnosticSort(batchData);
 						var limit = this._labelLimit,
 								horizenEX = batchData.map(d => this._sliderArray(dataInfo, d))
 										.map((d, i) => d.map((e, f) =>{ 

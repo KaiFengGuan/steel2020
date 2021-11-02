@@ -16,6 +16,7 @@ import deMergeLabel from "assets/images/deMergeLabel.svg";
 import util from './util.js';
 import processJson from "@/assets/json/processJson.json"
 import {mapGetters, mapMutations} from "vuex"
+import { divideData, arrowData, mergeColor, diagnosticSort} from "../../utils/data.js"
 const processIcon = [heaticon , rollicon , coolicon],
 	iconwhite = [heatwhite , rollwhite , coolwhite];
 export default {
@@ -68,6 +69,7 @@ export default {
 					result_extre_slow: jsondata['one_dimens'][item]['s_extremum_l'],
 				})
 			}
+			diagnosticSort(batchData)
 			const vm = this		
 			this.svg !== undefined && this.svg.remove()
 			this.svg=d3.select('#' + this.menuId)
@@ -597,51 +599,55 @@ export default {
 								rectArray = new Array(maxLength).fill(0).map((d, i) => (batchData[i].length + 1) * 4.75),   //batch position
 								rectPosition = Array.from(d3.cumsum(rectArray)),
 								RectWidth = rectPosition[rectPosition.length - 1],
-								minRect = RectWidth/ (maxLength + 0.5);
+								minRect = RectWidth/ (maxLength + 0.5),
+								batchEX = this._divideBacthData(dataInfo, batchData);
+						// console.log(batchData, horizenEX)
+						// console.log(batchData, horizenEX, batchData.map(d => this._sliderArray(dataInfo, d)))
+						// console.log(this._divideBacthData(dataInfo, batchData))
+						var arcX = 200,
+							wheel_y = 0,
+							rectX = r.outer + 280,  //rect_doct x
+							chartHeight = this._sliderInput,   //rect max height
+							chartPadding = {left: 1.5, right: 1.5, top: 2, bottom: 2, horizen: 3, vertical: 4},
+							boxMargin = {bottom: 5, top: 5, left : 5, right: 5, horizen: 10, vertical:  10},
+							chartMargin = 5,
+							textWidth = 75,
+							textMargin = {bottom: 5, top: 5, margin: 5, left : 5, right: 5, horizen: 10, vertical:  10},
+							cardWidth = boxMargin.horizen + RectWidth + textWidth + textMargin.horizen,
+							cardMargin = 20;
 
-								var arcX = 200,
-									wheel_y = 0,
-									rectX = r.outer + 280,  //rect_doct x
-									chartHeight = this._sliderInput,   //rect max height
-									chartPadding = {left: 1.5, right: 1.5, top: 2, bottom: 2, horizen: 3, vertical: 4},
-									boxMargin = {bottom: 5, top: 5, left : 5, right: 5, horizen: 10, vertical:  10},
-									chartMargin = 5,
-									textWidth = 125,
-									textMargin = {bottom: 5, top: 5, margin: 5, left : 5, right: 5, horizen: 10, vertical:  10},
-									cardWidth = boxMargin.horizen + RectWidth + textWidth + textMargin.horizen,
-									cardMargin = 20;
-
-								var	rectNum =  null,
-									opacityCache = null,
-									barVisObject = Object.assign({}, ...dataInfo.map(d => {return {[d.indexName] : this._barVis}})),
-									indexArray = d3.map(dataInfo, (d, i) => i),
-									indexSort = d3.map(dataInfo, d => d.indexName),
-									indexScale = null,// index  --- sort
-									rectHeight = null,
-									yScaleCache = null,
-									yScale = null,  //指标在y轴上的坐标
-									startXY = null,
-									centerScaleY = null,
-									lineToCircle = null,
-									lineToRect = null,
-									lastY = null,
-									scaleArray = null;
-								var mainAttrs = null, // init All Attrs
-									lineAttrs = null,
-									arcAttrs = null,
-									cardAttrs = null,
-									sliderAttrs = null,
-									rectAttrs = null,
-									dragAttrs = null,
-									iconAttrs = null,
-									sortAttrs = null,
-									switchAttrs = null,
-									linearGradientAttrs = null,
-									mergeAttrs = null,
-									horizenAttrs = null,
-									barAttrs = null,
-									textAttrs = null,
-									heatMapAttrs = null;
+						var	rectNum =  null,
+							opacityCache = null,
+							barVisObject = Object.assign({}, ...dataInfo.map(d => {return {[d.indexName] : this._barVis}})),
+							indexArray = d3.map(dataInfo, (d, i) => i),
+							indexSort = d3.map(dataInfo, d => d.indexName),
+							indexScale = null,// index  --- sort
+							rectHeight = null,
+							yScaleCache = null,
+							yScale = null,  //指标在y轴上的坐标
+							startXY = null,
+							centerScaleY = null,
+							lineToCircle = null,
+							lineToRect = null,
+							lastY = null,
+							scaleArray = null;
+						var mainAttrs = null, // init All Attrs
+							lineAttrs = null,
+							arcAttrs = null,
+							cardAttrs = null,
+							sliderAttrs = null,
+							rectAttrs = null,
+							dragAttrs = null,
+							iconAttrs = null,
+							sortAttrs = null,
+							switchAttrs = null,
+							linearGradientAttrs = null,
+							mergeAttrs = null,
+							horizenAttrs = null,
+							barAttrs = null,
+							textAttrs = null,
+							heatMapAttrs = null,
+							shapeAttrs = null;
 
 								this._initSlider()
 
@@ -671,8 +677,8 @@ export default {
 									renderSort();
 									wm._fliterStatus ? wm._renderWheelFilter() : undefined
 								})
-																.on('mouseover', function(e){})
-																.on('mouseout', function(e){})
+								.on('mouseover', function(e){})
+								.on('mouseout', function(e){})
 
 								
 								var lineG = mainG.append('g').attr('class', 'lineG'),
@@ -685,6 +691,8 @@ export default {
 
 								var sliderG = mainG.append('g').attr('class', 'sliderG').attr('transform', sliderAttrs.transform),
 										rectG = mainG.append('g').attr('class', 'rectG');
+
+								var dragG = mainG.append('g').attr('class', 'dragG').attr('transform', sliderAttrs.transform);
 								initDragG();
 								
 
@@ -718,6 +726,8 @@ export default {
 								const visG = this._staticGroup.append('g').attr('class', 'visG');
 								initVisG.call(this);
 
+								const shapeGroup = mainG.append('g').attr('class', 'shapeGroup').attr('transform', sliderAttrs.transform);
+								initShape();
 								// const 
 								// const heatMapG = mainG.append('g').attr('class', 'heatMapGroup');
 								// initMapArea()
@@ -726,8 +736,8 @@ export default {
 								renderSort()
 
 								function initAttrs(){
-																		const textX = rectX + boxMargin.left + textMargin.left,
-																				chartStart = boxMargin.left + textMargin.horizen + textWidth;
+									const textX = rectX + boxMargin.left + textMargin.left,
+											chartStart = boxMargin.left + textMargin.horizen + textWidth;
 									mainAttrs = {
 										transfrom: [rectX, -this._height/2],
 										width: RectWidth,
@@ -742,19 +752,21 @@ export default {
 										circleStroke: d => d3.color(lc[d.month]).darker(0.5),
 										circleFill: d => lc[d.month],
 										indexTransform: d => `translate(${[rectX - arcX + 55, centerScaleY(d) + 2]})`,
-										indexFill: d => d3.color(lc[d.month]).darker(0.5)
+										indexFill: d => d3.color(lc[d.month]).darker(0.5),
+										merge_visible: d => barVisObject[d.indexName] ? 'visible' : 'hidden'
 									}
-																		cardAttrs ={
-																				position: `translate(${[rectX, 0]})`,
+									cardAttrs ={
+										position: `translate(${[rectX, 0]})`,
 										opacity: opacityCache,
 										transform: (d, i) => `translate(${[0, yScale(i) - chartHeight - boxMargin.top - chartMargin/2]})`,
 										rectHeight: chartHeight * 2 + boxMargin.top + boxMargin.bottom + chartMargin,
 										rectWidth: cardWidth,
-																				indexNameTransform: (d, i) =>`translate(${[boxMargin.left + textMargin.left,  boxMargin.top/2]})`,
+										indexNameTransform: (d, i) =>`translate(${[boxMargin.left + textMargin.left,  boxMargin.top/2]})`,
+										indexShadowTransform: `translate(${[boxMargin.left + textMargin.left - 4,  boxMargin.top/2 - 5]})`,
 										mergeTransform: `translate(${[chartStart, chartHeight + boxMargin.top + chartMargin + chartPadding.top]})`,
 										mergeWidth: RectWidth,
 										mergeHeight: chartHeight - chartPadding.vertical
-																		}
+									}
 									arcAttrs = {
 										transform: d => `translate(${[rectX - arcX + 20, centerScaleY(d)]})`,
 										stroke: d => d3.color(lc[+d.data.process]).darker(2),
@@ -769,7 +781,7 @@ export default {
 										dragElementTransform: (d, i) => `translate(${[0 , yScale(i)]})`,
 										opacity: opacityCache,
 										dragHeight: chartHeight,
-										dragYlevel: -chartHeight,
+										dragYlevel: -chartHeight
 									}
 									iconAttrs = {
 										position: `translate(${[rectX - chartHeight, 0]})`,
@@ -799,7 +811,7 @@ export default {
 									}
 									mergeAttrs = {
 										transform: (d, i) =>`translate(${[(i== 0 ? 0 : rectPosition[i -1 ]) , 0]})`,
-										elementOpacity: (d, i) => barVisObject[d[0].indexName] ? opacityCache(d, i) : 0,
+										elementOpacity: (d, i) => barVisObject[d[0][0].indexName] ? opacityCache(d, i) : 0,
 										elementTransform: (d, i) =>`translate(${[0, yScale(i) + chartHeight]})`,
 									}
 									Object.assign(mergeAttrs, areaParameter(rectArray, horizenEX))
@@ -986,62 +998,68 @@ export default {
 											.style('stroke-width', arcAttrs.stroke_width)
 										)
 								}
-																function initCardG(){
-																		cardG
-																				.attr('transform', cardAttrs.position)
-																				.selectAll('g').data(dataInfo).join('g')
-											.attr('opacity', cardAttrs.opacity)
-											.attr('transform', cardAttrs.transform)
-												.call(g => g.append('rect')
-													.attr('class', 'outer')
-													.attr('height', cardAttrs.rectHeight)
-													.attr('width', cardAttrs.rectWidth)
-													.attr('stroke', this._borderStyle.color)
-													.attr('filter', 'url(#card-shadow)')
-													.attr('stroke-width', 0.25)
-													.attr('rx', this._borderStyle.rx)
-													.attr('ry', this._borderStyle.ry)
-													.attr('fill', 'none'))
-												.call(g => g.append('line')
-													.attr('x1', 0.25)
-													.attr('y1', chartHeight + boxMargin.top + chartMargin/2)
-													.attr('y2', chartHeight + boxMargin.top + chartMargin/2)
-													.attr('x2', cardAttrs.rectWidth - 0.25)
-													.attr('stroke-width', 0.25)
-													.attr('stroke', this._borderStyle.color))
-												.call(g => g.append('rect')
-													.attr('class', 'mergeCard')
-													.attr('transform', cardAttrs.mergeTransform)
-													.attr('height', cardAttrs.mergeHeight)
-													.attr('width', cardAttrs.mergeWidth)
-													.attr('stroke', this._borderStyle.color)
-													.attr('filter', 'url(#card-shadow)')
-													.attr('stroke-width', 0.25)
-													.attr('rx', this._borderStyle.rx)
-													.attr('ry', this._borderStyle.ry)
-													.attr('fill', 'none'))
-																								.call(g => g.append('text')
-																										.attr('class', 'cardName')
-																										.attr('transform', cardAttrs.indexNameTransform)
-																										.text(d => d.indexName)
-																										.attr('text-anchor', 'start')
-													.attr('fill', d => d3.color(lc[d.month]).darker(1)))
-												// .on('mouseover', (e, d) => {
-												//   this._overed(e, d.indexName, d.month)
-												// })
-												// .on('mouseout', (e, d) => {
-												//   this._outed(e, d.indexName, d.month)
-												// })
-																}
+							function initCardG(){
+								cardG
+									.attr('transform', cardAttrs.position)
+									.selectAll('g').data(dataInfo).join('g')
+									.attr('opacity', cardAttrs.opacity)
+									.attr('transform', cardAttrs.transform)
+									.call(g => g.append('rect')
+										.attr('class', 'outer')
+										.attr('height', cardAttrs.rectHeight)
+										.attr('width', cardAttrs.rectWidth)
+										.attr('stroke', this._borderStyle.color)
+										.attr('filter', 'url(#card-shadow)')
+										.attr('stroke-width', 0.25)
+										.attr('rx', this._borderStyle.rx)
+										.attr('ry', this._borderStyle.ry)
+										.attr('fill', 'none'))
+									.call(g => g.append('line')
+										.attr('x1', 0.25)
+										.attr('y1', chartHeight + boxMargin.top + chartMargin/2)
+										.attr('y2', chartHeight + boxMargin.top + chartMargin/2)
+										.attr('x2', cardAttrs.rectWidth - 0.25)
+										.attr('stroke-width', 0.25)
+										.attr('stroke', this._borderStyle.color))
+									.call(g => g.append('rect')
+										.attr('class', 'mergeCard')
+										.attr('visibility', cardAttrs.merge_visible)
+										.attr('transform', cardAttrs.mergeTransform)
+										.attr('height', cardAttrs.mergeHeight)
+										.attr('width', cardAttrs.mergeWidth)
+										.attr('stroke', this._borderStyle.color)
+										.attr('stroke-width', 0.25)
+										.attr('fill', 'none'))
+									.call(g => g.append('rect')
+										.attr('height', 5)
+										.attr('width', d => d.indexName.length * 6.3 + 12)
+										.attr('transform', cardAttrs.indexShadowTransform)
+										.attr('fill', 'white')
+										)
+									.call(g => g.append('text')
+											.attr('class', 'cardName')
+											.attr('transform', cardAttrs.indexNameTransform)
+											.text(d => d.indexName)
+											.attr('text-anchor', 'start')
+										.attr('fill', d => d3.color(lc[d.month]).darker(1)))
+									// .on('mouseover', (e, d) => {
+									//   this._overed(e, d.indexName, d.month)
+									// })
+									// .on('mouseout', (e, d) => {
+									//   this._outed(e, d.indexName, d.month)
+									// })
+								}
 								function updateCardG(t){
 									cardG
 										.transition(t)
-										.selectAll('g').attr('opacity', cardAttrs.opacity).attr('transform', cardAttrs.transform)
+										.call(g => g.selectAll('g').attr('opacity', cardAttrs.opacity).attr('transform', cardAttrs.transform))
+									cardG
+										.transition(t).call(g => g.selectAll('.mergeCard').attr('visibility', cardAttrs.merge_visible).attr('transform', cardAttrs.mergeTransform))
 								}
 								function initDragG(){
-										sliderG.selectAll('dragG')  //area drag
-										.data(Object.keys(rectPosition).map(d => +d).slice(0, -1)).join('g')
-										.attr('class', 'dragG')
+										dragG.selectAll('dragGroup')
+										.data(Object.keys(rectPosition).slice(0, -1)).join('g')
+										.attr('class', 'dragGroup')
 										.attr('transform', dragAttrs.transform)
 										.call(g => g
 											.call(g => g.selectAll('g')
@@ -1050,13 +1068,22 @@ export default {
 												.attr('class', 'dragElement')
 												.attr('opacity', dragAttrs.opacity)
 												.attr('transform', dragAttrs.dragElementTransform)
+												.call(g => g.append('line')
+													.attr('y1', chartMargin/2 + chartPadding.top)
+													.attr('stroke', '#d4dade')
+													.attr('stroke-width', 2)
+													.attr('y2', dragAttrs.dragHeight - chartPadding.bottom)
+													.attr('stroke-dasharray', '6 6'))
+												.call(g => g.append('line')
+													.attr('y1', -dragAttrs.dragHeight)
+													.attr('stroke', '#d4dade')
+													.attr('stroke-width', 2)
+													.attr('y2', -chartMargin/2)
+													.attr('stroke-dasharray', '6 6'))
 												.call(g => g.append('rect')
-													.attr('width', 0.5)
-													.attr('y', dragAttrs.dragYlevel)
-													.attr('height', dragAttrs.dragHeight))
-												.call(g => g.append('rect')
-													.attr('width', 5)
-													.attr('x', -2.5)
+													.attr('width', 3)
+													.attr('x', -1.5)
+													.attr('fill', 'white')
 													.attr('y', dragAttrs.dragYlevel)
 													.attr('height', dragAttrs.dragHeight)
 													.attr('opacity', 0)))
@@ -1068,7 +1095,7 @@ export default {
 										rectPosition[d] = e.x
 										rectPosition = Array.from(rectPosition);
 										rectPosition.unshift(0);
-										var rectlength = d3.pairs(rectPosition, (a, b) => b -a).filter((d, i) => i + 1 !== Math.ceil(maxLength/2));
+										var rectlength = d3.pairs(rectPosition, (a, b) => b - a).filter((d, i) => i + 1 !== Math.ceil(maxLength/2));
 										if(!rectlength.every(d => d > chartHeight - 5)){   //RectWidth/ maxLength/2
 												minRect = chartHeight
 										}else{
@@ -1077,7 +1104,7 @@ export default {
 										if( RectWidth - (maxLength - 1) * minRect < RectWidth /maxLength)minRect = (RectWidth - RectWidth /maxLength)/(maxLength - 1)
 										rectArray = new Array(maxLength).fill(minRect).map((d, i) => Math.ceil(maxLength/2) == i + 1 ? RectWidth - (maxLength - 1) * minRect : d);   
 										rectPosition = d3.cumsum(rectArray)
-										d3.selectAll('.dragG')
+										dragG.selectAll('.dragGroup')
 												// .transition(d3.transition()
 												//     .duration(200)
 												//     .ease(d3.easeLinear))
@@ -1088,30 +1115,30 @@ export default {
 										minRect !== chartHeight ? rectG.selectAll('g').remove() : initRectG();
 								}
 								function initSort(){//init sortG
-										sortG.selectAll('g')
-												.data([0, 1, 2])
-												.join('g')
-												.attr('transform', sortAttrs.transform)
-												.call(g => g.append('rect')
-														.attr('fill',  sortAttrs.sortChange(sortAttrs.sortColor, '#fff'))
-														.attr('rx', 5)
-														.attr('ry', 5)
-														.attr('stroke', sortAttrs.sortColor)
-														.attr('stroke-width', 0.5)
-														.attr('height', this._buttonStyle.height)
-														.attr('width', this._buttonStyle.width))
-												.call(g => g.append('text')
-														.attr('fill', sortAttrs.sortChange('#fff', sortAttrs.sortColor))
-														.attr('x', this._buttonStyle.textX)
-														.attr('y', this._buttonStyle.textY)
-														.text(d => sortAttrs.text[d]))
-												.on('click', (e, d) =>{
-														// wheel_y = 0; //when sort indexes, save wheel_y status or not
-														indexScale = scaleArray[d];
-														this._indexScale = d;
-														renderyAxis()
-														renderSort()
-												})
+									sortG.selectAll('g')
+										.data([0, 1, 2])
+										.join('g')
+										.attr('transform', sortAttrs.transform)
+										.call(g => g.append('rect')
+											.attr('fill',  sortAttrs.sortChange(sortAttrs.sortColor, '#fff'))
+											.attr('rx', 5)
+											.attr('ry', 5)
+											.attr('stroke', sortAttrs.sortColor)
+											.attr('stroke-width', 0.5)
+											.attr('height', this._buttonStyle.height)
+											.attr('width', this._buttonStyle.width))
+										.call(g => g.append('text')
+											.attr('fill', sortAttrs.sortChange('#fff', sortAttrs.sortColor))
+											.attr('x', this._buttonStyle.textX)
+											.attr('y', this._buttonStyle.textY)
+											.text(d => sortAttrs.text[d]))
+										.on('click', (e, d) =>{
+											// wheel_y = 0; //when sort indexes, save wheel_y status or not
+											indexScale = scaleArray[d];
+											this._indexScale = d;
+											renderyAxis()
+											renderSort()
+										})
 								}
 								function mouseText(dis){// calculate abscissa
 										let sumsearch = d3.leastIndex(rectPosition, d => dis > d),
@@ -1145,6 +1172,7 @@ export default {
 										.call(g => g.selectAll('.horizenElement')
 												.attr('opacity', horizenAttrs.elementOpacity)
 												.attr('transform', horizenAttrs.elementTransform))
+									dragG.transition(t)
 										.call(g => g.selectAll('.dragElement')
 												.attr('opacity', dragAttrs.opacity)
 												.attr('transform', dragAttrs.dragElementTransform))
@@ -1186,6 +1214,7 @@ export default {
 										arcG.raise()
 										barG.raise()
 										lineG.raise()
+										dragG.raise()
 								}
 								function renderShape(){
 									const t = d3.transition()
@@ -1196,7 +1225,7 @@ export default {
 										.call(g => g.selectAll('.sortIndex').attr('transform', lineAttrs.numberTransform))
 										.call(g => g.selectAll('circle').attr('transform', lineAttrs.circleTransform))
 										.call(g => g.selectAll('.indexName').attr('transform', lineAttrs.indexTransform));
-									sliderG.selectAll('.dragG')
+									dragG.selectAll('.dragGroup')
 										.transition(t)
 										.call(g => g.selectAll('rect').attr('y', dragAttrs.dragYlevel).attr('height', dragAttrs.dragHeight))
 										.call(g => g.selectAll('.dragElement')
@@ -1482,61 +1511,6 @@ export default {
 										.call(g => g.selectAll('text')
 														.attr('transform', 'translate(0, 12)rotate(45)'))
 								}
-								function areaParameter(array, data){	//area function
-										let xBatch = array.map((d, i) => {
-												let l = array[i],
-														scale = d3.scaleLinear()
-																// .range([0, l])
-																.range([chartPadding.left, l - chartPadding.right])
-																.domain(d3.extent(data[i][0], (e, f)=> e.time));
-												return scale
-										});
-										let mergeOffsets = array.map((d, i) => {
-												let scale = d3.scaleLinear()
-																// .range([0, l])
-																.range([0, 1])
-																.domain(d3.extent(data[i][0], (e, f)=> e.time));
-												return scale;
-										});
-										let yBatch = dataInfo.map((d, i) => {
-												let scale = d3.scaleLinear()
-																.range([0, chartHeight - chartPadding.top])
-																//有个BUG ，无法改成下面一行
-																// .range([chartPadding.bootom, maxBarHeight -chartPadding.top])
-																.domain([d3.min(d3.map(data, d => d[i]).flat().map(d => d.min)),
-																		d3.max(d3.map(data, d => d[i]).flat().map(d => d.max))]);
-												return scale
-										});
-										let mergeArea = [
-												d3.area()
-														.x(d => xBatch[d.i](d.time))
-														.y0((d, i) => -yBatch[d.d](d.l))
-														.y1((d, i) => -yBatch[d.d](d.h)),
-												d3.area()
-														.x(d => xBatch[d.i](d.time))
-														.y0((d, i) => -yBatch[d.d](d.l))
-														.y1((d, i) => -yBatch[d.d](d.exl)),
-												d3.area()
-														.x(d => xBatch[d.i](d.time))
-														.y0((d, i) => -yBatch[d.d](d.h))
-														.y1((d, i) => -yBatch[d.d](d.exh)),
-												d3.area()
-														.x(d => xBatch[d.i](d.time))
-														.y0((d, i) => -yBatch[d.d](d.exl))
-														.y1((d, i) => -yBatch[d.d](d.sxl)),
-												d3.area()
-														.x(d => xBatch[d.i](d.time))
-														.y0((d, i) => -yBatch[d.d](d.exh))
-														.y1((d, i) => -yBatch[d.d](d.sxh)),
-										],
-												mergeLine = d3.line()
-														.x(d => xBatch[d.i](d.time))
-														.y((d, i) => -yBatch[d.d](d.value))
-														.curve(d3.curveLinear),
-												mergeLocation = d => `translate(${[xBatch[d.i](d.time), -yBatch[d.d](d.value)]})`;
-										timeScale = xBatch;
-										return {mergeArea, mergeLine, mergeLocation, mergeOffsets}
-								}
 								function updateArea(){
 										if(wm._horizonView){
 												mergeG.selectAll('.batchG')
@@ -1578,86 +1552,105 @@ export default {
 										// initMapArea()
 								}
 								function initLinearGradient(){
-									gradientG.selectAll('g').data(rectPosition)
-										.join('g').attr('class', 'gradient')
-										.call(g => g.selectAll('g')
-											.data((d, i) => horizenEX[i])
+									gradientG.selectAll('g')
+											.data(batchEX)
 											.join('g')
 											.call(g => g.append('linearGradient')
-												.attr('id', d => `${d.i}price-gradient${d.d}`)
+												.attr('id', (d, i) => `price-gradient${i}`)
 												.attr('gradientUnits', 'userSpaceOnUse')
 												.attr('x1', '0%')
-												.attr('x2', '100%').selectAll('stop')
-																	.data(offsetParameter).enter().append('stop')
-												.attr('offset', function(d) { return d.offset; })
-												.attr('stop-color', function(d) { return d.color; }))
-											)
+												.attr('x2', '100%')
+												.selectAll('stop').data(d => {return offsetParameter(d);}).enter()
+												.append('stop')
+												.attr('offset', d => d.offset)
+												.attr('stop-color', d => d.color))
 									linearGradientAttrs
 								}
 								function offsetParameter(arr){
-									return arr.map(d => {
+									return arr.flat().map(d => {
 										// console.log(mergeAttrs.mergeOffsets[arr.i](d.time))
 										return {
-											offset: mergeAttrs.mergeOffsets[arr.i](d.time), //d.index/arr.length.toString()
-											color: util.labelScale(wm._rangeInsert(d))
+											offset: mergeAttrs.translateX[d.i](d.time)/rectPosition[rectPosition.length - 1], //d.index/arr.length.toString()
+											color: d.level > 1 ? 'red' : 'blue',//util.labelScale(d.level),
+											level: d.level
 										}
 									})
 								}
+								function areaParameter(){	//area function
+									let range = Array.from(d3.cumsum(rectArray));
+									range.unshift(0);
+									let rangeArray = d3.pairs(range);
+									let xBatch = rangeArray.map((d, i) => d3.scaleLinear().range(d).domain(d3.extent(batchEX[0][i], e => e.time)));
+									let yBatch = batchEX.map(d => d3.scaleLinear().range([chartPadding.bottom, chartHeight - chartPadding.top])
+										.domain([d3.min(d.flat().map(d => d.min)) * 0.95 , d3.max(d.flat().map(d => d.max)) * 1.05 ]));
+										let mergeArea = [
+											d3.area()
+												.x(d => xBatch[d.i](d.time))
+												.y0(d => -yBatch[d.d](d.exl))
+												.y1(d => -yBatch[d.d](d.exh)),
+											d3.area()
+												.x(d => xBatch[d.i](d.time))
+												.y0((d, i) => -yBatch[d.d](d.l))
+												.y1((d, i) => -yBatch[d.d](d.exl)),
+											d3.area()
+												.x(d => xBatch[d.i](d.time))
+												.y0((d, i) => -yBatch[d.d](d.h))
+												.y1((d, i) => -yBatch[d.d](d.exh)),
+											d3.area()
+												.x(d => xBatch[d.i](d.time))
+												.y0((d, i) => -yBatch[d.d](d.exl))
+												.y1((d, i) => -yBatch[d.d](d.sxl)),
+											d3.area()
+												.x(d => xBatch[d.i](d.time))
+												.y0((d, i) => -yBatch[d.d](d.exh))
+												.y1((d, i) => -yBatch[d.d](d.sxh))
+										],
+										mergeLine = d3.line().x(d => xBatch[d.i](d.time)).y((d, i) => -yBatch[d.d](d.value)).curve(d3.curveLinear),
+										mergeLocation = d => `translate(${[xBatch[d.i](d.time), -yBatch[d.d](d.value)]})`;
+										timeScale = xBatch;
+									let translateX = xBatch;
+										return {mergeArea, mergeLine, mergeLocation, translateX}
+								}
 								function initMergeArea(){
-									mergeG.selectAll('.batchG').data(rectPosition)
-											.join('g')
-											.attr('class', 'batchG')
-											.attr('transform', mergeAttrs.transform)
-											.call( g => g.selectAll('g')
-													.data((d, i) => horizenEX[i])
-													.join('g')
-													.attr('class', 'batchElement')
-													.attr('opacity', mergeAttrs.elementOpacity)
-													.attr('transform', mergeAttrs.elementTransform)
-															.call(g => g.append('path')
-																	.attr('fill', util.labelScale(2))
-																	.attr('class', 'path4')
-																	.datum(d => d)
-																	.attr('d', mergeAttrs.mergeArea[4]))
-															.call(g => g.append('path')
-																	.attr('fill', util.labelScale(2))
-																	.attr('class', 'path3')
-																	.datum(d => d)
-																	.attr('d', mergeAttrs.mergeArea[3]))
-																	.call(g => g.append('path')
-																	.attr('fill', util.labelScale(1))
-																	.attr('class', 'path2')
-																	.datum(d => d)
-																	.attr('d', mergeAttrs.mergeArea[2]))
-															.call(g => g.append('path')
-																	.attr('fill', util.labelScale(1))
-																	.attr('class', 'path1')
-																	.datum(d => d)
-																	.attr('d', mergeAttrs.mergeArea[1]))
-															.call(g => g.append('path')
-																	.attr('fill', util.labelScale(0))
-																	.attr('class', 'path0')
-																	.datum(d => d)
-																	.attr('d', mergeAttrs.mergeArea[0]))
-															.call(g => g.append('path')
-																	.attr('stroke-width', 2)
-																	.attr('class', 'line')
-																	.attr('stroke', d => `url(#${d.i}price-gradient${d.d}`)
-																	// .attr('stroke', (d, i) => d3.color(util.labelScale(0)).darker(0.6))
-																	.attr('fill', 'none')
-																	.datum(d => d)
-																	.attr('d', mergeAttrs.mergeLine))
-															.call(g => g.selectAll('circle')
-																	.data(d => d).join('circle')
-																	.attr('transform', mergeAttrs.mergeLocation)
-																	.attr('visibility', d => wm._rangeInsert(d) > 1 ? 'visible' : 'hidden')
-																	// .attr('fill', d => util.labelScale(wm._rangeInsert(d)))
-																	.attr('fill', 'none')
-																	.attr('stroke', d => d3.color(util.labelScale(wm._rangeInsert(d))).darker(0.5))
-																	// .attr('fill', (d, i) => lc[dataInfo[d.d].month])
-																	// .attr('stroke', (d, i) => d3.color(lc[dataInfo[d.d].month]).darker(1))
-																	.attr('stroke-width', 0.25)
-																	.attr('r', 1.8)))
+									mergeG.selectAll('.batchElement')
+										.data(batchEX)
+										.join('g')
+										.attr('class', 'batchElement')
+										.attr('transform', mergeAttrs.elementTransform)
+										.attr('opacity', mergeAttrs.elementOpacity)
+										.call(g => g.append('path')
+												.attr('fill', util.labelScale(0))
+												.attr('class', 'path0')
+												.datum(d => d.flat())
+												.attr('opacity', 0.5)
+												.attr('d', mergeAttrs.mergeArea[0]))
+										// .call(g => g.append('path')
+										// 		.attr('stroke-width', 2)
+										// 		.attr('class', 'line')
+										// 		.attr('stroke', (d, i) => `url(#price-gradient${i})`)
+										// 		// .attr('stroke', d3.color(util.labelScale(0)).darker(0.6))
+										// 		.attr('fill', 'none')
+										// 		.datum(d => d.flat())
+										// 		.attr('d', mergeAttrs.mergeLine))
+										.call(g => g.selectAll('.line').data(d => divideData(d.flat()))	// batchEX.map(d => console.log('data', divideData(d.flat())))
+											.join('path')
+											.attr('class', 'line')
+											.datum(d => d)
+											.attr('fill', 'none')
+											.attr('d', mergeAttrs.mergeLine)
+											.attr('stroke', d => d.status ? mergeColor[0] : mergeColor[1])
+											)
+										.call(g => g.selectAll('circle')
+											.data(d => d.flat()).join('circle')
+											.attr('transform', mergeAttrs.mergeLocation)
+											.attr('visibility', d => d.level > 1 ? 'visible' : 'hidden')
+											// .attr('fill', d => util.labelScale(wm._rangeInsert(d)))
+											.attr('fill', 'white')
+											.attr('stroke', d => d3.color(util.labelScale(d.level)).darker(1))
+											// .attr('fill', (d, i) => lc[dataInfo[d.d].month])
+											// .attr('stroke', (d, i) => d3.color(lc[dataInfo[d.d].month]).darker(1))
+											.attr('stroke-width', 1)
+											.attr('r', 1.5))
 								}
 								function horizenParameter(array, data){	//horizen function
 										let xBatch = array.map((d, i) => {
@@ -1786,6 +1779,18 @@ export default {
 														.attr('height', heatMapAttrs.rectHeight)
 														.attr('width', (d, i) => heatMapAttrs.xBatch[d.i].bandwidth())
 														.attr('x', (d, i) => heatMapAttrs.xBatch[d.i](d.time.toString()))))
+								}
+								function initShape(){
+									shapeAttrs = {
+										transform: (d, i) =>`translate(${[0, yScale(i) - chartHeight]})`
+									}
+									batchEX.map(d => arrowData(d.flat()))
+									shapeGroup.selectAll('shape_g')
+										.data(batchEX)
+										.join('g')
+										.attr('class', 'shape_g');
+										// .attr('transform', mergeAttrs.transform)
+										console.log(batchEX[0])
 								}
 								function clickScale(e, d){
 																		console.log(d3.pointer(e))
@@ -2726,7 +2731,6 @@ export default {
 				_sliderArray(arr, totalData){
 						return d3.map(arr, (d, f) => {
 								d.index = f;
-								// console.log(batchData);
 								var name = d.indexName,
 								batch = totalData.map(e => {
 										let i = searchLabels.indexOf(name);
@@ -2757,6 +2761,52 @@ export default {
 								batch.d = f;
 								return batch
 						})
+				}
+
+				_divideBacthData(arr, totalData){
+					let result = [];
+					for(let i = 0; i < arr.length; i++){
+						let index = searchLabels.indexOf(arr[i].indexName),
+							name = arr[i].indexName,
+							process = arr[i].month;
+						let batchIndex = d3.map(totalData, (d, batch) =>{
+							let temp = d3.map(d, e => {
+								let s = {
+									time: new Date(e.toc),
+									flag: e.fqc_label,
+									Q: e.CONTQ[index],
+									T2: e.CONTJ[index],
+									h: e['one_dimens'][index].u,
+									l: e['one_dimens'][index].l,
+									exh: e['one_dimens'][index].extremum_u,
+									exl: e['one_dimens'][index].extremum_l,
+									sxh: e['one_dimens'][index].s_extremum_u,
+									sxl: e['one_dimens'][index].s_extremum_l,
+									upid: e.upid,
+									value: e['one_dimens'][index].value,
+									indexName: name,
+									process: process,
+									d: i,
+									i: batch,
+									ovalue: e['one_dimens'][index].original_value,
+								};
+								s.self = e.upid == vm.upid ? true : false ,
+								s.max = Math.max(s.h, s.exh, s.value, s.sxh),
+								s.min = Math.min(s.l, s.exl, s.value, s.sxl),
+								s.over = s.h >= s.value && s.value >= s.l ? 0 : (s.h >= s.value ? s.value - s.l : s.h - s.value);
+								s.level = this._rangeInsert(s);
+								s.ovrage = s.level > 1 ?  true : false;
+								s.dia_Status = e['tjOrder'][index] < 15 && e['tqOrder'][index] < 15 ? true : false;
+								return s
+							});
+							temp.i = batch;
+							temp.d = i;
+							return temp;
+						})
+						result.push(batchIndex)
+					}
+					// console.log('result', result)
+					return result;
 				}
 				
 				_rangeInsert(s){

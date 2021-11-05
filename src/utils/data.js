@@ -1,5 +1,4 @@
 import * as d3 from 'd3';
-import { index } from 'd3';
 export function divideData(data){
   data = [...data];
   let res = [[data[0]]],
@@ -35,20 +34,46 @@ export function divideData(data){
   return res;
 }
 export function arrowData(data){
-  data = [...data];
-  let res = [[data[0]]],
-    last = res[res.length - 1];
-  const diagIndex = [];
+  const multiIndex = [];
   for(let i = 0; i < data.length; i++){
     if(data[i].dia_Status){
-      diagIndex.push(i);
+      multiIndex.push(i);
     }
   }
+  const singleIndex = [];
+  for(let i = 0; i < data.length; i++){
+    if(data[i].ovrage){
+      singleIndex.push(i);
+    }
+  }
+  const intersection = [...d3.intersection(multiIndex, singleIndex)];
+  var obj = {};
+  //   single: [...d3.difference(singleIndex, intersection)],
+  //   multivariate: [...d3.difference(multiIndex, intersection)] 
+  if(intersection.length !== 0){
+    let res = [[intersection[0]]];
+    for(let item = 1; item < intersection.length; item++){
+      let last = res[res.length - 1];
+      if(last[last.length - 1] === intersection[item] - 1 && data[last[last.length - 1]].range === data[intersection[item]].range){
+        last.push(intersection[item])
+      }else{
+        res.push([intersection[item]])
+      }
+    }
+    obj.intersection = res.filter(d => d.length !== 1);
+  }else{
+    obj.intersection = [];
+  }
+  const single = [...d3.difference(singleIndex, obj.intersection.flat())];
+  const multivariate = [...d3.difference(multiIndex, obj.intersection.flat())];
   
-  console.log(diagIndex)
-  return res;
+  obj.single = single.map(d => data[d]);
+  obj.multivariate = multivariate.map(d => data[d]);
+  obj.intersection = obj.intersection.map(d => d.map(e => data[e]));
+  // if(obj.intersection.length !== 0)console.log(obj.intersection)
+  return obj;
 }
-export const mergeColor = ['rgb(244 102 74)', 'rgb(91 143 249)']
+export const mergeColor = ['#c65b24', 'rgb(91 143 249)']
 
 export function diagnosticSort(batchData){
   for(let i = 0; i < batchData.length; i++){
@@ -68,5 +93,5 @@ export function diagnosticSort(batchData){
       }
     }
   }
-  console.log(batchData)
+  // console.log(batchData)
 }

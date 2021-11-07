@@ -16,7 +16,7 @@ import deMergeLabel from "assets/images/deMergeLabel.svg";
 import util from './util.js';
 import processJson from "@/assets/json/processJson.json"
 import {mapGetters, mapMutations} from "vuex"
-import { divideData, arrowData, mergeColor, diagnosticSort} from "../../utils/data.js"
+import { divideData, arrowData, mergeColor, diagnosticSort, queryIcon} from "../../utils/data.js"
 const processIcon = [heaticon , rollicon , coolicon],
 	iconwhite = [heatwhite , rollwhite , coolwhite];
 export default {
@@ -773,7 +773,7 @@ export default {
 										circleTransform: d =>  `translate(${[rectX - arcX, centerScaleY(d)]})`,
 										circleStroke: d => d3.color(lc[d.month]).darker(0.5),
 										circleFill: d => lc[d.month],
-										indexTransform: d => `translate(${[rectX - arcX + 55, centerScaleY(d) + 2]})`,
+										indexTransform: d => `translate(${[rectX - arcX + 35, centerScaleY(d) + 2]})`,
 										indexFill: d => d3.color(lc[d.month]).darker(0.5)
 									}
 									cardAttrs ={
@@ -782,6 +782,10 @@ export default {
 										transform: (d, i) => `translate(${[0, yScale(i) - chartHeight - boxMargin.top - chartMargin/2]})`,
 										rectHeight: d => (barVisObject[d.indexName] ? 2 : 1) * chartHeight + boxMargin.top + boxMargin.bottom + chartMargin * (barVisObject[d.indexName] ? 1 : 0),
 										rectWidth: cardWidth,
+										lineOpacity: d => barVisObject[d.indexName] ? 'visible' : 'hidden',
+										lineStroke: d => d3.color(lc[d.month]).darker(0.5),
+										lineY1: chartHeight * 0.3,
+										lineStrokeWidth: 1.5,
 										indexNameTransform: (d, i) =>`translate(${[boxMargin.left + textMargin.left,  boxMargin.top/2]})`,
 										indexShadowTransform: `translate(${[boxMargin.left + textMargin.left - 4,  boxMargin.top/2 - 5]})`,
 										mergeTransform: `translate(${[chartStart, chartHeight + boxMargin.top + chartMargin + chartPadding.top]})`,
@@ -792,6 +796,7 @@ export default {
 										shapeWidth: RectWidth,
 										merge_visible: d => barVisObject[d.indexName] ? 1 : 0
 									}
+									cardAttrs.lineY2 =  cardAttrs.rectHeight;
 									arcAttrs = {
 										transform: d => `translate(${[rectX - arcX + 20, centerScaleY(d)]})`,
 										stroke: d => d3.color(lc[+d.data.process]).darker(2),
@@ -803,28 +808,23 @@ export default {
 									}                  
 									dragAttrs = {
 										transform: d => `translate(${[rectPosition[d], 0]})`,
-										dragElementTransform: (d, i) => `translate(${[0 , yScale(i)]})`,
+										dragelementTrans: (d, i) => `translate(${[0 , yScale(i)]})`,
 										opacity: opacityCache,
 										dragHeight: chartHeight,
 										dragYlevel: -chartHeight
 									}
 									iconAttrs = {
-										position: `translate(${[rectX - chartHeight, 0]})`,
-										transform: (d, i) =>`translate(${[0, yScale(i) - chartHeight ]})`,
+										position: `translate(${[rectX + chartStart + RectWidth - chartHeight, 0]})`,
+										transform: (d, i) =>`translate(${[0, yScale(i) - chartHeight - 10 - boxMargin.top - chartMargin/2]})`,
 										opacity: opacityCache,
 										elementOpacity: d => barVisObject[d.indexName] ? 'visible' : 'hidden',
-										lineStroke: d => d3.color(lc[d.month]).darker(0.5),
-										lineY1: chartHeight /2 + 10,
-										lineTransform: `translate(${[chartHeight/2, 0]})`,
-										lineY2: (d, i) => rectHeight[i+1],
-										lineStrokeWidth: 0.5,
 										rectTransform: `translate(${[chartHeight/2, chartHeight/2]})`,
 										rectFill: d => lc[d.month],
 										icon: d => barVisObject[d.indexName] ? 'M-5,-2.5l10,0l-5,5l-5,-5zM-5,-2.5z' : 'M-2.5,0l0,-5l5,5l-5,5zM-2.5,0z'
 									}
 									sortAttrs = {
 										transform: d => `translate(${[340 + d * 60, -this._height/2 + 2.5]})`,
-										text: ['Single' ,'Limit', 'Total'],
+										text: ['Single' ,'Indicators', 'Total'],
 										sortColor: this._buttonColor,
 										sortChange: (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1: value2
 									},
@@ -837,14 +837,14 @@ export default {
 									mergeAttrs = {
 										transform: (d, i) =>`translate(${[(i== 0 ? 0 : rectPosition[i -1 ]) , 0]})`,
 										elementOpacity: (d, i) => barVisObject[d[0][0].indexName] ? opacityCache(d, i) : 0,
-										elementTransform: (d, i) =>`translate(${[0, yScale(i) + chartHeight]})`,
+										elementTrans: (d, i) =>`translate(${[0, yScale(i) + chartHeight]})`,
 									}
 									Object.assign(mergeAttrs, areaParameter(rectArray, horizenEX))
 
 									horizenAttrs = {
 										// transform: (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ] + chartStart, 0]})`,
 										elementOpacity: (d, i) => barVisObject[d[0].indexName] ? opacityCache(d, i) : 0,
-										elementTransform: (d, i) =>`translate(${[0, yScale(i)  +  chartPadding.top + chartMargin/2]})`,
+										elementTrans: (d, i) =>`translate(${[0, yScale(i)  +  chartPadding.top + chartMargin/2]})`,
 										overlap: 3,   //horizen layer
 										overlapNum: [-1, -2, -3, 0, 1, 2],
 										overHeight: [-3 , -2 , -1, 1, 2 , 3].map(d => d * cardAttrs.mergeHeight),
@@ -873,7 +873,7 @@ export default {
 										position: `translate(${[rectX + chartStart, 0]})`,
 										transform: (d, i) =>`translate(${[i== 0 ? 0 : rectPosition[i -1 ], 0]})`,
 										opacity: opacityCache,
-										elementTransform: (d, i) =>`translate(${[0, yScale(i)]})`,
+										elementTrans: (d, i) =>`translate(${[0, yScale(i)]})`,
 										rectHeight: chartHeight/2,
 										qY: -chartHeight/2,
 										t2Y: -chartHeight
@@ -886,10 +886,17 @@ export default {
 										rectWidth: chartHeight,
 										opacity: opacityCache
 									};
+									let baseRadius = 2;
 									shapeAttrs = {
 										transform: (d, i) =>`translate(${[0, yScale(i) - chartHeight/2]})`,
 										batch: batchEX.map(d => arrowData(d.flat())),
-										elementOpacity: opacityCache
+										elementOpacity: opacityCache,
+										elementTrans: d => `translate(${[mergeAttrs.translateX[d.i](d.time), 0]})`,
+										interArrow: d => `translate(${[(mergeAttrs.translateX[d[0].i](d[0].time) + mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time))/2, 0]})`,
+										startRibbon: d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time), 0]})`,
+										endRibbon: d => `translate(${[mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time), 0]})`,
+										interLineTrans: d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time) + baseRadius, 0]})`,
+										interLen: d => mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time) - mergeAttrs.translateX[d[0].i](d[0].time) - 2 * baseRadius
 									}
 								}
 								function initOrdinal(){
@@ -921,10 +928,10 @@ export default {
 										});
 										multiNum.sort((a, b) => a[1] - b[1]);
 										var selfBatch = horizenEX[batchIndex];
-										var oversort = d3.map(d3.sort(selfBatch, d => -d3.mean(d, e => e.over)), d => d[0].indexName),
-												overArray = d3.map(indexSort, d => oversort.indexOf(d)),
-												Qsort = d3.map(d3.sort(selfBatch, d => -d3.mean(d, e => e.Q)), d => d[0].indexName),
-												QArray = d3.map(indexSort, d => Qsort.indexOf(d));
+										// var oversort = d3.map(d3.sort(selfBatch, d => -d3.mean(d, e => e.over)), d => d[0].indexName),
+										// 		overArray = d3.map(indexSort, d => oversort.indexOf(d)),
+										// 		Qsort = d3.map(d3.sort(selfBatch, d => -d3.mean(d, e => e.Q)), d => d[0].indexName),
+										// 		QArray = d3.map(indexSort, d => Qsort.indexOf(d));
 										var T2sort = d3.map(d3.sort(selfBatch, d => -d3.mean(d, e => e.T2)), d => d[0].indexName),
 												T2Array = d3.map(indexSort, d => T2sort.indexOf(d));
 
@@ -951,7 +958,7 @@ export default {
 										lineToRect = (d, i) =>{
 												let centerY = centerScaleY(d),
 														endY = yScale(+i) - chartHeight * 0.4;
-												return [[rectX - arcX + 75, centerY],[rectX - arcX + 85, centerY], [rectX - 0.5 * chartHeight , endY]]
+												return [[rectX - arcX + 75, centerY],[rectX - arcX + 85, centerY], [rectX , endY]]
 										};
 										lineToCircle = d =>{
 												let [startX, startY] = startXY(d),
@@ -965,26 +972,26 @@ export default {
 										.selectAll('g')
 											.data(dataInfo)
 											.join('g')
+											.attr('class', 'iconElement')
 											.attr('opacity', iconAttrs.opacity)
 											.attr('transform', iconAttrs.transform)
-											.call(g => g.append('line')
-												.attr('visibility', iconAttrs.elementOpacity)
-												.attr('y1', iconAttrs.lineY1)
-												.attr('transform', iconAttrs.lineTransform)
-												.attr('y2', iconAttrs.lineY2)
-												.attr('stroke', iconAttrs.lineStroke)
-												.attr('stroke-width', iconAttrs.lineStrokeWidth))
-											.call(g => g.append('path')
-													.attr('transform', iconAttrs.rectTransform)
-													.attr('d', iconAttrs.icon)
-													.attr('fill', iconAttrs.rectFill))
+											.call(g => g.append('circle').attr('transform', 'translate(10, 10)')
+												.attr('fill', 'white')
+												.attr('stroke', 'black')
+												.attr('stroke-width', 0.25)
+												.attr('filter', 'url(#card-shadow)')
+												.attr('r', 10))
+											.call(g => g.append('g').attr('transform', 'scale(0.02)')
+												.call(g => g.append('path').attr('d', queryIcon[0]).attr('fill', '#0B72B6'))
+												.call(g => g.append('path').attr('d', queryIcon[1]).attr('fill', '#0B72B6')))
 											.on('click', function(e, d){
+												console.log(e)
 													const t = d3.transition()
 															.duration(300)
 															.ease(d3.easeLinear);
 													barVisObject[d.indexName] = !barVisObject[d.indexName]; 
-													d3.select(this).select('line').attr('visibility', iconAttrs.elementOpacity).transition(t)
-													d3.select(this).select('path').attr('d', iconAttrs.icon).transition(t);
+													// d3.select(this).select('line').attr('visibility', iconAttrs.elementOpacity).transition(t)
+													// d3.select(this).select('path').attr('d', iconAttrs.icon).transition(t);
 													renderyScale();
 													renderSort();
 											})
@@ -1044,69 +1051,76 @@ export default {
 										)
 								}
 								function initCardG(){
-								cardG
-									.attr('transform', cardAttrs.position)
-									.selectAll('g').data(dataInfo).join('g')
-									.attr('opacity', cardAttrs.opacity)
-									.attr('transform', cardAttrs.transform)
-									.call(g => g.append('rect')
-										.attr('class', 'outer')
-										.attr('height', cardAttrs.rectHeight)
-										.attr('width', cardAttrs.rectWidth)
-										.attr('stroke', this._borderStyle.color)
-										.attr('filter', 'url(#card-shadow)')
-										.attr('stroke-width', 0.25)
-										.attr('rx', this._borderStyle.rx)
-										.attr('ry', this._borderStyle.ry)
-										.attr('fill', 'none'))
-									// .call(g => g.append('line')
-									// 	.attr('x1', 0.25)
-									// 	.attr('y1', chartHeight + boxMargin.top + chartMargin/2)
-									// 	.attr('y2', chartHeight + boxMargin.top + chartMargin/2)
-									// 	.attr('x2', cardAttrs.rectWidth - 0.25)
-									// 	.attr('stroke-width', 0.25)
-									// 	.attr('stroke', this._borderStyle.color))
-									.call(g => g.append('rect')
-										.attr('class', 'shapeCard')
-										.attr('transform', cardAttrs.shapeTransform)
-										.attr('height', cardAttrs.shapeHeight)
-										.attr('width', cardAttrs.shapeWidth)
-										.attr('stroke', this._borderStyle.color)
-										.attr('stroke-width', 0.25)
-										.attr('fill', 'none'))
-									.call(g => g.append('rect')
-										.attr('class', 'mergeCard')
-										.attr('opacity', cardAttrs.merge_visible)
-										.attr('transform', cardAttrs.mergeTransform)
-										.attr('height', cardAttrs.mergeHeight)
-										.attr('width', cardAttrs.mergeWidth)
-										.attr('stroke', this._borderStyle.color)
-										.attr('stroke-width', 0.25)
-										.attr('fill', 'none'))
-									.call(g => g.append('rect')
-										.attr('height', 5)
-										.attr('width', d => d.indexName.length * 6.3 + 12)
-										.attr('transform', cardAttrs.indexShadowTransform)
-										.attr('fill', 'white')
-										)
-									.call(g => g.append('text')
-											.attr('class', 'cardName')
-											.attr('transform', cardAttrs.indexNameTransform)
-											.text(d => d.indexName)
-											.attr('text-anchor', 'start')
-										.attr('fill', d => d3.color(lc[d.month]).darker(1)))
-									// .on('mouseover', (e, d) => {
-									//   this._overed(e, d.indexName, d.month)
-									// })
-									// .on('mouseout', (e, d) => {
-									//   this._outed(e, d.indexName, d.month)
-									// })
+									cardG
+										.attr('transform', cardAttrs.position)
+										.selectAll('g').data(dataInfo).join('g')
+										.attr('opacity', cardAttrs.opacity)
+										.attr('transform', cardAttrs.transform)
+										.call(g => g.append('rect')
+											.attr('class', 'outer')
+											.attr('height', cardAttrs.rectHeight)
+											.attr('width', cardAttrs.rectWidth)
+											.attr('stroke', this._borderStyle.color)
+											.attr('filter', 'url(#card-shadow)')
+											.attr('stroke-width', 0.25)
+											.attr('rx', this._borderStyle.rx)
+											.attr('ry', this._borderStyle.ry)
+											.attr('fill', 'none'))
+										.call(g => g.append('line')	//粗线
+											.attr('visibility', cardAttrs.lineOpacity)
+											.attr('y1', cardAttrs.lineY1)
+											.attr('y2', cardAttrs.lineY2)
+											.attr('stroke', cardAttrs.lineStroke)
+											.attr('stroke-width', cardAttrs.lineStrokeWidth))
+										// .call(g => g.append('line')
+										// 	.attr('x1', 0.25)
+										// 	.attr('y1', chartHeight + boxMargin.top + chartMargin/2)
+										// 	.attr('y2', chartHeight + boxMargin.top + chartMargin/2)
+										// 	.attr('x2', cardAttrs.rectWidth - 0.25)
+										// 	.attr('stroke-width', 0.25)
+										// 	.attr('stroke', this._borderStyle.color))
+										.call(g => g.append('rect')
+											.attr('class', 'shapeCard')
+											.attr('transform', cardAttrs.shapeTransform)
+											.attr('height', cardAttrs.shapeHeight)
+											.attr('width', cardAttrs.shapeWidth)
+											.attr('stroke', this._borderStyle.color)
+											.attr('stroke-width', 0.25)
+											.attr('fill', 'none'))
+										.call(g => g.append('rect')
+											.attr('class', 'mergeCard')
+											.attr('opacity', cardAttrs.merge_visible)
+											.attr('transform', cardAttrs.mergeTransform)
+											.attr('height', cardAttrs.mergeHeight)
+											.attr('width', cardAttrs.mergeWidth)
+											.attr('stroke', this._borderStyle.color)
+											.attr('stroke-width', 0.25)
+											.attr('fill', 'none'))
+										.call(g => g.append('rect')
+											.attr('height', 5)
+											.attr('width', d => d.indexName.length * 6.3 + 12)
+											.attr('transform', cardAttrs.indexShadowTransform)
+											.attr('fill', 'white')
+											)
+										.call(g => g.append('text')
+												.attr('class', 'cardName')
+												.attr('transform', cardAttrs.indexNameTransform)
+												.text(d => d.indexName)
+												.attr('text-anchor', 'start')
+											.attr('fill', d => d3.color(lc[d.month]).darker(1)))
+										// .on('mouseover', (e, d) => {
+										//   this._overed(e, d.indexName, d.month)
+										// })
+										// .on('mouseout', (e, d) => {
+										//   this._outed(e, d.indexName, d.month)
+										// })
 								}
 								function updateCardG(t){
 									cardG
 										.transition(t)
 										.call(g => g.selectAll('g').attr('opacity', cardAttrs.opacity).attr('transform', cardAttrs.transform))
 										.call(g => g.selectAll('.outer').attr('height', cardAttrs.rectHeight))
+										.call(g => g.selectAll('line').attr('y2', cardAttrs.lineY2))
 									// console.log('mergeCard', cardG.selectAll('.mergeCard'))
 									// console.log('mergeCard', cardG)
 									mainG.transition(t).selectAll('.mergeCard').attr('opacity', cardAttrs.merge_visible).attr('transform', cardAttrs.mergeTransform)
@@ -1122,7 +1136,7 @@ export default {
 												.join('g')
 												.attr('class', 'dragElement')
 												.attr('opacity', dragAttrs.opacity)
-												.attr('transform', dragAttrs.dragElementTransform)
+												.attr('transform', dragAttrs.dragelementTrans)
 												.call(g => g.append('line')
 													.attr('y1', chartMargin/2 + chartPadding.top)
 													.attr('stroke', '#d4dade')
@@ -1168,7 +1182,7 @@ export default {
 												.attr('transform', d => `translate(${[rectPosition[d], 0]})`)
 										initAttrs.call(wm);
 										updateArea();
-										// updateShape();
+										updateShape();
 										renderAxisG(timeScale);
 										minRect !== chartHeight ? rectG.selectAll('g').remove() : initRectG();
 								}
@@ -1229,16 +1243,16 @@ export default {
 										.transition(t)
 										.call(g => g.selectAll('.batchElement')
 												.attr('opacity', mergeAttrs.elementOpacity)
-												.attr('transform', mergeAttrs.elementTransform))
+												.attr('transform', mergeAttrs.elementTrans))
 									horizenG
 										.transition(t)
 										.call(g => g.selectAll('.horizenElement')
 												.attr('opacity', horizenAttrs.elementOpacity)
-												.attr('transform', horizenAttrs.elementTransform))
+												.attr('transform', horizenAttrs.elementTrans))
 									dragG.transition(t)
 										.call(g => g.selectAll('.dragElement')
 												.attr('opacity', dragAttrs.opacity)
-												.attr('transform', dragAttrs.dragElementTransform))
+												.attr('transform', dragAttrs.dragelementTrans))
 										.call(g => g.selectAll('.mergeDrag')
 											.attr('opacity', cardAttrs.merge_visible))
 									rectG.selectAll('.rectElement')
@@ -1255,8 +1269,7 @@ export default {
 										.call(g => g.selectAll('text').attr('fill', sortAttrs.sortChange('#fff', sortAttrs.sortColor)))
 										triangleG
 											.transition(t)
-											.call(g => g.selectAll('g').attr('transform', iconAttrs.transform).attr('opacity', iconAttrs.opacity))
-											.call(g => g.selectAll('path').attr('d', iconAttrs.icon))
+											.call(g => g.selectAll('.iconElement').attr('transform', iconAttrs.transform).attr('opacity', iconAttrs.opacity))
 										textG
 											.transition(t)
 											.call(g => g.selectAll('text').attr('opacity', textAttrs.opacity).attr('transform', textAttrs.transform))
@@ -1272,7 +1285,7 @@ export default {
 										//   .transition(t)
 										//   .attr('opacity', heatMapAttrs.opacity)
 										//   .attr('class', 'heatMapElement')
-										//   .attr('transform', heatMapAttrs.elementTransform)
+										//   .attr('transform', heatMapAttrs.elementTrans)
 										arcG
 											.transition(t)
 											.call(g => g.selectAll('g').attr('transform', arcAttrs.transform).attr('opacity', opacityCache))
@@ -1281,6 +1294,7 @@ export default {
 										lineG.raise()
 										dragG.raise()
 										cardG.raise()
+										triangleG.raise()
 								}
 								function renderShape(){
 									const t = d3.transition()
@@ -1296,17 +1310,12 @@ export default {
 										.call(g => g.selectAll('rect').attr('y', dragAttrs.dragYlevel).attr('height', dragAttrs.dragHeight))
 										.call(g => g.selectAll('.dragElement')
 												.attr('opacity', dragAttrs.opacity)
-												.attr('transform', dragAttrs.dragElementTransform))
-									triangleG
-										.attr('transform', iconAttrs.position)
-										.transition(t)
-										.call(g => g.selectAll('line').attr('y1', iconAttrs.lineY1).attr('transform', iconAttrs.lineTransform).attr('y2', iconAttrs.lineY2))
-										.call(g => g.selectAll('path').attr('transform', iconAttrs.rectTransform))
+												.attr('transform', dragAttrs.dragelementTrans))
 									if(wm._horizonView){
 										mergeG.selectAll('.batchElement')
 											.transition(t)
 											.attr('opacity', mergeAttrs.elementOpacity)
-											.attr('transform', mergeAttrs.elementTransform)
+											.attr('transform', mergeAttrs.elementTrans)
 											.call(g => g.selectAll('.path4').attr('d', mergeAttrs.mergeArea[4]))
 											.call(g => g.selectAll('.path3').attr('d', mergeAttrs.mergeArea[3]))
 											.call(g => g.selectAll('.path2').attr('d', mergeAttrs.mergeArea[2]))
@@ -1579,7 +1588,7 @@ export default {
 										if(wm._horizonView){
 											mergeG.selectAll('.batchElement')
 												.transition(d3.transition().duration(200).ease(d3.easeLinear))
-												.attr('transform', mergeAttrs.elementTransform)
+												.attr('transform', mergeAttrs.elementTrans)
 												.call(g => g.selectAll('.path0').attr('d', mergeAttrs.mergeArea[0]))
 												.call(g => g.selectAll('.line').attr('d', mergeAttrs.mergeLine))
 												.call(g => g.selectAll('circle').attr('transform', mergeAttrs.mergeLocation));                           
@@ -1655,7 +1664,7 @@ export default {
 										.data(batchEX)
 										.join('g')
 										.attr('class', 'batchElement')
-										.attr('transform', mergeAttrs.elementTransform)
+										.attr('transform', mergeAttrs.elementTrans)
 										.attr('opacity', mergeAttrs.elementOpacity)
 										.call(g => g.append('path')
 												.attr('fill', util.labelScale(0))
@@ -1711,7 +1720,7 @@ export default {
 										.join('g')
 										.attr('class', 'horizenElement')
 										.attr('opacity', horizenAttrs.elementOpacity)
-										.attr('transform', horizenAttrs.elementTransform)
+										.attr('transform', horizenAttrs.elementTrans)
 										.call(g => g.append('clipPath')
 											.attr('id', (d, i) => `clipy${i}`)
 												.append('rect')
@@ -1775,13 +1784,13 @@ export default {
 										.selectAll('.heatMapG').data(rectPosition)
 										.join('g')
 										.attr('class', 'heatMapG')
-										.attr('transform', heatMapAttrs.elementTransform)
+										.attr('transform', heatMapAttrs.elementTrans)
 										.call( g => g.selectAll('g')
 											.data((d, i) => horizenEX[i])
 												.join('g')
 												.attr('opacity', heatMapAttrs.opacity)
 												.attr('class', 'heatMapElement')
-												.attr('transform', heatMapAttrs.elementTransform)
+												.attr('transform', heatMapAttrs.elementTrans)
 												.call(g => g.selectAll('.mapQ')
 														.data(d => d).join('rect')
 														.attr('fill', d => heatMapAttrs.yColor(d.Q))
@@ -1838,30 +1847,30 @@ export default {
 											.join('g')
 											.attr('class', 'multivariate')
 											.append('circle')
-											.attr('transform', d => `translate(${[mergeAttrs.translateX[d.i](d.time), 0]})`)
+											.attr('transform', shapeAttrs.elementTrans)
 											.attr('stroke', mergeColor[0])
 											.attr('fill', 'none')
 											.attr('r', baseRadius))
 										.call(g => g.selectAll('.single').data((d, i) =>shapeAttrs.batch[i].single)
 											.join('path')
 											.attr('class', 'single')
-											.attr('original_value', d => d.original_value)
-											.attr('value', d => d.value)
-											.attr('l', d => d.l)
-											.attr('h', d => d.h)
-											.attr('exl', d => d.exl)
-											.attr('exh', d => d.exh)
-											.attr('sxl', d => d.sxl)
-											.attr('sxh', d => d.sxh)
-											.attr('s_extremum_original_l', d => d.s_extremum_original_l)
-											.attr('s_extremum_original_u', d => d.s_extremum_original_u)
-											.attr('original_l', d => d.original_l)
-											.attr('original_u', d => d.original_u)
-											.attr('extremum_original_l', d => d.extremum_original_l)
-											.attr('extremum_original_u', d => d.extremum_original_u)
+											// .attr('original_value', d => d.original_value)
+											// .attr('value', d => d.value)
+											// .attr('l', d => d.l)
+											// .attr('h', d => d.h)
+											// .attr('exl', d => d.exl)
+											// .attr('exh', d => d.exh)
+											// .attr('sxl', d => d.sxl)
+											// .attr('sxh', d => d.sxh)
+											// .attr('s_extremum_original_l', d => d.s_extremum_original_l)
+											// .attr('s_extremum_original_u', d => d.s_extremum_original_u)
+											// .attr('original_l', d => d.original_l)
+											// .attr('original_u', d => d.original_u)
+											// .attr('extremum_original_l', d => d.extremum_original_l)
+											// .attr('extremum_original_u', d => d.extremum_original_u)
 											.attr('d', e => d3.linkVertical().x(d => d.x).y(d => d.y)({source: {x: 0, y: e.ovrage ? (e.range > 0 ?  -baseRadius : baseRadius) : 0},target: {x: 0, y: arrowScale(e.range)}}))
 											.attr('marker-end', 'url(#shape-arrow)')
-											.attr('transform', d => `translate(${[mergeAttrs.translateX[d.i](d.time), 0]})`)
+											.attr('transform', shapeAttrs.elementTrans)
 											.attr('stroke', mergeColor[0])
 											.attr('fill', 'none')
 											)
@@ -1872,26 +1881,38 @@ export default {
 												.attr('class', 'interArrow')
 												.attr('d', e => d3.linkVertical().x(d => d.x).y(d => d.y)({source: {x: 0, y: 0},target: {x: 0, y: arrowScale(e[0].range)}}))
 												.attr('marker-end', 'url(#shape-arrow)')
-												.attr('transform', d => `translate(${[(mergeAttrs.translateX[d[0].i](d[0].time) + mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time))/2, 0]})`)
+												.attr('transform', shapeAttrs.interArrow)
 												.attr('stroke', mergeColor[0])
 												.attr('fill', 'none'))
 											.call(g => g.append('circle')
-												.attr('transform', d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time), 0]})`)
+												.attr('transform', shapeAttrs.startRibbon)
+												.attr('class', 'startRibbon')
 												.attr('stroke', mergeColor[0])
 												.attr('fill', 'none')
 												.attr('r', baseRadius))
 											.call(g => g.append('circle')
-												.attr('transform', d => `translate(${[mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time), 0]})`)
+												.attr('transform', shapeAttrs.endRibbon)
+												.attr('class', 'endRibbon')
 												.attr('stroke', mergeColor[0])
 												.attr('fill', 'none')
 												.attr('r', baseRadius))
 											.call(g => g.append('line')
-												.attr('transform', d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time) + baseRadius, 0]})`)
+												.attr('transform', shapeAttrs.interLineTrans)
 												.attr('x1', 0)
-												.attr('x2', d => mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time) - mergeAttrs.translateX[d[0].i](d[0].time) - 2 * baseRadius)
+												.attr('x2', shapeAttrs.interLen)
 												.attr('stroke', mergeColor[0])
 												.attr('fill', 'none'))
 											)
+								}
+								function updateShape(){
+									const t = d3.transition().duration(150).ease(d3.easeLinear);
+									shapeGroup.transition(t)
+										.call(g => g.selectAll('.single').attr('transform', shapeAttrs.elementTrans))
+										.call(g => g.selectAll('.multivariate').attr('transform', shapeAttrs.elementTrans))
+										.call(g => g.selectAll('.intersection').selectAll('path').attr('transform', shapeAttrs.interArrow))
+										.call(g => g.selectAll('.intersection').selectAll('line').attr('transform', shapeAttrs.interLineTrans).attr('x2', shapeAttrs.interLen))
+										.call(g => g.selectAll('.startRibbon').attr('transform', shapeAttrs.startRibbon))
+										.call(g => g.selectAll('.endRibbon').attr('transform', shapeAttrs.endRibbon))
 								}
 								function initSymbol(){
 									symbolAttrs = {
@@ -1901,35 +1922,26 @@ export default {
 										borderHeight: chartHeight - chartPadding.vertical,
 										borderWidth: textWidth - chartPadding.horizen,
 										borderStroke: (d, i) => lc[dataInfo[i].month],
-										singleTransform: `translate(${[0, 5]})`,
-										multiTransform: `translate(${[0, (chartHeight - chartPadding.vertical)/2 + 5]})`,
 										rectHeight: chartHeight/4
 									}
 									var singleNum =  d3.map(batchEX, d => d.flat().filter(e => e.dia_Status).length),
-										singleScale = d3.scaleLinear().domain([0, d3.max(singleNum)]).range([0, symbolAttrs.borderWidth/2]),
-										multiNum = d3.map(batchEX, d => d.flat().filter(e => e.ovrage).length),
-										multiScale = d3.scaleLinear().domain([0, d3.max(multiNum)]).range([0, symbolAttrs.borderWidth/2]);
+										multiNum = d3.map(batchEX, d => d.flat().filter(e => e.ovrage).length);
+									symbolAttrs.singleScale = d3.scaleLinear().domain([0, d3.max(singleNum)]).range([0, symbolAttrs.borderWidth/2]);
+									symbolAttrs.multiScale = d3.scaleLinear().domain([0, d3.max(multiNum)]).range([0, symbolAttrs.borderWidth/2]);
+									symbolAttrs.singleTransform = (d, i) => `translate(${[textWidth - symbolAttrs.singleScale(singleNum[i]), (chartHeight - chartPadding.vertical)/2 + 5]})`;
+									symbolAttrs.multiTransform = (d, i) => `translate(${[textWidth - symbolAttrs.multiScale(multiNum[i]), 5]})`;
 									symbolG.attr('transform', symbolAttrs.position)
 									.call(g => g.selectAll('g')
 										.data(dataInfo).join('g').attr('transform', symbolAttrs.transform).attr('opacity', symbolAttrs.opacity)
 										.call(g => g.append('rect')
-											.attr('transform', symbolAttrs.multiTransform).attr('class', 'multivariate')
-											.attr('width', (d, i) => singleScale(singleNum[i]))
+											.attr('transform', symbolAttrs.singleTransform).attr('class', 'single')
+											.attr('width', (d, i) => symbolAttrs.singleScale(singleNum[i]))
 											.attr('height', symbolAttrs.rectHeight).attr('fill', util.delabelColor[0]).attr('stroke', 'none'))
-										// .call(g => g.append('rect').attr('transform', symbolAttrs.multiTransform)
-										// 	.attr('class', 'multiBorder').attr('width', symbolAttrs.borderWidth/2)
-										// 	.attr('height', symbolAttrs.rectHeight)
-										// 	.attr('fill', 'none').attr('stroke', util.delabelColor[0]))
-										.call(g => g.append('rect').attr('transform', symbolAttrs.singleTransform).attr('class', 'single')
-											.attr('width', (d, i) => multiScale(multiNum[i]))
+										.call(g => g.append('rect').attr('transform', symbolAttrs.multiTransform).attr('class', 'multivariate')
+											.attr('width', (d, i) => symbolAttrs.multiScale(multiNum[i]))
 											.attr('height', symbolAttrs.rectHeight)
 											.attr('fill', mergeColor[0])
 											.attr('stroke', 'none')))
-										// .call(g => g.append('rect').attr('transform', symbolAttrs.singleTransform).attr('class', 'singleBorder')
-										// 	.attr('width', symbolAttrs.borderWidth/2)
-										// 	.attr('height', symbolAttrs.rectHeight)
-										// 	.attr('fill', 'none')
-										// 	.attr('stroke', mergeColor[0])))
 								}
 								function updateSymbol(t){
 									symbolG.selectAll('g').transition(t)

@@ -94,6 +94,13 @@ function merge_plates(one_batch, minrange, minconflict) {
     return one_arr
   })
 
+  if (dis_matrix.length === 0) {
+    return {
+      'merge_result': { 'merge': [], 'select': []},
+      'cannot_merge': []
+    }
+  }
+
   let dis_upper = [];
   let dis_lower = [];
   for (let i = 0; i < dis_matrix[0].length; i++) {

@@ -365,6 +365,10 @@ export default {
             let mergeSelect = this._mergeresult[item].merge_result.select;
             let cannotMerge = this._mergeresult[item].cannot_merge;
 
+            if (!mergeItem.length && !mergeSelect.length && !cannotMerge.length) {
+              continue;
+            }
+
             // 每个批次 子母工序 统计（用于左边圆圈） 新的写法：一个合并块的种类对应一个圆圈
             let one_batch_info = [];
             let merge_data = [];
@@ -397,17 +401,20 @@ export default {
             // console.log(batch_index_count);
 
             // 不能合并的钢板单独统计
-            one_batch_info.push(getOneBatchInfo(
-              one_batch_category.length,
-              batch_index_count,
-              "cannotMerge",
-              cannotMerge,
-              cannotMerge.flat(),
-              this._stationsdata,
-              this.__getLabelStatistics(cannotMerge),
-              {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
-              {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent}
-            ))
+            let cannotMerge_flat = cannotMerge.flat();
+            if (cannotMerge_flat.length !== 0) {
+              one_batch_info.push(getOneBatchInfo(
+                one_batch_category.length,
+                batch_index_count,
+                "cannotMerge",
+                cannotMerge,
+                cannotMerge_flat,
+                this._stationsdata,
+                this.__getLabelStatistics(cannotMerge),
+                {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
+                {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent}
+              ))
+            }
 
             for (let key = 0; key < mergeItem.length; key++) {
               let one_merge_item = mergeItem[key];
@@ -437,30 +444,60 @@ export default {
 
             // 当前批次的所有钢板的诊断数据
             let batch_all_plate = [...mergeItem.flat(), ...cannotMerge.flat()]
-              .sort((a, b) => new Date(a.stops[0].time) - new Date(b.stops[0].time));
+              .sort((a, b) => new Date(a.stops[0].time).getTime() - new Date(b.stops[0].time).getTime());
             let all_diag = [[], [], []];
             let process = ['Heat', 'Roll', 'Cool'];
             let n = batch_all_plate.length;
-            for (let i = 0; i < n; i++) {
-              let plate = batch_all_plate[i];
-              let cur_moni = monitordata[plate.upid];
-              for (let j = 0; j < process.length; j++) {
-                let key = process[j];
-                all_diag[j].push({
-                  upid: plate.upid,
-                  toc: plate.toc,
-                  endtime: new Date(plate.stops.slice(-1)[0].time),
-                  nextendtime: i+1 === n ? 0 : new Date(batch_all_plate[i+1].stops.slice(-1)[0].time),
-                  index: j,
-                  Q_UCL:  cur_moni ? cur_moni[process[j] + '_QUCL']  ? cur_moni[process[j] + '_QUCL']  : 0 : 0,
-                  Q:      cur_moni ? cur_moni[process[j] + '_Q']     ? cur_moni[process[j] + '_Q'] > cur_moni[process[j] + '_QUCL'] * 1.5 ? cur_moni[process[j] + '_QUCL'] * 1.5 : cur_moni[process[j] + '_Q'] : 0 : 0,
-                  T2_UCL: cur_moni ? cur_moni[process[j] + '_T2UCL'] ? cur_moni[process[j] + '_T2UCL'] : 0 : 0,
-                  T2:     cur_moni ? cur_moni[process[j] + '_T2']    ? cur_moni[process[j] + '_T2'] > cur_moni[process[j] + '_T2UCL'] * 1.5 ? cur_moni[process[j] + '_T2UCL'] * 1.5 : cur_moni[process[j] + '_T2'] : 0 : 0,
+            for (let j = 0; j < process.length; j++) {
+              let key = process[j];
+              for (let i = 0; i < n; i++) {
+                let k = i;
+                let temp = [];
+                while (k < n && monitordata[batch_all_plate[k].upid]) {
+                  let plate = batch_all_plate[k];
+                  let cur_moni = monitordata[plate.upid];
+                  if (!cur_moni[key + '_QUCL'] && !cur_moni[key + '_Q']
+                    && !cur_moni[key + '_T2UCL'] && !cur_moni[key + '_T2']) {
+                    break;
+                  }
+                  temp.push({
+                    upid: plate.upid,
+                    toc: plate.toc,
+                    endtime: new Date(plate.stops.slice(-1)[0].time),
+                    nextendtime: k+1 === n ? 0 : new Date(batch_all_plate[k+1].stops.slice(-1)[0].time),
+                    index: j,
+                    Q_UCL:  cur_moni[key + '_QUCL'],
+                    Q:      cur_moni[key + '_Q'] > cur_moni[key + '_QUCL'] * 1.5 ? cur_moni[key + '_QUCL'] * 1.5 : cur_moni[key + '_Q'],
+                    T2_UCL: cur_moni[key + '_T2UCL'],
+                    T2:     cur_moni[key + '_T2'] > cur_moni[key + '_T2UCL'] * 1.5 ? cur_moni[key + '_T2UCL'] * 1.5 : cur_moni[key + '_T2'],
+                  });
+                  k++;
+                }
+                if (temp.length !== 0) all_diag[j].push(temp);
+                i = k;
+              }
+            }
+            
+            let merge_exit_date = [[], [], []];
+            for (let j = 0; j < process.length; j++) {
+              for (let key = 0; key < mergeItem.length; key++) {
+                let one_merge_item = mergeItem[key];
+                let date_exit_s = new Date(one_merge_item[0].stops.slice(-1)[0].time);
+                let date_exit_e = new Date(one_merge_item[one_merge_item.length - 1].stops.slice(-1)[0].time);
+
+                merge_exit_date[j].push({
+                  merge_index: key,
+                  process_index: j,
+                  date_exit_s: date_exit_s,
+                  date_exit_e: date_exit_e
                 })
               }
             }
+            // console.log( mergeItem.map(c => c.map(d => d.stops.length)) )
+            
 
-            // 与合并相关的数据
+
+            // 与合并相关的绘图数据
             this._mergeresult_1.push({
               batch_index: batch_index_count,
               // 马雷图合并 绘图数据
@@ -471,12 +508,15 @@ export default {
               batchColor: batchColor,
               // 批次信息 绘图数据
               one_batch_info: one_batch_info,
-              // 监控绘图数据
-              diag: all_diag
+              // 监控 绘图数据
+              diag: all_diag,
+              diag_area: merge_exit_date
             })
             batch_index_count++;
           }
           console.log("处理成绘图数据：", this._mergeresult_1)
+
+
 
           let heat_bad = Math.random() * 25;
           let roll_bad = Math.random() * 30;
@@ -516,7 +556,7 @@ export default {
           }
 
           this._monitoringdata['diag'] = all_diag;
-          // console.log(this._monitoringdata);
+          console.log(this._monitoringdata);
 
           // getMonitorData(this._mergeresult, this._timesdata, monitordata);
 
@@ -949,12 +989,15 @@ export default {
           // let stops = d3.merge(this._timesdata.map(d => d.stops.map(s => ({ train: d, stop: s }))));
           let filter = {};
           let filter_with_select = {};
+          let filter_with_cannot_merge = {};
           // if (this._is_merge) {
           if (true) {   // 不管和不合并，都将filter计算出来
             let merge = d3.map(d3.merge(d3.merge(that._mergeresult_1.map(d => d.merge_data.map(e => e.mergeItem)))) , d =>d.upid);
             let select = d3.map(d3.merge(d3.merge(that._mergeresult_1.map(d => d.merge_data.map(e => e.mergeSelect)))) , d =>d.upid);
-            filter = d3.filter(merge , d => select.indexOf(d) === -1 );
-            filter_with_select = merge;
+            let cannot = that._mergeresult_1.map(d => d.cannot_merge.map(e => e.merge_data.map(f => f.upid))).flat().flat().flat()
+            // console.log(cannot)
+            // filter = d3.filter(merge , d => select.indexOf(d) === -1 );
+            // filter_with_select = merge;
 
             for (let i = 0; i < that._mergeresult_1.length; i++) {
               let batch = that._mergeresult_1[i];
@@ -974,7 +1017,17 @@ export default {
                   }
                 }
               }
+              
+              let cannot_merge = batch.cannot_merge.map(d => d.merge_data).flat();
+              // console.log(cannot_merge)
+              for (let k = 0; k < cannot_merge.length; k++) {
+                let item = cannot_merge[k];
+                filter_with_cannot_merge[item.upid] = {
+                  "batch_index": i
+                }
+              }
             }
+            // console.log(filter, filter_with_select, filter_with_cannot_merge)
           }
 
           let MareyGroup = this._marey_g;
@@ -1044,11 +1097,17 @@ export default {
                 if (info_index != undefined) {
                   this._setInfoDetail(batch_index, info_index);
                 }
+                this._setMoniBlock(batch_index, [merge_index]);
                 return;
               }
               
+              // console.log(filter_with_select[d.train.upid])
               if (filter_with_select[d.train.upid] !== undefined && !this._is_merge) {
                 let batch_index = filter_with_select[d.train.upid]['batch_index'];
+                this._setNoMergeInfoArc(batch_index, d.train.upid);
+              }
+              if (filter_with_cannot_merge[d.train.upid] !== undefined && !this._is_merge) {
+                let batch_index = filter_with_cannot_merge[d.train.upid]['batch_index'];
                 this._setNoMergeInfoArc(batch_index, d.train.upid);
               }
 
@@ -1088,6 +1147,7 @@ export default {
                 this._emitToScatter(selected_plates, 1);
                 this._resetInfoDetail();
                 this._keepClickedStatus();
+                this._resetMoniBlock(batch_index, [merge_index]);
                 return;
               }
               if (this._trainSelectedList.includes(d.train.upid))
@@ -1095,6 +1155,10 @@ export default {
               
               if (filter_with_select[d.train.upid] !== undefined && !this._is_merge) {
                 let batch_index = filter_with_select[d.train.upid]['batch_index'];
+                this._resetNoMergeInfoArc(batch_index, d.train.upid);
+              }
+              if (filter_with_cannot_merge[d.train.upid] !== undefined && !this._is_merge) {
+                let batch_index = filter_with_cannot_merge[d.train.upid]['batch_index'];
                 this._resetNoMergeInfoArc(batch_index, d.train.upid);
               }
 
@@ -1834,14 +1898,17 @@ export default {
           linkRectMerge.selectAll('linkRectMergeItem')
             .data(d => d.merge_data)
             .enter()
-            .append("rect")
+            .append("line")
             .attr('class', 'linkRectMergeItem')
             .attr('id', d => `linkRectMergeItem${d.merge_index}`)
             .attr('merge_index', d => d.merge_index)
             .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
-            .attr("width", 2)
-            .attr("height", d => this._y(d.date_entry_e)- this._y(d.date_entry_s))
-            .attr("fill", d => d.pathColor)
+            .attr("x1", 1)
+            .attr("y1", 0)
+            .attr("x2", 1)
+            .attr("y2", d => this._y(d.date_entry_e)- this._y(d.date_entry_s))
+            .attr("stroke-width", 2)
+            .attr("stroke", d => d.pathColor)
           
           // 批次内不能合并块提示线
           linkRectMerge.selectAll('linkRectCannotMergeItem')
@@ -2428,7 +2495,9 @@ export default {
           let start_angle = all_stage_angle[i].stage_start;
           let end_angle = all_stage_angle[i].stage_end;
           let c_angle = start_angle + (end_angle-start_angle) * d[1];
-          return cx ? Math.sin(c_angle) * c_r : -(Math.cos(c_angle) * c_r)
+          let res = cx ? Math.sin(c_angle) * c_r : -(Math.cos(c_angle) * c_r);
+          if (!res) return;
+          return res;
         }
         _renderCenterRect(chartGroup) {
           let color = [vm.labelColors[1], vm.labelColors[0], vm.noflagColor]; // good, bad, noflag
@@ -2982,10 +3051,30 @@ export default {
             .attr('class', 'monitorProcess')
             .attr('id', (d, i) => 'monitorProcess_' + process[i])
             .attr('transform', (d, i) => `translate(${(this._moni_rect_w + 10) * i}, 0)`)
-          
-
           paintDiagnosis(monitorProcess, 'Q');
           paintDiagnosis(monitorProcess, 'T2');
+
+          // 监控块
+          if (!this._is_merge) return
+          let monitorMergeBlock = monitorBatch.selectAll('.monitorMergeBlock')
+            .data(datum => datum.diag_area)
+            .enter()
+            .append('g')
+            .attr('class', 'monitorMergeBlock')
+            .attr('id', (d, i) => 'monitorMergeBlock_' + process[i])
+            .attr('transform', (d, i) => `translate(${(this._moni_rect_w + 10) * i}, 0)`)
+          // monitorMergeBlock.selectAll('.monitor_diagnosis_block')
+          //   .data(d => d)
+          //   .enter()
+          //   .append('rect')
+          //   .attr('class', d => `monitor_diagnosis_block monitor_diagnosis_block_${d.merge_index}`)
+          //   .attr('transform', (d, i) => `translate(${[0, this._y(d.date_exit_s)]})`)
+          //   .attr('width', this._moni_rect_w)
+          //   .attr('height', d => this._y(d.date_exit_e) - this._y(d.date_exit_s))
+          //   // .attr('fill', d => d3.color(vm.processColor[d.process_index]))
+          //   .attr('fill', d => '#F6F7F7')
+          //   .attr('stroke', d => '#D6D9DC')
+          //   .attr('stroke-width', 2)
 
           function paintDiagnosis(Group, type) {
             let Scale;
@@ -3001,6 +3090,10 @@ export default {
             }
             Group.selectAll(`.${type}_diagnosis_value`)
               .data(d => d)
+              .enter()
+              .append('g')
+            .selectAll(`.what_ever_something`)
+            .data(d => d)
               .enter()
               .append('rect')
               .attr('class', `${type}_diagnosis_value`)
@@ -3020,8 +3113,11 @@ export default {
               .attr('stroke', d => d3.color(diagColor(d[type], d[type+'_UCL'])).darker(0.2))
               .attr('stroke-width', 1)
               .attr('opacity', 0.4)
+            
             // 报警线
-            Group
+            Group.selectAll('.what_ever_something')
+            .data(d => d)
+              .enter()
               .append('path')
               .attr('class', `${type}_Line`)
               .attr('transform', `translate(${[that._moni_rect_w/2 + (type === 'Q' ? 5 : -5), 0]})`)
@@ -3279,17 +3375,20 @@ export default {
                 let batch_point = batch_index;
                 while (mergeData.length < 5 && batch_point < N) {
                   let temp = this._mergeresult_1[++batch_point];
+                  if (!temp) break;
                   __selectCurrentBatchData(temp, mergeData, mergeSelect);
                 }
               } else {
                 let batch_point = batch_index;
                 while (mergeData.length < 5 && batch_point >= 0) {
                   let temp = this._mergeresult_1[--batch_point];
+                  if (!temp) break;
                   __selectCurrentBatchData(temp, mergeData, mergeSelect);
                 }
                 batch_point = batch_index;
                 while (mergeData.length < 5 && batch_point < N) {
                   let temp = this._mergeresult_1[++batch_point];
+                  if (!temp) break;
                   __selectCurrentBatchData(temp, mergeData, mergeSelect);
                 }
               }
@@ -3360,6 +3459,22 @@ export default {
             .selectAll('rect')
             .attr('stroke', 'none');
         }
+        _setMoniBlock(batch_index, merge_index_list) {
+          let moniBatch = this._moni_g.select('#monitorBatch' + batch_index)
+
+          for (let i of merge_index_list) {
+            moniBatch.selectAll('.monitor_diagnosis_block_' + i)
+              .attr('fill-opacity', 0)
+          }
+        }
+        _resetMoniBlock(batch_index, merge_index_list) {
+          let moniBatch = this._moni_g.select('#monitorBatch' + batch_index)
+
+          for (let i of merge_index_list) {
+            moniBatch.selectAll('.monitor_diagnosis_block_' + i)
+              .attr('fill-opacity', 1)
+          }
+        }
 
         // 整图过渡动画
         _mareyChartTranslate() {
@@ -3428,10 +3543,10 @@ export default {
             .attr("y2", d => this._y(d.batch_e)- this._y(d.batch_s))
           linkRectMerge.selectAll('.linkRectMergeItem')
             .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
-            .attr("height", d => this._y(d.date_entry_e) - this._y(d.date_entry_s))
-          linkRectMerge.selectAll('.linkRectCannotMergeItem')
+            .attr("y2", d => this._y(d.date_entry_e) - this._y(d.date_entry_s))
+          linkRectMerge.selectAll('.linkRectMergeItem')
             .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
-            .attr("y2", d => this._y(d.date_entry_e)- this._y(d.date_entry_s))
+            .attr("y2", d => this._y(d.date_entry_e) - this._y(d.date_entry_s))
           
           let oneBatchChartGroup = this._info_g.selectAll('.oneBatchChartGroup')
             .transition(line_tran);
@@ -3539,12 +3654,10 @@ export default {
             .delay(50)
             .duration(500);
 
-          // this._moni_g.selectAll('.merge_moni')
-          //   .transition(tran)
-          //   .attr('transform', d => `translate(${20}, ${this._y(d.proce_end_date_s)})`)
-          // this._moni_g.selectAll('.moni_process_rect')
-          //   .transition(tran)
-          //   .attr('height', d => this._y(d.h_e)-this._y(d.h_s))
+          this._moni_g.selectAll('.monitor_diagnosis_block')
+            .transition(tran)
+            .attr('transform', (d, i) => `translate(${[0, this._y(d.date_exit_s)]})`)
+            .attr('height', d => this._y(d.date_exit_e) - this._y(d.date_exit_s))
 
           transDiagnosis('Q');
           transDiagnosis('T2');

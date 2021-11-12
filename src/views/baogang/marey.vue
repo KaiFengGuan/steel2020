@@ -286,19 +286,19 @@ export default {
 					label: 'All'
         }],
       req_body: {
-        "slabthickness": "[]",
-        "tgtdischargetemp": "[]",
-        "tgtplatethickness": "[]",
-        "tgtwidth": "[]",
-        "tgtplatelength2": "[]",
-        "tgttmplatetemp": "[]",
-        "cooling_start_temp": "[]",
-        "cooling_stop_temp": "[]",
-        "cooling_rate1": "[]",
-        "productcategory": "[]",
-        "steelspec": "[]",
-        "status_cooling": "0"
-      },
+        "slabthickness": "[]",
+        "tgtdischargetemp": "[]",
+        "tgtplatethickness": "[]",
+        "tgtwidth": "[]",
+        "tgtplatelength2": "[]",
+        "tgttmplatetemp": "[]",
+        "cooling_start_temp": "[]",
+        "cooling_stop_temp": "[]",
+        "cooling_rate1": "[]",
+        "productcategory": "[]",
+        "steelspec": "[]",
+        "status_cooling": "0"
+      },
 			orderoptions:[{
 					value: 'Number',
 					label: 'Number'
@@ -651,7 +651,7 @@ export default {
       //   .catch(error => {
       //       this.getNotification("getJsonData:"+error)
       //     })
-      return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyTimesDataApi/all/${startDate}/${endDate}/60`,
+      return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyTimesDataApi/all/${startDate}/${endDate}/30`,
         {"steelspec": "all", "tgtplatethickness": '["all"]'})
         .catch(error => {
           this.getNotification("getJsonData:"+error)

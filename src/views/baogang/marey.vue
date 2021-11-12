@@ -1,5 +1,5 @@
 <template>
-	<div class="custom-marey" style="margin-top : -8px;margin-right:4px">
+	<div class="custom-marey">
 		<el-row :style="cssVars">
 			<el-col :span="4" style="margin-top:8px">
 				<el-row>
@@ -53,7 +53,7 @@
 				v-loading="loadingDataLoading"
 				element-loading-text="loading..."
 				element-loading-spinner="el-icon-loading"
-				element-loading-background="rgba(0, 0, 0, 0.3)">
+				element-loading-background="rgba(0, 0, 0, 0.3)" id="condition_view">
 				<el-row>
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
@@ -260,6 +260,7 @@ import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import mergeTimesData from '../../data/layout/mergeTimesData.js'
 import {mareyChartBatchSpec} from '../../data/layout/monitor.js'
 import {filterMareyChartEventIcon} from '../../data/layout/mareyChartEventIcon.js'
+import {getBatchHeader} from '../../utils/marey.js'
 import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
@@ -322,6 +323,7 @@ export default {
 				"T-SNE", "UMAP", "ISOMAP", "PCA"
 			],
 			alldiagnosisData: [],
+			batchData: [],
 			algorithmUrls: {
 				"T-SNE": "/newbaogangapi/v1.0/model/VisualizationTsne/",
 				"UMAP": "/newbaogangapi/v1.0/model/VisualizationUMAP/",
@@ -409,26 +411,10 @@ export default {
 
 			return [this.startmonth, endmonth]
 		},
-		// monthdata : vm => sampledata[+vm.startmonth.getMonth()+1],
-		// allupid : vm => d3.map(vm.monthdata, d => d.upid),
-		// upidData : vm => d3.group(vm.monthdata, d => d.upid),
 		startDateString: vm => util.timeFormat(vm.startDate),
 		endDateString: vm => util.timeFormat(vm.endDate),
 		selectDateStart: vm => util.timeFormat(vm.dateselect[0]),
 		selectDateEnd: vm => util.timeFormat(vm.dateselect[1]),
-		brushData : function(){
-			var start = new Date('2018-01-04 00:00:00'),
-          end = new Date('2018-01-06 04:00:00');
-      return []
-      		// console.log(this.monthdata);
-			// return this.monthdata.filter(d =>{
-			// 	var toc = new Date(d.toc);
-				
-			// 	// return toc < end && toc > start
-			// 	return toc > this.startDate && toc < this.endDate
-			// })
-		},
-    brushUpid : vm => d3.map(vm.brushData, d => d.upid),
     isSwitchActive: vm => !vm.isSwitch
 	},
 	created() {
@@ -735,34 +721,13 @@ export default {
 			}
       this.upidSelect = [...new Set(value.upidSelect)]//.filter(d => this.upidData.get(d) !== undefined)
       
-      this.alldiagnosisData = (await this.getDiagnosisData(
-        [this.batchDateStart[0], this.batchDateEnd[this.batchDateEnd.length - 1]],   // time_select
-        JSON.stringify([]),   // slabthickness
-        JSON.stringify([]),   // tgtdischargetemp
-        JSON.stringify([]),   // tgtplatethickness
-        JSON.stringify([]),   // tgtwidth
-        JSON.stringify([]),   // tgtplatelength2
-        JSON.stringify([]),   // tgttmplatetemp
-        JSON.stringify([]),   // cooling_start_temp
-        JSON.stringify([]),   // cooling_stop_temp
-        JSON.stringify([]),   // cooling_rate1
-        JSON.stringify([]),   // productcategory
-        JSON.stringify([]),   // steelspec
-        0,   // status_cooling
-        0,   // fqcflag
-      )).data;
-      this.alldiagnosisData.forEach(d => {
-				d.toc = new Date(d.toc)
-      })
-      this.alldiagnosisData.sort((a, b) => a.toc - b.toc);
-      let alldiagnosisUpid = this.alldiagnosisData.map(d => d.upid);
 
-      this.upidSelect = this.upidSelect.filter(d => alldiagnosisUpid.indexOf(d) !== -1)//online
-      // console.log(this.upidSelect);
-      // console.log(value.upidSelect);
+      this.batchData = (await this.requestBatchData());
+			this.alldiagnosisData = d3.group(this.batchData.flat(), d => d.upid);
+			this.upidSelect = [...d3.intersection(this.upidSelect, [...this.alldiagnosisData.keys()])]
 
 			for(let item of this.upidSelect){
-				this.usDiagnosis[item] = this.alldiagnosisData[alldiagnosisUpid.indexOf(item)];
+				this.usDiagnosis[item] = this.alldiagnosisData.get(item)[0];
       }
 
       // console.log( 'before paint: ', document.getElementById('diagnosis_view_id').style.height );
@@ -770,22 +735,35 @@ export default {
       this.corrdata = [];
       for(let item of this.upidSelect){
 				try{
-					await this.paintScatterList(item)
+					await this.paintChordList(item)
 				}catch(e){
 					console.log(e)
 				}
       }
-      
       // console.log( 'after paint scatterlist: ', document.getElementById('diagnosis_view_id').style.height );
 
       await this.paintUnderCharts(this.upidSelect[0]);
       
-      
     //   console.log( 'after paint: ', document.getElementById('diagnosis_view_id').style.height );
       
 		},
-		async paintScatterList(upid){
-      // var diagnosisData = this.upidData.get(upid)[0]   //json
+
+		async requestBatchData(){
+			let batchData = [];
+			for(let item in this.batchDateStart){
+				await this.selectDataByTime(this.batchDateStart[item], this.batchDateEnd[item]).then(response => {
+					console.log(this.batchDateStart[item], this.batchDateEnd[item], response.data)
+					let batch = response.data;
+					batch.forEach(d => {
+						d.toc = new Date(d.toc);
+					})
+					batch.sort((a, b) => a.toc - b.toc);
+					batchData.push(batch)
+				})
+			}
+			return batchData;
+		},
+		async paintChordList(upid){
       var diagnosisData = this.usDiagnosis[upid];   //online
       if(this.corrdata['label']) {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData, this.corrdata)})
@@ -817,24 +795,20 @@ export default {
 			})
     },
     
+		async selectDataByTime(...args){
+			const [start, end] = args.map(d => new Date(d));
+			const selectData = this.jsonData.filter(d => new Date(d.toc) <= end && new Date(d.toc) >= start)
+			let request = await this.getDiagnosisData(...getBatchHeader(selectData, args));
+			return request;
+		},
+
 		async paintRiverLike(upid) {
 			this.selectedUpid =  "UPID " + upid
-      // var diagnosisData = this.upidData.get(upid)[0]//json
 			var diagnosisData = this.usDiagnosis[upid]//online
 			this.sampleCss = {}
 			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
 
-      // console.log(this.alldiagnosisData.map(d => d.toc))
-      // console.log(this.batchDateStart)
-      // console.log(this.batchDateEnd)
-
-      var processData = this.batchDateStart.map((d, i) => this.alldiagnosisData.filter(e => e.toc >= new Date(d) && new Date(this.batchDateEnd[i]) >= e.toc))
-      processData = processData.filter(e => e.length != 0)
-
-      // console.log(processData)
-
-      if(this.corrdata['label']) this.$refs.wheelering.paintChart(diagnosisData, this.corrdata, processData)
-			// this.paintDetailPro(this.processTurn)
+      if(this.corrdata['label']) this.$refs.wheelering.paintChart(diagnosisData, this.corrdata, this.batchData)
     },
     
 		mareyUpdate(){
@@ -869,10 +843,9 @@ export default {
 			this.diagnosisVisible = !this.diagnosisVisible;
     },
 		paintUnderCharts(upid) {
-			// diagnosisData
 			this.paintRiverLike(upid);
 			// this.platetype(upid);
-    },
+    	},
     clickDiagnosisButton() {
       if (this.diagnosisVisible) {  // 如果还没收起诊断面板
         this.diagnosisVisible = false;
@@ -992,7 +965,10 @@ export default {
 		},
 	},
 	mounted() {
-		this.getplatetype()
+		// console.log(this.startmonth.getMonth())
+		// this.platetype('18B09019000')
+		// this.trainClick(diagnosis_value)
+		// this.getplatetype()
 		this.changeTime()
 	},
 	watch: {
@@ -1035,7 +1011,9 @@ export default {
 .custom-marey {
 	background: white;
 	margin: -18px;
-	padding: 8px;
+	margin-top : -8px;
+	margin-right:4px;
+	// padding: 8px;
 	overflow: hidden;
 	.el-button--danger {
 		color: #FFF;
@@ -1312,7 +1290,7 @@ export default {
 	// text-align: center;
 	// display: block;
 	font-size: var(--tf_size);
-  font-style: var(--tf_style);
+	font-style: var(--tf_style);
 	font-weight: var(--tf_weight);
 	font-family: var(--tf_family) !important;
 	color: var(--tf_color);

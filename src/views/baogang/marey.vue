@@ -285,19 +285,19 @@ export default {
 					label: 'All'
         }],
       req_body: {
-        "slabthickness": "[]",
-        "tgtdischargetemp": "[]",
-        "tgtplatethickness": "[]",
-        "tgtwidth": "[]",
-        "tgtplatelength2": "[]",
-        "tgttmplatetemp": "[]",
-        "cooling_start_temp": "[]",
-        "cooling_stop_temp": "[]",
-        "cooling_rate1": "[]",
-        "productcategory": "[]",
-        "steelspec": "[]",
-        "status_cooling": "0"
-      },
+        "slabthickness": "[]",
+        "tgtdischargetemp": "[]",
+        "tgtplatethickness": "[]",
+        "tgtwidth": "[]",
+        "tgtplatelength2": "[]",
+        "tgttmplatetemp": "[]",
+        "cooling_start_temp": "[]",
+        "cooling_stop_temp": "[]",
+        "cooling_rate1": "[]",
+        "productcategory": "[]",
+        "steelspec": "[]",
+        "status_cooling": "0"
+      },
 			orderoptions:[{
 					value: 'Number',
 					label: 'Number'
@@ -464,15 +464,15 @@ export default {
       
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      this.jsonData = jsonData
+      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      // this.jsonData = jsonData
       console.log('原始：', this.jsonData)
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       let eventIconData = filterMareyChartEventIcon(this.jsonData);
       this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
-      this.monitorData = monitorData
+      // this.monitorData = monitorData
 			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
-      // console.log('监控：', this.monitorData)
+      console.log('监控：', this.monitorData)
       // console.log(eventIconData)
 
 			// let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
@@ -665,7 +665,7 @@ export default {
       //   .catch(error => {
       //       this.getNotification("getJsonData:"+error)
       //     })
-      return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyTimesDataApi/all/${startDate}/${endDate}/60`,
+      return baogangPlotAxios(`/newbaogangapi/v1.0/newGetMareyTimesDataApi/all/${startDate}/${endDate}/30`,
         {"steelspec": "all", "tgtplatethickness": '["all"]'})
         .catch(error => {
           this.getNotification("getJsonData:"+error)

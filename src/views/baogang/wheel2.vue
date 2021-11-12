@@ -1940,7 +1940,7 @@ export default {
 										.call(g => g.append('rect').attr('transform', symbolAttrs.multiTransform).attr('class', 'multivariate')
 											.attr('width', (d, i) => symbolAttrs.multiScale(multiNum[i]))
 											.attr('height', symbolAttrs.rectHeight)
-											.attr('fill', mergeColor[0])
+											.attr('fill', util.delabelColor[0])
 											.attr('stroke', 'none')))
 								}
 								function updateSymbol(t){

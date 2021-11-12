@@ -3375,17 +3375,20 @@ export default {
                 let batch_point = batch_index;
                 while (mergeData.length < 5 && batch_point < N) {
                   let temp = this._mergeresult_1[++batch_point];
+                  if (!temp) break;
                   __selectCurrentBatchData(temp, mergeData, mergeSelect);
                 }
               } else {
                 let batch_point = batch_index;
                 while (mergeData.length < 5 && batch_point >= 0) {
                   let temp = this._mergeresult_1[--batch_point];
+                  if (!temp) break;
                   __selectCurrentBatchData(temp, mergeData, mergeSelect);
                 }
                 batch_point = batch_index;
                 while (mergeData.length < 5 && batch_point < N) {
                   let temp = this._mergeresult_1[++batch_point];
+                  if (!temp) break;
                   __selectCurrentBatchData(temp, mergeData, mergeSelect);
                 }
               }

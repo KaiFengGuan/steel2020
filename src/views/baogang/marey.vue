@@ -126,7 +126,7 @@
 				</el-row>
 				<!-- <transition name="diagnosis"> -->
 				<el-row>
-					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height:0px;">
+					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height: 540px;">
 						<div class="my-card-title" slot="header">
 							<el-col :span="14"><span>Diagnosis View</span></el-col>
 							<el-col :span="1" style="font-size: 12px;margin:2px 0px">CurveSize</el-col>
@@ -219,7 +219,7 @@
 									</el-row>
 								</div> -->
 								<div class="my-card-body" >
-									<wheeler ref="wheelering" style="height:490px" :contract="false"></wheeler>
+									<wheeler ref="wheelering" style="height:490px" :contract="false" @wheelMouse="wheelMouse"></wheeler>
 								</div>
 							</el-card>
 						</el-col>
@@ -227,7 +227,7 @@
 					</el-card>		
 				</el-row>
 				<!-- </transition> -->
-				<el-button circle class="diagnosis_button" icon="el-icon-more" @click="clickDiagnosisButton"></el-button>
+				
 			<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
 				<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
 					<el-card class="my-card-body-detail">
@@ -239,6 +239,7 @@
 				</el-col>
 			</el-row> -->
 			</el-col>
+			<el-button circle  icon="el-icon-more" @click="animeTransition"></el-button>
 		</el-row>
 
 	</div>
@@ -265,8 +266,9 @@ import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
 
-import jsonData from '../data/jsonData.json'
-import monitorData from '../data/monitorData.json'
+// import jsonData from '../data/jsonData.json'
+// import monitorData from '../data/monitorData.json'
+// import scatterData from '../data/scatterData.json'
 
 export default {
 	components: { mareyChart, timeBrush, brushableParallel, scatterlog, wheeler , smallWheel, slider},
@@ -407,7 +409,7 @@ export default {
 			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
 			// 	endmonth.setMonth(1)
       // }
-      endmonth.setDate(endmonth.getDate() + 10)
+      endmonth.setDate(endmonth.getDate() + 30)
 
 			return [this.startmonth, endmonth]
 		},
@@ -693,19 +695,28 @@ export default {
 			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
 		},
     animeTransition(){
-      if (this.diagnosisVisible) {
-        anime({
-          targets: ['.diagnosis_view'],
-          height:'540px',
-          easing: 'easeInOutQuad'
-        });
-      } else {
-        anime({
-          targets: ['.diagnosis_view'],
-          height:'0px',
-          easing: 'easeInOutQuad'
-        });
-      }
+			this.diagnosisVisible = !this.diagnosisVisible;
+			anime({
+				targets: ['.diagnosis_view'],
+				// height: this.diagnosisVisible ? '0px' : '540px',
+				translateY: this.diagnosisVisible ? '0px' : '540px',
+				easing: 'easeInOutQuad'
+			})
+      // if (this.diagnosisVisible) {
+      //   anime({
+      //     targets: ['.diagnosis_view'],
+      //     height:'540px',
+			// 		visibility: 'visible',
+      //     easing: 'easeInOutQuad'
+      //   });
+      // } else {
+      //   anime({
+      //     targets: ['.diagnosis_view'],
+      //     height:'0px',
+			// 		visibility: 'hidden',
+      //     easing: 'easeInOutQuad'
+      //   });
+      // }
     },
 
 		async trainClick(value) {
@@ -839,6 +850,11 @@ export default {
 			this.$refs.scatterCate.mouse(value)
 			this.$refs.mareyChart.mouse(value)
     },
+		wheelMouse(value){
+			this.$refs.scatterCate.mouse(value)
+			this.$refs.mareyChart.mouse(value)
+			this.$refs.parallel.mouse(value)
+		},
     changeDiagnosisVisible() {
 			this.diagnosisVisible = !this.diagnosisVisible;
     },
@@ -873,7 +889,14 @@ export default {
 				}
 			}
 			if(query.length===0)query=this.plateTempPropvalue
-			let processDetail = (await this.getDetailProcess(this.selectedTrainData[this.selectedTrainData.length-1], processName, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query,this.plateTempProp.deviation)).data
+			let processDetail = (await this.getDetailProcess(this.selectedTrainData[this.selectedTrainData.length-1], 
+				processName,
+				this.plateTempProp.width/1000,
+				this.plateTempProp.length,
+				this.plateTempProp.thickness/1000,
+				query,
+				this.plateTempProp.deviation)).data
+			//
 			// let processDetail = (await this.getDetailProcess('18A15070000', processName, this.plateTempProp.width, this.plateTempProp.length, this.plateTempProp.thickness)).data
 			this.processData = processDetail
 			this.processName=processName
@@ -957,6 +980,7 @@ export default {
 
 			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
         this.scatterData=Response.data
+				// this.scatterData = scatterData
 
 				this.$refs.scatterCate.paintChart(this.scatterData, this.req_count)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])

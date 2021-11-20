@@ -126,7 +126,7 @@
 				</el-row>
 				<!-- <transition name="diagnosis"> -->
 				<el-row>
-					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height: 540px;">
+					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height: 540px; transform: translateY(540px);">
 						<div class="my-card-title" slot="header">
 							<el-col :span="14"><span>Diagnosis View</span></el-col>
 							<el-col :span="1" style="font-size: 12px;margin:2px 0px">CurveSize</el-col>
@@ -239,7 +239,7 @@
 				</el-col>
 			</el-row> -->
 			</el-col>
-			<el-button circle  icon="el-icon-more" @click="animeTransition"></el-button>
+			<el-button circle  icon="el-icon-more" @click="changeDiagnosisVisible" id="diagnosis_button"></el-button>
 		</el-row>
 
 	</div>
@@ -266,9 +266,9 @@ import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
 
-// import jsonData from '../data/jsonData.json'
-// import monitorData from '../data/monitorData.json'
-// import scatterData from '../data/scatterData.json'
+import jsonData from '../data/jsonData.json'
+import monitorData from '../data/monitorData.json'
+import scatterData from '../data/scatterData.json'
 
 export default {
 	components: { mareyChart, timeBrush, brushableParallel, scatterlog, wheeler , smallWheel, slider},
@@ -452,13 +452,13 @@ export default {
       
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      // this.jsonData = jsonData
+      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      this.jsonData = jsonData
       console.log('原始：', this.jsonData)
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       let eventIconData = filterMareyChartEventIcon(this.jsonData);
-      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
-      // this.monitorData = monitorData
+      // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      this.monitorData = monitorData
 			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
       console.log('监控：', this.monitorData)
       // console.log(eventIconData)
@@ -695,28 +695,12 @@ export default {
 			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
 		},
     animeTransition(){
-			this.diagnosisVisible = !this.diagnosisVisible;
+			// this.diagnosisVisible = !this.diagnosisVisible;
 			anime({
 				targets: ['.diagnosis_view'],
-				// height: this.diagnosisVisible ? '0px' : '540px',
-				translateY: this.diagnosisVisible ? '0px' : '540px',
+				translateY: this.diagnosisVisible ? '0px' : '1100px',
 				easing: 'easeInOutQuad'
 			})
-      // if (this.diagnosisVisible) {
-      //   anime({
-      //     targets: ['.diagnosis_view'],
-      //     height:'540px',
-			// 		visibility: 'visible',
-      //     easing: 'easeInOutQuad'
-      //   });
-      // } else {
-      //   anime({
-      //     targets: ['.diagnosis_view'],
-      //     height:'0px',
-			// 		visibility: 'hidden',
-      //     easing: 'easeInOutQuad'
-      //   });
-      // }
     },
 
 		async trainClick(value) {
@@ -857,6 +841,7 @@ export default {
 		},
     changeDiagnosisVisible() {
 			this.diagnosisVisible = !this.diagnosisVisible;
+			this.animeTransition()
     },
 		paintUnderCharts(upid) {
 			this.paintRiverLike(upid);
@@ -978,14 +963,14 @@ export default {
 		async getAlgorithmData() {
       this.req_count += 1;
 
-			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
-        this.scatterData=Response.data
-				// this.scatterData = scatterData
+			// await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
+      //   this.scatterData=Response.data
+				this.scatterData = scatterData
 
 				this.$refs.scatterCate.paintChart(this.scatterData, this.req_count)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
         this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
-			})
+			// })
 		},
 	},
 	mounted() {

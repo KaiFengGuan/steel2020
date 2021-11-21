@@ -9,11 +9,11 @@ function hasOperation(curr, next) {
 
   if (curr_zp && next_zp) {
     let zp = curr_zp.map((d, i) => Math.abs(d - next_zp[i]));
-    // console.log(zp)
-    return zp.some(d => d >= OprationThreshold);
+    let m = d3.mean(curr_zp) - d3.mean(next_zp);
+    return [zp.some(d => d >= OprationThreshold), m];
   }
 
-  return false;
+  return [false, 0];
 }
 
 export function filterMareyChartEventIcon(timesData) {
@@ -32,32 +32,34 @@ export function filterMareyChartEventIcon(timesData) {
     
     let toc = (new Date(next_item.toc).getTime() + new Date(curr_item.toc).getTime()) / 2;
 
-    if (curr_rmF3
-      && next_rmF3
-      && hasOperation(curr_rmF3, next_rmF3)
-    ) {
-      eventIconData.push({
-        upid: next_item.upid,
-        toc: convertTime(toc),
-        flag: next_item.flag,
-        distance: next_rmF3.station.distance,
-        // time: convertTime((new Date(next_rmF3.time).getTime() + new Date(curr_rmF3.time).getTime()) / 2)
-        time: next_rmF3.time
-      });
+    if (curr_rmF3 && next_rmF3) {
+      let [op, val] = hasOperation(curr_rmF3, next_rmF3);
+      if (op) {
+        eventIconData.push({
+          upid: next_item.upid,
+          toc: convertTime(toc),
+          flag: next_item.flag,
+          distance: next_rmF3.station.distance,
+          // time: convertTime((new Date(next_rmF3.time).getTime() + new Date(curr_rmF3.time).getTime()) / 2)
+          time: next_rmF3.time,
+          value: val
+        });
+      }
     }
 
-    if (curr_fmL3
-      && next_fmL3
-      && hasOperation(curr_fmL3, next_fmL3)
-    ) {
-      eventIconData.push({
-        upid: next_item.upid,
-        toc: convertTime(toc),
-        flag: next_item.flag,
-        distance: next_fmL3.station.distance,
-        // time: convertTime((new Date(next_fmL3.time).getTime() + new Date(curr_fmL3.time).getTime()) / 2)
-        time: next_fmL3.time
-      });
+    if (curr_fmL3 && next_fmL3) {
+      let [op, val] = hasOperation(curr_fmL3, next_fmL3);
+      if (op) {
+        eventIconData.push({
+          upid: next_item.upid,
+          toc: convertTime(toc),
+          flag: next_item.flag,
+          distance: next_fmL3.station.distance,
+          // time: convertTime((new Date(next_fmL3.time).getTime() + new Date(curr_fmL3.time).getTime()) / 2)
+          time: next_fmL3.time,
+          value: val
+        });
+      }
     }
   }
 

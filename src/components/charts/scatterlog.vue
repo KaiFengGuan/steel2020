@@ -84,7 +84,9 @@ export default {
 							.style('font', '12px DIN');
 
 						const path = tooltip.append('path')
-							.attr('fill', 'rgba(245, 245, 230, 0.97)');
+              // .attr('fill', 'rgba(245, 245, 230, 0.97)');
+              .attr('stroke', 'rgba(148, 167, 183, 0.4)')
+              .attr('fill', 'white')
 
 						const text = tooltip.append('g');
 
@@ -114,14 +116,15 @@ export default {
 
 						const label=d;				
 						tooltip
-							.style('display', null)
-							.attr('fill', util.scatterTooltipAttr.line1.fontColor);
+              .style('display', null)
+              .attr('fill', vm.tooltipColor(label))
+							// .attr('fill', util.scatterTooltipAttr.line1.fontColor);
 						line1.text(`upid:`+ d.upid);
-						line2.text(`category: `+d.productcategory);
+						line2.text(`category: `+d.steelspec);
 						line3.text(`time:`+d.toc);
 						path
-							.attr('stroke', 'none')
-							.attr('fill', vm.tooltipColor(label));
+							.attr('stroke', vm.tooltipColor(label))
+							.attr('fill', 'white');
 						const box = text.node().getBBox();
 						let x = event.offsetX,
 							y = event.offsetY,
@@ -163,9 +166,10 @@ export default {
 						vm.$emit('scatterMouse', {upid: [d.upid],  mouse: 0});
 					})
 					.on('mouseout', (event, d)=> {
+            const that = this;
             setTimeout(function(){
               if(mouseTooltip)return;
-						  this.initDot();
+						  that.initDot();
               vm.$emit('scatterMouse', {upid: [d.upid],  mouse: 1});
             }, 0)
 					}))

@@ -1,59 +1,67 @@
 import * as d3 from 'd3'
 
-export function getMonitorData(mergeresult, timesdata, monitordata) {
-  // console.log(mergeresult)
-  // console.log(timesdata)
-  // console.log(monitordata)
+export function getMonitorChunk(merge_index, plates, monitordata) {
+  plates.sort((a, b) => new Date(a.stops[0].time).getTime() - new Date(b.stops[0].time).getTime());
+  let all_diag = [[], [], []];
+  let process = ['Heat', 'Roll', 'Cool'];
+  const n = plates.length;
+  let over_p = [0, 0, 0], total = [0, 0, 0];
 
-  // let merge_flat = mergeresult.map(d => [
-  //   ...d.cannot_merge, 
-  //   ...d.merge_result.merge.flat(), 
-  //   ...d.merge_result.select.flat()]);
+  for (let j = 0; j < process.length; j++) {
+    let key = process[j];
+    for (let i = 0; i < n; i++) {
+      let k = i;
+      let temp = [];
+      while (k < n && monitordata[plates[k].upid]) {
+        let plate = plates[k];
+        let cur_moni = monitordata[plate.upid];
+        if (!cur_moni[key + '_QUCL'] && !cur_moni[key + '_Q']
+          && !cur_moni[key + '_T2UCL'] && !cur_moni[key + '_T2']) {
+          break;
+        }
+        let Q_UCL  = cur_moni[key + '_QUCL'],
+            Q      = cur_moni[key + '_Q'] > cur_moni[key + '_QUCL'] * 1.5 ? cur_moni[key + '_QUCL'] * 1.5 : cur_moni[key + '_Q'],
+            T2_UCL = cur_moni[key + '_T2UCL'],
+            T2     = cur_moni[key + '_T2'] > cur_moni[key + '_T2UCL'] * 1.5 ? cur_moni[key + '_T2UCL'] * 1.5 : cur_moni[key + '_T2'];
+      
+        if (Q > Q_UCL)  over_p[j]++;
+        if (T2 > T2_UCL) over_p[j]++;
+        total[j] += 2;
 
-  // let time_extend = [];
-  // for (let batch of merge_flat) {
-  //   let max_toc = new Date(batch[0].toc), min_toc = new Date(batch[0].toc);
-  //   for (let plate of batch) {
-  //     let cur_toc = new Date(plate.toc);
-  //     if (cur_toc >= max_toc)  max_toc = cur_toc;
-  //     if (cur_toc < min_toc)  min_toc = cur_toc;
-  //   }
-  //   time_extend.push([min_toc, max_toc]);
-  // }
-  
-  
-  // let moni_res = [];
-  // for (let [min_toc, max_toc] of time_extend) {
-  //   let one_batch_moni = [];
-  //   for (let plate of timesdata) {
-  //     let cur_toc = new Date(plate.toc);
-  //     if (cur_toc >= min_toc && cur_toc <= max_toc &&)
-  //   }
-  // }
+        temp.push({
+          upid: plate.upid,
+          toc: plate.toc,
+          endtime: new Date(plate.stops.slice(-1)[0].time),
+          nextendtime: k+1 === n ? 0 : new Date(plates[k+1].stops.slice(-1)[0].time),
+          index: j,
+          Q_UCL:  Q_UCL,
+          Q:      Q,
+          T2_UCL: T2_UCL,
+          T2:     T2
+        });
+        k++;
+      }
+      if (temp.length !== 0) all_diag[j].push(temp);
+      i = k;
+    }
+  }
 
+  let merge_exit_date = [];
+  let date_exit_s = new Date(plates[0].stops.slice(-1)[0].time);
+  let date_exit_e = new Date(plates[plates.length - 1].stops.slice(-1)[0].time);
+  // console.log(over_p, total)
+  for (let j = 0; j < 3; j++) {
+    if (all_diag[j].length !== 0) {
+      let percent = over_p[j] / total[j];
+      merge_exit_date.push({
+        merge_index: merge_index,
+        process_index: j,
+        date_exit_s: date_exit_s,
+        date_exit_e: date_exit_e,
+        percent: percent
+      })
+    }
+  }
+
+  return [all_diag.filter(d => d.length !== 0), merge_exit_date]
 }
-
-
-// this._monitoringdata = {};
-//           let all_diag = [[], [], []];
-//           let process = ['Heat', 'Roll', 'Cool'];
-//           let n = this._timesdata.length;
-//           for (let i = 0; i < n; i++) {
-//             let item = this._timesdata[i];
-//             let cur_moni = monitordata[item.upid];
-
-//             for (let j = 0; j < process.length; j++) {
-//               let key = process[j];
-//               all_diag[j].push({
-//                 upid: item.upid,
-//                 toc: item.toc,
-//                 endtime: new Date(item.stops.slice(-1)[0].time),
-//                 nextendtime: i+1 === n ? 0 : new Date(this._timesdata[i+1].stops.slice(-1)[0].time),
-//                 index: j,
-//                 Q_UCL:  cur_moni ? cur_moni[process[j] + '_QUCL']  ? cur_moni[process[j] + '_QUCL']  : 0 : 0,
-//                 Q:      cur_moni ? cur_moni[process[j] + '_Q']     ? cur_moni[process[j] + '_Q'] > cur_moni[process[j] + '_QUCL'] * 1.5 ? cur_moni[process[j] + '_QUCL'] * 1.5 : cur_moni[process[j] + '_Q'] : 0 : 0,
-//                 T2_UCL: cur_moni ? cur_moni[process[j] + '_T2UCL'] ? cur_moni[process[j] + '_T2UCL'] : 0 : 0,
-//                 T2:     cur_moni ? cur_moni[process[j] + '_T2']    ? cur_moni[process[j] + '_T2'] > cur_moni[process[j] + '_T2UCL'] * 1.5 ? cur_moni[process[j] + '_T2UCL'] * 1.5 : cur_moni[process[j] + '_T2'] : 0 : 0,
-//               })
-//             }
-//           }

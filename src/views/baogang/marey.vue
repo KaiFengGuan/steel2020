@@ -37,11 +37,11 @@
 				<el-row>
 					<el-card class="myel-card">		 
 						<div class="my-card-title" slot="header" >
-								<span style="margin-left:5px">Tabular View  <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search"></el-button> </span>
-
+								<span style="margin-left:5px">Tabular View</span>
+								<el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search"></el-button>
 						</div>
 						<div class="my-card-body" style="padding-top:5px; overflow:scroll">
-							<brushableParallel ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse"></brushableParallel>
+							<brush-slider ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse" :diagnosisState='diagnosisState'></brush-slider>
 						</div>
 						<!-- <el-col :span="4"> -->
 							
@@ -256,7 +256,7 @@ import timeBrush from './timeBrush.vue';
 import wheeler from './wheel2.vue';
 import smallWheel from './wheel2.vue';
 import slider from './slider.vue'
-import brushableParallel from "components/charts/brushableParallel.vue"
+import brushSlider from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import mergeTimesData from '../../data/layout/mergeTimesData.js'
 import {mareyChartBatchSpec} from '../../data/layout/monitor.js'
@@ -268,10 +268,10 @@ import Vue from 'vue';
 
 // import jsonData from '../data/jsonData.json'
 // import monitorData from '../data/monitorData.json'
-// import scatterData from '../data/scatterData.json'
+import scatterData from '../data/scatterData.json'
 
 export default {
-	components: { mareyChart, timeBrush, brushableParallel, scatterlog, wheeler , smallWheel, slider},
+	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler , smallWheel, slider},
 	data() {
 		return {
 			diagnosisVisible: false,
@@ -301,6 +301,7 @@ export default {
         "steelspec": "[]",
         "status_cooling": "0"
       },
+			diagnosisState: false,
 			orderoptions:[{
 					value: 'Number',
 					label: 'Number'
@@ -315,7 +316,6 @@ export default {
 			plateTempPropvalue:['All'],
 			startmonth: new Date(2021, 2, 10, 0, 0),
 			time: undefined,
-			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
 			interval: 4,
@@ -398,7 +398,7 @@ export default {
 			"trainBorder",
 			"startDate",
 			"endDate",
-			"diagnosisState"
+			// "diagnosisState"
 		]),
 		dateselect : function(){
       var endmonth = new Date(this.startmonth.valueOf())
@@ -449,7 +449,7 @@ export default {
 		async getHttpData() {
 			this.plateTempPropvalue=['All']
       this.loadingDataLoading = true
-      
+      return;
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
       this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
@@ -487,47 +487,13 @@ export default {
         eventIconData: eventIconData
         }, this.isSwitch, this.isMerge);
 
-			// clear
-			this.selectedTrainData = [];
 		},
 		async newdiagnose() {
-			this.changeDiagnosisState()
-			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
-
-	// 		// response
-	// 		// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
-	// 		await this.getStationsData(this.startDate, this.endDate).then(Response => {
-	// 			this.stationsData=Response.data
-    //   })
-
-	// 		this.jsonData = (await this.getJsonData(startDate, endDate)).data;
-	// 		// this.jsonData = this.jsonData.filter(d => {
-	// 		// 	return this.brushUpid.includes(d.upid)
-	// 		// })
-
-	// 		let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
-	// 		// this.getplatetype();
-	// 		let allDataArr = []
-	// 		for (let item of this.jsonData) {
-	// 				let upid = item['upid']
-	// 				allDataArr.push(flagData[upid])
-	// 		}
-	// 		for (let i = 0; i < this.jsonData.length; i++) {
-	// 			this.jsonData[i]['flag'] = allDataArr[i]
-	// 		}
-
-	// 		// paint
-	// 		this.loadingDataLoading = false
-	// 		this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
-	// 		// this.jsonData = this.jsonData.filter(d => {
-	// 		// 	return this.brushUpid.includes(d.upid)
-	// 		// })
-    //   if(this.scatterData.length!==0)this.mergeflag()
-    //   // console.log("jsonData: ", this.jsonData);
-	// 		this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData, this.isMerge);
-
-	// // 		// clear
-	// // 		this.selectedTrainData = [];
+			this.diagnosisState = !this.diagnosisState;
+			this.$nextTick(function() {
+				// this.changeDiagnosisState()
+				this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+			})
 		},
 		mergeflag(){
 			let mergedata=[]
@@ -692,7 +658,6 @@ export default {
 			// // this.selectedTrainColor
 			// let seletcolor=this.$refs.mareyChart.setTrainColor(bool) 
 			// // this.changeScatterColor();
-			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
 		},
     animeTransition(){
 			this.diagnosisVisible = !this.diagnosisVisible;
@@ -873,11 +838,6 @@ export default {
 			this.processInTurn = [null, null]
 			let processName = this.processArray[processNumber]||'heat'
 
-			
-			if(this.selectedTrainData.length===0){
-				this.getNotification("未选择具体钢板进行分析，请在马雷图选择钢板")
-				return
-			}
 			if(this.plateTempPropvalue.length===0){
 				// this.getNotification("未选择合适的钢板类型进行分析，将默认为你选取所有钢板") 
 				this.plateTempPropvalue=['All'];
@@ -889,7 +849,7 @@ export default {
 				}
 			}
 			if(query.length===0)query=this.plateTempPropvalue
-			let processDetail = (await this.getDetailProcess(this.selectedTrainData[this.selectedTrainData.length-1], 
+			let processDetail = (await this.getDetailProcess('upid', 
 				processName,
 				this.plateTempProp.width/1000,
 				this.plateTempProp.length,
@@ -978,14 +938,14 @@ export default {
 		async getAlgorithmData() {
       this.req_count += 1;
 
-			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
-        this.scatterData=Response.data
-				// this.scatterData = scatterData
+			// await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
+      //   this.scatterData=Response.data
+				this.scatterData = scatterData
 
 				this.$refs.scatterCate.paintChart(this.scatterData, this.req_count)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
-        this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
-			})
+        // this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+			// })
 		},
 	},
 	mounted() {

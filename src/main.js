@@ -42,21 +42,21 @@ export default new Vue({
     render: h => h(App)
 }).$mount('#app')
 
-var ws = new WebSocket('ws://localhost:15674/ws')
-var client = stomp.over(ws)
-client.debug = null
-var connectHeaders = {
-    login: 'root',
-    passcode: 'woshimima',
-    host: '/'
-}
-var on_connect = function () {
-    console.log('everything is fine with stomp...')
-}
-var on_error = function (err) {
-    console.log('Oops, there is something wrong, look at the information below!!!')
-    console.log(err)
-}
-client.connect(connectHeaders, on_connect, on_error)
-// Vue.config.devtools = true;
-export { client }
+// var ws = new WebSocket('ws://localhost:15674/ws')
+// var client = stomp.over(ws)
+// client.debug = null
+// var connectHeaders = {
+//     login: 'root',
+//     passcode: 'woshimima',
+//     host: '/'
+// }
+// var on_connect = function () {
+//     console.log('everything is fine with stomp...')
+// }
+// var on_error = function (err) {
+//     console.log('Oops, there is something wrong, look at the information below!!!')
+//     console.log(err)
+// }
+// client.connect(connectHeaders, on_connect, on_error)
+// // Vue.config.devtools = true;
+// export { client }

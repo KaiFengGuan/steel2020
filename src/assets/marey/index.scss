@@ -8,14 +8,18 @@
 }
 #diagnosis_chart{
 	position: relative;
-	z-index: 66666;
+	z-index: 666;
 	right: 20px;
 }
 #diagnosis_button{
 	float: right;
+	z-index: 66666;
+	position: absolute;
+	right: 40px;
+	bottom: 40px;
 }
 .diagnosis_view {
-	position: relative;
+	position: absolute;
 	z-index: auto;
 	height: 540px;
 	bottom: 540px;

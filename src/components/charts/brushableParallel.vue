@@ -33,27 +33,32 @@ export default {
 			lengthStation: 0,
 			widthStation: 0,
 			xScale: new Map(),
-			slabThicknesssStation: 0,
-			countpaint: 0,
 			newBrushSelection: new Map(),
 			// objStatus: {'tgtplatethickness':false,'tgtplatelength2':false,'tgtwidth':false,'slab_thickness':false},
 			// coolingStation: {'cooling':false,'nocooling':false},
 			keys: ['tgtthickness', 'tgtplatelength2', 'tgtwidth',
 				'slab_thickness', 'tgtdischargetemp', 'tgttmplatetemp' // 'cooling_start_temp','cooling_stop_temp','cooling_rate1'
 			],
-			brushGroup: [],
+			brushStep: [10, 1, 0.1, 10, 5, 5],
+			maxStep: [500, 30, 2.5, 200, 100, 100],
+			//钢板厚度 300 +- 10
+			//钢板长度 38 +- 1
+			//钢板宽度 3.86 +- 0.1
+			//板坯厚度	386 +- 10
+			//实际出炉温度 770 +- 10
+			//终轧温度 840 +- 10
+			diagnosisArr: [0, 0, 0, 0, 0, 0],
 			newBrushData: [
-				[25, 35],
-				[20, 35],
-				[2.5, 4.0],
-				[2.5, 3],
-				[1120, 1130],
-				[600, 800],
-				[740, 820],
-				[300, 700],
-				[10.0, 40.0]
-			],
-			brush: d3.brushX(),
+							[25, 35],
+							[20, 35],
+							[2.5, 4.0],
+							[250, 300],
+							[1120, 1130],
+							[600, 800],
+							[1, 2]
+						],
+			brushRange: [],
+			diagnosisRange: [],
 			lastSelections: new Map(),
 			lastHandle: new Map(),
 			// brush
@@ -84,7 +89,7 @@ export default {
 	// 看时间的只要变化就会对应着变化
 	watch: {
 		isSwitch(val, oldVal) {
-			d3.selectAll('.pathColor').attr('stroke', this.deGroupStyle);
+			d3.selectAll('.steelLine').attr('stroke', this.deGroupStyle);
 		},
 		// startDate:function(){
 		//     if(this.plData !== undefined){
@@ -98,12 +103,8 @@ export default {
 				this.resetPath();
 			}
 		},
-		diagnosisState: function() {
-			if (this.diagnosisState) {
-				console.log('true');
-			} else {
-				console.log('false');
-			}
+		diagnosisState(val, oldVal) {
+			console.log(val)
 		}
 	},
 
@@ -125,11 +126,10 @@ export default {
 
 		},
 		paintChart(plData, startTime, endTime) {
-			let diagnosisSelected = new Map();
 			plData = this.deepCopy(plData);
 			this.plData = plData;
 			var brushdata = plData.map(d => {
-				d.slab_thickness = d.slab_thickness / 100;
+				d.slab_thickness = d.slab_thickness;
 				d.status_cooling = d.status_cooling + 1;
 				return d;
 			});
@@ -138,10 +138,6 @@ export default {
 			const newkeys = [...keys, 'status_cooling'];
 			this.brushdata = brushdata.filter(d => keys.every(e => typeof d[e] === 'number'));
 			var margin = {top: 40, right: 20, bottom: 50, left: 20},	// var margin = {top: 40, right: 20, bottom: 40, left: 20},
-				coolingArray = d3.filter(brushdata, (d, i) => d['status_cooling'] == 2),
-				nocoolingArray = d3.filter(brushdata, (d, i) => d['status_cooling'] == 1),
-				allArray = [],
-				cooling = ['cooling', 'nocooling'],
 				objStatus = {
 					tgtthickness: false,
 					tgtplatelength2: false,
@@ -154,8 +150,7 @@ export default {
 					cooling_rate1: false,
 					status_cooling: true
 				};
-			allArray.push(coolingArray);
-			allArray.push(nocoolingArray);
+			const allArray = [2, 1].map(d => d3.filter(brushdata, (e, f) => e['status_cooling'] == d));	//coolingArray nocoolingArray
 			var xCooling = d3
 					.scaleBand() //Ordinal scale
 					.domain(d3.range(allArray.length))
@@ -165,12 +160,7 @@ export default {
 					.scaleLinear()
 					.domain([0, d3.max(allArray, d => d.length)])
 					.nice()
-					// .range([50, 0]),
 					.range([40, 0]),
-				// yCooling = d3.scaleLinear()
-				//             .domain([0, d3.max(allArray, d => d.length)]).nice()
-				//             .range([50, 0]),
-
 				coolingMargin = (width - margin.right - margin.left) / allArray.length / 2;
 			var brushHeight = 10,
 				vm = this,
@@ -194,22 +184,11 @@ export default {
 					return d3.bin().thresholds(length)(bardata[i]);
 				});
 			// debugger
-			var barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.max(d3.map(array, d => d.length))]).range([0, 50])),
+			var barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.max(d3.map(array, d => d.length))]).range([0, 35])),
 				width = document.getElementById(this.menuId).offsetWidth,
-				arc = d3
-					.arc()
-					.innerRadius(0)
-					// .outerRadius(8)
-					.outerRadius(6)
-					.startAngle(0)
+				arc = d3.arc().innerRadius(0).outerRadius(6).startAngle(0)
 					.endAngle((d, i) => (i ? 2 * Math.PI : -2 * Math.PI)),
-				arcDiagnosis = d3
-					.arc()
-					.innerRadius(0)
-					.outerRadius(8)
-					.startAngle(0)
-					.endAngle((d, i) => (i ? 2 * Math.PI : -2 * Math.PI)),
-				height = (keys.length + 1) * 98,
+				height = (keys.length + 1) * 80,
 				x = new Map(
 					Array.from(keys, key => [
 						key,
@@ -220,7 +199,6 @@ export default {
 					])
 				),
 				y = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
-				// y = d3.scalePoint(keys, [margin.top, height - margin.bottom]),
 				xScale = d3
 					.axisBottom(xCooling)
 					.tickSizeOuter(0)
@@ -248,7 +226,7 @@ export default {
 								.attr('stroke', '#90a4ae')
 								.attr('stroke-width', 2)
 								.attr('cursor', 'ew-resize')
-								.attr('d', vm.diagnosisState ? arcDiagnosis : arc)
+								.attr('d', arc)
 						)
 						.attr('display', selection === null ? 'none' : null)
 						.attr(
@@ -256,128 +234,55 @@ export default {
 							selection === null ? null : (d, i) => `translate(${selection[i]},${0})`
 						);
 
-			function brushSlider() {
-				svg
-					.selectAll('#parallel .overlay')
-					.attr('fill', '#eeeeee')
-					.raise();
-				svg
-					.selectAll('#parallel .selection')
-					.attr('fill', vm.brushSelectColor)
-					.attr('fill-opacity', 0.8)
-					.raise();
-				// svg.selectAll('#parallel .parallelPath').raise()
-				svg.selectAll('.handle--custom').raise();
-				svg.selectAll('#parallel .domain').remove();
-				svg
-					.selectAll('#parallel .overlay')
-					.attr('rx', '5')
-					.attr('ry', '5')
-					.attr('stroke', '#bbbbbb')
-					.attr('stroke-width', 1);
-				svg
-					.selectAll('#parallel .selection')
-					.attr('rx', '5')
-					.attr('ry', '5')
-					.attr('stroke', '#aaa')
-					.attr('stroke-width', 1);
-				svg
-					.selectAll('#parallel .tick text')
-					.attr('stroke', 'none')
-					.style('font-family', util.tabularAxisTextAttr.fontFamily)
-					.style('color', util.tabularAxisTextAttr.fontColor)
-					.style('font-size', util.tabularAxisTextAttr.fontSize)
-					.style('font-weight', util.tabularAxisTextAttr.fontWeight)
-					.style('font-style', util.tabularAxisTextAttr.fontStyle);
-			}
-			function diagnosisBrushSlider() {
-				svg
-					.selectAll('#parallel .overlay')
-					.attr('fill', '#eeeeee')
-					.raise();
-				svg
-					.selectAll('#parallel .selection')
-					.attr('fill', vm.brushSelectColor)
-					.attr('fill-opacity', 0.8)
-					.raise();
-				// svg.selectAll('#parallel .parallelPath').raise()
-				svg.selectAll('#parallel .handle--custom').attr('stroke', util.labelColor[0]);
-				svg.selectAll('.handle--custom').raise();
-				svg.selectAll('#parallel .domain').remove();
-				svg
-					.selectAll('#parallel .overlay')
-					.attr('rx', '5')
-					.attr('ry', '5')
-					.attr('stroke', '#bbbbbb')
-					.attr('stroke-width', 1);
-				svg
-					.selectAll('#parallel .selection')
-					.attr('rx', '5')
-					.attr('ry', '5')
-					.attr('stroke', '#aaa')
-					.attr('stroke-width', 1);
-				svg
-					.selectAll('#parallel .tick text')
-					.attr('stroke', 'none')
-					.style('font-family', util.tabularAxisTextAttr.fontFamily)
-					.style('color', util.tabularAxisTextAttr.fontColor)
-					.style('font-size', util.tabularAxisTextAttr.fontSize)
-					.style('font-weight', util.tabularAxisTextAttr.fontWeight)
-					.style('font-style', util.tabularAxisTextAttr.fontStyle);
-			}
 			this.svg !== undefined && this.svg.remove();
 			this.svg = d3.select('#' + vm.menuId)
 				.append('svg')
 				.attr('width', width)
 				.attr('height', height);
-			var svg = this.svg.attr('id', 'parallel');
+			var svg = this.svg;
 			const brush = d3
 				.brushX()
 				.extent([
 					[margin.left, -(brushHeight / 2)],
 					[width - margin.right, brushHeight / 2]
 				])
-				.on('start brush end', brushed);
-			// .on('start ', brushed)
-
-			const cardAttrs = {
-				class: (d, i) => 'card' + i,
-				transform: d => `translate(${10},${y(d) - 42})`,
-				fill: d => objStatus[d] ? '#f7f7f7' : 'white',
-				'fill-opacity': d => objStatus[d] ? 0.7 : 1,
-				stroke: '#e0e0e0',
-				'stroke-width': 1,
-				'stroke-opacity': d => objStatus[d] ? 1 : 0,
-				width: 307,
-				height: 80,
-				rx: 10,
-				ry: 10
+				.on('start brush end', basebrushed);
+			for (let item in keys) {
+				this.brushSelection.set(
+					keys[item],
+					d3.extent(
+						d3.filter(brushdata, d => new Date(d.toc) >= startTime && new Date(d.toc) <= endTime),
+						d => d[keys[item]]
+					)
+				);
+				console.log(barbin[item][0].x0, barbin[item].slice(-1)[0].x1)
+				this.newBrushSelection.set(keys[item], this.newBrushData[item]);
 			}
-			const cardG = svg
-				.append('g')
-				.attr('class', 'cardG')
-			const buttonGroup = svg
-				.append('g');
-			// cardG
-			// 	.selectAll('rect')
-			// 	.data(newkeys)// .data(keys)
-			// 	.join('rect')
-			// 	.call(g => updateElement(g, cardAttrs));
+			var selections = this.brushSelection;
+
 			class parallelLines{
-				constructor(container) {
+				constructor(container, vm) {
+					this.vNode = vm;
+
 					this._container = container;
-					this._staticGroup = null;
+					this._mainG = null;
 					this._g = null;
 
 					this._width = 640;
 					this._height = 640;
+					this._x = x;
+					this._y = y;
 
 					this._cardG = null;
 					this._cardAttrs = null;
-					this._buttonGroup = null;
-					this._buttonGroupAttrs = null,
+					this._buttonG = null;
+					this._buttonAttrs = null,
 					this._rectRectAttrs = null,
 					this._rectTextAttrs = null;
+					this._rectBarG = null;
+					this._rectBarAttrs = null;
+					this._burshG = null;
+					this._brushHeight = 10;	//brushHeight
 				}
 				_initAttrs(){
 					this._cardAttrs = {
@@ -393,13 +298,12 @@ export default {
 						rx: 10,
 						ry: 10
 					};
-					this._buttonGroupAttrs ={
-						class: 'buttonGroup',
-						transform: d => `translate(${-8},${y(d) + 19 + 6})`
+					this._buttonAttrs ={
+						transform: d => `translate(${margin.left + 30},${y(d) + 19 + 6})`
 					},
 					this._rectRectAttrs = {
 						class: 'rectButton',
-						x: width - margin.left / 2 - 60,
+						x:  -30,
 						y: -45,
 						width: 56,
 						height: 16,
@@ -408,9 +312,9 @@ export default {
 						stroke: util.labelColor[1],
 						fill: d => objStatus[d] ? '#94a7b7' : '#ffffff'
 					},
-					this._rectTextAttrs ={
+					this._rectTextAttrs = {
 						'class': 'textButton',
-						'x': width - margin.left / 2 - 31,
+						'x': -1,
 						'y': -35,
 						'text-anchor': 'middle',
 						'fill': d => objStatus[d] ? '#ffffff' : '#94a7b7',
@@ -431,32 +335,9 @@ export default {
 							.replace(/cooling_rate1/, 'cooling_rate')
 							.replace(/status_cooling/, 'sta_cool')
 					}
-			// initAttrs();
-			// const buttonGroup = svg
-			// 	.append('g');
-			// buttonGroup
-			// 	.selectAll('g')
-			// 	.data(newkeys)	// .data(keys)
-			// 	.join('g')
-			// 	.call(g => updateElement(g, buttonGroupAttrs))
-			// 	.call(g => addElement(g, 'rect', rectRectAttrs))
-			// 	.call(g => addElement(g, 'text', rectTextAttrs))
-			// 	.on('click', function(e, d) {
-			// 		objStatus[d] = !objStatus[d];
-			// 		const t = d3.transition()
-			// 			.duration(300)
-			// 			.ease(d3.easeLinear);
-			// 		buttonGroup
-			// 			.transition(t)
-			// 			.call(g => updateElement.call(this, g.selectAll('.rectButton'), rectRectAttrs))
-			// 			.call(g => updateElement.call(this, g.selectAll('.textButton'), rectTextAttrs))
-			// 		cardG
-			// 			.transition(t)
-			// 			.call(g => updateElement(g.selectAll('rect'), cardAttrs))
-			// 	});
 				}
 				_initCardG(){
-					this._cardG = cardG;
+					this._cardG = this._mainG.append('g').attr('class', 'cardG');
 					this._cardG
 						.selectAll('rect')
 					.data(newkeys)// .data(keys)
@@ -465,12 +346,12 @@ export default {
 				}
 				_initButtonG(){
 					const context = this;
-					this._buttonGroup = buttonGroup;
-					this._buttonGroup
+					this._buttonG = this._mainG.append('g').attr('class', 'buttonGroup');
+					this._buttonG
 						.selectAll('g')
 						.data(newkeys)	// .data(keys)
 						.join('g')
-						.call(g => updateElement(g, this._buttonGroupAttrs))
+						.call(g => updateElement(g, this._buttonAttrs))
 						.call(g => addElement(g, 'rect', this._rectRectAttrs))
 						.call(g => addElement(g, 'text', this._rectTextAttrs))
 						.on('click', function(e, d) {
@@ -478,7 +359,7 @@ export default {
 							const t = d3.transition()
 								.duration(300)
 								.ease(d3.easeLinear);
-							buttonGroup
+							context._buttonG
 								.transition(t)
 								.call(g => updateElement.call(context, g.selectAll('.rectButton'), context._rectRectAttrs))
 								.call(g => updateElement.call(context, g.selectAll('.textButton'), context._rectTextAttrs))
@@ -487,288 +368,434 @@ export default {
 								.call(g => updateElement(g.selectAll('rect'), context._cardAttrs))
 						});
 				}
+				_initRectBar(){
+					var barmargin = item => (width - margin.right - margin.left) / barbin[item].length / 2;
+					const goodBarAttrs = (item) => {
+						return {
+							fill: util.delabelColor[1],
+							stroke: '#000',
+							class: 'rect' + item,
+							'stroke-width': 1,
+							x: d => x.get(keys[item])(d.x0),
+							y: d => -barScale[item](d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 1)
+								.length) + 1,
+							height: d => barScale[item](d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 1)
+							.length),
+							width: d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin(item)
+						}
+					},
+					badBarAttrs = (item) => {
+						return {
+							fill: util.delabelColor[0],
+							stroke: '#000',
+							class: 'rect' + item,
+							'stroke-width': 1,
+							x: d => x.get(keys[item])(d.x0),
+							y: 10,
+							height: d => barScale[item](d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 0)
+							.length),
+							width: d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin(item)
+						}
+					}
+					this._rectBarG = this._mainG.append('g').attr('class', 'rectBar');
+					for (let item in keys) {
+						// 柱状图
+						this._rectBarG
+							.append('g')
+							.attr('transform', `translate(0,${y(keys[item])})`)
+							.selectAll('.rect' + item)
+							.data(barbin[item])
+							.join('g')
+							.call(g => addElement(g, 'rect', goodBarAttrs(item)))
+							.call(g => addElement(g, 'rect', badBarAttrs(item)));
+					}
+					this._rectBarG.raise();
+				}
+				_initCoolBar(){
+					// rectcooling是否过冷却
+					const goodAttrs = {
+						x: (d, i) => x.get('status_cooling')(i + 1) - 9.375,
+						y: d => yCooling(d3.filter(d, e => e['label'] == '1').length),
+						height: d => yCooling(0) - yCooling(d3.filter(d, e => e['label'] == '1').length),
+						width: xCooling.bandwidth() - coolingMargin - 50,
+						fill: util.delabelColor[1],
+						opacity: 0.5,
+						stroke: '#000',
+						'stroke-width': 1
+					},
+					badAttrs = {
+						x: (d, i) => x.get('status_cooling')(i + 1) - 9.375,
+						y: 50,
+						height: d => yCooling(0) - yCooling(d3.filter(d, e => e['label'] == '0').length),
+						width: xCooling.bandwidth() - coolingMargin - 50,
+						fill: util.delabelColor[0],
+						opacity: 0.5,
+						stroke: '#000',
+						'stroke-width': 1
+					};
+					const coolBarG = svg.append('g');
+						coolBarG
+						.attr('class', 'rectCooling')
+						.attr('transform', `translate(0,${height - 80})`)
+						.selectAll('rect')
+						.data(allArray)
+						.join('g')
+						.call(g => addElement(g, 'rect', goodAttrs))
+						.call(g => addElement(g, 'rect', badAttrs));
+				}
+				_initBottomButtonG(){
+					const groupAttrs = {
+						transform: (d, i) => `translate(${[x.get('status_cooling')(i + 1) - 5.5, height - 10]})`,
+						class: (d, i) => 'coolingButton' + i
+					},
+					borderAttrs = {
+						fill: 'none',
+						stroke: '#ccc',
+						'stroke-width': 2,
+						width: 10,
+						height: 10
+					};
+					this._mainG
+						.append('g')
+						.attr('class', 'bottomButton')
+						.selectAll('g')
+						.data(['cooling', 'nocooling'])
+						.join('g')
+						.call(g => updateElement(g, groupAttrs))
+						.call(g => addElement(g, 'rect', borderAttrs))
+				}
+				_updateButtomButtonG(selected){
+					const iconAttrs ={
+						class: 'successIcon',
+						width: '10px',
+						height: '10px',
+						href: success,
+						visibility: (d, i) => selected.some(d => d.status_cooling === i + 1)
+					};
+					this._mainG.selectAll('.successIcon').remove();
+					this._mainG.select('.bottomButton').selectAll('g')
+						.call(g => addElement(g, 'image', iconAttrs))
+				}
+				_initBrush(){
+					const brushAttrs ={
+						transform: d => `translate(0,${y(d) + 6})`,
+						id: (d, i) => 'parallel' + i
+					}
+					this._burshG = this._mainG
+						.append('g')
+						.attr('class', 'baseBrush');
+					this._burshG.selectAll('g')
+					.data(keys)	// .data(newkeys)
+					.join('g')
+					.call(g => updateElement(g, brushAttrs))
+					.each(function(d, i) {
+						d3.select(this).call(
+							d3.axisBottom(x.get(d))
+								.tickSizeOuter(5)
+								.tickSizeInner(5)
+								.tickFormat(d3.format('.1f'))	// .tickFormat(d3.format(',.2f'))
+								.ticks(5));
+					})
+					.call(g => g.selectAll('.domain').remove())
+					.call(brush)
+					.attr('class', (d, i) => 'brushX' + i)
+					.call(brush.move, (d, i) => selections.get(d).map(x.get(d)));
+
+					this._burshG
+						.append('rect')
+							.attr('transform', `translate(${0},${height - margin.bottom})`)
+							.attr('x', 20)
+							.attr('y', 10)
+							.attr('width', 261)
+							.attr('height', this._brushHeight)
+							.attr('class', 'overlay')
+							.raise();
+				}
+				_brushSlider(){
+					const overLayAttrs = {
+							fill: '#eeeeee',
+							rx: 5,
+							ry: 5,
+							stroke: '#bbbbbb',
+							'stroke-width': 1
+						}
+					const selectionAttrs = {
+						rx: 5,
+						ry: 5,
+						stroke: '#aaa',
+						'stroke-width': 1
+					}
+					const tickTextAttrs = {
+						stroke: 'none',
+						'font-family': util.tabularAxisTextAttr.fontFamily,
+						color: util.tabularAxisTextAttr.fontColor,
+						'font-size': util.tabularAxisTextAttr.fontSize,
+						'font-weight': util.tabularAxisTextAttr.fontWeight,
+						'font-style': util.tabularAxisTextAttr.fontStyle
+					}
+					updateElement(this._burshG.selectAll('.overlay'), overLayAttrs).raise();
+					updateElement(this._burshG.selectAll('.selection'), selectionAttrs).raise();
+					this._burshG.selectAll('.handle--custom').raise();
+					updateElement(this._burshG.selectAll('.tick text'), tickTextAttrs);
+					this._raise();
+				}
+				_initLine(){
+					const lineAttrs = {
+						stroke: vm.deGroupStyle,
+						id: d => `paraPath${d.upid}`,
+						d: d => line(d3.cross(newkeys, [d], (key, d) => [key, d[key]])),
+						// .attr('d', d => line(d3.cross(keys, [d], (key, d) => [key, d[key]])))
+						class: 'steelLine',
+						fill: 'none',
+						'stroke-width': 1,
+						'stroke-opacity': 0.6
+					}
+					this._mainG.append('g')
+						.attr('class', 'parallelPath')
+						.selectAll('path')
+						.data(vm.paralleldata.slice().sort((a, b) => d3.ascending(a['upid'], b['upid'])))
+						.join('path')
+						.call(g => updateElement(g, lineAttrs))
+						// .on('mouseover', pathover)
+						// .on('mouseout', pathout);
+				}
+				_raise(){
+					['.rectBar', '.cardG'].map(d => this._mainG.selectAll(d).lower());
+					this._mainG.select('.rectBar').lower();
+					this._mainG.select('.bottomButton').raise();
+				}
+				_initControl(){
+					const context = this, vN = context.vNode;
+					const minusG = this._mainG.append('g').attr('class', 'minusG');
+					const plusG = this._mainG.append('g').attr('class', 'plusG');
+					const minusAttrs ={
+						transform: d => `translate(${width - margin.left / 2},${y(d) - 20})  scale(0.8)`
+					},
+					minusRect = {
+						height: 15,
+						width: 20,
+						x: -30,
+						rx: 2,
+						ry: 2,
+						stroke: util.labelColor[1],
+						fill: '#ffffff',
+						'cursor': 'pointer'
+					},
+					minusText = {
+						x: -20,
+						y: 14,
+						text: '-',
+						'text-anchor': 'middle',
+						'fill': '#94a7b7',
+						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,
+						'font-weight': util.buttonTextAttr.baseTextAttr.fontWeight,
+						'font-style': util.buttonTextAttr.baseTextAttr.fontStyle,
+						'font-size': '22px',
+						'cursor': 'pointer'
+					},
+					plusAttrs ={
+						transform: d => `translate(${width - margin.left / 2 },${y(d) - 20})  scale(0.8)`
+					},
+					plusRect = {
+						height: 15,
+						width: 20,
+						rx: 2,
+						ry: 2,
+						stroke: util.labelColor[1],
+						fill: '#ffffff',
+						'cursor': 'pointer'
+					},
+					plusText = {
+						x: 10,
+						y: 14,
+						text: '+',
+						'text-anchor': 'middle',
+						'fill': '#94a7b7',
+						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,
+						'font-weight': util.buttonTextAttr.baseTextAttr.fontWeight,
+						'font-style': util.buttonTextAttr.baseTextAttr.fontStyle,
+						'font-size': '18px',
+						'cursor': 'pointer'
+					};
+					minusG
+						.selectAll('g').data(keys).join('g')
+							.call(g => updateElement(g, minusAttrs))
+							.call(g => addElement(g, 'rect', minusRect))
+							.call(g => addElement(g, 'text', minusText))
+							.on('click', function(e, d){
+								const i = keys.indexOf(d);
+								if(vN.diagnosisRange[i][1] - vN.diagnosisRange[i][0] < 2 * vN.brushStep[i])return;
+								vN.diagnosisArr[i] -= vN.brushStep[i];
+								vN.diagnosisRange = vN.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *vN.diagnosisArr[i])).slice(0, -1);
+								context._updateDiagnosis()
+							});
+					plusG
+						.selectAll('g').data(keys).join('g')
+							.call(g => updateElement(g, plusAttrs))
+							.call(g => addElement(g, 'rect', plusRect))
+							.call(g => addElement(g, 'text', plusText))
+							.on('click', function(e, d){
+								const i = keys.indexOf(d);
+								// if(vN.diagnosisRange[i][1] - vN.diagnosisRange[i][0] < 2 * vN.brushStep[i])return;
+								vN.diagnosisArr[i] += vN.brushStep[i];
+								vN.diagnosisRange = vN.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *vN.diagnosisArr[i])).slice(0, -1);
+								context._updateDiagnosis()
+							});
+				}
+				_initDiagnosis(){
+					this.vNode.diagnosisRange = this.vNode.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *this.vNode.diagnosisArr[i])).slice(0, -1);
+					this._initControl()
+					this._initArea();
+					this._initAreaTooltip(true);
+				}
+				_areaAttrs(){
+					const context = this;
+					return {
+						fill: 'none',
+						class: 'rangeArea',
+						stroke: util.labelColor[0],
+						datum: context.vNode.diagnosisRange,
+						opacity: 0.5,
+						d: d3.area()
+						.y((d, i) => y(newkeys[i]) + context._brushHeight/2)
+						.x0((d, i) => context._x.get(newkeys[i])(d[0]))
+						.x1((d, i) => context._x.get(newkeys[i])(d[1])),
+					}
+				}
+				_initArea(){
+					this._mainG.call(g => addElement(g, 'path', this._areaAttrs()));
+				}
+				_initAreaTooltip(status){//true init -- false update
+					const context = this;
+					const leftAttrs ={
+						transform: (d, i) => `translate(${this._x.get(keys[i])(this.vNode.diagnosisRange[i][0])},${y(d) + 10})`
+					},
+					leftRect = {
+						height: 18,
+						width: 20,
+						x: -30,
+						rx: 4,
+						ry: 4,
+						stroke: util.labelColor[1],
+						fill: '#ffffff',
+						'cursor': 'pointer'
+					},
+					leftText = {
+						x: 0,
+						y: 14,
+						text: (d, i) => this.vNode.diagnosisRange[i][0],
+						'text-anchor': 'middle',
+						'fill': '#94a7b7',
+						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,
+						'font-weight': util.buttonTextAttr.baseTextAttr.fontWeight,
+						'font-style': util.buttonTextAttr.baseTextAttr.fontStyle,
+						'font-size': '15px',
+						'cursor': 'pointer'
+					};
+					const conflict = (d, i) => this._x.get(keys[i])(this.vNode.diagnosisRange[i][1]) - this._x.get(keys[i])(this.vNode.diagnosisRange[i][0]) < 40 ? 
+						this._x.get(keys[i])(this.vNode.diagnosisRange[i][0]) + 40: this._x.get(keys[i])(this.vNode.diagnosisRange[i][1]);
+					const rightAttrs ={
+						transform: (d, i) => `translate(${conflict(d, i)},${y(d) + 10})`
+					},
+					rightRect = {
+						height: 18,
+						width: 20,
+						x: -30,
+						rx: 4,
+						ry: 4,
+						stroke: util.labelColor[1],
+						fill: '#ffffff',
+						'cursor': 'pointer'
+					},
+					rightText = {
+						x: 0,
+						y: 14,
+						text: (d, i) => this.vNode.diagnosisRange[i][1],
+						'text-anchor': 'middle',
+						'fill': '#94a7b7',
+						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,
+						'font-weight': util.buttonTextAttr.baseTextAttr.fontWeight,
+						'font-style': util.buttonTextAttr.baseTextAttr.fontStyle,
+						'font-size': '15px',
+						'cursor': 'pointer'
+					};
+					if(status){
+						const leftG = this._mainG.append('g').attr('class', 'leftTooltip');
+						const rightG = this._mainG.append('g').attr('class', 'rightTooltip');
+						leftG
+							.selectAll('g').data(keys).join('g')
+								.call(g => updateElement(g, leftAttrs))
+								.call(g => addElement(g, 'rect', leftRect))
+								.call(g => addElement(g, 'text', leftText));
+						// console.log(leftG.selectAll('text')._groups[0])
+						const leftWidth = [...leftG.selectAll('text')._groups[0]].map(d => d.getBBox().width);	//{x: -27.5, y: 0, width: 15, height: 17}
+						leftRect.width = (d, i) => leftWidth[i] + 10;
+						leftRect.x = (d, i) => -leftWidth[i]/2 - 5 + leftText.x;
+						// console.log(leftWidth)
+						leftG.selectAll('rect').call(g => updateElement(g, leftRect));
+
+						rightG
+							.selectAll('g').data(keys).join('g')
+								.call(g => updateElement(g, rightAttrs))
+								.call(g => addElement(g, 'rect', rightRect))
+								.call(g => addElement(g, 'text', rightText));
+						const rightWidth = [...rightG.selectAll('text')._groups[0]].map(d => d.getBBox().width);	//{x: -27.5, y: 0, width: 15, height: 17}
+						rightRect.width = (d, i) => rightWidth[i] + 10;
+						rightRect.x = (d, i) => -rightWidth[i]/2 - 5 + rightText.x;
+						rightG.selectAll('rect').call(g => updateElement(g, rightRect));
+					}else{
+						const t = d3.transition()
+								.duration(300)
+								.ease(d3.easeLinear);
+						const leftG = this._mainG.select('.leftTooltip');
+						const rightG = this._mainG.select('.rightTooltip');
+						leftG.selectAll('g').transition(t).call(g => updateElement(g, leftAttrs));
+						leftG.selectAll('text').transition(t).call(g => updateElement(g, leftText));
+						const leftWidth = [...leftG.selectAll('text')._groups[0]].map(d => d.getBBox().width);	//{x: -27.5, y: 0, width: 15, height: 17}
+						leftRect.width = (d, i) => leftWidth[i] + 10;
+						leftRect.x = (d, i) => -leftWidth[i]/2 - 5 + leftText.x;
+						leftG.selectAll('rect').transition(t).call(g => updateElement(g, leftRect));
+
+						rightG.selectAll('g').transition(t).call(g => updateElement(g, rightAttrs));
+						rightG.selectAll('text').transition(t).call(g => updateElement(g, rightText));
+						const rightWidth = [...rightG.selectAll('text')._groups[0]].map(d => d.getBBox().width);	//{x: -27.5, y: 0, width: 15, height: 17}
+						rightRect.width = (d, i) => rightWidth[i] + 10;
+						rightRect.x = (d, i) => -rightWidth[i]/2 - 5 + rightText.x;
+						rightG.selectAll('rect').call(g => updateElement(g, rightRect));
+					}
+				}
+				_updateDiagnosis(){
+					this._updateArea();
+					this._initAreaTooltip(false);	//_updateAreaTooltip
+				}
+				_updateArea(){
+					this._mainG.call(g => updateElement(g.selectAll('.rangeArea'), this._areaAttrs()));
+				}
+				_removeDiagonis(){
+					['.minusG', '.plusG', '.rangeArea', '.leftTooltip', '.rightTooltip'].map(d => this._mainG.select(d).remove());
+				}
 				render(){
+					this._mainG = this._container.append('g').attr('class', 'mainG');
 					this._initAttrs();
 					this._initCardG();
+					this._initRectBar();
+					this._initCoolBar();
 					this._initButtonG();
+					this._initBottomButtonG();
+					this._initBrush();
+					this._brushSlider();
+					this._initLine();
+
+					//test
+					this._initDiagnosis();
+					// this._removeDiagonis();
+					return this;
 				}
 			}
-			this.svgChart = new parallelLines(svg)
-				.render();
-			const rectBarAttrs = {
-				fill: util.delabelColor[1],
-				stroke: '#000',
-				'stroke-width': 1
-			}
-			for (let item in keys) {
-				var barmargin = (width - margin.right - margin.left) / barbin[item].length / 2;
-				// d => (d3.filter(brushdata, e => e[keys] <= d.x1 && d.x0 <= e[keys] && +e.label=== 0)).length
-				// 这里绘制的是柱状图
-				svg
-					.append('g')
-					.attr('class', 'rectBar')
-					.attr('transform', `translate(0,${y(keys[item])})`)
-					.selectAll('.rect' + item)
-					.data(barbin[item])
-					.join('g')
-					.call(g => addElement(g, 'rect', rectBarAttrs)
-							.attr('class', 'rect' + item)
-							.attr('x', d => x.get(keys[item])(d.x0))
-							.attr(
-								'y',
-								d =>
-									-barScale[item](
-										d3.filter(
-											brushdata,
-											e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 1
-										).length
-									) + 1
-							)
-							.attr('height', d =>
-								barScale[item](
-									d3.filter(
-										brushdata,
-										e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 1
-									).length
-								)
-							)
-							.attr('width', d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin)
-					)
-					.call(g => addElement(g, 'rect', rectBarAttrs)
-							.attr('class', 'rect' + item)
-							.attr('x', d => x.get(keys[item])(d.x0))
-							.attr('fill', util.delabelColor[0])
-							.attr('y', 10)
-							.attr('height', d =>
-								barScale[item](
-									d3.filter(
-										brushdata,
-										e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 0
-									).length
-								)
-							)
-							.attr('width', d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin)
-					);
-				this.brushSelection.set(
-					keys[item],
-					d3.extent(
-						d3.filter(brushdata, d => new Date(d.toc) >= startTime && new Date(d.toc) <= endTime),
-						d => d[keys[item]]
-					)
-				);
-				// this.newBrushSelection.set(keys[item],this.newBrushData[item])
-				this.newBrushSelection.set(keys[item], this.newBrushData[item]);
-			}
-			d3.select('.rectBar').raise();
-			// rectcooling是否过冷却
-			svg
-				.append('g')
-				.attr('class', 'rectCooling')
-				.attr('transform', `translate(0,${height - 90})`)
-				// .attr('transform',`translate(0,${height - 80})`)
-				.selectAll('rect')
-				// .selectAll('circle')
-				.data(allArray)
-				.join('g')
-				.call(g =>
-					//  890 +
-					g
-						.append('rect')
-						.attr('class', (d, i) => 'rectcooling' + i)
-						.attr('x', (d, i) => x.get('status_cooling')(i + 1) - 9.375)
-						.attr('y', d => yCooling(d3.filter(d, e => e['label'] == '1').length))
-						.attr(
-							'height',
-							d => yCooling(0) - yCooling(d3.filter(d, e => e['label'] == '1').length)
-						)
-						// .attr('width', xCooling - coolingMargin)
-						.attr('width', xCooling.bandwidth() - coolingMargin - 50)
-						.attr('fill', util.delabelColor[1])
-				)
-				.attr('opacity', 0.5)
-				.attr('stroke', '#000')
-				.attr('stroke-width', 1)
-				.call(g =>
-					g
-						.append('rect')
-						.attr('class', (d, i) => 'rectcooling' + i)
-						.attr('x', (d, i) => x.get('status_cooling')(i + 1) - 9.375)
-						.attr('y', d => 50)
-						.attr(
-							'height',
-							d => yCooling(0) - yCooling(d3.filter(d, e => e['label'] == '0').length)
-						)
-						.attr('width', xCooling.bandwidth() - coolingMargin - 50)
-						// .attr('width', xCooling.bandwidth())
-						.attr('fill', util.delabelColor[0])
-						.attr('opacity', 0.5)
-						.attr('stroke', '#000')
-						.attr('stroke-width', 1)
-				);
-
-			d3.select('.rectcooling0').lower();
-			d3.select('.rectcooling1').lower();
-			svg
-				.append('g')
-				.attr('class', 'bottomButton')
-				.selectAll('g')
-				.data(cooling)
-				.join('g')
-				.attr(
-					'transform',
-					(d, i) => `translate(${[x.get('status_cooling')(i + 1) - 5.5, height - 10]})`
-				)
-				// .attr('transform', d => `translate(0,${y(d)+6})`)
-				.attr('class', (d, i) => 'coolingButton' + i)
-				.call(g =>
-					g
-						.append('rect')
-						// .attr('class',(d,i) => 'coolingButton'+ i)
-						// .attr('x',(d,i) => x.get('status_cooling')(i + 1) -5.5)
-						// .attr('y',477)
-						// .attr('fill','blue')
-						.attr('fill-opacity', 0)
-						.attr('stroke', '#ccc')
-						.attr('stroke-width', 2)
-						.attr('width', 10)
-						.attr('height', 10)
-				);
-			svg
-				.append('g')
-				// .attr('transform',`translate(${0},${height - 50})`)
-				.attr('transform', `translate(${0},${height - 60})`)
-				.call(g =>
-					g
-						.append('rect')
-						.attr('x', 20)
-						.attr('y', 10)
-						.attr('width', 276)
-						.attr('height', 10)
-						.attr('fill', '#eee')
-						.attr('rx', 5)
-						.attr('ry', 5)
-						.attr('stroke', '#bbb')
-						.attr('stroke-width', 1)
-						.raise()
-				);
-			const path = svg
-				.append('g')
-				.attr('fill', 'none')
-				.attr('stroke-width', 1)
-				.attr('stroke-opacity', 0.6)
-				.attr('class', 'parallelPath')
-				.selectAll('path')
-				.data(
-					vm.paralleldata.slice().sort((a, b) => {
-						// console.log(d3.ascending(a['upid'], b['upid']))
-						return d3.ascending(a['upid'], b['upid']);
-					})
-				)
-				.join('path')
-				.attr('stroke', this.deGroupStyle)
-				.attr('id', d => `paraPath${d.upid}`)
-				// .attr('id', d=> `paraPath${d.upid}`)
-				.attr('d', d => line(d3.cross(newkeys, [d], (key, d) => [key, d[key]])))
-				// .attr('d', d => line(d3.cross(keys, [d], (key, d) => [key, d[key]])))
-				.attr('class', 'pathColor')
-				.on('mouseover', pathover)
-				.on('mouseout', pathout);
-
-			var selections;
-			if (vm.diagnosisState) {
-				selections = this.newBrushSelection;
-			} else {
-				selections = this.brushSelection;
-			}
-			//   debugger
-			svg
-				.append('g')
-				.attr('class', 'brushParalle')
-				.selectAll('g')
-				.data(keys)
-				// .data(newkeys)
-				.join('g')
-				.attr('transform', d => `translate(0,${y(d) + 6})`)
-				.attr('id', (d, i) => 'parallel' + i)
-				// .attr('fill', '#2c3e50')
-				.each(function(d, i) {
-					//   if(i< 4){
-					d3.select(this).call(
-						d3
-							.axisBottom(x.get(d))
-							.tickSizeOuter(5)
-							.tickSizeInner(5)
-							// .tickFormat(d3.format(',.2f'))
-							.tickFormat(d3.format('.1f'))
-							// .ticks(barbin[i].length));
-							.ticks(5)
-					);
-				})
-				.call(g => g.selectAll('.domain').remove())
-				.call(brush)
-				.attr('class', (d, i) => 'brushX' + i)
-				.call(brush.move, (d, i) => selections.get(d).map(x.get(d)));
+			this.svgChart = new parallelLines(svg, this);
+			this.svgChart.render();
 
 			this.xScale = x;
-			if (vm.diagnosisState) {
-				for (let item in keys) {
-					//     // console.log(item);
-					svg
-						.select('.brushX' + item)
-						// .append('g')
-						// .attr('class','previousHandle' + item)
-						// .call(g =>
-						.selectAll('.handle--custom1')
-						.data([{type: 'w1'}, {type: 'e1'}])
-						.join(enter =>
-							enter
-								.append('path')
-								.attr('class', 'handle--custom1')
-								.attr('fill', 'white')
-								.attr('fill-opacity', 1)
-								.attr('stroke', '#90a4ae')
-								.attr('stroke-width', 2)
-								// .attr('cursor', 'ew-resize')
-								.attr('d', arc)
-						)
-						.attr('transform', (d, i) => `translate(${vm.lastHandle.get(keys[item])[i]},${0})`);
-					// )
-				}
-
-				// svg.select('.brushParalle')
-				//     .append('g')
-				//     .attr('class','previousBrushed')
-				//     // .append('g')
-				//     .selectAll('g')
-				//     .data(keys)
-				//     .join('g')
-				//     .attr('class',(d,i) => 'previousbrusHandle'+i)
-				//     .attr('transform', d => `translate(0,${y(d)+6})`)
-				//     .each((key,i) => {
-				//         svg.select('.previousbrusHandle'+i).call(
-				//             g => g.selectAll('.handle--custom1')
-				//                 .data([{type: 'w'}, {type: 'e'}])
-				//                 .join(enter => enter.append('path')
-				//                                 .attr('class', 'handle--custom1')
-				//                                 .attr('fill', 'white')
-				//                                 .attr('fill-opacity', 1)
-				//                                 .attr('stroke', '#90a4ae')
-				//                                 .attr('stroke-width', 1)
-				//                                 // .attr('cursor', 'ew-resize')
-				//                                 .attr('d', arc))
-				//                                 .attr('transform', (d, i) => {
-				//                                 return `translate(${vm.lastHandle.get(key)[i]},${0})`})
-				//                 )
-				//         })
-			}
-			if (vm.diagnosisState) {
-				diagnosisBrushSlider();
-
-				d3.selectAll('.handle--custom1').raise();
-				d3.selectAll('.handle--custom').raise();
-			} else {
-				brushSlider();
-			}
 
 			// 折现和散点图之间的联动以及toptip
 			function pathover(event, d) {
@@ -828,11 +855,11 @@ export default {
 				);
 				text.attr('transform', `translate(${[box.x, box.y - 50]})`);
 				tooltip.attr('transform', `translate(${[x, y]})`);
-				// vm.svg.selectAll(`.pathColor`)
+				// vm.svg.selectAll(`.steelLine`)
 				//     .attr('stroke-opacity', 0.01)
 				//     .attr('stroke-width', 0.25)
 				vm.svg
-					.selectAll(`.pathColor`)
+					.selectAll(`.steelLine`)
 					.attr('stroke-opacity', 0)
 					.attr('stroke-width', 0);
 				vm.svg
@@ -843,7 +870,7 @@ export default {
 			}
 			function pathout(e, d) {
 				// if(!vm.diagnosisState){
-				//      vm.svg.selectAll(`.pathColor`)
+				//      vm.svg.selectAll(`.steelLine`)
 				//     .attr('stroke-opacity', 0.6)
 				//     .attr('stroke-width', 1)
 				// }else{
@@ -861,153 +888,52 @@ export default {
 
 				// }
 				vm.svg
-					.selectAll(`.pathColor`)
+					.selectAll(`.steelLine`)
 					.attr('stroke-opacity', 0.6)
 					.attr('stroke-width', 1);
 				vm.svg.selectAll('.tooltip').remove();
 				vm.mouseList !== undefined ? vm.mouse(vm.mouseList) : false;
 				vm.$emit('parallMouse', {upid: [d.upid], mouse: 1});
 			}
-			function brushed({selection}, key) {
+			function basebrushed({selection}, key) {
 				let selected = [];
-				if (d3.selectAll('.successIcon') !== undefined) {
-					d3.selectAll('.successIcon').remove();
-				}
-				var tempValue = selections.get(key).map(d => x.get(key)(d));
+				if (objStatus[key])return;
 				d3.select(this).call(brushHandle, selection);
-				if (objStatus[key] && !tempValue.every((d, i) => d === selection[i])) {
-					d3.select(this).call(
-						brush.move,
-						selections.get(key).map(d => x.get(key)(d))
-					);
-					return;
-				}
-				if (!vm.diagnosisState && !tempValue.every((d, i) => d === selection[i])) {
-					d3.select(this).call(
-						brush.move,
-						selections.get(key).map(d => x.get(key)(d))
-					);
-					return;
-				}
+				// var tempValue = selections.get(key).map(d => x.get(key)(d));
+				// if (!tempValue.every((d, i) => d === selection[i])) {
+				// 	d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)));
+				// 	return;
+				// }
 				if (selection === null) selections.delete(key);
 				else selections.set(key, selection.map(x.get(key).invert));
-				// selections.set(key, selection.map(x.get(key).invert));
 
-				if (vm.diagnosisState !== true) {
-					vm.lastSelections.set(key, selection.map(x.get(key).invert));
-					vm.lastHandle.set(key, selection);
-				}
-				if (vm.diagnosisState) {
-					if (selection === null) {
-						diagnosisSelected.delete(key);
-						d3.selectAll('.rect' + keys.indexOf(key)).attr('opacity', 0.5);
-					} else {
-						diagnosisSelected.set(key, selection.map(x.get(key)));
-						let brushRange = d3.map(selection, x.get(key).invert);
-						let previousRange = vm.lastSelections.get(key);
-						d3.selectAll('.rect' + keys.indexOf(key)).attr('opacity', (d, i) =>
+				vm.lastHandle.set(key, selection);
+				
+				if (selection === null) {
+					d3.selectAll('.rect' + keys.indexOf(key)).attr('opacity', 0.5);
+				} else {
+					let brushRange = d3.map(selection, x.get(key).invert);
+					d3.selectAll('.rect' + keys.indexOf(key))
+						.attr('opacity', (d, i) =>
 							(d.x0 + d.x1) / 2 >= brushRange[0] && (d.x0 + d.x1) / 2 <= brushRange[1]
 								? 0.5
-								: ((d.x0 + d.x1) / 2 >= previousRange[0] && (d.x0 + d.x1) / 2 <= brushRange[0]) ||
-								  ((d.x0 + d.x1) / 2 >= brushRange[1] && (d.x0 + d.x1) / 2 <= previousRange[1])
-								? 0.1
 								: 0.05
 						);
-						// d3.select(this).call(brushHandle, selection);
-					}
-					// let currentSelections = Array.from(selections),
-					// previousSelections = Array.from(vm.lastSelections),
-					// secondStateSelections = []
-					// previousSelections.forEach((d,i) => secondStateSelections.push([d[0],[d[1][0],currentSelections[i][1][0]],[currentSelections[i][1][1],d[1][1]]]))
-					path.each(function(d) {
-						const active = Array.from(selections).every(
-							([key, [min, max]]) => d[key] >= min && d[key] <= max
-						);
-						// const lastActive = previousSelections.every(([key, [min, max]]) =>  d[key] >= min && d[key] <= max)
-						// const secondStateactive = secondStateSelections.every(([key,[min1,max1],[min2,max2]]) => (d[key] >= min1 &&d[key]<=max1) || (d[key] >= min2 &&d[key]<=max2))
-						// let state = 0
-						if (active) {
-							//  d3.select(this).attr('stroke',vm.deGroupStyle).attr('stroke-opacity',1)
-							//  d3.select(this).attr('stroke','none')
-							brushedArray.push(d.upid);
-						}
-						// else if(secondStateactive){
-						//     // state = 1
-						//     //  d3.select(this).attr('stroke',vm.deGroupStyle).attr('stroke-opacity',0.1)
-						//     //  previousArray.push(d.upid)
-						//     //  d3.select(this).attr('stroke',vm.deGroupStyle)
-						//     //  d3.select(this).attr('stroke','red')
-						// }else{
-						//     //  d3.select(this).attr('stroke','none')
-						// }
-						d3.select(this).attr('stroke', active ? vm.deGroupStyle : 'none');
-						// d3.select(this).attr('stroke', state == 2 ? 'red' :(state == 1 ? vm.deGroupStyle : 'none'));
-						//  if (active || secondStateactive ) {
-						//     d3.select(this).raise();
-						//     selected.push(d);
-						// }
-						if (active) {
-							d3.select(this).raise();
-							selected.push(d);
-						}
-					});
-					// previousArray = Array.from(new Set(previousArray))
-					// brushedArray = Array.from(new Set(brushedArray))
-				} else {
-					if (selection === null) {
-						d3.selectAll('.rect' + keys.indexOf(key)).attr('opacity', 0.5);
-					} else {
-						let brushRange = d3.map(selection, x.get(key).invert);
-						d3.selectAll('.rect' + keys.indexOf(key))
-							// .attr('fill', (d,i) => (d.x0 + d.x1)/2 >= brushRange[0] && (d.x0 + d.x1)/2 <= brushRange[1] ? selectedColor : deselectedColor)
-							.attr('opacity', (d, i) =>
-								(d.x0 + d.x1) / 2 >= brushRange[0] && (d.x0 + d.x1) / 2 <= brushRange[1]
-									? 0.5
-									: 0.05
-							);
-					}
-					path.each(function(d) {
-						const active = Array.from(selections).every(
-							([key, [min, max]]) => d[key] >= min && d[key] <= max
-						);
-						d3.select(this).attr('stroke', active ? vm.deGroupStyle : 'none');
-						if (active) {
-							d3.select(this).raise();
-							selected.push(d);
-						}
-					});
 				}
+				svg.selectAll('.steelLine').each(function(d) {
+					const active = Array.from(selections).every(
+						([key, [min, max]]) => d[key] >= min && d[key] <= max
+					);
+					d3.select(this).attr('stroke', active ? vm.deGroupStyle : 'none');
+					if (active) {
+						d3.select(this).raise();
+						selected.push(d);
+					}
+				});
 				selected = Array.from(new Set(selected));
-				if (selected.some(d => d.status_cooling === 1)) {
-					svg
-						.select('.coolingButton0')
-						.append('image')
-						.attr('class', 'successIcon')
-						.attr('width', '10px')
-						.attr('height', '10px')
-						.attr('href', success);
-				}
-				if (selected.some(d => d.status_cooling === 2)) {
-					svg
-						.select('.coolingButton1')
-						.append('image')
-						.attr('class', 'successIcon')
-						.attr('width', '10px')
-						.attr('height', '10px')
-						.attr('href', success);
-				}
-				// console.log(x.get(Array.from(diagnosisSelected)[0][0]));
-
-				// diagnosisSelected
-				d3.select(this).call(brushHandle, selection);
 				svg.property('value', selected).dispatch('input');
-				d3.select('.rectBar').lower();
-				brushSlider();
-				d3.selectAll('.handle--custom1').raise();
-				d3.selectAll('.selection').raise();
-				d3.selectAll('.handle--custom').raise();
-				cardG.lower();
-				d3.select('.bottomButton').raise();
+				vm.svgChart._brushSlider();
+				vm.svgChart._updateButtomButtonG(selected);
 			}
 		},
 		mouse(value) {
@@ -1038,14 +964,14 @@ export default {
 		clear() {
 			//clear Style
 			this.svg
-				.selectAll(`.pathColor`)
+				.selectAll(`.steelLine`)
 				.attr('stroke-width', 1)
 				.style('visibility', 'hidden');
 		},
 		init() {
 			//init Style
 			this.svg
-				.selectAll(`.pathColor`)
+				.selectAll(`.steelLine`)
 				.style('visibility', 'visible')
 				.attr('stroke-width', 1);
 		},

@@ -444,17 +444,17 @@ export default {
       this.req_count = 0;
 			await this.getTimeBrushData();
 			await this.getAlgorithmData()
-			this.getHttpData()
+			//this.getHttpData()
 		},
 		async getHttpData() {
 			this.plateTempPropvalue=['All']
       this.loadingDataLoading = true
-      return;
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
       // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
       this.jsonData = jsonData
-      console.log('原始：', this.jsonData)
+      console.log('原始：', this.jsonData);
+			await this.$refs.parallel.paintChart(this.jsonData);
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       let eventIconData = filterMareyChartEventIcon(this.jsonData);
       // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
@@ -489,11 +489,31 @@ export default {
 
 		},
 		async newdiagnose() {
-			this.diagnosisState = !this.diagnosisState;
-			this.$nextTick(function() {
-				// this.changeDiagnosisState()
-				this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
-			})
+			// this.diagnosisState = !this.diagnosisState;
+			this.animeTransition();
+      this.batchData = (await this.requestBatchData());
+			this.alldiagnosisData = d3.group(this.batchData.flat(), d => d.upid);
+			this.upidSelect = [...d3.intersection(this.upidSelect, [...this.alldiagnosisData.keys()])]
+
+			for(let item of this.upidSelect){
+				this.usDiagnosis[item] = this.alldiagnosisData.get(item)[0];
+      }
+
+      // console.log( 'before paint: ', document.getElementById('diagnosis_view_id').style.height );
+
+      this.corrdata = [];
+      for(let item of this.upidSelect){
+				try{
+					await this.paintChordList(item)
+				}catch(e){
+					console.log(e)
+				}
+      }
+      // console.log( 'after paint scatterlist: ', document.getElementById('diagnosis_view_id').style.height );
+
+      await this.paintUnderCharts(this.upidSelect[0]);
+      
+    //   console.log( 'after paint: ', document.getElementById('diagnosis_view_id').style.height );
 		},
 		mergeflag(){
 			let mergedata=[]
@@ -674,38 +694,16 @@ export default {
       this.chooseList = value.batch;
       this.batchDateStart = value.date_s;
       this.batchDateEnd = value.date_e;
-      this.animeTransition();
 
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
 			}
       this.upidSelect = [...new Set(value.upidSelect)]//.filter(d => this.upidData.get(d) !== undefined)
       
-
-      this.batchData = (await this.requestBatchData());
-			this.alldiagnosisData = d3.group(this.batchData.flat(), d => d.upid);
-			this.upidSelect = [...d3.intersection(this.upidSelect, [...this.alldiagnosisData.keys()])]
-
-			for(let item of this.upidSelect){
-				this.usDiagnosis[item] = this.alldiagnosisData.get(item)[0];
-      }
-
-      // console.log( 'before paint: ', document.getElementById('diagnosis_view_id').style.height );
-
-      this.corrdata = [];
-      for(let item of this.upidSelect){
-				try{
-					await this.paintChordList(item)
-				}catch(e){
-					console.log(e)
-				}
-      }
-      // console.log( 'after paint scatterlist: ', document.getElementById('diagnosis_view_id').style.height );
-
-      await this.paintUnderCharts(this.upidSelect[0]);
-      
-    //   console.log( 'after paint: ', document.getElementById('diagnosis_view_id').style.height );
-      
+			this.diagnosisState = false;
+			this.$nextTick(function() {
+				this.diagnosisState = true;
+			})
 		},
 
 		async requestBatchData(){
@@ -796,8 +794,8 @@ export default {
 			this.$refs.parallel.mouse(value)
 		},
 		parallMouse(value){
-			this.$refs.scatterCate.mouse(value)
-			this.$refs.mareyChart.mouse(value)
+			// this.$refs.scatterCate.mouse(value)
+			// this.$refs.mareyChart.mouse(value)
     },
 		wheelMouse(value){
 			this.$refs.scatterCate.mouse(value)
@@ -929,7 +927,7 @@ export default {
 
 				this.$refs.scatterCate.paintChart(this.scatterData, this.req_count)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
-        // this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+        this.$refs.parallel.dataPre(Object.values(this.scatterData))
 			// })
 		},
 	},
@@ -944,7 +942,6 @@ export default {
 		startDate:function(){
 			if(this.scatterData.length == 0)return
 			this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
-			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 			this.getHttpData()
 		}
 	}

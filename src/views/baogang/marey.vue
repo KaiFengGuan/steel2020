@@ -38,7 +38,7 @@
 					<el-card class="myel-card">		 
 						<div class="my-card-title" slot="header" >
 								<span style="margin-left:5px">Tabular View</span>
-								<el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search"></el-button>
+								<el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search" :disabled='!diagnosisState'></el-button>
 						</div>
 						<div class="my-card-body" style="padding-top:5px; overflow:scroll">
 							<brush-slider ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse" :diagnosisState='diagnosisState'></brush-slider>
@@ -409,7 +409,7 @@ export default {
 			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
 			// 	endmonth.setMonth(1)
       // }
-      endmonth.setDate(endmonth.getDate() + 30)
+      endmonth.setDate(endmonth.getDate() + 10)
 
 			return [this.startmonth, endmonth]
 		},
@@ -444,21 +444,21 @@ export default {
       this.req_count = 0;
 			await this.getTimeBrushData();
 			await this.getAlgorithmData()
-			//this.getHttpData()
+			this.getHttpData();
 		},
 		async getHttpData() {
 			this.plateTempPropvalue=['All']
       this.loadingDataLoading = true
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      this.jsonData = jsonData
+      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      // this.jsonData = jsonData
       console.log('原始：', this.jsonData);
 			await this.$refs.parallel.paintChart(this.jsonData);
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       let eventIconData = filterMareyChartEventIcon(this.jsonData);
-      // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
-      this.monitorData = monitorData
+      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      // this.monitorData = monitorData
 			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
       console.log('监控：', this.monitorData)
       // console.log(eventIconData)
@@ -689,6 +689,7 @@ export default {
     },
 
 		async trainClick(value) {
+			console.log(value)
 			this.diagnosisVisible = true;
 			this.upidSelect = []
       this.chooseList = value.batch;
@@ -703,7 +704,10 @@ export default {
 			this.diagnosisState = false;
 			this.$nextTick(function() {
 				this.diagnosisState = true;
-			})
+				const data = this.jsonData.filter(d => new Date(d.toc) <= value.relevantDate[1] && new Date(d.toc) >= value.relevantDate[0]);
+				this.$refs.parallel.changeDiagnosis(data)
+			});
+			// newdiagnose
 		},
 
 		async requestBatchData(){
@@ -921,14 +925,14 @@ export default {
 		async getAlgorithmData() {
       this.req_count += 1;
 
-			// await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
-      //   this.scatterData=Response.data
-				this.scatterData = scatterData
+			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
+        this.scatterData = Response.data
+				// this.scatterData = scatterData
 
 				this.$refs.scatterCate.paintChart(this.scatterData, this.req_count)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
         this.$refs.parallel.dataPre(Object.values(this.scatterData))
-			// })
+			})
 		},
 	},
 	mounted() {

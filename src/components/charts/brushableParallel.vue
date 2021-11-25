@@ -92,6 +92,7 @@ export default {
 		hightlightGroup: function() {
 			if (this.hightlightGroup.length === 0) {
 				this.init();
+				this.svgChart._removeDiagonis();
 			} else {
 				this.resetPath();
 			}
@@ -131,7 +132,8 @@ export default {
 		},
 		changeDiagnosis(jsondata){
 			const data = brushPre(jsondata);
-			this.newBrushData = d3.map([...keys, 'status_cooling'], d => d3.extent(data, e => e[d]));
+			this.newBrushData = d3.map([...this.keys, 'status_cooling'], d => d3.extent(data, e => e[d]));
+			console.log(data.length);
 			console.log(this.newBrushData);
 		},
 		paintChart(plData) {
@@ -142,7 +144,7 @@ export default {
 			const keys = this.keys;
 			const newkeys = [...keys, 'status_cooling'];
 			brushdata = brushdata.filter(d => keys.every(e => typeof d[e] === 'number'));
-			var margin = {top: 40, right: 20, bottom: 50, left: 20};	// var margin = {top: 40, right: 20, bottom: 40, left: 20},
+			var margin = {top: 40, right: 30, bottom: 50, left: 20};	// var margin = {top: 40, right: 20, bottom: 40, left: 20},
 			const allArray = [1, 0].map(d => d3.filter(brushdata, (e, f) => e['status_cooling'] == d));	//coolingArray nocoolingArray
 			var xCooling = d3
 					.scaleBand() //Ordinal scale
@@ -283,7 +285,7 @@ export default {
 						'stroke-width': 1,
 						'stroke-opacity': d => this._objStatus[d] ? 1 : 0,
 						width: 307,
-						height: 80,
+						height: 70,
 						rx: 10,
 						ry: 10
 					};
@@ -502,7 +504,7 @@ export default {
 
 					this._burshG
 						.append('rect')
-							.attr('transform', `translate(${0},${height - margin.bottom})`)
+							.attr('transform', `translate(${0},${height - margin.bottom - 15})`)
 							.attr('x', 20)
 							.attr('y', 10)
 							.attr('width', 261)
@@ -801,7 +803,10 @@ export default {
 					.attr('class', 'tooltip')
 					.style('font', '12px DIN');
 
-				const path = tooltip.append('path').attr('fill', 'rgba(245, 245, 230, 0.97)');
+				const path = tooltip.append('path')
+					// .attr('fill', 'rgba(245, 245, 230, 0.97)');
+					.attr('stroke', 'rgba(148, 167, 183, 0.4)')
+					.attr('fill', 'white');
 
 				const text = tooltip.append('text');
 
@@ -831,27 +836,24 @@ export default {
 					.style('font-size', util.tabularTooltipAttr.line3.fontSize)
 					.style('font-weight', util.tabularTooltipAttr.line3.fontWeight)
 					.style('font-style', util.tabularTooltipAttr.line3.fontStyle);
-				tooltip.style('display', null).attr('fill', util.tabularTooltipAttr.line1.fontColor);
+				tooltip.style('display', null).attr('fill', vm.deGroupStyle(d));
 				line1.text(`upid:` + d.upid);
 				line2.text(`category: ` + d.productcategory);
 				line3.text(`time:` + d.toc);
-				path.attr('stroke', 'none').attr('fill', vm.deGroupStyle(d));
+				path.attr('stroke', vm.deGroupStyle(d)).attr('fill', 'white');
 				const box = text.node().getBBox();
-				let x = event.offsetX - 78,
-					y = event.offsetY + 10;
-				path.attr(
-					'd',
-					`
-                    M${box.x - 10},${box.y - 10}
-                    H${box.width / 2 - 5}l5,15l5,-15
-                    H${box.width + 10}
-                    v-${box.height + 20}
-                    h-${box.width + 20}
-                    z
-                `
-				);
-				text.attr('transform', `translate(${[box.x, box.y - 50]})`);
-				tooltip.attr('transform', `translate(${[x, y]})`);
+				let x = event.offsetX,
+						y = event.offsetY;				
+				path.attr('d', `
+					M${box.x - 10},${box.y - 10}
+					H${box.width / 2 - 5}l5,15l5,-15
+					H${box.width + 10}
+					v-${box.height + 20}
+					h-${box.width + 20}
+					z
+				`)
+				text.attr('transform', `translate(${[box.x, box.y - box.height - 10]})`);
+				tooltip.attr('transform', `translate(${[x - box.width/2, y + 5]})`);
 				// vm.svg.selectAll(`.steelLine`)
 				//     .attr('stroke-opacity', 0.01)
 				//     .attr('stroke-width', 0.25)
@@ -894,7 +896,7 @@ export default {
 			}
 			function basebrushed({selection}, key) {
 				let selected = [];
-				console.log(vm.svgChart._objStatus, key)
+				// console.log(vm.svgChart._objStatus, key)
 				if (vm.svgChart._objStatus[key])return;
 				d3.select(this).call(brushHandle, selection);
 				// var tempValue = selections.get(key).map(d => x.get(key)(d));

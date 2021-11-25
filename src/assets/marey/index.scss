@@ -1,4 +1,10 @@
-* { touch-action: pan-y; }
+* { touch-action: pan-y; 
+	-moz-user-select: none;	/*禁止鼠标选择文字事件*/
+	-webkit-user-select: none;
+	user-select: none;
+	-o-user-select:none;
+	-ms-user-select:none; 
+}
 #condition_view{
 	overflow: hidden;
 	height: 1068px;

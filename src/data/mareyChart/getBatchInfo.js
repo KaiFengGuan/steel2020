@@ -43,6 +43,9 @@ export function getOneBatchInfo(
   let fu_arr = [], m_arr = [], c_arr = [], t_arr = [];
   let sub_arr = [];
   let stage_for_pre_plate = [];
+  let targetKey = ["tgtplatelength2", "tgtwidth", "tgtplatethickness"];
+  let targetDataArr = {};
+  targetKey.forEach(key => targetDataArr[key] = []);
 
   for (let i in mergeItem_flat) {
     let item_data = mergeItem_flat[i];
@@ -62,6 +65,10 @@ export function getOneBatchInfo(
       // pr_angle: pr_time / t_extent[1],  // 节奏是两块板之间的出炉时间间隔，单块板不存在节奏？
       toc: new Date(item_data.toc)
     })
+
+    for (let key of targetKey) {
+      targetDataArr[key].push(item_data[key]);
+    }
 
     for (let j in stationsdata.slice(0, -1)) {
       let stations_item = stationsdata[j];
@@ -130,11 +137,25 @@ export function getOneBatchInfo(
     })
   }
 
+  let targetInfo = {};
+  targetKey.forEach(key => {
+    let m = d3.mean(targetDataArr[key]);
+    let max = d3.max(targetDataArr[key]);
+    targetInfo[key] = [m / max, m];
+  });
+
+  let steelspecGroup = d3.groups(mergeItem_flat, d => d.steelspec)
+    .sort((a, b) => a[1].length - b[1].length);
+  let maxSteelspec = steelspecGroup.slice(-1)[0];
+  let steelspecSuffix = (category_name === "cannotMerge" && steelspecGroup.length > 1) ? ', etc.' : '';
+
   // 角度数组含义：[平均值, 标准差]
   return {
     info_index: key,
     pathColor: __getPathColor(mergeItem_flat),
     steelspec: category_name,
+    maxSteelspec: maxSteelspec[0] + steelspecSuffix,
+    maxSteelspecColor: __getPathColor(maxSteelspec[1]),
     pr_angle: [pr_angle, pr_std_angle],
     pr_quantile: t_quantile,
     stage_angle: stage_avg_angle.map((d, i) => [d, stage_std_angle[i]]),
@@ -143,6 +164,7 @@ export function getOneBatchInfo(
     stage_for_pre_plate: stage_for_pre_plate,
     link_rect: link_info_list,
     link_rect_data: mergeItem,
-    label_statistics: [labelStatistics]
+    label_statistics: [labelStatistics],
+    targetInfo: targetInfo
   }
 }

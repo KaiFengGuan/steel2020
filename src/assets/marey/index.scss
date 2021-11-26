@@ -1,4 +1,10 @@
-* { touch-action: pan-y; }
+* { touch-action: pan-y; 
+	-moz-user-select: none;	/*禁止鼠标选择文字事件*/
+	-webkit-user-select: none;
+	user-select: none;
+	-o-user-select:none;
+	-ms-user-select:none; 
+}
 #condition_view{
 	overflow: hidden;
 	height: 1068px;
@@ -8,18 +14,21 @@
 }
 #diagnosis_chart{
 	position: relative;
-	z-index: 66666;
-	bottom: 50px;
+	z-index: 666;
 	right: 20px;
 }
 #diagnosis_button{
 	float: right;
+	z-index: 66666;
+	position: absolute;
+	right: 40px;
+	bottom: 40px;
 }
 .diagnosis_view {
-	position: relative;
+	position: absolute;
 	z-index: auto;
 	height: 540px;
-	bottom: 580px;
+	bottom: 540px;
 	/* width: 1595px;*/
 	width: 100%;
 }

@@ -143,13 +143,13 @@ export default {
 					this._padAngle=[];
 					this._linespace=6;
 					this._merge = true;
-					this._sliderInput = 40;
+					this._sliderValue = 40;
 					this._horizonView = true;
 					this._indexdata = [];
 					this._allIndex = undefined;    //index name
-					this._indexScale = undefined;
+					this._indexScale = 0;
 					this._mouseDis  = undefined;
-					this._barVis = true;
+					this._barVis = false;
 					this._labelLimit = {
 						precs: 0.5,
 						humis: 0.5,
@@ -202,7 +202,10 @@ export default {
 						height: 18 ,
 						textX: 20,
 						textY:  12
-					}
+					};
+
+					// 高亮
+					this._upid = null;
 				}
 				getIndex(_){
 					for (let item in this._process){
@@ -382,7 +385,7 @@ export default {
 					let debounce = (value) => {
 						clearTimeout(this._sliderTimer)
 						this._sliderTimer = setTimeout(() => {
-							this._sliderInput = value;
+							this._sliderValue = value;
 							this._barInstance.updateBar()
 						}, 500)
 					}
@@ -422,10 +425,10 @@ export default {
 							.attr('height', sliderHeight)
 							.attr('rx', sliderHeight/2)
 							.attr('ry', sliderHeight/2)
-							.attr('width', width))
+							.attr('width', xScale.invert(this._sliderValue) + width))
 					sliderGroup.append('circle')
 						.attr('r', 5)
-						.attr('cx', 0)
+						.attr('cx', xScale.invert(this._sliderValue))
 						.attr('cy', this._buttonStyle.height/2)
 						.attr('stroke', this._buttonColor)
 						.attr('stroke-width', 1.5)
@@ -616,7 +619,7 @@ export default {
 						var arcX = 200,
 							wheel_y = 0,
 							rectX = r.outer + 280,  //rect_doct x
-							chartHeight = this._sliderInput,   //rect max height
+							chartHeight = this._sliderValue,   //rect max height
 							chartPadding = {left: 1.5, right: 1.5, top: 2, bottom: 2, horizen: 3, vertical: 4},
 							boxMargin = {bottom: 5, top: 5, left : 5, right: 5, horizen: 10, vertical:  10},
 							chartMargin = 5,
@@ -891,19 +894,36 @@ export default {
 										transform: (d, i) =>`translate(${[0, yScale(i) - chartHeight/2]})`,
 										batch: batchEX.map(d => arrowData(d.flat())),
 										elementOpacity: opacityCache,
-										elementTrans: d => `translate(${[mergeAttrs.translateX[d.i](d.time), 0]})`,
+										elementTrans: d => `translate(${[mergeAttrs.translateX[d.i](d.time) - 1.5 * baseRadius, 0 - 1.5 * baseRadius]})`,
+										arrowTrans: d => `translate(${[mergeAttrs.translateX[d.i](d.time), 0]})`,
 										interArrow: d => `translate(${[(mergeAttrs.translateX[d[0].i](d[0].time) + mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time))/2, 0]})`,
 										startRibbon: d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time), 0]})`,
 										endRibbon: d => `translate(${[mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time), 0]})`,
-										interLineTrans: d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time) + baseRadius, 0]})`,
-										interLen: d => mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time) - mergeAttrs.translateX[d[0].i](d[0].time) - 2 * baseRadius
+										interLineTrans: d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time), 0 - 1.5 * baseRadius]})`,
+										interLen: d => mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time) - mergeAttrs.translateX[d[0].i](d[0].time)
+									}
+									symbolAttrs = {
+										position: `translate(${[rectX  + boxMargin.left, - chartHeight - chartMargin/2]})`,
+										transform: (d, i) =>`translate(${[chartPadding.left + textWidth, yScale(i)]})`,
+										opacity: opacityCache,
+										borderHeight: chartHeight - chartPadding.vertical,
+										borderWidth: textWidth - chartPadding.horizen,
+										borderStroke: (d, i) => lc[dataInfo[i].month],
+										rectHeight: chartHeight/4,
+										singleNum: d3.map(batchEX, d => d.flat().filter(e => e.dia_Status).length),
+										multiNum: d3.map(batchEX, d => d.flat().filter(e => e.ovrage).length)
+									}
+									var	position = [5, (chartHeight - chartPadding.vertical)/2 + 5];
+									symbolAttrs.singleScale = d3.scaleLinear().domain([0, d3.max(symbolAttrs.singleNum)]).range([0, symbolAttrs.borderWidth/2]);
+									symbolAttrs.multiScale = d3.scaleLinear().domain([0, d3.max(symbolAttrs.multiNum)]).range([0, symbolAttrs.borderWidth/2]);
+									symbolAttrs.singleTransform = (d, i) => `translate(${[ - symbolAttrs.singleScale(symbolAttrs.singleNum[i]), position[1 - wm._indexScale]]})`;
+									symbolAttrs.multiTransform = (d, i) => `translate(${[ - symbolAttrs.multiScale(symbolAttrs.multiNum[i]), position[wm._indexScale]]})`;
+									if(wm._indexScale === 2){
+										symbolAttrs.singleTransform = (d, i) => `translate(${[ -symbolAttrs.borderWidth/2 - symbolAttrs.singleScale(symbolAttrs.singleNum[i]), d3.mean(position)]})`;
+										symbolAttrs.multiTransform = (d, i) => `translate(${[ -symbolAttrs.borderWidth/2, d3.mean(position)]})`;
 									}
 								}
 								function initOrdinal(){
-										// tempsort = d3.map(d3.sort(dataInfo, d => -d.over), d => d.indexName),
-										// sortArray = d3.map(indexSort, d => tempsort.indexOf(d)),
-										// var tempsort = d3.map(d3.sort(dataInfo, d => -d.humidity), d => d.indexName),
-										//     sortArray = d3.map(indexSort, d => tempsort.indexOf(d)),
 										//     totalSort = d3.map(d3.sort(dataInfo, d => -d.precipitation), d => d.indexName),
 										//     totalArray = d3.map(indexSort, d => totalSort.indexOf(d));
 										// var scaleArray = [d3.scaleOrdinal().domain(indexArray).range(sortArray), d3.scaleOrdinal().domain(indexArray).range(sortArray), d3.scaleOrdinal().domain(indexArray).range(totalArray)];
@@ -985,13 +1005,10 @@ export default {
 												.call(g => g.append('path').attr('d', queryIcon[0]).attr('fill', '#0B72B6'))
 												.call(g => g.append('path').attr('d', queryIcon[1]).attr('fill', '#0B72B6')))
 											.on('click', function(e, d){
-												console.log(e)
 													const t = d3.transition()
 															.duration(300)
 															.ease(d3.easeLinear);
 													barVisObject[d.indexName] = !barVisObject[d.indexName]; 
-													// d3.select(this).select('line').attr('visibility', iconAttrs.elementOpacity).transition(t)
-													// d3.select(this).select('path').attr('d', iconAttrs.icon).transition(t);
 													renderyScale();
 													renderSort();
 											})
@@ -1218,6 +1235,8 @@ export default {
 												mouseDate = new Date(timeScale[sumsearch].invert(indexsearch)),
 												selectDate = horizenEX[sumsearch].map(d => d3.least(d, e => mouseDate > e.time).time),
 												mouseInfo = horizenEX[sumsearch].map(d => d3.least(d, e => mouseDate > e.time)[wm._horizonView ? 'ovalue' : 'ovalue']);
+										// sumsearch, upid, indexName
+										wm._upid = horizenEX[sumsearch].map(d => d3.least(d, e => mouseDate > e.time))[0].upid;
 										// if(wm._horizonView){
 										//     sliderG.selectAll('circle').attr('r', 2)
 										//     sliderG.selectAll('circle').attr('r', d => d.time.toString() !== selectDate[0].toString() ? 2 : 3.5)
@@ -1499,16 +1518,20 @@ export default {
 														.text(textAttrs.text)
 														.attr('fill', 'black')
 										sliderG.on('mousemove', (e, d) => {
-												let mouseDis = d3.pointer(e)[0];//mouse distance
-												if(mouseDis <= 0)return
-												textG.select('.mouseG')
-														.attr('transform', (d, i) =>`translate(${[mouseDis, 0]})`)
-														.attr('stroke', '#bbbcbd')
-												mouseInfo = mouseText(mouseDis);
-												wm._mouseDis = mouseDis;
-												textG.selectAll('text')
-														.attr('transform', textAttrs.transform)
-														.text(textAttrs.text)
+												let x = d3.pointer(e)[0];//mouse distance
+												if(x <= 0)return
+												textG.select('.mouseG').attr('transform', (d, i) =>`translate(${[x, 0]})`).attr('stroke', '#bbbcbd')
+												let upid = wm._upid;
+												mouseInfo = mouseText(x);
+												if(upid !== wm._upid){
+													vm.$emit('wheelMouse', {upid: [upid],  mouse: 1});
+													vm.$emit('wheelMouse', {upid: [wm._upid],  mouse: 0});
+												}
+												wm._mouseDis = x;
+												textG.selectAll('text').attr('transform', textAttrs.transform).text(textAttrs.text)
+										})
+										.on('mouseleave', (e, d) => {
+											vm.$emit('wheelMouse', {upid: [wm._upid],  mouse: 1});
 										})
 								}
 								function initRectG(){
@@ -1844,13 +1867,13 @@ export default {
 										.attr('transform', shapeAttrs.transform)
 										.attr('opacity', shapeAttrs.elementOpacity)
 										.call(g => g.selectAll('.multivariate').data((d, i) => shapeAttrs.batch[i].multivariate)
-											.join('g')
+											.join('rect')
 											.attr('class', 'multivariate')
-											.append('circle')
 											.attr('transform', shapeAttrs.elementTrans)
-											.attr('stroke', mergeColor[0])
-											.attr('fill', 'none')
-											.attr('r', baseRadius))
+											.attr('fill', mergeColor[0])
+											.attr('stroke', 'none')
+											.attr('height', baseRadius * 3)
+											.attr('width', baseRadius * 3))
 										.call(g => g.selectAll('.single').data((d, i) =>shapeAttrs.batch[i].single)
 											.join('path')
 											.attr('class', 'single')
@@ -1870,7 +1893,7 @@ export default {
 											// .attr('extremum_original_u', d => d.extremum_original_u)
 											.attr('d', e => d3.linkVertical().x(d => d.x).y(d => d.y)({source: {x: 0, y: e.ovrage ? (e.range > 0 ?  -baseRadius : baseRadius) : 0},target: {x: 0, y: arrowScale(e.range)}}))
 											.attr('marker-end', 'url(#shape-arrow)')
-											.attr('transform', shapeAttrs.elementTrans)
+											.attr('transform', shapeAttrs.arrowTrans)
 											.attr('stroke', mergeColor[0])
 											.attr('fill', 'none')
 											)
@@ -1884,69 +1907,91 @@ export default {
 												.attr('transform', shapeAttrs.interArrow)
 												.attr('stroke', mergeColor[0])
 												.attr('fill', 'none'))
-											.call(g => g.append('circle')
-												.attr('transform', shapeAttrs.startRibbon)
-												.attr('class', 'startRibbon')
-												.attr('stroke', mergeColor[0])
-												.attr('fill', 'none')
-												.attr('r', baseRadius))
-											.call(g => g.append('circle')
-												.attr('transform', shapeAttrs.endRibbon)
-												.attr('class', 'endRibbon')
-												.attr('stroke', mergeColor[0])
-												.attr('fill', 'none')
-												.attr('r', baseRadius))
-											.call(g => g.append('line')
+											// .call(g => g.append('circle')
+											// 	.attr('transform', shapeAttrs.startRibbon)
+											// 	.attr('class', 'startRibbon')
+											// 	.attr('stroke', mergeColor[0])
+											// 	.attr('fill', 'none')
+											// 	.attr('r', baseRadius))
+											// .call(g => g.append('circle')
+											// 	.attr('transform', shapeAttrs.endRibbon)
+											// 	.attr('class', 'endRibbon')
+											// 	.attr('stroke', mergeColor[0])
+											// 	.attr('fill', 'none')
+											// 	.attr('r', baseRadius))
+											.call(g => g.append('rect')
 												.attr('transform', shapeAttrs.interLineTrans)
-												.attr('x1', 0)
-												.attr('x2', shapeAttrs.interLen)
-												.attr('stroke', mergeColor[0])
-												.attr('fill', 'none'))
+												.attr('width', shapeAttrs.interLen)
+												.attr('height', 3 * baseRadius)
+												.attr('fill', mergeColor[0])
+												.attr('stroke', 'none'))
 											)
 								}
 								function updateShape(){
 									const t = d3.transition().duration(150).ease(d3.easeLinear);
 									shapeGroup.transition(t)
-										.call(g => g.selectAll('.single').attr('transform', shapeAttrs.elementTrans))
+										.call(g => g.selectAll('.single').attr('transform', shapeAttrs.arrowTrans))
 										.call(g => g.selectAll('.multivariate').attr('transform', shapeAttrs.elementTrans))
 										.call(g => g.selectAll('.intersection').selectAll('path').attr('transform', shapeAttrs.interArrow))
 										.call(g => g.selectAll('.intersection').selectAll('line').attr('transform', shapeAttrs.interLineTrans).attr('x2', shapeAttrs.interLen))
 										.call(g => g.selectAll('.startRibbon').attr('transform', shapeAttrs.startRibbon))
 										.call(g => g.selectAll('.endRibbon').attr('transform', shapeAttrs.endRibbon))
 								}
+								function initSymbolDefs(){
+									mainG.call(g => g.append('defs')
+										.append('pattern')
+										.attr('id', 'sort_pattern')
+										.attr('patternUnits', 'userSpaceOnUse')
+										.attr('patternTransform', 'rotate(45)')
+										.attr('width', 5)
+										.attr('height', 5)
+										.call(g => g.append('rect')
+											.attr('width', 5)
+											.attr('height', 5)
+											.attr('fill', util.delabelColor[0]))
+										.call(g => g.append('line')
+											.attr('x1', 0)
+											.attr('x2', 0)
+											.attr('y1', 0)
+											.attr('y2', 5)
+											.attr('stroke', 'white')
+											.attr('stroke-width', 4)
+											.attr('stroke-opacity', 1)
+											.attr('fill', util.delabelColor[0])))
+								}
 								function initSymbol(){
-									symbolAttrs = {
-										position: `translate(${[rectX  + boxMargin.left, - chartHeight - chartMargin/2]})`,
-										transform: (d, i) =>`translate(${[chartPadding.left, yScale(i)]})`,
-										opacity: opacityCache,
-										borderHeight: chartHeight - chartPadding.vertical,
-										borderWidth: textWidth - chartPadding.horizen,
-										borderStroke: (d, i) => lc[dataInfo[i].month],
-										rectHeight: chartHeight/4
-									}
-									var singleNum =  d3.map(batchEX, d => d.flat().filter(e => e.dia_Status).length),
-										multiNum = d3.map(batchEX, d => d.flat().filter(e => e.ovrage).length);
-									symbolAttrs.singleScale = d3.scaleLinear().domain([0, d3.max(singleNum)]).range([0, symbolAttrs.borderWidth/2]);
-									symbolAttrs.multiScale = d3.scaleLinear().domain([0, d3.max(multiNum)]).range([0, symbolAttrs.borderWidth/2]);
-									symbolAttrs.singleTransform = (d, i) => `translate(${[textWidth - symbolAttrs.singleScale(singleNum[i]), (chartHeight - chartPadding.vertical)/2 + 5]})`;
-									symbolAttrs.multiTransform = (d, i) => `translate(${[textWidth - symbolAttrs.multiScale(multiNum[i]), 5]})`;
+									initSymbolDefs();
 									symbolG.attr('transform', symbolAttrs.position)
 									.call(g => g.selectAll('g')
 										.data(dataInfo).join('g').attr('transform', symbolAttrs.transform).attr('opacity', symbolAttrs.opacity)
 										.call(g => g.append('rect')
-											.attr('transform', symbolAttrs.singleTransform).attr('class', 'single')
-											.attr('width', (d, i) => symbolAttrs.singleScale(singleNum[i]))
-											.attr('height', symbolAttrs.rectHeight).attr('fill', util.delabelColor[0]).attr('stroke', 'none'))
-										.call(g => g.append('rect').attr('transform', symbolAttrs.multiTransform).attr('class', 'multivariate')
-											.attr('width', (d, i) => symbolAttrs.multiScale(multiNum[i]))
+											.attr('transform', symbolAttrs.singleTransform)
+											.attr('class', 'single')
+											.attr('width', (d, i) => symbolAttrs.singleScale(symbolAttrs.singleNum[i]))
 											.attr('height', symbolAttrs.rectHeight)
-											.attr('fill', util.delabelColor[0])
+											// .attr('fill', util.delabelColor[0])
+											.attr('fill', 'url(#sort_pattern)')
+											.attr('stroke', 'none'))
+										.call(g => g.append('rect')
+											.attr('transform', symbolAttrs.multiTransform)
+											.attr('class', 'multivariate')
+											.attr('width', (d, i) => symbolAttrs.multiScale(symbolAttrs.multiNum[i]))
+											.attr('height', symbolAttrs.rectHeight)
+											.attr('fill', 'url(#sort_pattern)')
 											.attr('stroke', 'none')))
 								}
 								function updateSymbol(t){
-									symbolG.selectAll('g').transition(t)
+									symbolG.transition(t)
+										.attr('transform', symbolAttrs.position)
+										.selectAll('g')
 										.call(g => g.attr('transform', symbolAttrs.transform).attr('opacity', symbolAttrs.opacity))
-										
+										.call(g => g.selectAll('rect').attr('height', symbolAttrs.rectHeight))
+									symbolG.transition(t)
+										.attr('transform', symbolAttrs.position)
+										.call(g => g.selectAll('.single').attr('transform', symbolAttrs.singleTransform)
+											.attr('width', (d, i) => symbolAttrs.singleScale(symbolAttrs.singleNum[i])))
+										.call(g => g.selectAll('.multivariate').attr('transform', symbolAttrs.multiTransform)
+											.attr('width', (d, i) => symbolAttrs.multiScale(symbolAttrs.multiNum[i])))
 								}
 								function clickScale(e, d){
 									console.log(d3.pointer(e))
@@ -1988,7 +2033,7 @@ export default {
 										return dataInfo.filter((d, i) => wheel_y <= indexScale(i) && indexScale(i) < rectNum + wheel_y).map(d => d.indexName)
 								}
 								function updateBar(){
-									chartHeight = wm._sliderInput;
+									chartHeight = wm._sliderValue;
 									renderyScale();
 									// renderSort();
 									renderShape();

@@ -1057,6 +1057,10 @@ export default {
             const linePath = (d) => {
               const line_data = [];
               const N = d.length;
+              line_data.push({
+                line_x: scaleX(0),
+                line_y: that._y(new Date(d[0].time))
+              })
               for (let j = 0; j < N - 1; j++) {
                 let e = that._y(new Date(d[j].time));
                 let h = that._y(new Date(d[j + 1].time)) - e;
@@ -1071,6 +1075,10 @@ export default {
                   line_y: e + h
                 })
               }
+              line_data.push({
+                line_x: scaleX(0),
+                line_y: that._y(new Date(d.slice(-1)[0].time))
+              })
               const start = line_data[0].line_y;
               return d3.line()
                 .x(e => e.line_x)

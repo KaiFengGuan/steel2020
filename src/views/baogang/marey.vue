@@ -37,11 +37,11 @@
 				<el-row>
 					<el-card class="myel-card">		 
 						<div class="my-card-title" slot="header" >
-								<span style="margin-left:5px">Tabular View  <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search"></el-button> </span>
-
+								<span style="margin-left:5px">Tabular View</span>
+								<el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search" :disabled='!diagnosisState'></el-button>
 						</div>
 						<div class="my-card-body" style="padding-top:5px; overflow:scroll">
-							<brushableParallel ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse"></brushableParallel>
+							<brush-slider ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse" :diagnosisState='diagnosisState'></brush-slider>
 						</div>
 						<!-- <el-col :span="4"> -->
 							
@@ -126,7 +126,7 @@
 				</el-row>
 				<!-- <transition name="diagnosis"> -->
 				<el-row>
-					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height:0px;">
+					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height: 540px; transform: translateY(540px);">
 						<div class="my-card-title" slot="header">
 							<el-col :span="14"><span>Diagnosis View</span></el-col>
 							<el-col :span="1" style="font-size: 12px;margin:2px 0px">CurveSize</el-col>
@@ -219,7 +219,7 @@
 									</el-row>
 								</div> -->
 								<div class="my-card-body" >
-									<wheeler ref="wheelering" style="height:490px" :contract="false"></wheeler>
+									<wheeler ref="wheelering" style="height:490px" :contract="false" @wheelMouse="wheelMouse"></wheeler>
 								</div>
 							</el-card>
 						</el-col>
@@ -227,7 +227,7 @@
 					</el-card>		
 				</el-row>
 				<!-- </transition> -->
-				<el-button circle class="diagnosis_button" icon="el-icon-more" @click="clickDiagnosisButton"></el-button>
+				
 			<!-- <el-row style="margin: 2px 0; overflow:auto; display:flex;flex-wrap: nowrap;">
 				<el-col :span="8" style="flex-shrink: 0;flex-grow: 0;" class="my-card" v-for="item of processInTurn" :key = item>
 					<el-card class="my-card-body-detail">
@@ -239,6 +239,7 @@
 				</el-col>
 			</el-row> -->
 			</el-col>
+			<el-button circle  icon="el-icon-more" @click="changeDiagnosisVisible" id="diagnosis_button"></el-button>
 		</el-row>
 
 	</div>
@@ -255,7 +256,7 @@ import timeBrush from './timeBrush.vue';
 import wheeler from './wheel2.vue';
 import smallWheel from './wheel2.vue';
 import slider from './slider.vue'
-import brushableParallel from "components/charts/brushableParallel.vue"
+import brushSlider from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import mergeTimesData from '../../data/layout/mergeTimesData.js'
 import {mareyChartBatchSpec} from '../../data/layout/monitor.js'
@@ -267,9 +268,10 @@ import Vue from 'vue';
 
 import jsonData from '../data/jsonData.json'
 import monitorData from '../data/monitorData.json'
+import scatterData from '../data/scatterData.json'
 
 export default {
-	components: { mareyChart, timeBrush, brushableParallel, scatterlog, wheeler , smallWheel, slider},
+	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler , smallWheel, slider},
 	data() {
 		return {
 			diagnosisVisible: false,
@@ -299,6 +301,7 @@ export default {
         "steelspec": "[]",
         "status_cooling": "0"
       },
+			diagnosisState: false,
 			orderoptions:[{
 					value: 'Number',
 					label: 'Number'
@@ -313,7 +316,6 @@ export default {
 			plateTempPropvalue:['All'],
 			startmonth: new Date(2021, 2, 10, 0, 0),
 			time: undefined,
-			selectedTrainData: [],
 			corrdata:[],
 			selectedTrainColor: 'green',
 			interval: 4,
@@ -396,7 +398,7 @@ export default {
 			"trainBorder",
 			"startDate",
 			"endDate",
-			"diagnosisState"
+			// "diagnosisState"
 		]),
 		dateselect : function(){
       var endmonth = new Date(this.startmonth.valueOf())
@@ -442,21 +444,21 @@ export default {
       this.req_count = 0;
 			await this.getTimeBrushData();
 			await this.getAlgorithmData()
-			this.getHttpData()
+			this.getHttpData();
 		},
 		async getHttpData() {
 			this.plateTempPropvalue=['All']
       this.loadingDataLoading = true
-      
 			// response
-			this.stationsData = (await this.getStationsData(this.selectDateStart, this.selectDateEnd)).data;
-      // this.jsonData = (await this.getJsonData(this.selectDateStart, this.selectDateEnd)).data;
-      this.jsonData = jsonData
-      console.log('原始：', this.jsonData)
+			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
+      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      // this.jsonData = jsonData
+      console.log('原始：', this.jsonData);
+			await this.$refs.parallel.paintChart(this.jsonData);
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       let eventIconData = filterMareyChartEventIcon(this.jsonData);
-      // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.selectDateStart, this.selectDateEnd)).data;
-      this.monitorData = monitorData
+      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      // this.monitorData = monitorData
 			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
       console.log('监控：', this.monitorData)
       // console.log(eventIconData)
@@ -485,47 +487,33 @@ export default {
         eventIconData: eventIconData
         }, this.isSwitch, this.isMerge);
 
-			// clear
-			this.selectedTrainData = [];
 		},
 		async newdiagnose() {
-			this.changeDiagnosisState()
-			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+			// this.diagnosisState = !this.diagnosisState;
+			this.animeTransition();
+      this.batchData = (await this.requestBatchData());
+			this.alldiagnosisData = d3.group(this.batchData.flat(), d => d.upid);
+			this.upidSelect = [...d3.intersection(this.upidSelect, [...this.alldiagnosisData.keys()])]
 
-	// 		// response
-	// 		// this.stationsData = (await this.getStationsData(startDate, endDate)).data;
-	// 		await this.getStationsData(this.startDate, this.endDate).then(Response => {
-	// 			this.stationsData=Response.data
-    //   })
+			for(let item of this.upidSelect){
+				this.usDiagnosis[item] = this.alldiagnosisData.get(item)[0];
+      }
 
-	// 		this.jsonData = (await this.getJsonData(startDate, endDate)).data;
-	// 		// this.jsonData = this.jsonData.filter(d => {
-	// 		// 	return this.brushUpid.includes(d.upid)
-	// 		// })
+      // console.log( 'before paint: ', document.getElementById('diagnosis_view_id').style.height );
 
-	// 		let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${startDate}/${endDate}/`)).data
-	// 		// this.getplatetype();
-	// 		let allDataArr = []
-	// 		for (let item of this.jsonData) {
-	// 				let upid = item['upid']
-	// 				allDataArr.push(flagData[upid])
-	// 		}
-	// 		for (let i = 0; i < this.jsonData.length; i++) {
-	// 			this.jsonData[i]['flag'] = allDataArr[i]
-	// 		}
+      this.corrdata = [];
+      for(let item of this.upidSelect){
+				try{
+					await this.paintChordList(item)
+				}catch(e){
+					console.log(e)
+				}
+      }
+      // console.log( 'after paint scatterlist: ', document.getElementById('diagnosis_view_id').style.height );
 
-	// 		// paint
-	// 		this.loadingDataLoading = false
-	// 		this.jsonData.length===0 ? this.getNotification('时间线图选择错误，请重新选择') : undefined
-	// 		// this.jsonData = this.jsonData.filter(d => {
-	// 		// 	return this.brushUpid.includes(d.upid)
-	// 		// })
-    //   if(this.scatterData.length!==0)this.mergeflag()
-    //   // console.log("jsonData: ", this.jsonData);
-	// 		this.$refs.mareyChart.paintPre(this.jsonData, this.stationsData, this.isSwitch, this.brushData, this.isMerge);
-
-	// // 		// clear
-	// // 		this.selectedTrainData = [];
+      await this.paintUnderCharts(this.upidSelect[0]);
+      
+    //   console.log( 'after paint: ', document.getElementById('diagnosis_view_id').style.height );
 		},
 		mergeflag(){
 			let mergedata=[]
@@ -690,62 +678,36 @@ export default {
 			// // this.selectedTrainColor
 			// let seletcolor=this.$refs.mareyChart.setTrainColor(bool) 
 			// // this.changeScatterColor();
-			// // this.selectedTrainData !== undefined && this.paintUnderCharts(this.selectedTrainData); 
 		},
     animeTransition(){
-      if (this.diagnosisVisible) {
-        anime({
-          targets: ['.diagnosis_view'],
-          height:'540px',
-          easing: 'easeInOutQuad'
-        });
-      } else {
-        anime({
-          targets: ['.diagnosis_view'],
-          height:'0px',
-          easing: 'easeInOutQuad'
-        });
-      }
+			// this.diagnosisVisible = !this.diagnosisVisible;
+			anime({
+				targets: ['.diagnosis_view'],
+				translateY: this.diagnosisVisible ? '0px' : '1100px',
+				easing: 'easeInOutQuad'
+			})
     },
 
 		async trainClick(value) {
+			console.log(value)
 			this.diagnosisVisible = true;
 			this.upidSelect = []
       this.chooseList = value.batch;
       this.batchDateStart = value.date_s;
       this.batchDateEnd = value.date_e;
-      this.animeTransition();
 
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
 			}
       this.upidSelect = [...new Set(value.upidSelect)]//.filter(d => this.upidData.get(d) !== undefined)
       
-
-      this.batchData = (await this.requestBatchData());
-			this.alldiagnosisData = d3.group(this.batchData.flat(), d => d.upid);
-			this.upidSelect = [...d3.intersection(this.upidSelect, [...this.alldiagnosisData.keys()])]
-
-			for(let item of this.upidSelect){
-				this.usDiagnosis[item] = this.alldiagnosisData.get(item)[0];
-      }
-
-      // console.log( 'before paint: ', document.getElementById('diagnosis_view_id').style.height );
-
-      this.corrdata = [];
-      for(let item of this.upidSelect){
-				try{
-					await this.paintChordList(item)
-				}catch(e){
-					console.log(e)
-				}
-      }
-      // console.log( 'after paint scatterlist: ', document.getElementById('diagnosis_view_id').style.height );
-
-      await this.paintUnderCharts(this.upidSelect[0]);
-      
-    //   console.log( 'after paint: ', document.getElementById('diagnosis_view_id').style.height );
-      
+			this.diagnosisState = false;
+			this.$nextTick(function() {
+				this.diagnosisState = true;
+				const data = this.jsonData.filter(d => new Date(d.toc) <= value.relevantDate[1] && new Date(d.toc) >= value.relevantDate[0]);
+				this.$refs.parallel.changeDiagnosis(data)
+			});
+			// newdiagnose
 		},
 
 		async requestBatchData(){
@@ -836,11 +798,17 @@ export default {
 			this.$refs.parallel.mouse(value)
 		},
 		parallMouse(value){
+			// this.$refs.scatterCate.mouse(value)
+			// this.$refs.mareyChart.mouse(value)
+    },
+		wheelMouse(value){
 			this.$refs.scatterCate.mouse(value)
 			this.$refs.mareyChart.mouse(value)
-    },
+			this.$refs.parallel.mouse(value)
+		},
     changeDiagnosisVisible() {
 			this.diagnosisVisible = !this.diagnosisVisible;
+			this.animeTransition()
     },
 		paintUnderCharts(upid) {
 			this.paintRiverLike(upid);
@@ -857,11 +825,6 @@ export default {
 			this.processInTurn = [null, null]
 			let processName = this.processArray[processNumber]||'heat'
 
-			
-			if(this.selectedTrainData.length===0){
-				this.getNotification("未选择具体钢板进行分析，请在马雷图选择钢板")
-				return
-			}
 			if(this.plateTempPropvalue.length===0){
 				// this.getNotification("未选择合适的钢板类型进行分析，将默认为你选取所有钢板") 
 				this.plateTempPropvalue=['All'];
@@ -873,7 +836,14 @@ export default {
 				}
 			}
 			if(query.length===0)query=this.plateTempPropvalue
-			let processDetail = (await this.getDetailProcess(this.selectedTrainData[this.selectedTrainData.length-1], processName, this.plateTempProp.width/1000, this.plateTempProp.length, this.plateTempProp.thickness/1000,query,this.plateTempProp.deviation)).data
+			let processDetail = (await this.getDetailProcess('upid', 
+				processName,
+				this.plateTempProp.width/1000,
+				this.plateTempProp.length,
+				this.plateTempProp.thickness/1000,
+				query,
+				this.plateTempProp.deviation)).data
+			//
 			// let processDetail = (await this.getDetailProcess('18A15070000', processName, this.plateTempProp.width, this.plateTempProp.length, this.plateTempProp.thickness)).data
 			this.processData = processDetail
 			this.processName=processName
@@ -956,11 +926,12 @@ export default {
       this.req_count += 1;
 
 			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
-        this.scatterData=Response.data
+        this.scatterData = Response.data
+				// this.scatterData = scatterData
 
 				this.$refs.scatterCate.paintChart(this.scatterData, this.req_count)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
-        this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
+        this.$refs.parallel.dataPre(Object.values(this.scatterData))
 			})
 		},
 	},
@@ -975,7 +946,6 @@ export default {
 		startDate:function(){
 			if(this.scatterData.length == 0)return
 			this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
-			this.$refs.parallel.paintChart(Object.values(this.scatterData), this.startDate, this.endDate)
 			this.getHttpData()
 		}
 	}

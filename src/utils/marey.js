@@ -5,8 +5,8 @@ export function getBatchHeader(data, toc) {
   const thick_list = d3.extent(data, d => d.tgtplatethickness);
   const width_list = d3.extent(data, d => d.tgtwidth);
   const length_list = d3.extent(data, d => d.tgtplatelength2);
-  console.log(data)
-  console.log(d3.map(data, d => d.tgtwidth))
+  // console.log(data)
+  // console.log(d3.map(data, d => d.tgtwidth))
   return [toc_list,   // time_select
   JSON.stringify([]),   // slabthickness
   JSON.stringify([]),   // tgtdischargetemp

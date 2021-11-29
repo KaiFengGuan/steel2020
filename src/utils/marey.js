@@ -23,3 +23,46 @@ export function getBatchHeader(data, toc) {
   0   // fqcflag
   ]
 }
+export function updateRange (obj, selection){
+  // var keys = ['tgtthickness', 'tgtplatelength2', 'tgtwidth', 'slab_thickness', 'tgtdischargetemp', 'tgttmplatetemp']
+  var values = [
+    JSON.stringify([]),   // slabthickness  //selection[3].map(d => d / 1000)
+    JSON.stringify(selection[4]),   // tgtdischargetemp
+    JSON.stringify(selection[0]),   // tgtplatethickness
+    JSON.stringify([]),   // tgtwidth //selection[2]
+    JSON.stringify(selection[1]),   // tgtplatelength2
+    JSON.stringify(selection[5]),   // tgttmplatetemp
+    JSON.stringify([]),   // cooling_start_temp
+    JSON.stringify([]),   // cooling_stop_temp
+    JSON.stringify([]),   // cooling_rate1
+    JSON.stringify([]),   // productcategory
+    JSON.stringify([]),   // steelspec
+    selection[6][0],   // status_cooling
+    0   // fqcflag
+    ]
+  var keys = ["slabthickness", "tgtdischargetemp", "tgtplatethickness", "tgtwidth",
+    "tgtplatelength2", "tgttmplatetemp", "cooling_start_temp",
+    "cooling_stop_temp", "cooling_rate1", "productcategory", "steelspec",
+    "status_cooling" , "fqcflag"];
+  let object = {};
+  for(let key in keys){
+    object[keys[key]] = values[key];
+  }
+    return object;
+    // Object.fromEntries([keys, values]);
+  }
+    // {
+//   "slabthickness":"[]",
+//   "tgtdischargetemp":"[]",
+//   "tgtplatethickness":"[17.25,21.25]",
+//   "tgtwidth":"[]",
+//   "tgtplatelength2":"[]",
+//   "tgttmplatetemp":"[]",
+//   "cooling_start_temp":"[]",
+//   "cooling_stop_temp":"[]",
+//   "cooling_rate1":"[]",
+//   "productcategory":"[]",
+//   "status_cooling":0,
+//   "steelspec":"[\"X70M\"]",
+//   "fqcflag":0
+// }

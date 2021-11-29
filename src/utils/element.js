@@ -14,6 +14,12 @@ export function updateElement(element, attrs){
   }
   return element;
 }
+export function updateStyles(element, styles){
+  for(let item in styles){
+      element.style(item, styles[item])
+  }
+  return element;
+}
 export function updateDatum(element, attrs){
   delete attrs['datum'];
   delete attrs['data'];

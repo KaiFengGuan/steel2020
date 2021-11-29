@@ -14,3 +14,6 @@ export  function getVisCorrelation (url, params) {
 export function getMonitorData(url, params) {
   return service.post(APIs.GET_MonitorData + `/${url.startDate}/${url.endDate}/${url.type}/${url.limit}`, params)
 }
+export function getProcessData(url, params){
+  return service.post(APIs.GET_Steel_Process_Data + `/${url.upid}/${url.process}/${url.devation}/${url.limit}`, params)
+}

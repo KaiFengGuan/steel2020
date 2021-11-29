@@ -6,7 +6,7 @@
 import * as d3 from 'd3';
 // import brushdata from './chartdata/brushdata.json'
 import util from 'src/views/baogang/util.js';
-import { addElement, updateElement, updateAsyncElement } from 'utils/element';
+import { addElement, updateElement, updateAsyncElement , updateStyles} from 'utils/element';
 import {brushPre} from  'utils/data.js';
 import {mapGetters, mapMutations} from 'vuex';
 import success from 'assets/images/success.svg';
@@ -28,7 +28,7 @@ export default {
 			categoryColors: util.categoryColor,
 			mouseList: undefined,
 			brushdata: undefined,
-			svgChart: undefined,
+			svgChart: {},
 			plData: undefined,
 			tgtThicknessStation: 0,
 			lengthStation: 0,
@@ -46,7 +46,7 @@ export default {
 			//板坯厚度	386 +- 10
 			//实际出炉温度 770 +- 10
 			//终轧温度 840 +- 10
-			diagnosisArr: [0, 0, 0, 0, 0, 0],
+			diagnosisArr: [20, 10, 1, 10, 5, 5, 0],
 			newBrushData: [
 							[25, 35],
 							[20, 35],
@@ -59,7 +59,7 @@ export default {
 			brushRange: [],
 			diagnosisRange: [],
 			lastSelections: new Map(),
-			// brush
+			rangeData: []
 		};
 	},
 	// mounted() {},
@@ -92,7 +92,7 @@ export default {
 		hightlightGroup: function() {
 			if (this.hightlightGroup.length === 0) {
 				this.init();
-				this.svgChart._removeDiagonis();
+				this.svgChart['instance']._removeDiagonis();
 			} else {
 				this.resetPath();
 			}
@@ -100,9 +100,9 @@ export default {
 		diagnosisState(val, oldVal) {
 			console.log(val);
 			if(!val){
-				this.svgChart._removeDiagonis()
+				this.svgChart['instance']._removeDiagonis()
 			}else{
-				this.svgChart._initDiagnosis()
+				this.svgChart['instance']._initDiagnosis()
 			}
 		}
 	},
@@ -123,6 +123,7 @@ export default {
 		},
 		dataPre(rangeData){
 			const data = this.deepCopy(rangeData).filter(d => this.keys.every(e => typeof d[e] === 'number'));
+			this.rangeData = data;
 			const bardata = d3.map(this.keys, d => d3.map(data, index => index[d])),
 				barbin = d3.map(this.keys, (d, i) => d3.bin().thresholds(20)(bardata[i]));
 			// for (let item in this.keys) {
@@ -225,14 +226,6 @@ export default {
 				.append('svg')
 				.attr('width', width)
 				.attr('height', height);
-			var svg = this.svg;
-			const brush = d3
-				.brushX()
-				.extent([
-					[margin.left, -(brushHeight / 2)],
-					[width - margin.right, brushHeight / 2]
-				])
-				.on('start brush end', basebrushed);
 			for (let item in keys) {
 				this.brushSelection.set(keys[item],d3.extent(brushdata,d => d[keys[item]]));
 				this.newBrushSelection.set(keys[item], this.newBrushData[item]);
@@ -240,9 +233,8 @@ export default {
 			var selections = this.brushSelection;
 
 			class parallelLines{
-				constructor(container, vm) {
-					this.vNode = vm;
-
+				constructor(container, vNode) {
+					this.vNode = vNode;
 					this._container = container;
 					this._mainG = null;
 					this._g = null;
@@ -272,8 +264,10 @@ export default {
 					this._rectTextAttrs = null;
 					this._rectBarG = null;
 					this._rectBarAttrs = null;
-					this._burshG = null;
+					this._brushG = null;
 					this._brushHeight = 10;	//brushHeight
+
+					this._lineG = null;
 				}
 				_initAttrs(){
 					this._cardAttrs = {
@@ -434,7 +428,7 @@ export default {
 						stroke: '#000',
 						'stroke-width': 1
 					};
-					const coolBarG = svg.append('g');
+					const coolBarG = this._mainG.append('g');
 						coolBarG
 						.attr('class', 'rectCooling')
 						.attr('transform', `translate(0,${height - 80})`)
@@ -477,15 +471,45 @@ export default {
 					this._mainG.select('.bottomButton').selectAll('g')
 						.call(g => addElement(g, 'image', iconAttrs))
 				}
+				_brushFunc(selection, key){
+					let selected = [];
+					this._updateRectBar(selection, key);
+					this._updateLine(selected);
+					selected = Array.from(new Set(selected));
+					this._container.property('value', selected).dispatch('input');
+					this._brushSlider();
+					this._updateButtomButtonG(selected);
+				}
 				_initBrush(){
+					const brush = d3
+						.brushX()
+						.extent([
+							[margin.left, -(brushHeight / 2)],
+							[width - margin.right, brushHeight / 2]
+						])
+						.on('start brush end', basebrushed);
+					const context = this;
+					function basebrushed({selection}, key) {
+						if(vm.diagnosisState || vm.svgChart['instance']._objStatus[key])return;
+						d3.select(this).call(brushHandle, selection);
+						// var tempValue = selections.get(key).map(d => x.get(key)(d));
+						// if (!tempValue.every((d, i) => d === selection[i])) {
+						// 	d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)));
+						// 	return;
+						// }
+						if (selection === null) selections.delete(key);
+						else selections.set(key, selection.map(x.get(key).invert));
+
+						vm.svgChart['instance']._brushFunc(selection, key);
+					}
 					const brushAttrs ={
 						transform: d => `translate(0,${y(d) + 6})`,
 						id: (d, i) => 'parallel' + i
 					}
-					this._burshG = this._mainG
+					this._brushG = this._mainG
 						.append('g')
 						.attr('class', 'baseBrush');
-					this._burshG.selectAll('g')
+					this._brushG.selectAll('g')
 					.data(keys)	// .data(newkeys)
 					.join('g')
 					.call(g => updateElement(g, brushAttrs))
@@ -502,7 +526,7 @@ export default {
 					.attr('class', (d, i) => 'brushX' + i)
 					.call(brush.move, (d, i) => selections.get(d).map(x.get(d)));
 
-					this._burshG
+					this._brushG
 						.append('rect')
 							.attr('transform', `translate(${0},${height - margin.bottom - 15})`)
 							.attr('x', 20)
@@ -534,10 +558,10 @@ export default {
 						'font-weight': util.tabularAxisTextAttr.fontWeight,
 						'font-style': util.tabularAxisTextAttr.fontStyle
 					}
-					updateElement(this._burshG.selectAll('.overlay'), overLayAttrs).raise();
-					updateElement(this._burshG.selectAll('.selection'), selectionAttrs).raise();
-					this._burshG.selectAll('.handle--custom').raise();
-					updateElement(this._burshG.selectAll('.tick text'), tickTextAttrs);
+					updateElement(this._brushG.selectAll('.overlay'), overLayAttrs).raise();
+					updateElement(this._brushG.selectAll('.selection'), selectionAttrs).raise();
+					this._brushG.selectAll('.handle--custom').raise();
+					updateElement(this._brushG.selectAll('.tick text'), tickTextAttrs);
 					this._raise();
 				}
 				_initLine(){
@@ -551,14 +575,25 @@ export default {
 						'stroke-width': 1,
 						'stroke-opacity': 0.6
 					}
-					this._mainG.append('g')
-						.attr('class', 'parallelPath')
-						.selectAll('path')
+					this._lineG = this._mainG.append('g').attr('class', 'parallelPath');
+					this._lineG.selectAll('path')
 						.data(Object.values(brushdata).sort((a, b) => d3.ascending(a['upid'], b['upid'])))
 						.join('path')
 						.call(g => updateElement(g, lineAttrs))
 						.on('mouseover', pathover)
 						.on('mouseout', pathout);
+				}
+				_updateLine(selected){
+					this._lineG.selectAll('path').each(function(d){
+						const active = Array.from(selections).every(
+							([key, [min, max]]) => d[key] >= min && d[key] <= max
+						);
+						d3.select(this).attr('stroke', active ? vm.deGroupStyle : 'none');
+						if(active){
+							d3.select(this).raise();
+							selected.push(d);
+						}
+					});
 				}
 				_raise(){
 					['.rectBar', '.cardG'].map(d => this._mainG.selectAll(d).lower());
@@ -568,13 +603,13 @@ export default {
 					const context = this, vN = context.vNode;
 					const minusG = this._mainG.append('g').attr('class', 'minusG');
 					const plusG = this._mainG.append('g').attr('class', 'plusG');
+					const textG = this._mainG.append('g').attr('class', 'textG');
 					const minusAttrs ={
-						transform: d => `translate(${width - margin.left / 2},${y(d) - 20})  scale(0.8)`
+						transform: d => `translate(${width - margin.right / 2 - 7.5},${y(d) + 25 - 7.5})  scale(0.8)`
 					},
 					minusRect = {
 						height: 15,
 						width: 20,
-						x: -30,
 						rx: 2,
 						ry: 2,
 						stroke: util.labelColor[1],
@@ -582,7 +617,7 @@ export default {
 						'cursor': 'pointer'
 					},
 					minusText = {
-						x: -20,
+						x: 10,
 						y: 14,
 						text: '-',
 						'text-anchor': 'middle',
@@ -594,7 +629,7 @@ export default {
 						'cursor': 'pointer'
 					},
 					plusAttrs ={
-						transform: d => `translate(${width - margin.left / 2 },${y(d) - 20})  scale(0.8)`
+						transform: d => `translate(${width - margin.right / 2 - 7.5},${y(d) - 25 + 7.5})  scale(0.8)`
 					},
 					plusRect = {
 						height: 15,
@@ -625,7 +660,7 @@ export default {
 							.on('click', function(e, d){
 								const i = keys.indexOf(d);
 								if(vN.diagnosisRange[i][1] - vN.diagnosisRange[i][0] < 2 * vN.brushStep[i])return;
-								vN.diagnosisArr[i] -= vN.brushStep[i];
+								vN.diagnosisArr[i] = +(vN.diagnosisArr[i] - vN.brushStep[i]).toFixed(1);
 								vN.diagnosisRange = vN.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *vN.diagnosisArr[i])).slice(0, -1);
 								context._updateDiagnosis()
 							});
@@ -636,15 +671,37 @@ export default {
 							.call(g => addElement(g, 'text', plusText))
 							.on('click', function(e, d){
 								const i = keys.indexOf(d);
-								// if(vN.diagnosisRange[i][1] - vN.diagnosisRange[i][0] < 2 * vN.brushStep[i])return;
-								vN.diagnosisArr[i] += vN.brushStep[i];
+								if(vN.diagnosisRange[i][0] < vN.brushStep[i])return;
+								vN.diagnosisArr[i] = +(vN.diagnosisArr[i] + vN.brushStep[i]).toFixed(1);
 								vN.diagnosisRange = vN.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *vN.diagnosisArr[i])).slice(0, -1);
 								context._updateDiagnosis()
 							});
+					const valueAttrs ={
+						transform: d => `translate(${width - margin.right / 2 - 7.5},${y(d)})  scale(0.8)`
+					},
+					valueText = {
+						x: 12,
+						y: 14,
+						text: (d, i) => vN.diagnosisArr[i],
+						'fill': '#94a7b7',
+					},
+					valueStyle = {
+						'text-anchor': 'middle',
+						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,
+						'font-weight': util.buttonTextAttr.baseTextAttr.fontWeight,
+						'font-style': util.buttonTextAttr.baseTextAttr.fontStyle,
+						'font-size': '18px',
+						'cursor': 'pointer'
+					};
+					textG.selectAll('g').data(keys).join('g')
+							.call(g => updateElement(g, valueAttrs))
+							.call(g => addElement(g, 'text', valueText))
+					textG.call(g => updateStyles(g.selectAll('text'), valueStyle))
 				}
 				_initDiagnosis(){
-					this.vNode.diagnosisRange = this.vNode.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *this.vNode.diagnosisArr[i])).slice(0, -1);
-					this._initControl()
+					['.handle--custom', '.selection', '.handle'].map(d => this._brushG.selectAll(d).attr('display', 'none'));
+					this._brushG.selectAll('.overlay').attr('cursor', 'auto');
+					this.vNode.diagnosisRange = this.vNode.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *this.vNode.diagnosisArr[i]));
 					this._initArea();
 					this._initAreaTooltip(true);
 				}
@@ -767,12 +824,30 @@ export default {
 				_updateDiagnosis(){
 					this._updateArea();
 					this._initAreaTooltip(false);	//_updateAreaTooltip
+					this._updateDLine();
+					this._mainG.select('.textG').selectAll('text').text((d, i) => this.vNode.diagnosisArr[i])
+				}
+				_updateDLine(){
+					const context = this,
+						vn = context.vNode,
+						selected = [];
+					this._lineG.selectAll('path').each(function(d){
+						const active = keys.every((element, index) => d[element] >= vn.diagnosisRange[index][0] && d[element] <= vn.diagnosisRange[index][1]);
+						d3.select(this).attr('stroke', active ? vn.deGroupStyle : 'none');
+						if(active){
+							d3.select(this).raise();
+							selected.push(d);
+						}
+					});
 				}
 				_updateArea(){
 					this._mainG.call(g => updateElement(g.selectAll('.rangeArea'), this._areaAttrs()));
 				}
 				_removeDiagonis(){
-					['.minusG', '.plusG', '.rangeArea', '.leftTooltip', '.rightTooltip'].map(d => this._mainG.select(d).remove());
+					['.rangeArea', '.leftTooltip', '.rightTooltip'].map(d => this._mainG.select(d).remove());
+					['.handle--custom', '.selection', '.handle'].map(d => this._brushG.selectAll(d).attr('display', 'block'));;
+					this._brushG.selectAll('.overlay').attr('cursor', 'crosshair');
+					this._updateLine([]);
 				}
 				render(){
 					this._mainG = this._container.append('g').attr('class', 'mainG');
@@ -782,20 +857,19 @@ export default {
 					this._initCoolBar();
 					this._initButtonG();
 					this._initBottomButtonG();
+					this._initLine();
 					this._initBrush();
 					this._brushSlider();
-					this._initLine();
-
+					this._initControl();
 					//test
 					// this._initDiagnosis();
 					// this._removeDiagonis();
 					return this;
 				}
 			}
-			this.svgChart = new parallelLines(svg, this);
-			this.svgChart.render();
-
-
+			this.svgChart['instance'] = new parallelLines(this.svg, this);
+			this.svgChart['instance'].render();
+			
 			// 折现和散点图之间的联动以及toptip
 			function pathover(event, d) {
 				const tooltip = vm.svg
@@ -894,35 +968,6 @@ export default {
 				vm.mouseList !== undefined ? vm.mouse(vm.mouseList) : false;
 				vm.$emit('parallMouse', {upid: [d.upid], mouse: 1});
 			}
-			function basebrushed({selection}, key) {
-				let selected = [];
-				// console.log(vm.svgChart._objStatus, key)
-				if (vm.svgChart._objStatus[key])return;
-				d3.select(this).call(brushHandle, selection);
-				// var tempValue = selections.get(key).map(d => x.get(key)(d));
-				// if (!tempValue.every((d, i) => d === selection[i])) {
-				// 	d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)));
-				// 	return;
-				// }
-				if (selection === null) selections.delete(key);
-				else selections.set(key, selection.map(x.get(key).invert));
-				
-				vm.svgChart._updateRectBar(selection, key);
-				svg.selectAll('.steelLine').each(function(d) {
-					const active = Array.from(selections).every(
-						([key, [min, max]]) => d[key] >= min && d[key] <= max
-					);
-					d3.select(this).attr('stroke', active ? vm.deGroupStyle : 'none');
-					if (active) {
-						d3.select(this).raise();
-						selected.push(d);
-					}
-				});
-				selected = Array.from(new Set(selected));
-				svg.property('value', selected).dispatch('input');
-				vm.svgChart._brushSlider();
-				vm.svgChart._updateButtomButtonG(selected);
-			}
 		},
 		mouse(value) {
 			this.mouseList = value;
@@ -976,7 +1021,10 @@ export default {
 			}
 		}
 	},
-	mounted() {}
+	mounted() {},
+	beforeDestroy(){
+		
+	}
 };
 </script>
 <style scoped>

@@ -451,14 +451,14 @@ export default {
       this.loadingDataLoading = true
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      // this.jsonData = jsonData
+      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      this.jsonData = jsonData
       console.log('原始：', this.jsonData);
 			await this.$refs.parallel.paintChart(this.jsonData);
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       let eventIconData = filterMareyChartEventIcon(this.jsonData);
-      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
-      // this.monitorData = monitorData
+      // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      this.monitorData = monitorData
 			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
       console.log('监控：', this.monitorData)
       // console.log(eventIconData)

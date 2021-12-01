@@ -65,3 +65,33 @@ export function getMonitorChunk(merge_index, plates, monitordata) {
 
   return [all_diag.filter(d => d.length !== 0), merge_exit_date]
 }
+
+
+export function countTotalDiagPercent(timesdata, monitordata) {
+  let times_moni_data = [];
+
+  for (let item of timesdata) {
+    let upid = item.upid;
+    if (monitordata[upid]) {
+      times_moni_data.push(monitordata[upid]);
+    }
+  }
+
+  let process = ['Heat', 'Roll', 'Cool'];
+  let over_p = [0, 0, 0], total = [0, 0, 0];
+  for (let item of times_moni_data) {
+    for (let j = 0; j < process.length; j++) {
+      let key = process[j];
+      let Q_UCL  = item[key + '_QUCL'],
+          Q      = item[key + '_Q'],
+          T2_UCL = item[key + '_T2UCL'],
+          T2     = item[key + '_T2'];
+      
+      if (Q > Q_UCL)  over_p[j]++;
+      if (T2 > T2_UCL) over_p[j]++;
+      total[j] += 2;
+    }
+  }
+
+  return over_p.map((d, i) => (d / total[i]) * 100);
+}

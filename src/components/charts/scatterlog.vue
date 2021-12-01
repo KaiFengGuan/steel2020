@@ -120,7 +120,7 @@ export default {
               .attr('fill', vm.tooltipColor(label))
 							// .attr('fill', util.scatterTooltipAttr.line1.fontColor);
 						line1.text(`upid:`+ d.upid);
-						line2.text(`category: `+d.steelspec);
+						line2.text(`steelspec: `+d.steelspec);
 						line3.text(`time:`+d.toc);
 						path
 							.attr('stroke', vm.tooltipColor(label))

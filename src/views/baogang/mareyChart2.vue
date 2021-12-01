@@ -857,6 +857,13 @@ export default {
           this._renderMareyLine();
           this._renderMareyLineTooltip();
           this._renderEventIconData(this._marey_g);
+
+          // 合并块的tooltip分组
+          this._marey_g.append('g')
+            .attr('id', 'mergeBlockTooltip')
+          this._marey_g.append('g')
+            .attr('id', 'mareyLineTooltip')
+
           this._renderMareyStations();
         }
         _renderMareyLine() {
@@ -1363,37 +1370,6 @@ export default {
 
           let tooltipGroup = MareyGroup.append('g')
             .attr('class', 'mareyTooltipGroup');
-          
-          let tooltip = tooltipGroup.append('g');
-          let path = tooltip.append('path')
-            .attr('class', 'tooltipContent')
-            .attr('stroke', 'rgba(148, 167, 183, 0.4)')
-            .attr('fill', 'white')
-            // .attr('fill', 'rgba(245, 245, 230, 0.97)');
-          
-          let text = tooltip.append('text')
-            .attr('class', 'tooltipContent');
-          let line1 = text.append('tspan')
-            .attr('x', 0)
-            .attr('y', 0)
-            .style('font-family', util.conditionMareyTooltipAttr.line1.fontFamily)
-            .style('font-size', util.conditionMareyTooltipAttr.line1.fontSize)
-            .style('font-weight', util.conditionMareyTooltipAttr.line1.fontWeight)
-            .style('font-style', util.conditionMareyTooltipAttr.line1.fontStyle);
-          let line2 = text.append('tspan')
-            .attr('x', 0)
-            .attr('y', '1.1em')
-            .style('font-family', util.conditionMareyTooltipAttr.line2.fontFamily)
-            .style('font-size', util.conditionMareyTooltipAttr.line2.fontSize)
-            .style('font-weight', util.conditionMareyTooltipAttr.line2.fontWeight)
-            .style('font-style', util.conditionMareyTooltipAttr.line2.fontStyle);
-          let line3 = text.append('tspan')
-            .attr('x', 0)
-            .attr('y', '2.2em')
-            .style('font-family', util.conditionMareyTooltipAttr.line3.fontFamily)
-            .style('font-size', util.conditionMareyTooltipAttr.line3.fontSize)
-            .style('font-weight', util.conditionMareyTooltipAttr.line3.fontWeight)
-            .style('font-style', util.conditionMareyTooltipAttr.line3.fontStyle);
 
           tooltipGroup.append('g')
             .attr('fill', 'none')
@@ -1420,6 +1396,42 @@ export default {
                   }
                 });
 
+                let pathColor = this._mergeresult_1[batch_index].merge_data[merge_index].pathColor;
+                this._marey_g.select('#mergeBlockTooltip')
+                  .call(g => {
+                    g.append('g')
+                      .attr('id', 'textGroup')
+                    .selectAll('selected_plates')
+                      .data(selected_plates.map(d => d.upid))
+                      .join('text')
+                      .text(d => d)
+                      .attr('y', (_, i) => `${1.1 * i}em`)
+                      .attr('fill', pathColor)
+                  })
+                  .call(g => {
+                    const mergeBlockTooltip = this._marey_g.select('#mergeBlockTooltip');
+                    const box = mergeBlockTooltip.select('#textGroup').node().getBBox()
+
+                    const textBackground = g.append('g')
+                      .attr('id', 'textBackground')
+                    textBackground.append('path')
+                      .attr('stroke', pathColor)
+                      .attr('fill', 'white')
+                      .attr('d', `
+                        M${box.x - 10},${box.y - 10}
+                        H${box.width / 2 - 5}l5,-15l5,15
+                        H${box.width + 10}
+                        v${box.height + 20}
+                        h-${box.width + 20}
+                        z
+                      `)
+                    
+                    textBackground.lower();
+                    mergeBlockTooltip.attr('transform', `translate(${[
+                      this._x(d.stop.station.distance) - box.width / 2, 
+                      this._y(new Date(d.stop.time)) + 37]})`)
+                  })
+
                 this._setMergeRect([batch_index], [merge_index]);
                 this._setMergeBin(selected_plates);
                 this._emitToScatter(selected_plates, 0);
@@ -1445,6 +1457,37 @@ export default {
               let toopcolor = this._trainGroupStyle(d.train);
               mouseoverLine(d.train.upid);
               changeBin(d.train.upid);
+
+              const mareyLineTooltip = this._marey_g.select('#mareyLineTooltip');
+              let tooltip = mareyLineTooltip.append('g');
+              let path = tooltip.append('path')
+                .attr('class', 'tooltipContent')
+                .attr('stroke', 'rgba(148, 167, 183, 0.4)')
+                .attr('fill', 'white')
+              
+              let text = tooltip.append('text')
+                .attr('class', 'tooltipContent');
+              let line1 = text.append('tspan')
+                .attr('x', 0)
+                .attr('y', 0)
+                .style('font-family', util.conditionMareyTooltipAttr.line1.fontFamily)
+                .style('font-size', util.conditionMareyTooltipAttr.line1.fontSize)
+                .style('font-weight', util.conditionMareyTooltipAttr.line1.fontWeight)
+                .style('font-style', util.conditionMareyTooltipAttr.line1.fontStyle);
+              let line2 = text.append('tspan')
+                .attr('x', 0)
+                .attr('y', '1.1em')
+                .style('font-family', util.conditionMareyTooltipAttr.line2.fontFamily)
+                .style('font-size', util.conditionMareyTooltipAttr.line2.fontSize)
+                .style('font-weight', util.conditionMareyTooltipAttr.line2.fontWeight)
+                .style('font-style', util.conditionMareyTooltipAttr.line2.fontStyle);
+              let line3 = text.append('tspan')
+                .attr('x', 0)
+                .attr('y', '2.2em')
+                .style('font-family', util.conditionMareyTooltipAttr.line3.fontFamily)
+                .style('font-size', util.conditionMareyTooltipAttr.line3.fontSize)
+                .style('font-weight', util.conditionMareyTooltipAttr.line3.fontWeight)
+                .style('font-style', util.conditionMareyTooltipAttr.line3.fontStyle);
               tooltip
                 .style('display', null)
                 .attr('fill', toopcolor);
@@ -1453,7 +1496,6 @@ export default {
               line2.text(`steelspec: ${d.train.steelspec}`);
               line3.text(`time: ${t_info}`);
               path
-                // .attr('fill', toopcolor);
                 .attr('stroke', toopcolor)
               
               const box = text.node().getBBox();
@@ -1472,6 +1514,9 @@ export default {
                 let batch_index = filter[d.train.upid]['batch_index'];
                 let merge_index = filter[d.train.upid]['merge_index'];
                 let selected_plates = that.__getSelectPlate([batch_index], [merge_index]);
+
+                this._marey_g.select('#mergeBlockTooltip')
+                  .selectAll('g').remove()
 
                 this._resetMergeRect();
                 this._resetMergeBin();
@@ -1494,10 +1539,12 @@ export default {
               }
 
               vm.$emit('trainMouse', {upid: [d.train.upid],  mouse: 1});
-              tooltip.style('display', 'none');
               mouseoutLine(d.train.upid);
               resetBin();
               // mergeGopacity()
+
+              this._marey_g.select('#mareyLineTooltip')
+                .selectAll('g').remove()
             })
             .on('click', (event, d) => {
               if (this._trainSelectedList.includes(d.train.upid)) {

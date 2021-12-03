@@ -4,11 +4,10 @@
 
 <script>
 import * as d3 from 'd3';
-// import brushdata from './chartdata/brushdata.json'
 import util from 'src/views/baogang/util.js';
 import { addElement, updateElement, updateAsyncElement , updateStyles} from 'utils/element';
 import {brushPre} from  'utils/data.js';
-import {mapGetters, mapMutations} from 'vuex';
+import {mapGetters} from 'vuex';
 import success from 'assets/images/success.svg';
 
 export default {
@@ -54,7 +53,7 @@ export default {
 							[250, 300],
 							[1120, 1130],
 							[600, 800],
-							[1, 2]
+							[0, 1]
 						],
 			brushRange: [],
 			diagnosisRange: [],
@@ -146,7 +145,7 @@ export default {
 			const newkeys = [...keys, 'status_cooling'];
 			brushdata = brushdata.filter(d => keys.every(e => typeof d[e] === 'number'));
 			var margin = {top: 40, right: 30, bottom: 50, left: 20};	// var margin = {top: 40, right: 20, bottom: 40, left: 20},
-			const allArray = [1, 0].map(d => d3.filter(brushdata, (e, f) => e['status_cooling'] == d));	//coolingArray nocoolingArray
+			const allArray = [0, 1].map(d => d3.filter(brushdata, (e, f) => e['status_cooling'] == d));	//coolingArray nocoolingArray
 			var xCooling = d3
 					.scaleBand() //Ordinal scale
 					.domain(d3.range(allArray.length))
@@ -156,37 +155,36 @@ export default {
 					.scaleLinear()
 					.domain([0, d3.max(allArray, d => d.length)])
 					.nice()
-					.range([40, 0]),
-				coolingMargin = (width - margin.right - margin.left) / allArray.length / 2;
+					.range([40, 0]);
+				// coolingMargin = (width - margin.right - margin.left) / allArray.length / 2;
 			var brushHeight = 10,
 				vm = this,
 				bardata = d3.map(keys, d => d3.map(brushdata, index => index[d])),
 				barbin = d3.map(keys, (d, i) => {
-					var length = 6;
-					var maxlength = bardata[i].length;
-					while (true) {
-						if (d !== 'status_cooling') {
-							var max = d3.max(d3.bin().thresholds(length)(bardata[i]), d => d.length);
-							if (max / maxlength < 0.5 || length >= 10) {
-								break;
-							} else {
-								length++;
-							}
-						} else {
-							length = 1;
-							break;
-						}
-					}
-					return d3.bin().thresholds(length)(bardata[i]);
+					// var length = 6;
+					// var maxlength = bardata[i].length;
+					// while (true) {
+					// 	if (d !== 'status_cooling') {
+					// 		var max = d3.max(d3.bin().thresholds(length)(bardata[i]), d => d.length);
+					// 		if (max / maxlength < 0.5 || length >= 10) {
+					// 			break;
+					// 		} else {
+					// 			length++;
+					// 		}
+					// 	} else {
+					// 		length = 1;
+					// 		break;
+					// 	}
+					// }
+					return d3.bin().thresholds(10)(bardata[i]);
 				});
-
-			var barScale = d3.map(barbin, array => d3.scalePow().domain([0, d3.max(d3.map(array, d => d.length))]).range([0, 35])),
+			var barScale = d3.map(barbin, array => d3.scalePow().domain([0, 1, d3.max(d3.map(array, d => d.length))]).range([0, 5, 35])),
 				width = document.getElementById(this.menuId).offsetWidth,
 				arc = d3.arc().innerRadius(0).outerRadius(6).startAngle(0)
 					.endAngle((d, i) => (i ? 2 * Math.PI : -2 * Math.PI)),
 				height = (keys.length + 1) * 80,
 				x = new Map(
-					Array.from(keys, (key, index) => [key, d3.scaleLinear(this.domain[index],[margin.left, width - margin.right])])
+					Array.from(keys, (key, index) => [key, d3.scaleLinear(this.domain[index],[margin.left, width - margin.right]).clamp(true)])
 				),
 				y = d3.scalePoint(newkeys, [margin.top, height - margin.bottom]),
 				xScale = d3
@@ -195,9 +193,7 @@ export default {
 					.tickSizeInner(0),
 				previousArray = [],
 				brushedArray = [];
-			
 			x.set('status_cooling', d3.scaleLinear([-1, 2], [margin.left, width - margin.right]));
-			//console.log(203, keys.map((d, i) => bardata[i].map(e => x.get(d)(e))))
 			var line = d3
 					.line()
 					.defined(([, value]) => value != null)
@@ -268,6 +264,8 @@ export default {
 					this._brushHeight = 10;	//brushHeight
 
 					this._lineG = null;
+
+					this._dataMap = d3.group(brushdata, d => d.upid);
 				}
 				_initAttrs(){
 					this._cardAttrs = {
@@ -354,19 +352,18 @@ export default {
 						});
 				}
 				_initRectBar(){
-					var barmargin = item => (width - margin.right - margin.left) / barbin[item].length / 2;
 					const goodBarAttrs = (item) => {
 						return {
 							fill: util.delabelColor[1],
 							stroke: '#000',
 							class: 'rect' + item,
 							'stroke-width': 1,
-							x: d => x.get(keys[item])(d.x0),
+							x: d => 0.75 * x.get(keys[item])(d.x0) + 0.25 * x.get(keys[item])(d.x0),
 							y: d => -barScale[item](d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 1)
 								.length) + 1,
 							height: d => barScale[item](d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 1)
 							.length),
-							width: d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin(item)
+							width: d => 0.5* (x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0))
 						}
 					},
 					badBarAttrs = (item) => {
@@ -375,11 +372,11 @@ export default {
 							stroke: '#000',
 							class: 'rect' + item,
 							'stroke-width': 1,
-							x: d => x.get(keys[item])(d.x0),
+							x: d => 0.75 * x.get(keys[item])(d.x0) + 0.25 * x.get(keys[item])(d.x0),
 							y: 10,
 							height: d => barScale[item](d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 0)
 							.length),
-							width: d => x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0) - barmargin(item)
+							width: d => 0.5* (x.get(keys[item])(d.x1) - x.get(keys[item])(d.x0))
 						}
 					}
 					this._rectBarG = this._mainG.append('g').attr('class', 'rectBar');
@@ -412,7 +409,7 @@ export default {
 						x: (d, i) => x.get('status_cooling')(i) - 9.375,
 						y: d => yCooling(d3.filter(d, e => e['label'] == '1').length),
 						height: d => yCooling(0) - yCooling(d3.filter(d, e => e['label'] == '1').length),
-						width: xCooling.bandwidth() - coolingMargin - 50,
+						width: 20,
 						fill: util.delabelColor[1],
 						opacity: 0.5,
 						stroke: '#000',
@@ -422,7 +419,7 @@ export default {
 						x: (d, i) => x.get('status_cooling')(i) - 9.375,
 						y: 50,
 						height: d => yCooling(0) - yCooling(d3.filter(d, e => e['label'] == '0').length),
-						width: xCooling.bandwidth() - coolingMargin - 50,
+						width: 20,
 						fill: util.delabelColor[0],
 						opacity: 0.5,
 						stroke: '#000',
@@ -431,7 +428,7 @@ export default {
 					const coolBarG = this._mainG.append('g');
 						coolBarG
 						.attr('class', 'rectCooling')
-						.attr('transform', `translate(0,${height - 80})`)
+						.attr('transform', `translate(0,${height - 95})`)
 						.selectAll('rect')
 						.data(allArray)
 						.join('g')
@@ -671,13 +668,13 @@ export default {
 							.call(g => addElement(g, 'text', plusText))
 							.on('click', function(e, d){
 								const i = keys.indexOf(d);
-								if(vN.diagnosisRange[i][0] < vN.brushStep[i])return;
+								if(vN.diagnosisRange[i][0] < vN.brushStep[i] || vN.brushStep[i] + vN.diagnosisArr[i] > vN.maxStep[i])return;
 								vN.diagnosisArr[i] = +(vN.diagnosisArr[i] + vN.brushStep[i]).toFixed(1);
 								vN.diagnosisRange = vN.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *vN.diagnosisArr[i])).slice(0, -1);
 								context._updateDiagnosis()
 							});
 					const valueAttrs ={
-						transform: d => `translate(${width - margin.right / 2 - 7.5},${y(d)})  scale(0.8)`
+						transform: d => `translate(${width - margin.right / 2 - 7.5 - 2},${y(d)})  scale(0.8)`
 					},
 					valueText = {
 						x: 12,
@@ -704,6 +701,8 @@ export default {
 					this.vNode.diagnosisRange = this.vNode.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *this.vNode.diagnosisArr[i]));
 					this._initArea();
 					this._initAreaTooltip(true);
+
+					this._updateDiagnosis();
 				}
 				_areaAttrs(){
 					const context = this;
@@ -712,6 +711,7 @@ export default {
 						class: 'rangeArea',
 						stroke: util.labelColor[0],
 						datum: context.vNode.diagnosisRange,
+						fill: util.delabelColor[1],
 						opacity: 0.5,
 						d: d3.area()
 						.y((d, i) => y(newkeys[i]) + context._brushHeight/2)
@@ -720,7 +720,50 @@ export default {
 					}
 				}
 				_initArea(){
-					this._mainG.call(g => addElement(g, 'path', this._areaAttrs()));
+					this._lineG.call(g => addElement(g, 'path', this._areaAttrs()));
+				}
+				_initSteelTooltip(upid){//true init -- false update
+					if(this._dataMap.get(upid) === undefined)return;
+					const datum = this._dataMap.get(upid)[0];
+					this._mainG.selectAll('.datumTooltip').remove();
+					const context = this;
+					const datumAttrs ={
+						transform: (d, i) => `translate(${this._x.get(keys[i])(datum[keys[i]])},${y(d) + 10})`
+					},
+					datumRect = {
+						height: 18,
+						width: 20,
+						x: -30,
+						rx: 4,
+						ry: 4,
+						stroke: util.labelColor[1],
+						fill: '#ffffff',
+						'cursor': 'pointer'
+					},
+					datumText = {
+						x: 0,
+						y: 14,
+						text: (d, i) => datum[keys[i]],
+						'text-anchor': 'middle',
+						'fill': '#94a7b7',
+						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,
+						'font-weight': util.buttonTextAttr.baseTextAttr.fontWeight,
+						'font-style': util.buttonTextAttr.baseTextAttr.fontStyle,
+						'font-size': '15px',
+						'cursor': 'pointer'
+					};
+					const datumG = this._mainG.append('g').attr('class', 'datumTooltip');
+						datumG
+							.selectAll('g').data(keys).join('g')
+								.call(g => updateElement(g, datumAttrs))
+								.call(g => addElement(g, 'rect', datumRect))
+								.call(g => addElement(g, 'text', datumText));
+						const datumWidth = [...datumG.selectAll('text')._groups[0]].map(d => d.getBBox().width);	//{x: -27.5, y: 0, width: 15, height: 17}
+						datumRect.width = (d, i) => datumWidth[i] + 10;
+						datumRect.x = (d, i) => -datumWidth[i]/2 - 5 + datumText.x;
+						context.vNode.$nextTick(function() {
+							console.log('$nextTick success')
+							datumG.selectAll('rect').call(g => updateElement(g, datumRect));})
 				}
 				_initAreaTooltip(status){//true init -- false update
 					const context = this;
@@ -784,12 +827,10 @@ export default {
 								.call(g => updateElement(g, leftAttrs))
 								.call(g => addElement(g, 'rect', leftRect))
 								.call(g => addElement(g, 'text', leftText));
-						// console.log(leftG.selectAll('text')._groups[0])
 						const leftWidth = [...leftG.selectAll('text')._groups[0]].map(d => d.getBBox().width);	//{x: -27.5, y: 0, width: 15, height: 17}
 						leftRect.width = (d, i) => leftWidth[i] + 10;
 						leftRect.x = (d, i) => -leftWidth[i]/2 - 5 + leftText.x;
-						// console.log(leftWidth)
-						leftG.selectAll('rect').call(g => updateElement(g, leftRect));
+						context.vNode.$nextTick(function() {leftG.selectAll('rect').call(g => updateElement(g, leftRect));})
 
 						rightG
 							.selectAll('g').data(keys).join('g')
@@ -799,7 +840,7 @@ export default {
 						const rightWidth = [...rightG.selectAll('text')._groups[0]].map(d => d.getBBox().width);	//{x: -27.5, y: 0, width: 15, height: 17}
 						rightRect.width = (d, i) => rightWidth[i] + 10;
 						rightRect.x = (d, i) => -rightWidth[i]/2 - 5 + rightText.x;
-						rightG.selectAll('rect').call(g => updateElement(g, rightRect));
+						context.vNode.$nextTick(function() {rightG.selectAll('rect').call(g => updateElement(g, rightRect));})
 					}else{
 						const t = d3.transition()
 								.duration(300)
@@ -811,14 +852,16 @@ export default {
 						const leftWidth = [...leftG.selectAll('text')._groups[0]].map(d => d.getBBox().width);	//{x: -27.5, y: 0, width: 15, height: 17}
 						leftRect.width = (d, i) => leftWidth[i] + 10;
 						leftRect.x = (d, i) => -leftWidth[i]/2 - 5 + leftText.x;
-						leftG.selectAll('rect').transition(t).call(g => updateElement(g, leftRect));
+						// leftG.selectAll('rect').transition(t).call(g => updateElement(g, leftRect));
+						context.vNode.$nextTick(function() {leftG.selectAll('rect').call(g => updateElement(g, leftRect));})
 
 						rightG.selectAll('g').transition(t).call(g => updateElement(g, rightAttrs));
 						rightG.selectAll('text').transition(t).call(g => updateElement(g, rightText));
 						const rightWidth = [...rightG.selectAll('text')._groups[0]].map(d => d.getBBox().width);	//{x: -27.5, y: 0, width: 15, height: 17}
 						rightRect.width = (d, i) => rightWidth[i] + 10;
 						rightRect.x = (d, i) => -rightWidth[i]/2 - 5 + rightText.x;
-						rightG.selectAll('rect').call(g => updateElement(g, rightRect));
+						// rightG.selectAll('rect').call(g => updateElement(g, rightRect));
+						context.vNode.$nextTick(function() {rightG.selectAll('rect').call(g => updateElement(g, rightRect));})
 					}
 				}
 				_updateDiagnosis(){
@@ -872,6 +915,7 @@ export default {
 			
 			// 折现和散点图之间的联动以及toptip
 			function pathover(event, d) {
+				vm.svgChart['instance']._initSteelTooltip(d.upid);
 				const tooltip = vm.svg
 					.append('g')
 					.attr('class', 'tooltip')
@@ -960,6 +1004,7 @@ export default {
 				//     }
 
 				// }
+				vm.svg.selectAll('.datumTooltip').remove();
 				vm.svg
 					.selectAll(`.steelLine`)
 					.attr('stroke-opacity', 0.6)
@@ -975,7 +1020,9 @@ export default {
 			if (value.mouse === 0) {
 				this.changePath(value.upid);
 				this.changePath(this.hightlightGroup);
+				if(value.upid.length === 1)this.svgChart['instance']._initSteelTooltip(value.upid[0]);
 			} else {
+				this.svg.selectAll('.datumTooltip').remove();
 				this.init();
 				if (this.hightlightGroup.length !== 0) {
 					this.clear();

@@ -202,7 +202,7 @@
 												</el-row>
 											</div>
 										<div class="my-card-body" @click="changeUpid(item)">
-											<small-wheel :ref="item" style="height:223px" :contract="true"></small-wheel>
+											<monitor-arc :ref="item" style="height:223px" class="monitor_arc"></monitor-arc>
 										</div>
 									</el-card>
 								</el-row>
@@ -253,15 +253,15 @@ import util from './util.js';
 import mareyChart from './mareyChart2.vue';
 import scatterlog from 'components/charts/scatterlog.vue';
 import timeBrush from './timeBrush.vue';
-import wheeler from './wheel2.vue';
-import smallWheel from './wheel2.vue';
+import wheeler from 'components/composition/index.vue';
+import monitorArc from 'components/wheelChart/index.vue';
 import slider from './slider.vue'
 import brushSlider from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import mergeTimesData from '../../data/layout/mergeTimesData.js'
 import {mareyChartBatchSpec} from '../../data/layout/monitor.js'
 import {filterMareyChartEventIcon} from '../../data/layout/mareyChartEventIcon.js'
-import {getBatchHeader} from '../../utils/marey.js'
+import {getBatchHeader, updateRange} from '../../utils/marey.js'
 import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
 import Vue from 'vue';
@@ -271,7 +271,7 @@ import monitorData from '../data/monitorData.json'
 import scatterData from '../data/scatterData.json'
 
 export default {
-	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler , smallWheel, slider},
+	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler , monitorArc, slider},
 	data() {
 		return {
 			diagnosisVisible: false,
@@ -451,16 +451,16 @@ export default {
       this.loadingDataLoading = true
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      // this.jsonData = jsonData
-      console.log('原始：', this.jsonData);
+      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      this.jsonData = jsonData
+      // console.log('原始：', this.jsonData);
 			await this.$refs.parallel.paintChart(this.jsonData);
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       let eventIconData = filterMareyChartEventIcon(this.jsonData);
-      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
-      // this.monitorData = monitorData
+      // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      this.monitorData = monitorData
 			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
-      console.log('监控：', this.monitorData)
+      // console.log('监控：', this.monitorData)
       // console.log(eventIconData)
 
 			// let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
@@ -726,6 +726,8 @@ export default {
 			return batchData;
 		},
 		async paintChordList(upid){
+			// console.log(diagnosisData)
+			// console.log(this.corrdata)
       var diagnosisData = this.usDiagnosis[upid];   //online
       if(this.corrdata['label']) {
 				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData, this.corrdata)})
@@ -765,14 +767,16 @@ export default {
 		},
 
 		async paintRiverLike(upid) {
+
 			this.selectedUpid =  "UPID " + upid
 			var diagnosisData = this.usDiagnosis[upid]//online
-			this.sampleCss = {}
+			this.sampleCss = {};
+			let data =  (await steel.getProcessData({upid, process: 'roll',limit: 1000, devation: 0.25}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			console.log('steel.getProcessData', data);
 			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
 
       if(this.corrdata['label']) this.$refs.wheelering.paintChart(diagnosisData, this.corrdata, this.batchData)
     },
-    
 		mareyUpdate(){
       this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
 		},
@@ -790,12 +794,12 @@ export default {
 			this.setCurveSize(this.curvesize)
 		},
 		trainMouse(value){
-			this.$refs.scatterCate.mouse(value)
-			this.$refs.parallel.mouse(value)
+			this.$refs.scatterCate && this.$refs.scatterCate.mouse(value);
+			this.$refs.parallel && this.$refs.parallel.mouse(value);
 		},
 		scatterMouse(value){
-			this.$refs.mareyChart.mouse(value)
-			this.$refs.parallel.mouse(value)
+			this.$refs.mareyChart && this.$refs.mareyChart.mouse(value);
+			this.$refs.parallel && this.$refs.parallel.mouse(value);
 		},
 		parallMouse(value){
 			// this.$refs.scatterCate.mouse(value)
@@ -812,7 +816,6 @@ export default {
     },
 		paintUnderCharts(upid) {
 			this.paintRiverLike(upid);
-			// this.platetype(upid);
     	},
     clickDiagnosisButton() {
       if (this.diagnosisVisible) {  // 如果还没收起诊断面板
@@ -925,21 +928,19 @@ export default {
 		async getAlgorithmData() {
       this.req_count += 1;
 
-			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
-        this.scatterData = Response.data
-				// this.scatterData = scatterData
+			// await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
+      //   this.scatterData = Response.data
+				this.scatterData = scatterData
 
 				this.$refs.scatterCate.paintChart(this.scatterData, this.req_count)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
         this.$refs.parallel.dataPre(Object.values(this.scatterData))
-			})
+			// })
 		},
 	},
 	mounted() {
 		// console.log(this.startmonth.getMonth())
-		// this.platetype('18B09019000')
 		// this.trainClick(diagnosis_value)
-		// this.getplatetype()
 		this.changeTime()
 	},
 	watch: {

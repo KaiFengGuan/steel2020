@@ -116,7 +116,7 @@ export default {
           this._brush_margin = {
             top: 115,
             right: 15,
-            bottom: 220,
+            bottom: 110,
             left: 35
           };
           this._brush_size = {
@@ -177,6 +177,7 @@ export default {
           this._quantile_r1 = this._quantile_r2 - 3;
           this._displayIconData = undefined;
           this._iconClickStatus = undefined;
+          this._displayInfoBadPlate = {};
 
           this._targetMargin = 15;
           this._targetHeadHeight = 40;
@@ -352,6 +353,14 @@ export default {
           })
           let [t_extent, fu_extent, m_extent, c_extent,
             sub_extent] = this.__getAllDataExtend(merge_plates, 0.99, true, true);
+          this._info_extent = {
+            stage: [t_extent, fu_extent, m_extent, c_extent],
+            sub_stage: [
+              sub_extent.slice(0, 5),
+              sub_extent.slice(6, 13),
+              sub_extent.slice(14, 16)
+            ]
+          }
           
           // 按steelspec计算标尺范围
           let cate_extend = {};
@@ -651,7 +660,7 @@ export default {
           this._zoom_mini_y = d3.scaleLinear()
             .domain([0, this._brush_size.h])
             .range([this._stations_size.h, this._height]);
-          this._brush_select[1] = (this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom) * 0.25;
+          this._brush_select[1] = (this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom) * 0.2;
 
           
           this._x = d3.scaleLinear()
@@ -933,6 +942,7 @@ export default {
           
           mergeG.append('g')
             .attr('fill', 'white')
+            .attr('class', 'mergeG_select_g')
             .selectAll('.select g')
             .data(d => d.mergeSelect)
             .join('g')
@@ -1391,7 +1401,8 @@ export default {
                   d => curr_batch_all_mergeindex.push(d3.select(d).attr('merge_index')));
                 let info_index;
                 curr_batch_all_mergeindex.forEach((d, i) => {
-                  if (d.includes(''+merge_index)) {
+                  let arr = d.split(" ").map(e => +e)
+                  if (arr.indexOf(merge_index) !== -1) {
                     info_index = i;
                   }
                 });
@@ -1693,9 +1704,11 @@ export default {
               `)
               .attr('fill', (d,i) => statname.indexOf(d.name) <6 ? stationcolor [0] : (statname.indexOf(d.name) > this._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1]))
               .attr('id', d => 'polygon' + d.name)
+              .attr('class', (_, i) => `polygon_${i}`)
               .attr('stroke', 'none'))
             .call(g => g.append('text')
               .attr('transform', `translate(-4 ,${this._main_magin.top -1.5}) rotate(-45)`)
+              .attr('class', (_, i) => `station_${i}`)
               .attr('id', d => 'station' + d.name)
               .attr('x', 8)
               .attr('dy', '0.25em')
@@ -2639,8 +2652,8 @@ export default {
           // console.log('proportion: ', this._proportion_angle);
 
           this._uniform_FillContent(chartGroup);  // 画填充
-          this._is_merge ? this._uniform_ErrorLine(chartGroup) : undefined;    // 画误差线
           this._uniform_StageStroke(chartGroup);   // 画格
+          this._is_merge ? this._uniform_ErrorLine(chartGroup) : undefined;    // 画误差线
           this._uniform_QuantileLine(chartGroup);    // 分位线
           // this._StageText(chartGroup);            // 工序文字
           this._renderCenterRect(chartGroup);   // 中间正方形
@@ -2726,7 +2739,30 @@ export default {
                 .startAngle(that._arc_start)
                 .endAngle(that._arc_start + pr_angle * (d.pr_angle[0]>=1?1:d.pr_angle[0]))())
               .attr('class', 'inner_pr_fill')
-              .attr('fill', d => d.pr_angle[0]>=1?`url(#hatching_pattern_${0})`:circlecolor[0]);
+              .attr('fill', d => d.pr_angle[0]>=1?`url(#hatching_pattern_${0})`:circlecolor[0])
+              .on('mouseenter', function(e, d) {
+                let group = d3.select(this.parentNode.parentNode.parentNode);
+                group.select('.inner_pr_stroke')
+                  .attr('stroke-width', 2)
+
+                let a = 0;
+                let r = (that._inner_arc_r2 + that._inner_arc_r1) / 2;
+                let [x, y] = that.__translateXY(r - 5, a);
+                
+                let val = that._info_extent.stage[0][1] * d.pr_angle[0] / 1000
+                let infoContent = d3.select(this.parentNode.parentNode)
+                infoContent.call(g => {
+                  that.__infoTooltip(g, `${val.toFixed(2)} s`, [x, y], circlecolor[0])
+                })
+              })
+              .on('mouseleave', function(e, d) {
+                let group = d3.select(this.parentNode.parentNode.parentNode);
+                group.select('.inner_pr_stroke')
+                  .attr('stroke-width', 1)
+                
+                let infoContent = d3.select(this.parentNode.parentNode)
+                infoContent.select('#infoTooltip').remove()
+              })
           }
           function mergeStageFill() {
             FillArcGroup.selectAll('.innerFill')
@@ -2738,13 +2774,51 @@ export default {
                 let end_angle = all_stage_angle[i].stage_end;
                 let arc_angle = start_angle + (end_angle-start_angle) * (d[0]>=1?1:d[0]);
                 return d3.arc()
-                  .innerRadius(that._inner_arc_r1)
-                  .outerRadius(that._inner_arc_r2)
+                  .innerRadius(that._inner_arc_r1 + 0.5)
+                  .outerRadius(that._inner_arc_r2 - 0.5)
                   .startAngle(start_angle)
                   .endAngle(arc_angle)()
               })
-              .attr('class', 'inner_stage_fill')
-              .attr('fill', (d, i) => d[0]>=1?`url(#hatching_pattern_${i+1})`:circlecolor[i+1]);
+              .attr('class', (d, i) => `inner_stage_fill inner_stage_fill_${i}`)
+              .attr('fill', (d, i) => d[0]>=1?`url(#hatching_pattern_${i+1})`:circlecolor[i+1])
+              .on('mouseenter', function (e, d) {
+                let group = d3.select(this.parentNode.parentNode.parentNode);
+                let i = d3.select(this).attr('class').slice(-1)
+                group.select('.inner_stage_stroke_' + i)
+                  .attr('stroke-width', 2)
+                
+                // 计算角度
+                let stage_angle = !that._info_state ? that._proportion_angle : that._uniformity_angle
+                let a = (stage_angle[i].stage_start + stage_angle[i].stage_end) / 2;
+                let r = (that._inner_arc_r2 + that._inner_arc_r1) / 2;
+                let pos = that.__translateXY(r, a);
+                
+                let val = that._info_extent.stage[(+i) + 1][1] * d[0] / 1000
+                let infoContent = d3.select(this.parentNode.parentNode)
+                infoContent.call(g => {
+                  that.__infoTooltip(g, `${val.toFixed(2)} s`, pos, circlecolor[(+i) + 1])
+                })
+
+                // 更改马雷图线
+                let range = i === "0" ? [0, 6] : i === "1" ? [6, 14] : [14, 17]
+                for (let index = range[0]; index < range[1]; index++) {
+                  that._setStationLine(index);
+                }
+              })
+              .on('mouseleave', function (e, d) {
+                let group = d3.select(this.parentNode.parentNode.parentNode);
+                let i = d3.select(this).attr('class').slice(-1)
+                group.select('.inner_stage_stroke_' + i)
+                  .attr('stroke-width', 1)
+                
+                let infoContent = d3.select(this.parentNode.parentNode)
+                infoContent.select('#infoTooltip').remove()
+
+                let range = i === "0" ? [0, 6] : i === "1" ? [6, 14] : [14, 17]
+                for (let index = range[0]; index < range[1]; index++) {
+                  that._resetStationLine(index);
+                }
+              })
           }
           function noMergeStageFill() {
             const stage_width = that._inner_arc_width;
@@ -2795,7 +2869,33 @@ export default {
                     .endAngle(arc_angle)()
                 })
                 .attr('class', 'inner_sub_fill')
-                .attr('fill', d => d[0].data>=1?`url(#hatching_sub_pattern_${d[0].stage_i+1})`:circlecolor[d[0].stage_i + 1]);
+                .attr('stage_i', d => d[0].stage_i)
+                .attr('sub_j', d => d[0].sub_j)
+                .attr('fill', d => d[0].data>=1?`url(#hatching_sub_pattern_${d[0].stage_i+1})`:circlecolor[d[0].stage_i + 1])
+                .on('mouseenter', function(e, d) {
+                  let ele = d3.select(this)
+                  let stage_i = ele.attr('stage_i')
+                  let sub_j = ele.attr('sub_j')
+                  let group = d3.select(this.parentNode.parentNode.parentNode);
+                  group.select(`.outer_sub_stroke_${stage_i}_${sub_j}`)
+                    .attr('stroke-width', 2)
+                  
+                  let setIndex = stage_i === "0" ? (+sub_j) : stage_i === "1" ? (+sub_j) + 6 : (+sub_j) + 14;
+                  that._setStationLine(setIndex);
+                  that._setStationLine(setIndex + 1);
+                })
+                .on('mouseleave', function(e, d) {
+                  let ele = d3.select(this)
+                  let stage_i = ele.attr('stage_i')
+                  let sub_j = ele.attr('sub_j')
+                  let group = d3.select(this.parentNode.parentNode.parentNode);
+                  group.select(`.outer_sub_stroke_${stage_i}_${sub_j}`)
+                    .attr('stroke-width', 1)
+                  
+                  let setIndex = stage_i === "0" ? (+sub_j) : stage_i === "1" ? (+sub_j) + 6 : (+sub_j) + 14;
+                  that._resetStationLine(setIndex);
+                  that._resetStationLine(setIndex + 1);
+                })
           }
         }
         _uniform_StageStroke(chartGroup) {
@@ -2804,7 +2904,7 @@ export default {
           let path_attr = g => g
               .attr('stroke', 'grey')
               .attr('stroke-width', 1)
-              .attr('fill', 'none');
+              .attr('fill', 'none')
             
           let ArcGroup = chartGroup.append('g')
             .attr('class', 'ArcGroup')
@@ -2832,7 +2932,7 @@ export default {
               .outerRadius(this._inner_arc_r2)
               .startAngle(d.stage_start)
               .endAngle(d.stage_end)())
-            .attr('class', 'inner_stage_stroke')
+            .attr('class', (d, i) => `inner_stage_stroke inner_stage_stroke_${i}`)
             .call(path_attr);
           // 子工序
           ArcGroup.selectAll('.subProcess')
@@ -2844,7 +2944,11 @@ export default {
               .outerRadius(this._outer_arc_r2)
               .startAngle(d[0])
               .endAngle(d[1])())
-            .attr('class', 'outer_sub_stroke')
+            .attr('class', (d, j) => {
+              let i = j < 5 ? 0 : j < 12 ? 1 : 2
+              let _j = j < 5 ? j : j < 12 ? j - 5 : j - 12
+              return `outer_sub_stroke outer_sub_stroke_${i}_${_j}`
+            })
             .call(path_attr);
         }
         _uniform_ErrorLine(chartGroup) {
@@ -2993,6 +3097,7 @@ export default {
           let color = [vm.labelColors[1], vm.labelColors[0], vm.noflagColor]; // good, bad, noflag
           let rect_w = 20;
           let gap = 1.5;
+          const that = this;
 
           let CenterRectGroup = chartGroup.selectAll('CenterRectGroup')
             .data(d => d.label_statistics)
@@ -3000,6 +3105,50 @@ export default {
             .append('g')
             .attr('class', 'CenterRectGroup')
             .attr('transform', `translate(${[0, -rect_w/Math.pow(2, 0.5)]}) rotate(45)`)
+            .on('click', function (e, d) {
+              const chartGroup = d3.select(this.parentNode.parentNode);
+              let batch_index = +chartGroup.attr('batch_index')
+              let info_index = +chartGroup.attr('info_index')
+              let merge_index_list = chartGroup.attr('merge_index').split(' ').map(e => (+e))
+              let click_id = `${batch_index}_${info_index}`
+
+              if (that._displayInfoBadPlate[click_id]) {
+                that._displayInfoBadPlate[click_id] = !that._displayInfoBadPlate[click_id]
+              } else {
+                that._displayInfoBadPlate[click_id] = true
+              }
+
+              if (that._displayInfoBadPlate[click_id]) {
+                let bad_plates = [];
+                that._mergeresult_1[batch_index].merge_data.forEach((e, i) => {
+                  if (merge_index_list.indexOf(i) !== -1) {
+                    bad_plates.push(e.mergeItem.filter(f => f.flag === 0))
+                  }
+                })
+
+                for (let merge_index of merge_index_list) {
+                  let mergeG_select_g = that._marey_g.select(`#batchG${batch_index} #mergeG${merge_index}`)
+                    .select('.mergeG_select_g')
+                  
+                  mergeG_select_g.selectAll('info_bad_plate_mareyline')
+                    .data(bad_plates.flat())
+                    .join('g')
+                    .attr('class', `select_g info_bad_plate_${click_id}`)
+                    .attr('transform', d => `translate(0, ${that._y(new Date(d.stops[0].time))})`)
+                    .style('color', that._trainGroupStyle)
+                    .attr('stroke-width', d => { return that._defaultStrokeWidth(d.tgtplatethickness2) } )
+                    .attr('id', d => ('id' + d.upid))
+                    .call(g => g.append('path')
+                      .attr('fill', 'none')
+                      .attr('stroke', 'currentColor')
+                      .attr('d', d => that._line(d.stops)))
+                }
+              } else {
+                that._marey_g.selectAll('.info_bad_plate_' + click_id).remove()
+              }
+
+              e.stopPropagation()
+            })
 
           CenterRectGroup.selectAll('.good_bad_noflag')
             .data(d => getPolygonPoint(rect_w, gap, ...d))
@@ -3559,6 +3708,41 @@ export default {
             .style("color", 'black')
             .call(yAxis)
 
+        }
+        __infoTooltip(g, text, pos, color) {
+          let box
+          const infoTooltip = g.append('g')
+          .attr('id', 'infoTooltip')
+
+          color = d3.color(color).darker(0.5)
+          infoTooltip
+          .call(g => {
+            g.append('text')
+              .text(text)
+              .attr('id', 'infoTooltipText')
+              .attr('fill', color)
+          })
+          .call(g => {
+            box = g.select('#infoTooltipText').node().getBBox()
+            g.append('path')
+              .attr('stroke', color)
+              .attr('fill', 'white')
+              .attr('d', `
+                M${box.x - 10},${box.y - 10}
+                H${box.width / 2 - 5}l5,-15l5,15
+                H${box.width + 10}
+                v${box.height + 20}
+                h-${box.width + 20}
+                z
+              `)
+              .lower()
+          })
+          .attr('transform', `translate(${[pos[0] - box.width/2, pos[1] + box.height+20]})`)
+        }
+        __translateXY (radius, alpha) {
+          let x = Math.sin(alpha) * radius;
+          let y = - Math.cos(alpha) * radius;
+          return [x, y];
         }
 
         // 右边监控视图
@@ -4130,6 +4314,7 @@ export default {
               this._setInfoDetail(batch_index, info_index);
               this._setMergeRect([batch_index], merge_index_list);
               this._setMergeBin(selected_plates);
+              this._setMoniBlock(batch_index, merge_index_list)
             }
           }
         }
@@ -4232,6 +4417,26 @@ export default {
         //   this._marey_g.selectAll('#eventIcon_' + upid)
         //     .attr('opacity', 1);
         // }
+        _setStationLine(index) {
+          let color = vm.processColor;
+
+          this._marey_g.selectAll(`.polygon_${index}`)
+            .attr('fill', d3.color(index < 6 ? color[0] : index < 14 ? color[1] : color[2]).darker(0.2))
+          this._marey_g.selectAll(`.station_${index}`)
+            .attr('font-weight', 'bold')
+          this._marey_g.selectAll(`.mline${index}`)
+            .attr('stroke-width', 2.5)
+        }
+        _resetStationLine(index) {
+          let color = vm.processColor;
+
+          this._marey_g.selectAll(`.polygon_${index}`)
+            .attr('fill', index < 6 ? color[0] : index < 14 ? color[1] : color[2])
+          this._marey_g.selectAll(`.station_${index}`)
+            .attr('font-weight', 'normal')
+          this._marey_g.selectAll(`.mline${index}`)
+            .attr('stroke-width', 0.5)
+        }
 
         // 整图过渡动画
         _mareyChartTranslate() {

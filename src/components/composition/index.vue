@@ -249,6 +249,7 @@ export default {
 				_renderBar(){
 					this._fliterScaleData();
 					this._barInstance = this._renderMainBar();
+					this._initMainBox(rollData);
 					this._renderMainWheel();
 				}
 
@@ -2053,7 +2054,8 @@ export default {
 
 					const boxPlotG = this._g.append('g').attr('class', 'boxPlotGroup').attr('transform', `translate(${barData.rectWidth + 20}, 0)`);
 					const preRoll = data => {
-						let res = new Map();
+						let res = new Map(),
+							map = new Map();
 						for(let passNum in data){
 							let datum = data[passNum].result;
 							let passArr = new Array(data[passNum].passcount).fill(0).map((d, i) => {
@@ -2067,9 +2069,13 @@ export default {
 							});
 							// passArr.range = [d3.min(passArr, e => e.value.min), d3.max(passArr, e => e.value.max)];
 							passArr.upid = passArr[0].value.map(e => e.upid);
+							let upidArr = passArr.upid;
+							for(let i in upidArr){
+								map.set(upidArr[i], passArr.map(e => e.value[i].value))
+							}
 							res.set(data[passNum].passcount, passArr);
 						}
-						return res;
+						return [res, map];
 					}
 						// .call(g => g.append('circle'))
 					// const width = 400, height = 200;
@@ -3085,7 +3091,6 @@ export default {
 				.labels(labels)
 				.render();
 
-			this.wheelChart._initMainBox(rollData);
 		},
 		renderChart(){
 			this.paintChart(this.jsondata, this.chorddata, this.batchData)

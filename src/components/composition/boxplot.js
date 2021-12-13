@@ -32,22 +32,32 @@ export class boxplot{
   }
   enter(options){
     this._originData = options.data;
-    this._passMap = options.func(this._originData);
+    [this._passMap, this._upidMap] = options.func(this._originData);
+    console.log(this._upidMap);
     this._passArr = [...this._passMap.keys()];
     [this._minLen, this._maxLen]  = d3.extent(this._passArr);
-    this._length = 10;
-      // this._maxLen;
+    this._length = this._maxLen;
     this._range = this._passMap.get(this._length).range;
-    // this._originData = d3.group(options.data, d => d.upid);
     // this._data = options.func(options.data);
     this._g.attr('transform', `scale(${Math.min(options.width/this._width, options.height/this._height)})`);
     return this;
-  };
+  }
   render(){
     this._initScale();
+    this._initAttrs();
+    this._g.append('rect')
+      .attr('fill', 'white')
+      .attr('stroke', 'none')
+      .attr('transform', `translate(${this._margin.right}, ${this._margin.top})`)
+      .attr('width', this._width - this._margin.right - this._margin.left)
+      .attr('height', this._height - this._margin.top - this._margin.bottom)
     this._initBox();
-    this._initAxis();
-    // setTimeout(() => {this._renderAxis()}, 2000)
+    let flag = true;
+    this._g.on('click', ()=>{
+      console.log('click')
+      flag = !flag;
+      this._renderChart(flag ? "21222001000" : "21221360000")
+    })
   }
   _initScale(){
     const renderData = this._passMap.get(this._length);
@@ -65,174 +75,196 @@ export class boxplot{
     .nice()
     .range([this._height - this._margin.bottom, this._margin.top]);
     this._xAxis = g => g
-      .attr("transform", `translate(0,${this._height - this._margin.bottom})`)
+      .attr('transform', `translate(0,${this._height - this._margin.bottom})`)
       .call(d3.axisBottom(this._xScale));
     this._yAxis = g => g
-    .attr("transform", `translate(${this._margin.left},0)`)
-    .call(d3.axisLeft(this._yScale).ticks(null, "s"))
-    .call(g => g.select(".domain").remove());
-  }
-  _initAxis(){
-      this._g.append("g").attr('class', 'xAxis').call(this._xAxis);
-      this._g.append("g").attr('class', 'yAxis').call(this._yAxis);
-  }
-  _renderAxis(){
-    this._length = 8;
-    const renderData = this._passMap.get(this._length);
-    this._xScale.domain(renderData.map(d => d.key));
-    this._yScale.domain([d3.min(renderData, d => d.value.min * 0.8), d3.max(renderData, d => d.value.max * 1.2)])
-    this._xLinear.domain(d3.extent(renderData, d => d.key))
-      .range([this._xScale(renderData[0].key), this._xScale(renderData[renderData.length - 1].key)]);
-    const t = d3.transition()
-      .duration(300)
-      .ease(d3.easeLinear);
-    // this._g.select('.xAxis').transition(t).call(this._xAxis)
-    this._g.transition(t)
-      .call(g => g.select('.xAxis').call(this._xAxis))
-      .call(g => g.select('.yAxis').call(this._yAxis));
-    this._updateBox();
-    // this._initLine();
-    console.log(12)
-  }
-  _updateBox(){
-     const t = d3.transition()
-      .duration(300)
-      .ease(d3.easeLinear);
-    this._mainGroup
-      .selectAll("g")
-      .transition(t)
-      .attr("transform", d => `translate(${this._xLinear(d)}, 0)`)
-      .attr('display', (d, i) => d < this._length ? 'block' : 'none');
-    this._mainGroup.selectAll("g").filter((d, i) => d < this._length).transition(t)
-      .call(g => g.selectAll("vertLine")
-        .data((_, i) => [this._passMap.get(this._length)[i].value.range])
-          .join("line")
-            .attr("class", "vertLine")
-            .attr("stroke", "#C0C0C0")
-            .attr('stroke-width','1px')
-            .style("width", 40)
-            .attr("x1", 0)
-            .attr("x2", 0)
-            .attr("y1", range => this._yScale(range[0]))
-            .attr("y2", range => this._yScale(range[1])))
-      // .call(g => g.selectAll('.vertLine')
-      //  .attr("y1", range => this._yScale(range[0]))
-      //  .attr("y2", range => this._yScale(range[1])))
-      // .call(g => g.selectAll('.horizontalLine')
-      //  .attr("y1", d => this._yScale(d))
-      //  .attr("y2", d => this._yScale(d)))
-      // .call(g => g.selectAll('.box')
-      //   .attr("y", d => this._yScale(d.value.quartiles[2]))
-      //   .attr("height", d => this._yScale(d.value.quartiles[0])-this._yScale(d.value.quartiles[2])))
-  }
-  _initLine(){
-    const datum = this._originData.get('examples0')[0];
-    this._g.select('.passLine').remove();
-    // console.log(datum);
-    const line = d3.line().x((d, i) => this._xLinear(i)).y(d => this._yScale(d)).curve(d3.curveLinear);
-    const path = this._mainGroup
-      .append('path')
-      .datum(datum.value)
-      .attr('class', 'passLine')
-      .attr('d', d => line(d))
-      .attr('stroke', "#af5f68")
-      .attr('display', 'none')
-      .attr('stroke-width', 0.5)
-      .attr('fill', 'none');
-    // getTotalLength()
-    this._lineTransition();
-  }
-  async _lineTransition(){
-    const path = this._g.select('.passLine');
-    const lineLength = path.node().getTotalLength();
-    const t = d3.transition()
-      .duration(300)
-      .ease(d3.easeLinear);
-    path
-      .attr("stroke-dasharray", `${0},${lineLength}`)
-      .attr('display', 'block');
-    console.log(lineLength);
-    let i = 0, n = lineLength;
-    let timer = setInterval(() => {
-        const t = (i + 1) / n;
-        console.log(i);
-        i++;
-        path.transition(t) .attr("stroke-dasharray", `${t * lineLength},${lineLength}`);
-        if(t > 1){
-          console.log(t);
-          clearInterval(timer);
-        }
-      },20)
-  }
+    .attr('transform', `translate(${this._margin.left},0)`)
+    .call(d3.axisLeft(this._yScale).ticks(null, 's'))
+    .call(g => g.select('.domain').remove());
 
-  _initBox(){
+    this._g.append('g').attr('class', 'xAxis').call(this._xAxis);
+    this._g.append('g').attr('class', 'yAxis').call(this._yAxis);
+  }
+  _initAttrs(){
     const boxWidth = 50;
     // const jitterWidth = 50;
   
     console.log(this);
     console.log(this._passMap);
+
+    this._vertLineAttrs = {
+      class: 'vertLine',
+      stroke: '#C0C0C0',
+      'stroke-width': '1px',
+      x1: 0,
+      x2: 0,
+      y1: d => this._yScale(this._passMap.get(this._length)[d].value.range[0]),
+      y2: d => this._yScale(this._passMap.get(this._length)[d].value.range[1]),
+      // transform: d => `translate(${this._xLinear(d)}, 0)`
+    };
+    this._boxAttrs = {
+      class: 'box',
+      x: -boxWidth/2,
+      y: d => this._yScale(this._passMap.get(this._length)[d].value.quartiles[2]),
+      height: d => this._yScale(this._passMap.get(this._length)[d].value.quartiles[0])
+        - this._yScale(this._passMap.get(this._length)[d].value.quartiles[2]),
+      width: boxWidth,
+      stroke: 'purple',
+      fill: 'rgb(255, 255, 255)',
+      'fill-opacity': 0.7,
+      // transform: d => `translate(${this._xLinear(d)}, 0)`
+    };
+    this._horizontalLineAttrs = {
+      'class': 'horizontalLine',
+      'stroke': '#808080',
+      'stroke-width': '1px',
+      'x1': -boxWidth/2,
+      x2: +boxWidth/2,
+      y1: d => this._yScale(d),
+      y2: d => this._yScale(d)
+    };
+    this._pointAttrs = {
+      cx: 0,  //d => 0 - jitterWidth/2 + Math.random() * jitterWidth
+      cy: d => this._yScale(d.value),
+      fill: '#af5f68',
+      'fill-opacity': 0.8,
+      r: 2
+    };
+  }
+  _initBox(){
     this._mainGroup = this._g.append('g')
       .attr('class', 'mainGroup');
     const groups = this._mainGroup
-      .selectAll("g")
+      .selectAll('g')
       .data(new Array(this._maxLen).fill(0).map((d, i) => i))
-      .join("g")
-      .attr("transform", d => `translate(${this._xLinear(d)}, 0)`)
-      .attr('display', (d, i) => d < this._length ? 'block' : 'none');
-  
+      .join('g')
+      .attr('transform', d => `translate(${this._xLinear(d)}, 0)`)
+      .attr('display', d => d < this._length ? 'block' : 'none');
     // groups
-    groups
-    // .filter((d, i) => d < this._length)
-      .selectAll("vertLine")
-      // .data(d => [d.value.range])
-      .data((_, i) => [this._passMap.get(this._length)[i].value.range])
-      .join("line")
-            .attr("class", "vertLine")
-            .attr("stroke", "#C0C0C0")
-            .attr('stroke-width','1px')
-            .style("width", 40)
-            .attr("x1", 0)
-            .attr("x2", 0)
-            .attr("y1", range => this._yScale(range[0]))
-            .attr("y2", range => this._yScale(range[1]));
-  
-  // groups
-  //   .selectAll("points")
-  //   .data(d => d.value)
-  //   .join("circle")
-  //     // .attr("cx", d => 0 - jitterWidth/2 + Math.random() * jitterWidth)
-  //     .attr('cx', 0)
-  //     .attr("cy", d => this._yScale(d.value))
-  //     .attr("r", 2)
-  //     .style("fill", "#af5f68")
-  //     .attr("fill-opacity", 0.8);
-  
-  //  groups
-  //   .selectAll("box")
-  //   .data(d => [d])
-  //   .join("rect")
-  //       .attr("class", "box")
-  //       .attr("x", -boxWidth/2)
-  //       .attr("y", d => this._yScale(d.value.quartiles[2]))
-  //       .attr("height", d => this._yScale(d.value.quartiles[0])-this._yScale(d.value.quartiles[2]))
-  //       .attr("width", boxWidth)
-  //       // .attr("stroke", "#808080")
-  //    .attr('stroke', 'purple')
-     
-  //       .style("fill", "rgb(255, 255, 255)")
-  //       .style("fill-opacity", 0.7);
+    const enter = groups.filter(d => d < this._length);
+    enter
+      .call(g => g.selectAll('.vertLine')
+        .data(d => [d])
+          .join('line')
+          .call(g => updateElement(g, this._vertLineAttrs)))
+      .call(g => g.selectAll('.box')
+        .data(d => [d])
+          .join('rect')
+          .call(g => updateElement(g, this._boxAttrs)))
+      // addElement(g, 'line', this._vertLineAttrs))
+      // .call(g => addElement(g, 'rect', this._boxAttrs))
+    enter
+      .call(g => g.selectAll('points')
+        .data(d => this._passMap.get(this._length)[d].value)
+        .join('circle')
+        .call(g => updateElement(g, this._pointAttrs)))
+      .call(g => g.selectAll('.horizontalLine')
+        .data(d => {
+          let datum = this._passMap.get(this._length)[d].value;
+          return [datum.range[0], datum.quartiles[1], datum.range[1]];
+        })
+        .join('line')
+        .call(g => updateElement(g, this._horizontalLineAttrs)))
+  }
+  _renderChart(upid){
+    this._length = this._upidMap.get(upid).length;
+    const renderData = this._passMap.get(this._length);
+    this._xScale.domain(renderData.map(d => d.key));
+    this._yScale.domain([d3.min(renderData, d => d.value.min * 0.8), d3.max(renderData, d => d.value.max * 1.2)])
+    this._xLinear.domain(d3.extent(renderData, d => d.key))
+      .range([this._xScale(renderData[0].key), this._xScale(renderData[renderData.length - 1].key)]);
+
+    this._updateBox();
+    this._initLine(upid);
+  }
+  _updateBox(){
+    const t = d3.transition()
+      .duration(300)
+      .ease(d3.easeLinear);
     
-  //  groups
-  //   .selectAll("horizontalLine")
-  //   .data(d => [d.value.range[0], d.value.quartiles[1], d.value.range[1]])
-  //   .join("line")
-  //      .attr("class", "horizontalLine")
-  //      .attr("stroke", "#808080")
-  //      .attr('stroke-width','1px')
-  //      .style("width", 40)
-  //      .attr("x1", -boxWidth/2)
-  //      .attr("x2", +boxWidth/2)
-  //      .attr("y1", d => this._yScale(d))
-  //      .attr("y2", d => this._yScale(d));
+    // this._g.select('.xAxis').transition(t).call(this._xAxis)
+    this._g.transition(t)
+      .call(g => g.select('.xAxis').call(this._xAxis))
+      .call(g => g.select('.yAxis').call(this._yAxis));
+    
+    this._mainGroup.selectAll('g')
+      .transition(t)
+      .attr('transform', d => `translate(${this._xLinear(d)}, 0)`)
+      .attr('display', d => d < this._length ? 'block' : 'none');
+
+    const enter = this._mainGroup.selectAll('g').filter(d => d < this._length);
+    
+      enter
+      .call(g => g.selectAll('.vertLine')
+        .data(d => [d])
+          .join(enter => addElement(enter, 'line', this._vertLineAttrs)
+            .attr('transform', `translate(0, -20)`),
+            update => update,
+            exit => exit.transition(t).remove().attr('transform', `translate(0, 20)`)
+          )
+          .call(g => updateElement(g.transition(t), this._vertLineAttrs)))
+      .call(g => g.selectAll('.box')
+          .data(d => [d])
+          .join(enter => addElement(enter, 'rect', this._boxAttrs)
+            .attr('transform', `translate(0, -20)`),
+            update => update,
+            exit => exit.transition(t).remove().attr('transform', `translate(0, 20)`)
+          )
+          .call(g => updateElement(g.transition(t), this._boxAttrs)));
+    
+
+    enter.selectAll('.horizontalLine')
+        .data(d => {
+          let datum = this._passMap.get(this._length)[d].value;
+          return [datum.range[0], datum.quartiles[1], datum.range[1]];
+        })
+        .join(enter => addElement(enter, 'line', this._horizontalLineAttrs)
+          .attr('x1', -20).attr('x2', -20),
+          update => update,
+          exit => exit.transition(t).remove().attr('x1', 20).attr('x2', 20)
+        )
+        .call(g => updateElement(g.transition(t), this._horizontalLineAttrs));
+
+    enter.selectAll('circle')
+        .data(d => this._passMap.get(this._length)[d].value)
+        .join(enter => addElement(enter, 'circle', this._pointAttrs).attr('cy', d => this._yScale(d.value) - 10),
+          update => update,
+          exit => exit.transition(t).remove().attr('cy', d => this._yScale(d.value) + 10)
+        )
+        .call(g => updateElement(g.transition(t), this._pointAttrs));
+  }
+  _initLine(upid){
+    const datum = this._upidMap.get(upid);
+    this._g.select('.passLine').remove();
+    // console.log(datum);
+    const line = d3.line().x((d, i) => this._xLinear(i)).y(d => this._yScale(d)).curve(d3.curveLinear);
+    const path = this._mainGroup
+      .append('path')
+      .datum(datum)
+      .attr('class', 'passLine')
+      .attr('d', d => line(d))
+      .attr('stroke', '#af5f68')
+      .attr('display', 'none')
+      .attr('stroke-width', 0.5)
+      .attr('fill', 'none');
+    const lineLength = path.node().getTotalLength();
+    // const t = d3.transition()
+    //   .duration(300)
+    //   .ease(d3.easeLinear);
+    path
+      .attr('stroke-dasharray', `${0},${lineLength}`)
+      .attr('display', 'block');
+    console.log(lineLength);
+    let i = 0, n = 300;
+    let timer = setInterval(() => {
+        const t = (i + 1) / n;
+        console.log(i);
+        i++;
+        path.transition(t) .attr('stroke-dasharray', `${t * lineLength},${lineLength}`);
+        if(t > 1){
+          console.log(t);
+          clearInterval(timer);
+        }
+      },20)
   }
 } 

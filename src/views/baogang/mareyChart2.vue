@@ -1893,33 +1893,35 @@ export default {
           let that = this;
           function statOver(e, m) {
             let i = d3.select(this).attr('i')
-            d3.select('#polygon' + m.name)
-              .attr('fill', (d,i) => 
-                d3.color(
-                  statname.indexOf(d.name) <6 ? 
-                  stationcolor [0] : 
-                  (statname.indexOf(d.name) > that._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1])
-                ).darker(0.2))
-            d3.selectAll(`.mline${i}`)
-              .attr('stroke-width', 2.5)
-            d3.selectAll(`.mline${i++}`)
-              .attr('stroke-width', 2.5)
-            d3.select('#station' + m.name)
-              .attr('font-weight', 'bold')
+            that._setStationLine(i);
+            // d3.select('#polygon' + m.name)
+            //   .attr('fill', (d,i) => 
+            //     d3.color(
+            //       statname.indexOf(d.name) <6 ? 
+            //       stationcolor [0] : 
+            //       (statname.indexOf(d.name) > that._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1])
+            //     ).darker(0.2))
+            // d3.selectAll(`.mline${i}`)
+            //   .attr('stroke-width', 2.5)
+            // d3.selectAll(`.mline${i++}`)
+            //   .attr('stroke-width', 2.5)
+            // d3.select('#station' + m.name)
+            //   .attr('font-weight', 'bold')
           }
           function statOut (e,m){
             let i = d3.select(this).attr('i')
-            d3.select('#polygon' + m.name)
-              .attr('fill', (d,i) => 
-                statname.indexOf(d.name) <6 ? 
-                stationcolor [0] : 
-                (statname.indexOf(d.name) > that._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1]))
-            d3.selectAll(`.mline${i}`)
-              .attr('stroke-width', 0.5)
-            d3.selectAll(`.mline${i++}`)
-              .attr('stroke-width', 0.5)
-            d3.select('#station' + m.name)
-              .attr('font-weight', 'normal')
+            that._resetStationLine(i);
+            // d3.select('#polygon' + m.name)
+            //   .attr('fill', (d,i) => 
+            //     statname.indexOf(d.name) <6 ? 
+            //     stationcolor [0] : 
+            //     (statname.indexOf(d.name) > that._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1]))
+            // d3.selectAll(`.mline${i}`)
+            //   .attr('stroke-width', 0.5)
+            // d3.selectAll(`.mline${i++}`)
+            //   .attr('stroke-width', 0.5)
+            // d3.select('#station' + m.name)
+            //   .attr('font-weight', 'normal')
           }
 
 
@@ -2880,6 +2882,18 @@ export default {
                   group.select(`.outer_sub_stroke_${stage_i}_${sub_j}`)
                     .attr('stroke-width', 2)
                   
+                  // 计算角度
+                  let stage_angle = !that._info_state ? that._proportion_angle : that._uniformity_angle
+                  let a = (stage_angle[+stage_i].stage_sub[+sub_j][0] + stage_angle[+stage_i].stage_sub[+sub_j][1]) / 2;
+                  let r = (that._outer_arc_r1 + that._outer_arc_r2) / 2
+                  let pos = that.__translateXY(r, a);
+
+                  let val = that._info_extent.sub_stage[+stage_i][+sub_j][1] * d[0].data / 1000
+                  let infoContent = d3.select(this.parentNode.parentNode)
+                  infoContent.call(g => {
+                    that.__infoTooltip(g, `${val.toFixed(2)} s`, pos, circlecolor[(+stage_i) + 1])
+                  })
+                  
                   let setIndex = stage_i === "0" ? (+sub_j) : stage_i === "1" ? (+sub_j) + 6 : (+sub_j) + 14;
                   that._setStationLine(setIndex);
                   that._setStationLine(setIndex + 1);
@@ -2891,6 +2905,9 @@ export default {
                   let group = d3.select(this.parentNode.parentNode.parentNode);
                   group.select(`.outer_sub_stroke_${stage_i}_${sub_j}`)
                     .attr('stroke-width', 1)
+                  
+                  let infoContent = d3.select(this.parentNode.parentNode)
+                  infoContent.select('#infoTooltip').remove()
                   
                   let setIndex = stage_i === "0" ? (+sub_j) : stage_i === "1" ? (+sub_j) + 6 : (+sub_j) + 14;
                   that._resetStationLine(setIndex);
@@ -4421,7 +4438,8 @@ export default {
           let color = vm.processColor;
 
           this._marey_g.selectAll(`.polygon_${index}`)
-            .attr('fill', d3.color(index < 6 ? color[0] : index < 14 ? color[1] : color[2]).darker(0.2))
+            .attr('stroke', d3.color(index < 6 ? color[0] : index < 14 ? color[1] : color[2]).darker(0.2))
+            .attr('stroke-width', 2.5)
           this._marey_g.selectAll(`.station_${index}`)
             .attr('font-weight', 'bold')
           this._marey_g.selectAll(`.mline${index}`)
@@ -4431,7 +4449,9 @@ export default {
           let color = vm.processColor;
 
           this._marey_g.selectAll(`.polygon_${index}`)
-            .attr('fill', index < 6 ? color[0] : index < 14 ? color[1] : color[2])
+            // .attr('fill', index < 6 ? color[0] : index < 14 ? color[1] : color[2])
+            .attr('stroke', 'none')
+            .attr('stroke-width', 0)
           this._marey_g.selectAll(`.station_${index}`)
             .attr('font-weight', 'normal')
           this._marey_g.selectAll(`.mline${index}`)

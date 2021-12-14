@@ -10,8 +10,9 @@ import { mapGetters, mapMutations } from "vuex";
 import info_state from "assets/images/info_state.svg"
 import info_state1 from "assets/images/info_state1.svg"
 import warningIcon5 from "../../assets/images/weixiu.svg"
+import leanerIcon from "../../assets/images/leanerIcon_opera.svg"
 import {getOneBatchInfo} from '../../data/mareyChart/getBatchInfo.js'
-import {getMonitorChunk} from '../../data/mareyChart/getMoniData.js'
+import {getMonitorChunk, countTotalDiagPercent} from '../../data/mareyChart/getMoniData.js'
 export default {
   data() {
     return {
@@ -115,7 +116,7 @@ export default {
           this._brush_margin = {
             top: 115,
             right: 15,
-            bottom: 220,
+            bottom: 110,
             left: 35
           };
           this._brush_size = {
@@ -176,6 +177,7 @@ export default {
           this._quantile_r1 = this._quantile_r2 - 3;
           this._displayIconData = undefined;
           this._iconClickStatus = undefined;
+          this._displayInfoBadPlate = {};
 
           this._targetMargin = 15;
           this._targetHeadHeight = 40;
@@ -229,7 +231,7 @@ export default {
               let time_spend = 0;
               for (let k in item_data_stops.slice(0, -1)) {
                 if (stations_item.key === item_data_stops[k].station.key) {
-                  time_spend = (new Date(item_data_stops[(+k)+1].time)).getTime() - (new Date(item_data_stops[k].time))
+                  time_spend = (new Date(item_data_stops[(+k)+1].time)).getTime() - (new Date(item_data_stops[k].time)).getTime()
                 }
               }
               single_arr.push(time_spend)
@@ -331,7 +333,7 @@ export default {
           });
 
 
-          console.log('马雷图合并结果：', this._mergeresult);
+          // console.log('马雷图合并结果：', this._mergeresult);
 
           // 过滤合并的钢板
           let merge_upid = this._mergeresult.map(item => item.merge_result.merge.flat()).flat().map(d => d.upid)
@@ -351,6 +353,14 @@ export default {
           })
           let [t_extent, fu_extent, m_extent, c_extent,
             sub_extent] = this.__getAllDataExtend(merge_plates, 0.99, true, true);
+          this._info_extent = {
+            stage: [t_extent, fu_extent, m_extent, c_extent],
+            sub_stage: [
+              sub_extent.slice(0, 5),
+              sub_extent.slice(6, 13),
+              sub_extent.slice(14, 16)
+            ]
+          }
           
           // 按steelspec计算标尺范围
           let cate_extend = {};
@@ -559,21 +569,16 @@ export default {
           }
           console.log("处理成绘图数据：", this._mergeresult_1)
 
+          // 统计整图监控结果占比
+          let [heat_bad, roll_bad, cool_bad] = countTotalDiagPercent(this._timesdata, monitordata);
 
-
-          let heat_bad = Math.random() * 25;
-          let roll_bad = Math.random() * 30;
-          let cool_bad = Math.random() * 20;
           this._statistics = [
             {bad: heat_bad, good: 100-heat_bad},
             {bad: roll_bad, good: 100-roll_bad},
             {bad: cool_bad, good: 100-cool_bad}
           ]
 
-          // console.log('马雷：', this._timesdata);
-          // console.log('监控：', monitordata);
 
-          
           this._monitoringdata = {};
           let all_diag = [[], [], []];
           let process = ['Heat', 'Roll', 'Cool'];
@@ -599,7 +604,7 @@ export default {
           }
 
           this._monitoringdata['diag'] = all_diag;
-          console.log(this._monitoringdata);
+          // console.log(this._monitoringdata);
 
           // getMonitorData(this._mergeresult, this._timesdata, monitordata);
 
@@ -655,7 +660,7 @@ export default {
           this._zoom_mini_y = d3.scaleLinear()
             .domain([0, this._brush_size.h])
             .range([this._stations_size.h, this._height]);
-          this._brush_select[1] = (this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom) * 0.25;
+          this._brush_select[1] = (this._brush_size.h - this._brush_margin.top - this._brush_margin.bottom) * 0.2;
 
           
           this._x = d3.scaleLinear()
@@ -859,9 +864,16 @@ export default {
             .attr('transform', `translate(${[this._info_size.w, 0]})`);
           
           this._renderMareyLine();
-          this._renderMareyStations();
           this._renderMareyLineTooltip();
           this._renderEventIconData(this._marey_g);
+
+          // 合并块的tooltip分组
+          this._marey_g.append('g')
+            .attr('id', 'mergeBlockTooltip')
+          this._marey_g.append('g')
+            .attr('id', 'mareyLineTooltip')
+
+          this._renderMareyStations();
         }
         _renderMareyLine() {
           let removeElement = this._marey_g.selectAll('.mareyGroup')._groups[0][0]
@@ -930,6 +942,7 @@ export default {
           
           mergeG.append('g')
             .attr('fill', 'white')
+            .attr('class', 'mergeG_select_g')
             .selectAll('.select g')
             .data(d => d.mergeSelect)
             .join('g')
@@ -1032,6 +1045,11 @@ export default {
             const color = d.flag !== 404 ? (d.flag === 0 ? vm.labelColors[0] : vm.labelColors[1]) : vm.noflagColor;
             const zeroLineWidth = 1;
             const scaleX = that._iconOpScale[d.distance];
+            const xAxis = d3.axisBottom(scaleX)
+              .ticks(3)
+              .tickFormat(x => x * 1000)
+              .tickSizeInner(3)
+              .tickSizeOuter(0)
             
             const iconEleGroup = iconEle.append('g')
               .attr('class', 'iconEleGroup')
@@ -1044,11 +1062,26 @@ export default {
               .attr('class', 'iconEle_background')
               .attr('width', (margin + width) * 2)
               // .attr('height', 0)
-              .attr('height', height + margin)
+              .attr('height', height + margin + 13)
               .attr('transform', `translate(${[-margin - width, 0]})`)
               .attr('fill', 'white')
               .attr('stroke', color)
               .attr('rx', 3)
+
+            iconEleGroup
+              .append('line')
+              .attr('class', 'iconEle_zeroLine')
+              .attr('x1', 0)
+              .attr('y1', 0)
+              .attr('x2', 0)
+              // .attr('y2', 0)
+              .attr('y2', height)
+              .attr("fill", 'none')
+              .attr('stroke', color)
+              .attr("stroke-width", zeroLineWidth)
+              // .attr("stroke-linejoin", "round")
+              // .attr("stroke-dasharray", "3 3")
+              // .attr("stroke-linecap", "round")
 
 
             const line = d3.line()
@@ -1110,28 +1143,23 @@ export default {
               .attr('class', 'operation_line')
               // .attr('d', line(lineData))
               .attr('d', linePath(lineData))
-              // .attr('fill', 'none')
-              .attr('fill', color)
+              .attr('fill', 'none')
+              // .attr('fill', color)
               // .attr('fill', 'url("#pathFillColor")')
               .attr('stroke', color)
               .attr('stroke-width', 1.5)
               // .attr('stroke-dasharray', '0 1')
-
-                        
-            iconEleGroup
-              .append('line')
-              .attr('class', 'iconEle_zeroLine')
-              .attr('x1', 0)
-              .attr('y1', 0)
-              .attr('x2', 0)
-              // .attr('y2', 0)
-              .attr('y2', height)
-              .attr("fill", 'none')
-              .attr('stroke', 'white')
-              .attr("stroke-width", zeroLineWidth)
               // .attr("stroke-linejoin", "round")
               // .attr("stroke-dasharray", "3 3")
               // .attr("stroke-linecap", "round")
+
+            iconEleGroup.append('g')
+              .attr('transform', `translate(${[0, height]})`)
+              .style("font-size", 8)
+              .style("font-weight", 'normal')
+              .style("color", 'black')
+              .call(xAxis)
+            
 
             
             // __trans('iconEle_background', 'height', false, function() {
@@ -1260,16 +1288,16 @@ export default {
                 .attr('stdDeviation', 1)
                 .attr('flood-color', stroke_color)
             )
-            .call(g =>
-              g.append('circle')
-                .attr('class', 'all_circle')
-                .attr('cx', 0)
-                .attr('cy', 0)
-                .attr('r', 0.9 * cx)
-                .attr('fill', background_color)
-                .attr('stroke', stroke_color)
-                .attr('filter', 'url(#shadowicon)')
-            )
+            // .call(g =>
+            //   g.append('circle')
+            //     .attr('class', 'all_circle')
+            //     .attr('cx', 0)
+            //     .attr('cy', 0)
+            //     .attr('r', 0.9 * cx)
+            //     .attr('fill', background_color)
+            //     .attr('stroke', stroke_color)
+            //     .attr('filter', 'url(#shadowicon)')
+            // )
             // .call(g => 
             //   g.append('circle')
             //     .attr('class', 'outer_circle')
@@ -1286,9 +1314,10 @@ export default {
                 .attr('cx', 0)
                 .attr('cy', 0)
                 .attr('r', 0.68 * cx)
-                .attr('fill', 'none')
-                .attr('stroke', stroke_color)
-                .attr('stroke-width', 0.05 * cx)
+                .attr('fill', background_color)
+                .attr('stroke', 'black')
+                .attr('stroke-width', 0.25)
+                .attr('filter', 'url(#shadowicon)')
             )
             .call(g => 
               g.append('image')
@@ -1296,7 +1325,7 @@ export default {
                 .attr('class', 'iconwarning')
                 .attr('width', 0.9 * cx)
                 .attr('height', 0.9 * cx)
-                .attr('href', warningIcon5)
+                .attr('href', leanerIcon)
             )
         }
         _renderMareyLineTooltip() {
@@ -1351,37 +1380,6 @@ export default {
 
           let tooltipGroup = MareyGroup.append('g')
             .attr('class', 'mareyTooltipGroup');
-          
-          let tooltip = tooltipGroup.append('g');
-          let path = tooltip.append('path')
-            .attr('class', 'tooltipContent')
-            .attr('stroke', 'rgba(148, 167, 183, 0.4)')
-            .attr('fill', 'white')
-            // .attr('fill', 'rgba(245, 245, 230, 0.97)');
-          
-          let text = tooltip.append('text')
-            .attr('class', 'tooltipContent');
-          let line1 = text.append('tspan')
-            .attr('x', 0)
-            .attr('y', 0)
-            .style('font-family', util.conditionMareyTooltipAttr.line1.fontFamily)
-            .style('font-size', util.conditionMareyTooltipAttr.line1.fontSize)
-            .style('font-weight', util.conditionMareyTooltipAttr.line1.fontWeight)
-            .style('font-style', util.conditionMareyTooltipAttr.line1.fontStyle);
-          let line2 = text.append('tspan')
-            .attr('x', 0)
-            .attr('y', '1.1em')
-            .style('font-family', util.conditionMareyTooltipAttr.line2.fontFamily)
-            .style('font-size', util.conditionMareyTooltipAttr.line2.fontSize)
-            .style('font-weight', util.conditionMareyTooltipAttr.line2.fontWeight)
-            .style('font-style', util.conditionMareyTooltipAttr.line2.fontStyle);
-          let line3 = text.append('tspan')
-            .attr('x', 0)
-            .attr('y', '2.2em')
-            .style('font-family', util.conditionMareyTooltipAttr.line3.fontFamily)
-            .style('font-size', util.conditionMareyTooltipAttr.line3.fontSize)
-            .style('font-weight', util.conditionMareyTooltipAttr.line3.fontWeight)
-            .style('font-style', util.conditionMareyTooltipAttr.line3.fontStyle);
 
           tooltipGroup.append('g')
             .attr('fill', 'none')
@@ -1403,10 +1401,47 @@ export default {
                   d => curr_batch_all_mergeindex.push(d3.select(d).attr('merge_index')));
                 let info_index;
                 curr_batch_all_mergeindex.forEach((d, i) => {
-                  if (d.includes(''+merge_index)) {
+                  let arr = d.split(" ").map(e => +e)
+                  if (arr.indexOf(merge_index) !== -1) {
                     info_index = i;
                   }
                 });
+
+                let pathColor = this._mergeresult_1[batch_index].merge_data[merge_index].pathColor;
+                this._marey_g.select('#mergeBlockTooltip')
+                  .call(g => {
+                    g.append('g')
+                      .attr('id', 'textGroup')
+                    .selectAll('selected_plates')
+                      .data(selected_plates.map(d => d.upid))
+                      .join('text')
+                      .text(d => d)
+                      .attr('y', (_, i) => `${1.1 * i}em`)
+                      .attr('fill', pathColor)
+                  })
+                  .call(g => {
+                    const mergeBlockTooltip = this._marey_g.select('#mergeBlockTooltip');
+                    const box = mergeBlockTooltip.select('#textGroup').node().getBBox()
+
+                    const textBackground = g.append('g')
+                      .attr('id', 'textBackground')
+                    textBackground.append('path')
+                      .attr('stroke', pathColor)
+                      .attr('fill', 'white')
+                      .attr('d', `
+                        M${box.x - 10},${box.y - 10}
+                        H${box.width / 2 - 5}l5,-15l5,15
+                        H${box.width + 10}
+                        v${box.height + 20}
+                        h-${box.width + 20}
+                        z
+                      `)
+                    
+                    textBackground.lower();
+                    mergeBlockTooltip.attr('transform', `translate(${[
+                      this._x(d.stop.station.distance) - box.width / 2, 
+                      this._y(new Date(d.stop.time)) + 37]})`)
+                  })
 
                 this._setMergeRect([batch_index], [merge_index]);
                 this._setMergeBin(selected_plates);
@@ -1433,15 +1468,45 @@ export default {
               let toopcolor = this._trainGroupStyle(d.train);
               mouseoverLine(d.train.upid);
               changeBin(d.train.upid);
+
+              const mareyLineTooltip = this._marey_g.select('#mareyLineTooltip');
+              let tooltip = mareyLineTooltip.append('g');
+              let path = tooltip.append('path')
+                .attr('class', 'tooltipContent')
+                .attr('stroke', 'rgba(148, 167, 183, 0.4)')
+                .attr('fill', 'white')
+              
+              let text = tooltip.append('text')
+                .attr('class', 'tooltipContent');
+              let line1 = text.append('tspan')
+                .attr('x', 0)
+                .attr('y', 0)
+                .style('font-family', util.conditionMareyTooltipAttr.line1.fontFamily)
+                .style('font-size', util.conditionMareyTooltipAttr.line1.fontSize)
+                .style('font-weight', util.conditionMareyTooltipAttr.line1.fontWeight)
+                .style('font-style', util.conditionMareyTooltipAttr.line1.fontStyle);
+              let line2 = text.append('tspan')
+                .attr('x', 0)
+                .attr('y', '1.1em')
+                .style('font-family', util.conditionMareyTooltipAttr.line2.fontFamily)
+                .style('font-size', util.conditionMareyTooltipAttr.line2.fontSize)
+                .style('font-weight', util.conditionMareyTooltipAttr.line2.fontWeight)
+                .style('font-style', util.conditionMareyTooltipAttr.line2.fontStyle);
+              let line3 = text.append('tspan')
+                .attr('x', 0)
+                .attr('y', '2.2em')
+                .style('font-family', util.conditionMareyTooltipAttr.line3.fontFamily)
+                .style('font-size', util.conditionMareyTooltipAttr.line3.fontSize)
+                .style('font-weight', util.conditionMareyTooltipAttr.line3.fontWeight)
+                .style('font-style', util.conditionMareyTooltipAttr.line3.fontStyle);
               tooltip
                 .style('display', null)
                 .attr('fill', toopcolor);
               let t_info = d.stop.realTime.toLocaleString(undefined, { hour: "numeric", minute: "numeric" });
               line1.text(`upid: ${d.train.upid}`);
-              line2.text(`category: ${d.train.steelspec}`);
+              line2.text(`steelspec: ${d.train.steelspec}`);
               line3.text(`time: ${t_info}`);
               path
-                // .attr('fill', toopcolor);
                 .attr('stroke', toopcolor)
               
               const box = text.node().getBBox();
@@ -1460,6 +1525,9 @@ export default {
                 let batch_index = filter[d.train.upid]['batch_index'];
                 let merge_index = filter[d.train.upid]['merge_index'];
                 let selected_plates = that.__getSelectPlate([batch_index], [merge_index]);
+
+                this._marey_g.select('#mergeBlockTooltip')
+                  .selectAll('g').remove()
 
                 this._resetMergeRect();
                 this._resetMergeBin();
@@ -1482,10 +1550,12 @@ export default {
               }
 
               vm.$emit('trainMouse', {upid: [d.train.upid],  mouse: 1});
-              tooltip.style('display', 'none');
               mouseoutLine(d.train.upid);
               resetBin();
               // mergeGopacity()
+
+              this._marey_g.select('#mareyLineTooltip')
+                .selectAll('g').remove()
             })
             .on('click', (event, d) => {
               if (this._trainSelectedList.includes(d.train.upid)) {
@@ -1634,9 +1704,11 @@ export default {
               `)
               .attr('fill', (d,i) => statname.indexOf(d.name) <6 ? stationcolor [0] : (statname.indexOf(d.name) > this._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1]))
               .attr('id', d => 'polygon' + d.name)
+              .attr('class', (_, i) => `polygon_${i}`)
               .attr('stroke', 'none'))
             .call(g => g.append('text')
               .attr('transform', `translate(-4 ,${this._main_magin.top -1.5}) rotate(-45)`)
+              .attr('class', (_, i) => `station_${i}`)
               .attr('id', d => 'station' + d.name)
               .attr('x', 8)
               .attr('dy', '0.25em')
@@ -1821,33 +1893,35 @@ export default {
           let that = this;
           function statOver(e, m) {
             let i = d3.select(this).attr('i')
-            d3.select('#polygon' + m.name)
-              .attr('fill', (d,i) => 
-                d3.color(
-                  statname.indexOf(d.name) <6 ? 
-                  stationcolor [0] : 
-                  (statname.indexOf(d.name) > that._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1])
-                ).darker(0.2))
-            d3.selectAll(`.mline${i}`)
-              .attr('stroke-width', 2.5)
-            d3.selectAll(`.mline${i++}`)
-              .attr('stroke-width', 2.5)
-            d3.select('#station' + m.name)
-              .attr('font-weight', 'bold')
+            that._setStationLine(i);
+            // d3.select('#polygon' + m.name)
+            //   .attr('fill', (d,i) => 
+            //     d3.color(
+            //       statname.indexOf(d.name) <6 ? 
+            //       stationcolor [0] : 
+            //       (statname.indexOf(d.name) > that._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1])
+            //     ).darker(0.2))
+            // d3.selectAll(`.mline${i}`)
+            //   .attr('stroke-width', 2.5)
+            // d3.selectAll(`.mline${i++}`)
+            //   .attr('stroke-width', 2.5)
+            // d3.select('#station' + m.name)
+            //   .attr('font-weight', 'bold')
           }
           function statOut (e,m){
             let i = d3.select(this).attr('i')
-            d3.select('#polygon' + m.name)
-              .attr('fill', (d,i) => 
-                statname.indexOf(d.name) <6 ? 
-                stationcolor [0] : 
-                (statname.indexOf(d.name) > that._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1]))
-            d3.selectAll(`.mline${i}`)
-              .attr('stroke-width', 0.5)
-            d3.selectAll(`.mline${i++}`)
-              .attr('stroke-width', 0.5)
-            d3.select('#station' + m.name)
-              .attr('font-weight', 'normal')
+            that._resetStationLine(i);
+            // d3.select('#polygon' + m.name)
+            //   .attr('fill', (d,i) => 
+            //     statname.indexOf(d.name) <6 ? 
+            //     stationcolor [0] : 
+            //     (statname.indexOf(d.name) > that._stationsdata.length - 4 ? stationcolor [2] : stationcolor [1]))
+            // d3.selectAll(`.mline${i}`)
+            //   .attr('stroke-width', 0.5)
+            // d3.selectAll(`.mline${i++}`)
+            //   .attr('stroke-width', 0.5)
+            // d3.select('#station' + m.name)
+            //   .attr('font-weight', 'normal')
           }
 
 
@@ -2370,7 +2444,7 @@ export default {
           let timer, status = true;
           function __pathClick(e, d) {  // 双击触发诊断
             clearTimeout(timer);
-            console.log('双击')
+            // console.log('双击')
             let info_index = d3.select(this).attr('info_index');
             let batch_index = d3.select(this).attr('batch_index');
             let merge_index = d3.select(this).attr('merge_index');
@@ -2400,7 +2474,7 @@ export default {
                 info_index: info_index,
                 merge_index_list: merge_index_list
               };
-              console.log(info_id)
+              // console.log(info_id)
 
               that._trainClickHandle(info_id.split('_').map(d => (+d)));   // 点击后往父组件发送数据
               
@@ -2417,12 +2491,23 @@ export default {
             let info_id = batch_index + '_' + info_index;
 
             that._setInfoDetail(batch_index, info_index);
-
             if (d.steelspec !== "cannotMerge") {
               let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
 
-              that._setMergeRect([batch_index], merge_index.split(' ').map(d => +d));
+              if (that._is_merge) {
+                that._setMergeRect([batch_index], merge_index.split(' ').map(d => +d));
+                that._setMoniBlock(batch_index, merge_index.split(' ').map(d => +d));
+              } else {
+                let selected_plates = d.link_rect_data.flat();
+                that._reduceOpacity();
+                for (let upid of selected_plates.map(d => d.upid)) {
+                  that.__setMareyLine(upid);
+                  that._setMoniPlates(upid);
+                }
+              }
 
+              that._setIconPlate(selected_plates.map(d => d.upid));
+              that._setLinkLine([batch_index], d.link_rect.map(e => e.merge_index));
               that._setMergeBin(selected_plates);
               that._emitToScatter(selected_plates, 0);
 
@@ -2431,17 +2516,21 @@ export default {
               }
             } else {
               let selected_plates = d.link_rect_data.flat();
-
               that._reduceOpacity();
               for (let upid of selected_plates.map(d => d.upid)) {
                 that.__setMareyLine(upid);
+                that._setMoniPlates(upid);
               }
 
+              if (that._is_merge) {
+                that._setMoniBlock(batch_index, [-1]);
+              }
+
+              that._setIconPlate(selected_plates.map(d => d.upid));
               that._setLinkLine([batch_index], d.link_rect.map(e => '_' + e.name));
-          
               that._setMergeBin(selected_plates);
               that._emitToScatter(selected_plates, 0);
-              
+
               if(that._mergeClickValue[info_id] == undefined) {
                 that._emitToScatter(selected_plates, 0);
               }
@@ -2451,6 +2540,7 @@ export default {
           }
           function __pathOut(e, d) {
             let batch_index = d3.select(d3.select(this)._groups[0][0].parentNode).attr('batch_index');
+            let merge_index = d3.select(this).attr('merge_index');
             let merge_index_list = d.link_rect.map(e => e.merge_index);
             let info_index = d3.select(this).attr('info_index');
             let info_id = batch_index + '_' + info_index;
@@ -2459,24 +2549,39 @@ export default {
 
             if (d.steelspec !== "cannotMerge") {
               let selected_plates = that.__getSelectPlate([batch_index], merge_index_list);
-              that._resetMergeRect();
+              if (that._is_merge) {
+                that._resetMergeRect();
+                that._resetMoniBlock(batch_index, merge_index.split(' ').map(d => +d));
+              } else {
+                let selected_plates = d.link_rect_data.flat();
+                that._raiseOpacity();
+                for (let upid of selected_plates.map(d => d.upid)) {
+                  that.__resetMareyLine(upid);
+                  that._resetMoniPlates(upid);
+                }
+              }
 
               that._emitToScatter(selected_plates, 1);
               if(that._mergeClickValue[info_id] == undefined) {
                 that._emitToScatter(selected_plates, 1);
               }
             } else {
-              that._raiseOpacity();
               let selected_plates = d.link_rect_data.flat();
+              that._raiseOpacity();
               for (let upid of selected_plates.map(d => d.upid)) {
                 that.__resetMareyLine(upid);
+                that._resetMoniPlates(upid);
               }
-              that._resetLinkLine();
+              if (that._is_merge) {
+                that._resetMoniBlock(batch_index, [-1]);
+              }
               that._emitToScatter(selected_plates, 1);
               if(that._mergeClickValue[info_id] == undefined) {
                 that._emitToScatter(selected_plates, 1);
               }
             }
+            that._resetIconPlate();
+            that._resetLinkLine();
             that._resetMergeBin();
             that._keepClickedStatus();
           }
@@ -2549,8 +2654,8 @@ export default {
           // console.log('proportion: ', this._proportion_angle);
 
           this._uniform_FillContent(chartGroup);  // 画填充
-          this._is_merge ? this._uniform_ErrorLine(chartGroup) : undefined;    // 画误差线
           this._uniform_StageStroke(chartGroup);   // 画格
+          this._is_merge ? this._uniform_ErrorLine(chartGroup) : undefined;    // 画误差线
           this._uniform_QuantileLine(chartGroup);    // 分位线
           // this._StageText(chartGroup);            // 工序文字
           this._renderCenterRect(chartGroup);   // 中间正方形
@@ -2636,7 +2741,30 @@ export default {
                 .startAngle(that._arc_start)
                 .endAngle(that._arc_start + pr_angle * (d.pr_angle[0]>=1?1:d.pr_angle[0]))())
               .attr('class', 'inner_pr_fill')
-              .attr('fill', d => d.pr_angle[0]>=1?`url(#hatching_pattern_${0})`:circlecolor[0]);
+              .attr('fill', d => d.pr_angle[0]>=1?`url(#hatching_pattern_${0})`:circlecolor[0])
+              .on('mouseenter', function(e, d) {
+                let group = d3.select(this.parentNode.parentNode.parentNode);
+                group.select('.inner_pr_stroke')
+                  .attr('stroke-width', 2)
+
+                let a = 0;
+                let r = (that._inner_arc_r2 + that._inner_arc_r1) / 2;
+                let [x, y] = that.__translateXY(r - 5, a);
+                
+                let val = that._info_extent.stage[0][1] * d.pr_angle[0] / 1000
+                let infoContent = d3.select(this.parentNode.parentNode)
+                infoContent.call(g => {
+                  that.__infoTooltip(g, `${val.toFixed(2)} s`, [x, y], circlecolor[0])
+                })
+              })
+              .on('mouseleave', function(e, d) {
+                let group = d3.select(this.parentNode.parentNode.parentNode);
+                group.select('.inner_pr_stroke')
+                  .attr('stroke-width', 1)
+                
+                let infoContent = d3.select(this.parentNode.parentNode)
+                infoContent.select('#infoTooltip').remove()
+              })
           }
           function mergeStageFill() {
             FillArcGroup.selectAll('.innerFill')
@@ -2648,13 +2776,51 @@ export default {
                 let end_angle = all_stage_angle[i].stage_end;
                 let arc_angle = start_angle + (end_angle-start_angle) * (d[0]>=1?1:d[0]);
                 return d3.arc()
-                  .innerRadius(that._inner_arc_r1)
-                  .outerRadius(that._inner_arc_r2)
+                  .innerRadius(that._inner_arc_r1 + 0.5)
+                  .outerRadius(that._inner_arc_r2 - 0.5)
                   .startAngle(start_angle)
                   .endAngle(arc_angle)()
               })
-              .attr('class', 'inner_stage_fill')
-              .attr('fill', (d, i) => d[0]>=1?`url(#hatching_pattern_${i+1})`:circlecolor[i+1]);
+              .attr('class', (d, i) => `inner_stage_fill inner_stage_fill_${i}`)
+              .attr('fill', (d, i) => d[0]>=1?`url(#hatching_pattern_${i+1})`:circlecolor[i+1])
+              .on('mouseenter', function (e, d) {
+                let group = d3.select(this.parentNode.parentNode.parentNode);
+                let i = d3.select(this).attr('class').slice(-1)
+                group.select('.inner_stage_stroke_' + i)
+                  .attr('stroke-width', 2)
+                
+                // 计算角度
+                let stage_angle = !that._info_state ? that._proportion_angle : that._uniformity_angle
+                let a = (stage_angle[i].stage_start + stage_angle[i].stage_end) / 2;
+                let r = (that._inner_arc_r2 + that._inner_arc_r1) / 2;
+                let pos = that.__translateXY(r, a);
+                
+                let val = that._info_extent.stage[(+i) + 1][1] * d[0] / 1000
+                let infoContent = d3.select(this.parentNode.parentNode)
+                infoContent.call(g => {
+                  that.__infoTooltip(g, `${val.toFixed(2)} s`, pos, circlecolor[(+i) + 1])
+                })
+
+                // 更改马雷图线
+                let range = i === "0" ? [0, 6] : i === "1" ? [6, 14] : [14, 17]
+                for (let index = range[0]; index < range[1]; index++) {
+                  that._setStationLine(index);
+                }
+              })
+              .on('mouseleave', function (e, d) {
+                let group = d3.select(this.parentNode.parentNode.parentNode);
+                let i = d3.select(this).attr('class').slice(-1)
+                group.select('.inner_stage_stroke_' + i)
+                  .attr('stroke-width', 1)
+                
+                let infoContent = d3.select(this.parentNode.parentNode)
+                infoContent.select('#infoTooltip').remove()
+
+                let range = i === "0" ? [0, 6] : i === "1" ? [6, 14] : [14, 17]
+                for (let index = range[0]; index < range[1]; index++) {
+                  that._resetStationLine(index);
+                }
+              })
           }
           function noMergeStageFill() {
             const stage_width = that._inner_arc_width;
@@ -2705,7 +2871,48 @@ export default {
                     .endAngle(arc_angle)()
                 })
                 .attr('class', 'inner_sub_fill')
-                .attr('fill', d => d[0].data>=1?`url(#hatching_sub_pattern_${d[0].stage_i+1})`:circlecolor[d[0].stage_i + 1]);
+                .attr('stage_i', d => d[0].stage_i)
+                .attr('sub_j', d => d[0].sub_j)
+                .attr('fill', d => d[0].data>=1?`url(#hatching_sub_pattern_${d[0].stage_i+1})`:circlecolor[d[0].stage_i + 1])
+                .on('mouseenter', function(e, d) {
+                  let ele = d3.select(this)
+                  let stage_i = ele.attr('stage_i')
+                  let sub_j = ele.attr('sub_j')
+                  let group = d3.select(this.parentNode.parentNode.parentNode);
+                  group.select(`.outer_sub_stroke_${stage_i}_${sub_j}`)
+                    .attr('stroke-width', 2)
+                  
+                  // 计算角度
+                  let stage_angle = !that._info_state ? that._proportion_angle : that._uniformity_angle
+                  let a = (stage_angle[+stage_i].stage_sub[+sub_j][0] + stage_angle[+stage_i].stage_sub[+sub_j][1]) / 2;
+                  let r = (that._outer_arc_r1 + that._outer_arc_r2) / 2
+                  let pos = that.__translateXY(r, a);
+
+                  let val = that._info_extent.sub_stage[+stage_i][+sub_j][1] * d[0].data / 1000
+                  let infoContent = d3.select(this.parentNode.parentNode)
+                  infoContent.call(g => {
+                    that.__infoTooltip(g, `${val.toFixed(2)} s`, pos, circlecolor[(+stage_i) + 1])
+                  })
+                  
+                  let setIndex = stage_i === "0" ? (+sub_j) : stage_i === "1" ? (+sub_j) + 6 : (+sub_j) + 14;
+                  that._setStationLine(setIndex);
+                  that._setStationLine(setIndex + 1);
+                })
+                .on('mouseleave', function(e, d) {
+                  let ele = d3.select(this)
+                  let stage_i = ele.attr('stage_i')
+                  let sub_j = ele.attr('sub_j')
+                  let group = d3.select(this.parentNode.parentNode.parentNode);
+                  group.select(`.outer_sub_stroke_${stage_i}_${sub_j}`)
+                    .attr('stroke-width', 1)
+                  
+                  let infoContent = d3.select(this.parentNode.parentNode)
+                  infoContent.select('#infoTooltip').remove()
+                  
+                  let setIndex = stage_i === "0" ? (+sub_j) : stage_i === "1" ? (+sub_j) + 6 : (+sub_j) + 14;
+                  that._resetStationLine(setIndex);
+                  that._resetStationLine(setIndex + 1);
+                })
           }
         }
         _uniform_StageStroke(chartGroup) {
@@ -2714,7 +2921,7 @@ export default {
           let path_attr = g => g
               .attr('stroke', 'grey')
               .attr('stroke-width', 1)
-              .attr('fill', 'none');
+              .attr('fill', 'none')
             
           let ArcGroup = chartGroup.append('g')
             .attr('class', 'ArcGroup')
@@ -2742,7 +2949,7 @@ export default {
               .outerRadius(this._inner_arc_r2)
               .startAngle(d.stage_start)
               .endAngle(d.stage_end)())
-            .attr('class', 'inner_stage_stroke')
+            .attr('class', (d, i) => `inner_stage_stroke inner_stage_stroke_${i}`)
             .call(path_attr);
           // 子工序
           ArcGroup.selectAll('.subProcess')
@@ -2754,7 +2961,11 @@ export default {
               .outerRadius(this._outer_arc_r2)
               .startAngle(d[0])
               .endAngle(d[1])())
-            .attr('class', 'outer_sub_stroke')
+            .attr('class', (d, j) => {
+              let i = j < 5 ? 0 : j < 12 ? 1 : 2
+              let _j = j < 5 ? j : j < 12 ? j - 5 : j - 12
+              return `outer_sub_stroke outer_sub_stroke_${i}_${_j}`
+            })
             .call(path_attr);
         }
         _uniform_ErrorLine(chartGroup) {
@@ -2903,6 +3114,7 @@ export default {
           let color = [vm.labelColors[1], vm.labelColors[0], vm.noflagColor]; // good, bad, noflag
           let rect_w = 20;
           let gap = 1.5;
+          const that = this;
 
           let CenterRectGroup = chartGroup.selectAll('CenterRectGroup')
             .data(d => d.label_statistics)
@@ -2910,6 +3122,50 @@ export default {
             .append('g')
             .attr('class', 'CenterRectGroup')
             .attr('transform', `translate(${[0, -rect_w/Math.pow(2, 0.5)]}) rotate(45)`)
+            .on('click', function (e, d) {
+              const chartGroup = d3.select(this.parentNode.parentNode);
+              let batch_index = +chartGroup.attr('batch_index')
+              let info_index = +chartGroup.attr('info_index')
+              let merge_index_list = chartGroup.attr('merge_index').split(' ').map(e => (+e))
+              let click_id = `${batch_index}_${info_index}`
+
+              if (that._displayInfoBadPlate[click_id]) {
+                that._displayInfoBadPlate[click_id] = !that._displayInfoBadPlate[click_id]
+              } else {
+                that._displayInfoBadPlate[click_id] = true
+              }
+
+              if (that._displayInfoBadPlate[click_id]) {
+                let bad_plates = [];
+                that._mergeresult_1[batch_index].merge_data.forEach((e, i) => {
+                  if (merge_index_list.indexOf(i) !== -1) {
+                    bad_plates.push(e.mergeItem.filter(f => f.flag === 0))
+                  }
+                })
+
+                for (let merge_index of merge_index_list) {
+                  let mergeG_select_g = that._marey_g.select(`#batchG${batch_index} #mergeG${merge_index}`)
+                    .select('.mergeG_select_g')
+                  
+                  mergeG_select_g.selectAll('info_bad_plate_mareyline')
+                    .data(bad_plates.flat())
+                    .join('g')
+                    .attr('class', `select_g info_bad_plate_${click_id}`)
+                    .attr('transform', d => `translate(0, ${that._y(new Date(d.stops[0].time))})`)
+                    .style('color', that._trainGroupStyle)
+                    .attr('stroke-width', d => { return that._defaultStrokeWidth(d.tgtplatethickness2) } )
+                    .attr('id', d => ('id' + d.upid))
+                    .call(g => g.append('path')
+                      .attr('fill', 'none')
+                      .attr('stroke', 'currentColor')
+                      .attr('d', d => that._line(d.stops)))
+                }
+              } else {
+                that._marey_g.selectAll('.info_bad_plate_' + click_id).remove()
+              }
+
+              e.stopPropagation()
+            })
 
           CenterRectGroup.selectAll('.good_bad_noflag')
             .data(d => getPolygonPoint(rect_w, gap, ...d))
@@ -3145,25 +3401,57 @@ export default {
                     .endAngle(interpolate(t))();
                 }
               })
-            FillArcGroup.selectAll('.inner_stage_fill')
-              .transition(tran)
-              .attrTween('d', (d, i) => {
-                let old_angle_span = (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * (d[0]>=1?1:d[0]);
-                let new_angle_span = (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * (d[0]>=1?1:d[0]);
+            
+            if (that._is_merge) {
+              FillArcGroup.selectAll('.inner_stage_fill')
+                .transition(tran)
+                .attrTween('d', (d, i) => {
+                  let old_angle_span = (old_stage_angle[i].stage_end - old_stage_angle[i].stage_start) * (d[0]>=1?1:d[0]);
+                  let new_angle_span = (new_stage_angle[i].stage_end - new_stage_angle[i].stage_start) * (d[0]>=1?1:d[0]);
 
-                let start_interpolate = d3.interpolate(old_stage_angle[i].stage_start, new_stage_angle[i].stage_start);
-                let end_interpolate = d3.interpolate(
-                  old_stage_angle[i].stage_start + old_angle_span,
-                  new_stage_angle[i].stage_start + new_angle_span
-                );
-                return function(t) {
-                  return d3.arc()
-                    .innerRadius(that._inner_arc_r1)
-                    .outerRadius(that._inner_arc_r2)
-                    .startAngle(start_interpolate(t))
-                    .endAngle(end_interpolate(t))();
-                }
-              })
+                  let start_interpolate = d3.interpolate(old_stage_angle[i].stage_start, new_stage_angle[i].stage_start);
+                  let end_interpolate = d3.interpolate(
+                    old_stage_angle[i].stage_start + old_angle_span,
+                    new_stage_angle[i].stage_start + new_angle_span
+                  );
+                  return function(t) {
+                    return d3.arc()
+                      .innerRadius(that._inner_arc_r1)
+                      .outerRadius(that._inner_arc_r2)
+                      .startAngle(start_interpolate(t))
+                      .endAngle(end_interpolate(t))();
+                  }
+                })
+            } else {
+              const stage_width = that._inner_arc_width;
+              const bar_stroke_width = 0;
+              FillArcGroup.selectAll('.per_plate_fill path')
+                .transition(tran)
+                .attrTween('d', (d, i) => {
+                  let bar_width = stage_width / d.n;
+                  let bar_r1 = that._inner_arc_r1 + d.k * bar_width + bar_stroke_width;
+                  let bar_r2 = that._inner_arc_r1 + (d.k + 1) * bar_width - bar_stroke_width;
+
+                  let old_angle_span = old_stage_angle[d.i].stage_end - old_stage_angle[d.i].stage_start;
+                  let old_bar_span = old_angle_span * (d.data > 1 ? 1 : d.data);
+                  let new_angle_span = new_stage_angle[d.i].stage_end - new_stage_angle[d.i].stage_start;
+                  let new_bar_span = new_angle_span * (d.data > 1 ? 1 : d.data);
+
+                  let start_interpolate = d3.interpolate(old_stage_angle[d.i].stage_start, new_stage_angle[d.i].stage_start);
+                  let end_interpolate = d3.interpolate(
+                    old_stage_angle[d.i].stage_start + old_bar_span,
+                    new_stage_angle[d.i].stage_start + new_bar_span
+                  );
+                  return function(t) {
+                    return d3.arc()
+                      .innerRadius(bar_r1)
+                      .outerRadius(bar_r2)
+                      .startAngle(start_interpolate(t))
+                      .endAngle(end_interpolate(t))()
+                  }
+                })
+            }
+
             FillArcGroup.selectAll('.inner_sub_fill')
               .transition(tran)
               .attrTween('d', (d, i) => {
@@ -3312,11 +3600,11 @@ export default {
           }
         }
         _renderInfoTargetInfo(chartGroup) {
-          const target = ['tgtplatelength2', 'tgtwidth', 'tgtplatethickness'];
+          const target = ['tgtplatethickness', 'tgtwidth', 'tgtplatelength2'];
           const targetMap = {
-            tgtplatelength2: "L",
-            tgtwidth: "W",
-            tgtplatethickness: "T"
+            tgtplatelength2: {name: "L", unit: "m"},
+            tgtwidth: {name: "W", unit: "m"},
+            tgtplatethickness: {name: "T", unit: "mm"}
           }
 
           const width = this._detail_rect_w - this._targetMargin * 2;
@@ -3328,12 +3616,12 @@ export default {
             .domain([0, 1])
             .range([0, this._detail_rect_w-this._targetMargin*2 - this._targetTickWidth - 10])
           const yScale = d3.scaleBand()
-            .domain(target.map(d => targetMap[d]))
+            .domain(target.map(d => targetMap[d].name))
             .range([0, width - headHeight])
             .padding(0.35);
           const yAxis = d3.axisLeft(yScale)
             .tickSizeOuter(0);
-
+          
           // // 定位用，删
           // chartGroup.append('rect')
           //   .attr('width', width)
@@ -3380,20 +3668,54 @@ export default {
             .selectAll('rect')
             .data(d => target.map(e => d.targetInfo[e]))
             .join('g')
+            .attr('index', (_, i) => i)
+            // .on('mouseenter', function (e, d) {
+            //   let barGroup = d3.select(this);
+            //   let index = barGroup.attr('index')
+            //   const fontSize = 11;
+            //   const fontColor = d3.color('#cbdcea').darker(1);
+            //   barGroup.append('text')
+            //     .text(`${d[1].toFixed(2)} ${targetMap[target[index]].unit}`)
+            //     .attr('x', xScale(1) / 2)
+            //     .attr('y', yScale(targetMap[target[index]].name) + (yScale.bandwidth() + fontSize) / 2 - 2)
+            //     .attr('fill', fontColor)
+            //     .attr('font-size', fontSize)
+            //     .style('font-weight', 'normal')
+            //     .style('font-style', 'normal')
+            //     .attr('text-anchor', 'middle')
+
+            // })
+            // .on('mouseleave', function (e, d) {
+            //   let barGroup = d3.select(this);
+            //   barGroup.select('text').remove()
+            // })
             .call(g => g.append('rect')
-              .attr('fill', 'none')
+              .attr('fill', 'white')
               .attr('stroke', '#cbdcea')
               .attr('stroke-width', 2)
               .attr('x', xScale(0) + 2)
-              .attr('y', (_, i) => yScale(targetMap[target[i]]))
+              .attr('y', (_, i) => yScale(targetMap[target[i]].name))
               .attr('width', d => xScale(1))
               .attr('height', yScale.bandwidth()))
             .call(g => g.append('rect')
               .attr('fill', '#cbdcea')
               .attr('x', xScale(0))
-              .attr('y', (_, i) => yScale(targetMap[target[i]]))
+              .attr('y', (_, i) => yScale(targetMap[target[i]].name))
               .attr('width', d => xScale(d[0]) + 2)
               .attr('height', yScale.bandwidth()))
+            .call(g => {
+              const fontSize = 11;
+              const fontColor = d3.color('#cbdcea').darker(1);
+              g.append('text')
+                .text((d, i) => `${d[1].toFixed(2)} ${targetMap[target[i]].unit}`)
+                .attr('x', xScale(1) / 2)
+                .attr('y', (d, i) => yScale(targetMap[target[i]].name) + (yScale.bandwidth() + fontSize) / 2 - 2)
+                .attr('fill', fontColor)
+                .attr('font-size', fontSize)
+                .style('font-weight', 'normal')
+                .style('font-style', 'normal')
+                .attr('text-anchor', 'middle')
+            })
           
           chartGroup.append('g')
             .attr('transform', `translate(${[-width/2 + this._targetTickWidth, -width/2 + headHeight]})`)
@@ -3403,6 +3725,41 @@ export default {
             .style("color", 'black')
             .call(yAxis)
 
+        }
+        __infoTooltip(g, text, pos, color) {
+          let box
+          const infoTooltip = g.append('g')
+          .attr('id', 'infoTooltip')
+
+          color = d3.color(color).darker(0.5)
+          infoTooltip
+          .call(g => {
+            g.append('text')
+              .text(text)
+              .attr('id', 'infoTooltipText')
+              .attr('fill', color)
+          })
+          .call(g => {
+            box = g.select('#infoTooltipText').node().getBBox()
+            g.append('path')
+              .attr('stroke', color)
+              .attr('fill', 'white')
+              .attr('d', `
+                M${box.x - 10},${box.y - 10}
+                H${box.width / 2 - 5}l5,-15l5,15
+                H${box.width + 10}
+                v${box.height + 20}
+                h-${box.width + 20}
+                z
+              `)
+              .lower()
+          })
+          .attr('transform', `translate(${[pos[0] - box.width/2, pos[1] + box.height+20]})`)
+        }
+        __translateXY (radius, alpha) {
+          let x = Math.sin(alpha) * radius;
+          let y = - Math.cos(alpha) * radius;
+          return [x, y];
         }
 
         // 右边监控视图
@@ -3675,10 +4032,10 @@ export default {
             .attr('height', d => this._y(d.date_exit_e) - this._y(d.date_exit_s))
             // .attr('fill', d => d3.color(vm.processColor[d.process_index]))
             .attr('percent', d => d.percent)
-            .attr('fill', d => this._colorScale(d.percent))
-            .attr('stroke', d => '#D6D9DC')
+            .attr('fill', d => d.percent <= 0.2 ? "white" : this._colorScale(d.percent))
+            .attr('stroke', d => d.percent <= 0.2 ? "white" : d3.color(this._colorScale(d.percent)).darker(0.2))
             .attr('stroke-width', 2)
-            .attr('opacity', d => d.percent <= 0.2 ? 0 : 1)
+            // .attr('opacity', d => d.percent <= 0.2 ? 0 : 1)
         }
 
         // 交互事件, 改变各图元的样式
@@ -3887,7 +4244,7 @@ export default {
           let curr_batch = this._mergeresult_1[batch_index];
           let merge_index = curr_batch.one_batch_info[info_index].link_rect.map(d => d.merge_index)
           
-          console.log(curr_batch, merge_index)
+          // console.log(curr_batch, merge_index)
           let date1, date2;
           if (merge_index.some(d => d !== -1)) {
             date1 = curr_batch.merge_data[merge_index[0]].date_entry_s;
@@ -3974,6 +4331,7 @@ export default {
               this._setInfoDetail(batch_index, info_index);
               this._setMergeRect([batch_index], merge_index_list);
               this._setMergeBin(selected_plates);
+              this._setMoniBlock(batch_index, merge_index_list)
             }
           }
         }
@@ -4010,7 +4368,7 @@ export default {
 
           for (let i of merge_index_list) {
             moniBatch.selectAll('.monitor_diagnosis_block_' + i)
-              .attr('fill-opacity', 0)
+              .attr('opacity', 0)
           }
         }
         _resetMoniBlock(batch_index, merge_index_list) {
@@ -4021,8 +4379,83 @@ export default {
 
           for (let i of merge_index_list) {
             moniBatch.selectAll('.monitor_diagnosis_block_' + i)
-              .attr('fill-opacity', 1)
+              .attr('opacity', 1)
           }
+        }
+        _setMoniPlates(upid) {
+          const diagColor = (d, ucl) => d > ucl ? vm.labelColors[0] : vm.labelColors[1];
+          this._moni_g.selectAll('#Q_diagnosis_value_' + upid)
+            .attr('fill', d => d3.color(diagColor(d['Q'], d['Q_UCL'])).darker(0.2))
+            .attr('stroke', d => d3.color(diagColor(d['Q'], d['Q_UCL'])).darker(1))
+            .attr('stroke-width', 2)
+          this._moni_g.selectAll('#T2_diagnosis_value_' + upid)
+            .attr('fill', d => d3.color(diagColor(d['T2'], d['T2_UCL'])).darker(0.2))
+            .attr('stroke', d => d3.color(diagColor(d['T2'], d['T2_UCL'])).darker(1))
+            .attr('stroke-width', 2)
+        }
+        _resetMoniPlates(upid) {
+          const diagColor = (d, ucl) => d > ucl ? vm.labelColors[0] : vm.labelColors[1];
+          this._moni_g.selectAll('#Q_diagnosis_value_' + upid)
+            .attr('fill', d => diagColor(d['Q'], d['Q_UCL']))
+            .attr('stroke', d => d3.color(diagColor(d['Q'], d['Q_UCL'])).darker(0.2))
+            .attr('stroke-width', 1)
+          this._moni_g.selectAll('#T2_diagnosis_value_' + upid)
+            .attr('fill', d => diagColor(d['T2'], d['T2_UCL']))
+            .attr('stroke', d => d3.color(diagColor(d['T2'], d['T2_UCL'])).darker(0.2))
+            .attr('stroke-width', 1)
+        }
+        _reduceIconOpacity() {
+          this._marey_g.selectAll('.iconLinkGroup')
+            .attr('opacity', 0.4);
+          this._marey_g.selectAll('.eventIcon')
+            .attr('opacity', 0.4);
+        }
+        _raiseIconOpacity() {
+          this._marey_g.selectAll('.iconLinkGroup')
+            .attr('opacity', 1);
+          this._marey_g.selectAll('.eventIcon')
+            .attr('opacity', 1);
+        }
+        _setIconPlate(upids) {
+          this._reduceIconOpacity();
+          for (let upid of upids) {
+            this._marey_g.selectAll('#iconLinkGroup' + upid)
+              .attr('opacity', 1);
+            this._marey_g.selectAll('#eventIcon_' + upid)
+              .attr('opacity', 1);
+          }
+        }
+        _resetIconPlate() {
+          this._raiseIconOpacity();
+        }
+        // _reduceAllIconPlates() {
+        //   this._marey_g.selectAll('.iconLinkGroup')
+        //     .attr('opacity', 1);
+        //   this._marey_g.selectAll('#eventIcon_' + upid)
+        //     .attr('opacity', 1);
+        // }
+        _setStationLine(index) {
+          let color = vm.processColor;
+
+          this._marey_g.selectAll(`.polygon_${index}`)
+            .attr('stroke', d3.color(index < 6 ? color[0] : index < 14 ? color[1] : color[2]).darker(0.2))
+            .attr('stroke-width', 2.5)
+          this._marey_g.selectAll(`.station_${index}`)
+            .attr('font-weight', 'bold')
+          this._marey_g.selectAll(`.mline${index}`)
+            .attr('stroke-width', 2.5)
+        }
+        _resetStationLine(index) {
+          let color = vm.processColor;
+
+          this._marey_g.selectAll(`.polygon_${index}`)
+            // .attr('fill', index < 6 ? color[0] : index < 14 ? color[1] : color[2])
+            .attr('stroke', 'none')
+            .attr('stroke-width', 0)
+          this._marey_g.selectAll(`.station_${index}`)
+            .attr('font-weight', 'normal')
+          this._marey_g.selectAll(`.mline${index}`)
+            .attr('stroke-width', 0.5)
         }
 
         // 整图过渡动画

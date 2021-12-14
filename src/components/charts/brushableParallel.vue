@@ -956,7 +956,7 @@ export default {
 					.style('font-style', util.tabularTooltipAttr.line3.fontStyle);
 				tooltip.style('display', null).attr('fill', vm.deGroupStyle(d));
 				line1.text(`upid:` + d.upid);
-				line2.text(`category: ` + d.productcategory);
+				line2.text(`steelspec: ` + d.steelspec);
 				line3.text(`time:` + d.toc);
 				path.attr('stroke', vm.deGroupStyle(d)).attr('fill', 'white');
 				const box = text.node().getBBox();

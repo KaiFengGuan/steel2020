@@ -1,5 +1,6 @@
 import * as d3 from 'd3'
 import { addElement, updateElement, updateAsyncElement, updateStyles, sortedIndex } from 'utils/element';
+import clickIcon from "assets/images/wheel/fixed.svg"
 // import util from 'views/baogang/util.js';
 import { processIcon, colourLessIcon } from "assets/images/index.js";
 export const processJson = [
@@ -231,6 +232,23 @@ export function mergeBar(batchData, vm) {
   }
   scalePlotY.call(this);
   initPlotG.call(this);
+
+  // const iconG = mainG.append('g')
+  //   // .attr('transform', textAttrs.position)
+  //   .attr('transform', (d, i) => `translate(${[mouseInfo ? wm._mouseDis : 0, 0]})`)
+  //   .attr('class', 'iconClass');
+  // iconG
+  //   .call(g => g.append('line')
+  //   .attr('y1', textAttrs.line0)
+  //   .attr('y2', textAttrs.line1)
+  //   .attr('stroke', '#bbbcbd')
+  //   .attr('stroke-width', 0.25))
+  //   .call(g => g.append('image')
+  //   .attr('width', '25px')
+  //   .attr('height','25px')
+  //   // .attr('transform', `translate(${[-45, -12.5]})`)
+  //   .attr('href', clickIcon))
+  // clickIcon
   function initPlotG(){
     plotG
     .append('rect')
@@ -404,8 +422,8 @@ export function mergeBar(batchData, vm) {
       position: `translate(${[0, 0]})`,
       line0: yScale(0) - chartHeight,
       line1: lastY,
-      opacity: (d, i) => barVisObject[d.indexName] ? opacityCache(d, i) : 0,
-      transform: (d, i) => `translate(${[mouseInfo ? wm._mouseDis + 30 : 0, yScale(i) + chartHeight / 2]})`,
+      opacity: (d, i) => opacityCache(d, i),
+      transform: (d, i) => `translate(${[mouseInfo ? wm._mouseDis + 30 : 0, yScale(i) + (barVisObject[d.indexName] ? chartHeight / 2 : -chartHeight / 2)]})`,
       text: (d, i) => mouseInfo !== undefined ? (+mouseInfo[i]).toFixed(2) : ''
     }
     heatMapAttrs = {
@@ -430,23 +448,23 @@ export function mergeBar(batchData, vm) {
       transform: (d, i) => `translate(${[0, yScale(i) - chartHeight / 2]})`,
       batch: batchEX.map(d => arrowData(d.flat())),
       elementOpacity: opacityCache,
-      elementTrans: d => `translate(${[mergeAttrs.translateX[d.i](d.time) - 1.5 * baseRadius, 0 - 1.5 * baseRadius]})`,
+      elementTrans: d => `translate(${[mergeAttrs.translateX[d.i](d.time) - 0.75 * baseRadius, 0 - 0.75 * baseRadius]})`,
       arrowTrans: d => `translate(${[mergeAttrs.translateX[d.i](d.time), 0]})`,
       interArrow: d => `translate(${[(mergeAttrs.translateX[d[0].i](d[0].time) + mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time)) / 2, 0]})`,
       startRibbon: d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time), 0]})`,
       endRibbon: d => `translate(${[mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time), 0]})`,
-      interLineTrans: d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time), 0 - 1.5 * baseRadius]})`,
+      interLineTrans: d => `translate(${[mergeAttrs.translateX[d[0].i](d[0].time), 0 - 0.75 * baseRadius]})`,
       interLen: d => mergeAttrs.translateX[d[d.length - 1].i](d[d.length - 1].time) - mergeAttrs.translateX[d[0].i](d[0].time)
     }
     console.log(batchEX)
     console.log(shapeAttrs.batch)
     const arrowScale = d3.scaleLinear().domain([-3, 3]).range([10, -10]);
     shapeAttrs.multiAttrs = {	//multivariate
-      fill: mergeColor[0],
+      fill: 'green',//util.delabelColor[0],//mergeColor[0],
       stroke: 'none',
-      height: baseRadius * 3,
+      height: baseRadius * 1.25,
       transform: shapeAttrs.elementTrans,
-      width: baseRadius * 3
+      width: baseRadius * 1.25
     },
       shapeAttrs.singleAttrs = {
         transform: shapeAttrs.arrowTrans,
@@ -470,7 +488,7 @@ export function mergeBar(batchData, vm) {
     let position = [5, (chartHeight - chartPadding.vertical) / 2 + 5],
       singleScale = d3.scaleLinear().domain([0, d3.max(symbolAttrs.singleNum)]).range([0, symbolAttrs.borderWidth / 2]),
       multiScale = d3.scaleLinear().domain([0, d3.max(symbolAttrs.multiNum)]).range([0, symbolAttrs.borderWidth / 2]),
-      siTransform = (d, i) => `translate(${[- singleScale(symbolAttrs.singleNum[i]), position[1 - wm._indexScale]]})`,
+      siTransform = (d, i) => `translate(${[-singleScale(symbolAttrs.singleNum[i]), position[1 - wm._indexScale]]})`,
       muTransform = (d, i) => `translate(${[- multiScale(symbolAttrs.multiNum[i]), position[wm._indexScale]]})`,
       rectColor = wm._indexScale === 0 ? [util.delabelColor[0], 'url(#sort_pattern)'] : ['url(#sort_pattern)', util.delabelColor[0]];
     if (wm._indexScale === 2) {
@@ -486,14 +504,47 @@ export function mergeBar(batchData, vm) {
       fill: rectColor[0],	//util.delabelColor[0]
       stroke: 'none'
     },
-      symbolAttrs.mIndice = {	//multivariateAttrs
-        transform: muTransform,
-        class: 'multivariate',
-        width: (d, i) => multiScale(symbolAttrs.multiNum[i]),
-        height: symbolAttrs.rectHeight,
-        fill: rectColor[1],
-        stroke: 'none'
-      };
+    symbolAttrs.sText = {	//singleIndice
+      x: -10,
+      class: 'singleText',
+      y: position[1 - wm._indexScale] + 9,
+      text: (d, i) => symbolAttrs.singleNum[i],
+      fill: 'rgb(142, 154, 164)',
+      'font-weight': 'normal',
+      'font-style': 'normal',
+      'font-size': 11,
+      'text-anchor': 'middle'
+    },
+    symbolAttrs.mIndice = {	//multivariateAttrs
+      transform: muTransform,
+      class: 'multivariate',
+      width: (d, i) => multiScale(symbolAttrs.multiNum[i]),
+      height: symbolAttrs.rectHeight,
+      fill: rectColor[1],
+      stroke: 'none'
+    },
+    symbolAttrs.mText = {	//multivariateAttrs
+      // transform: muTransform,
+      x: -10,
+      class: 'multiText',
+      y: position[wm._indexScale] + 9,
+      text: (d, i) => symbolAttrs.multiNum[i],
+      fill: 'rgb(142, 154, 164)',
+      'font-weight': 'normal',
+      'font-style': 'normal',
+      'font-size': 11,
+      'text-anchor': 'middle'
+    };
+    // const 
+    // symbolAttrs.scale = {
+
+    // }
+    // const yScale = d3.scaleBand()
+    //         .domain(target.map(d => targetMap[d].name))
+    //         .range([0, width - headHeight])
+    //         .padding(0.35);
+    //       const yAxis = d3.axisLeft(yScale)
+    //         .tickSizeOuter(0);
   }
   function initConstant() {
     mainAttrs = {
@@ -553,11 +604,18 @@ export function mergeBar(batchData, vm) {
         .attr('fill', util.delabelColor[0])))
   }
   function initArrow() {
-    const markerBoxWidth = 4,
-      markerBoxHeight = 4,
-      refX = markerBoxWidth / 2,
-      refY = markerBoxHeight / 2,
-      arrowPoints = [[0, 0], [0, markerBoxHeight], [markerBoxWidth, refY]];
+    const markerBoxWidth = 5;
+    const markerBoxHeight = 5;
+    const refX = markerBoxWidth / 2;
+    const refY = markerBoxHeight / 2;
+    const markerWidth = markerBoxWidth / 2;
+    const markerHeight = markerBoxHeight / 2;
+    const arrowPoints = [[0, 0], [0, 5], [5, 2.5]];
+    // const markerBoxWidth = 4,
+    //   markerBoxHeight = 4,
+    //   refX = markerBoxWidth / 2,
+    //   refY = markerBoxHeight / 2,
+    //   arrowPoints = [[0, 0], [0, markerBoxHeight], [markerBoxWidth, refY]];
     mainG.call(g => g.append('defs')
       .append('marker')
       .attr('id', 'shape-arrow')
@@ -569,7 +627,7 @@ export function mergeBar(batchData, vm) {
       .attr('orient', 'auto-start-reverse')
       .append('path')
       .attr('d', d3.line()(arrowPoints))
-      .attr('fill', mergeColor[0])
+      .attr('fill', util.labelColor[0])
       .attr('stroke', mergeColor[0]))
   }
   function initOrdinal() {
@@ -1158,9 +1216,24 @@ export function mergeBar(batchData, vm) {
       wm._mouseDis = x;
       textG.selectAll('text').attr('transform', textAttrs.transform).text(textAttrs.text)
     })
-      .on('mouseleave', (e, d) => {
-        vm.$emit('wheelMouse', { upid: [wm._upid], mouse: 1 });
-      })
+    .on('mouseleave', (e, d) => {
+      vm.$emit('wheelMouse', { upid: [wm._upid], mouse: 1 });
+    })
+    .on('click', (e, d) => {
+      let x = d3.pointer(e)[0];
+      if (x <= 0) return;
+      iconG
+        .attr('transform', `translate(${[x, 0]})`)
+        .attr('display', 'block');
+      // let upid = wm._upid;
+      // mouseInfo = mouseText(x);
+      // if (upid !== wm._upid) {
+      //   vm.$emit('wheelMouse', { upid: [upid], mouse: 1 });
+      //   vm.$emit('wheelMouse', { upid: [wm._upid], mouse: 0 });
+      // }
+      // wm._mouseDis = x;
+      // textG.selectAll('text').attr('transform', textAttrs.transform).text(textAttrs.text)
+    })
     console.log(textG.selectAll('text'))
   }
   function initRectG() {
@@ -1482,35 +1555,35 @@ export function mergeBar(batchData, vm) {
         .join('path')
         .attr('class', 'single')
         .call(g => updateElement(g, shapeAttrs.singleAttrs)))
-      // .call(g => g.selectAll('.intersection').data((d, i) => shapeAttrs.batch[i].intersection)
-      //   .join('g')
-      //   .attr('class', 'intersection')
-      //   .call(g => g.append('path')
-      //     .attr('class', 'interArrow')
-      //     .attr('d', e => d3.linkVertical().x(d => d.x).y(d => d.y)({ source: { x: 0, y: 0 }, target: { x: 0, y: arrowScale(e[0].range) } }))
-      //     .attr('marker-end', 'url(#shape-arrow)')
-      //     .attr('transform', shapeAttrs.interArrow)
-      //     .attr('stroke', mergeColor[0])
-      //     .attr('fill', 'none'))
-      //   // .call(g => g.append('circle')
-      //   // 	.attr('transform', shapeAttrs.startRibbon)
-      //   // 	.attr('class', 'startRibbon')
-      //   // 	.attr('stroke', mergeColor[0])
-      //   // 	.attr('fill', 'none')
-      //   // 	.attr('r', baseRadius))
-      //   // .call(g => g.append('circle')
-      //   // 	.attr('transform', shapeAttrs.endRibbon)
-      //   // 	.attr('class', 'endRibbon')
-      //   // 	.attr('stroke', mergeColor[0])
-      //   // 	.attr('fill', 'none')
-      //   // 	.attr('r', baseRadius))
-      //   // .call(g => g.append('rect')
-      //   //   .attr('transform', shapeAttrs.interLineTrans)
-      //   //   .attr('width', shapeAttrs.interLen)
-      //   //   .attr('height', 3 * baseRadius)
-      //   //   .attr('fill', mergeColor[0])
-      //   //   .attr('stroke', 'none'))
-      // )
+      .call(g => g.selectAll('.intersection').data((d, i) => shapeAttrs.batch[i].intersection)
+        .join('g')
+        .attr('class', 'intersection')
+        .call(g => g.append('path')
+          .attr('class', 'interArrow')
+          .attr('d', e => d3.linkVertical().x(d => d.x).y(d => d.y)({ source: { x: 0, y: 0 }, target: { x: 0, y: arrowScale(e[0].range) } }))
+          .attr('marker-end', 'url(#shape-arrow)')
+          .attr('transform', shapeAttrs.interArrow)
+          .attr('stroke', mergeColor[0])
+          .attr('fill', 'none'))
+        // .call(g => g.append('circle')
+        // 	.attr('transform', shapeAttrs.startRibbon)
+        // 	.attr('class', 'startRibbon')
+        // 	.attr('stroke', mergeColor[0])
+        // 	.attr('fill', 'none')
+        // 	.attr('r', baseRadius))
+        // .call(g => g.append('circle')
+        // 	.attr('transform', shapeAttrs.endRibbon)
+        // 	.attr('class', 'endRibbon')
+        // 	.attr('stroke', mergeColor[0])
+        // 	.attr('fill', 'none')
+        // 	.attr('r', baseRadius))
+        .call(g => g.append('rect')
+          .attr('transform', shapeAttrs.interLineTrans)
+          .attr('width', shapeAttrs.interLen)
+          .attr('height', 1.25 * baseRadius)
+          .attr('fill', mergeColor[0])
+          .attr('stroke', 'none'))
+      )
   }
   function updateShape() {
     const t = d3.transition().duration(150).ease(d3.easeLinear);
@@ -1527,7 +1600,9 @@ export function mergeBar(batchData, vm) {
       .call(g => g.selectAll('g')
         .data(dataInfo).join('g').attr('transform', symbolAttrs.transform).attr('opacity', symbolAttrs.opacity)
         .call(g => addElement(g, 'rect', symbolAttrs.sIndice))
-        .call(g => addElement(g, 'rect', symbolAttrs.mIndice)))
+        .call(g => addElement(g, 'text', symbolAttrs.sText))
+        .call(g => addElement(g, 'rect', symbolAttrs.mIndice))
+        .call(g => addElement(g, 'text', symbolAttrs.mText)))
   }
   function updateSymbol(t) {
     symbolG.transition(t)
@@ -1537,6 +1612,8 @@ export function mergeBar(batchData, vm) {
     symbolG.transition(t)
       .call(g => updateElement(g.selectAll('.single'), symbolAttrs.sIndice))
       .call(g => updateElement(g.selectAll('.multivariate'), symbolAttrs.mIndice))
+      .call(g => updateElement(g.selectAll('.singleText'), symbolAttrs.sText))
+      .call(g => updateElement(g.selectAll('.multiText'), symbolAttrs.mText))
   }
   function clickScale(e, d) {
     console.log(d3.pointer(e))

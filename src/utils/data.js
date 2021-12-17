@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import * as util from '../views/baogang/util.js';
 export function divideData(data){
   data = [...data];
   let res = [[data[0]]],
@@ -36,7 +37,7 @@ export function divideData(data){
 export function arrowData(data){
   const multiIndex = [];
   for(let i = 0; i < data.length; i++){
-    if(data[i].dia_Status){
+    if(data[i].dia_Status && data[i].flag == 0){
       multiIndex.push(i);
     }
   }
@@ -46,7 +47,7 @@ export function arrowData(data){
       singleIndex.push(i);
     }
   }
-  const intersection = [...d3.intersection(multiIndex, singleIndex)];
+  const intersection = singleIndex;
   var obj = {};
   //   single: [...d3.difference(singleIndex, intersection)],
   //   multivariate: [...d3.difference(multiIndex, intersection)] 
@@ -65,15 +66,15 @@ export function arrowData(data){
     obj.intersection = [];
   }
   const single = [...d3.difference(singleIndex, obj.intersection.flat())];
-  const multivariate = [...d3.difference(multiIndex, obj.intersection.flat())];
+  // const multivariate = [...d3.difference(multiIndex, obj.intersection.flat())];
   
   obj.single = single.map(d => data[d]);
-  obj.multivariate = multivariate.map(d => data[d]);
+  obj.multivariate = multiIndex.map(d => data[d]);
   obj.intersection = obj.intersection.map(d => d.map(e => data[e]));
   // if(obj.intersection.length !== 0)console.log(obj.intersection)
   return obj;
 }
-export const mergeColor = ['#c65b24', 'rgb(91 143 249)']
+export const mergeColor = ["#e3ad92",   "#b9c6cd"]
 
 export function diagnosticSort(batchData){
   for(let i = 0; i < batchData.length; i++){

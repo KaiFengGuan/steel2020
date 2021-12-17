@@ -1,12 +1,35 @@
 import * as d3 from 'd3';
-import { addElement, updateElement, updateAsyncElement , updateStyles} from 'utils/element';
+import { addElement, updateElement, attrTween} from 'utils/element';
+export function preRoll(data){
+  let res = new Map(),
+    map = new Map();
+  for(let passNum in data){
+    let datum = data[passNum].result;
+    let passArr = new Array(data[passNum].passcount).fill(0).map((d, i) => {
+      let arr = datum['sample'][i];
+      arr.forEach(e => {e.pass = i});
+      arr.quartiles = [datum['min'][i], datum['mean'][i], datum['max'][i]];
+      arr.min = Math.min(...arr.map(d => d.value), datum['min'][i]);
+      arr.max = Math.max(...arr.map(d => d.value), datum['max'][i]);
+      arr.range = [datum['emin'][i], datum['emax'][i]];
+      return {key: i,value: arr}
+    });
+    passArr.upid = passArr[0].value.map(e => e.upid);
+    let upidArr = passArr.upid;
+    for(let i in upidArr){
+      map.set(upidArr[i], passArr.map(e => e.value[i].value))
+    }
+    res.set(data[passNum].passcount, passArr);
+  }
+  return [res, map];
+}
 export class boxplot{
   constructor(container) {
     this._container = container;
     this._g = this._container.append('g').attr('class', 'scaleGroup');
     this._margin = {top: 20, right: 20, bottom: 30, left: 40};
-    this._height = 600;
-    this._width = 800;
+    this._height = 200;
+    this._width = 1000;
     
     //init data
     this._originData = null;
@@ -33,24 +56,19 @@ export class boxplot{
   enter(options){
     this._originData = options.data;
     [this._passMap, this._upidMap] = options.func(this._originData);
-    console.log(this._upidMap);
+    // console.log(this._upidMap);
     this._passArr = [...this._passMap.keys()];
     [this._minLen, this._maxLen]  = d3.extent(this._passArr);
     this._length = this._maxLen;
     this._range = this._passMap.get(this._length).range;
     // this._data = options.func(options.data);
-    this._g.attr('transform', `scale(${Math.min(options.width/this._width, options.height/this._height)})`);
+    this._g.attr('transform', `scale(${Math.min(options.height/this._height)})`); //options.width/this._width, 
     return this;
   }
   render(){
+    this._initBackground();
     this._initScale();
     this._initAttrs();
-    this._g.append('rect')
-      .attr('fill', 'white')
-      .attr('stroke', 'none')
-      .attr('transform', `translate(${this._margin.right}, ${this._margin.top})`)
-      .attr('width', this._width - this._margin.right - this._margin.left)
-      .attr('height', this._height - this._margin.top - this._margin.bottom)
     this._initBox();
     let flag = true;
     this._g.on('click', ()=>{
@@ -58,6 +76,14 @@ export class boxplot{
       flag = !flag;
       this._renderChart(flag ? "21222001000" : "21221360000")
     })
+  }
+  _initBackground(){
+    this._g.append('rect')
+      .attr('fill', 'white')
+      .attr('stroke', 'none')
+      .attr('transform', `translate(${this._margin.right}, ${this._margin.top})`)
+      .attr('width', this._width - this._margin.right - this._margin.left)
+      .attr('height', this._height - this._margin.top - this._margin.bottom)
   }
   _initScale(){
     const renderData = this._passMap.get(this._length);
@@ -89,8 +115,8 @@ export class boxplot{
     const boxWidth = 50;
     // const jitterWidth = 50;
   
-    console.log(this);
-    console.log(this._passMap);
+    // console.log(this);
+    // console.log(this._passMap);
 
     this._vertLineAttrs = {
       class: 'vertLine',
@@ -248,23 +274,18 @@ export class boxplot{
       .attr('stroke-width', 0.5)
       .attr('fill', 'none');
     const lineLength = path.node().getTotalLength();
-    // const t = d3.transition()
-    //   .duration(300)
-    //   .ease(d3.easeLinear);
+    const t = d3.transition()
+      .duration(1500)
+      .ease(d3.easeQuad);
     path
       .attr('stroke-dasharray', `${0},${lineLength}`)
       .attr('display', 'block');
-    console.log(lineLength);
-    let i = 0, n = 300;
-    let timer = setInterval(() => {
-        const t = (i + 1) / n;
-        console.log(i);
-        i++;
-        path.transition(t) .attr('stroke-dasharray', `${t * lineLength},${lineLength}`);
-        if(t > 1){
-          console.log(t);
-          clearInterval(timer);
-        }
-      },20)
+    
+    const selction = this._mainGroup.select('.passLine').transition(t);
+    attrTween(selction, 'stroke-dasharray', function() {
+      const length = this.getTotalLength();
+      return d3.interpolate(`0,${length}`, `${length},${length}`);
+    })
+    // console.log(lineLength);
   }
 } 

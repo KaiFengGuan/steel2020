@@ -13,7 +13,8 @@ import processJson from "assets/json/processJson.json"
 import {mapGetters, mapMutations} from "vuex"
 import { divideData, arrowData, mergeColor, diagnosticSort, queryIcon} from "utils/data.js"
 import {processIcon, colourLessIcon} from "assets/images/index.js";
-import {boxplot} from './boxplot.js';
+import {preRoll, boxplot} from './boxplot.js';
+import {mergeBar} from './index.js';
 import rollData from 'views/data/rollData.json';
 export default {
 	props: {
@@ -248,8 +249,9 @@ export default {
 
 				_renderBar(){
 					this._fliterScaleData();
-					this._barInstance = this._renderMainBar();
-					this._initMainBox(rollData);
+					this._barInstance = mergeBar.bind(this)(batchData, vm);
+					// this._renderMainBar();
+					// this._initMainBox(rollData);
 					this._renderMainWheel();
 				}
 
@@ -2048,54 +2050,32 @@ export default {
 								}
 				}
 
-				_initMainBox(boxData){
-					const barData = this._barInstance.privateData;
-					console.log(this._barInstance.privateData);
+				// _initMainBox(boxData){
+				// 	const barData = this._barInstance.privateData;
+				// 	console.log(this._barInstance.privateData);
 
-					const boxPlotG = this._g.append('g').attr('class', 'boxPlotGroup').attr('transform', `translate(${barData.rectWidth + 20}, 0)`);
-					const preRoll = data => {
-						let res = new Map(),
-							map = new Map();
-						for(let passNum in data){
-							let datum = data[passNum].result;
-							let passArr = new Array(data[passNum].passcount).fill(0).map((d, i) => {
-								let arr = datum['sample'][i];
-								arr.forEach(e => {e.pass = i});
-								arr.quartiles = [datum['min'][i], datum['mean'][i], datum['max'][i]];
-								arr.min = Math.min(...arr.map(d => d.value), datum['min'][i]);
-								arr.max = Math.max(...arr.map(d => d.value), datum['max'][i]);
-								arr.range = [datum['emin'][i], datum['emax'][i]];
-								return {key: i,value: arr}
-							});
-							// passArr.range = [d3.min(passArr, e => e.value.min), d3.max(passArr, e => e.value.max)];
-							passArr.upid = passArr[0].value.map(e => e.upid);
-							let upidArr = passArr.upid;
-							for(let i in upidArr){
-								map.set(upidArr[i], passArr.map(e => e.value[i].value))
-							}
-							res.set(data[passNum].passcount, passArr);
-						}
-						return [res, map];
-					}
-						// .call(g => g.append('circle'))
-					// const width = 400, height = 200;
-					// chart3 = {
-					// 	const height = 600;
-					// 	const svg = d3.select(DOM.svg(width, height));
+				// 	const rollKeys = ['bendingforce', 'bendingforcebot', 'bendingforcetop',
+				// 		'rollforce', 'rollforceds', 'rollforceos', 'screwdown',
+				// 		'shiftpos', 'speed', 'torque', 'torquebot', 'torquetop'
+				// 		]
+				// 	const boxPlotG = this._g.append('g').attr('class', 'boxPlotGroup').attr('transform', `translate(${barData.rectWidth + 20}, 0)`);
+				// 		// .call(g => g.append('circle'))
+				// 	// const width = 400, height = 200;
+				// 	// chart3 = {
+				// 	// 	const height = 600;
+				// 	// 	const svg = d3.select(DOM.svg(width, height));
 						
-						new boxplot(boxPlotG).enter({
-							data: boxData['bendingforce'],
-							func: preRoll,
-							width: 200, 
-							height: 400
-						})
-						.render();
-
-					// 	return svg.node();
-					// }
-					console.log(boxData);
-					console.log(boxplot);
-				}
+				// 		new boxplot(boxPlotG).enter({
+				// 			data: boxData['bendingforce'],
+				// 			func: preRoll,
+				// 			width: 200, 
+				// 			height: 40,
+				// 			label: 'bendingforce'
+				// 		})
+				// 		.render();
+				// 	console.log(boxData);
+				// 	console.log(boxplot);
+				// }
 
 				_renderWheelFilter(){
 						let indexes;

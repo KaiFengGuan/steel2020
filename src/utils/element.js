@@ -37,3 +37,26 @@ export function updateAsyncElement(element, attrs){
   }
   return element;
 }
+export function attrTween(selection, attr, fn, endfunc){
+  selection.
+    attrTween(attr, fn)
+    .on('end', endfunc)
+  return selection;
+}
+
+/**
+ * mode -> true max -> min
+ * mode -> false min -> max
+ * [0.06920063103322494, 0.19436112650041948, 0.6520178944851003, 0.4375501755421416, 0.24848507785134522]
+ * @param {Array} value 
+ * @param {Boolean} mode 
+ * @returns [ 4, 3, 0, 1, 2 ]//true	
+ * [ 0, 1, 4, 3, 2 ]//false
+ */
+export function sortedIndex(value, mode){
+  let arr = value.map((d, i) => [d, i]);
+  arr.sort((a, b) => mode ? b[0] - a[0] : a[0] - b[0]);
+  let res = new Array(value.length).fill(0);
+  arr.forEach((d, i) => {res[d[1]] = i});
+  return res;
+}

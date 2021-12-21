@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import { addElement, updateElement, attrTween} from 'utils/element';
+const labelColor = [ "#c65b24", "#94a7b7"];
 export function preRoll(data){
   let res = new Map(),
     map = new Map();
@@ -7,17 +8,18 @@ export function preRoll(data){
     let datum = data[passNum].result;
     let passArr = new Array(data[passNum].passcount).fill(0).map((d, i) => {
       let arr = datum['sample'][i];
-      arr.forEach(e => {e.pass = i});
       arr.quartiles = [datum['min'][i], datum['mean'][i], datum['max'][i]];
-      arr.min = Math.min(...arr.map(d => d.value), datum['min'][i]);
-      arr.max = Math.max(...arr.map(d => d.value), datum['max'][i]);
+      arr.min = Math.min(...arr.map(d => d.value), datum['emin'][i]);
+      arr.max = Math.max(...arr.map(d => d.value), datum['emax'][i]);
       arr.range = [datum['emin'][i], datum['emax'][i]];
+      arr.forEach(e => {e.pass = i, e.overflow = 
+        e.value > arr.range[1] || e.value < arr.range[0] ? true : false});
       return {key: i,value: arr}
     });
     passArr.upid = passArr[0].value.map(e => e.upid);
     let upidArr = passArr.upid;
     for(let i in upidArr){
-      map.set(upidArr[i], passArr.map(e => e.value[i].value))
+      map.set(upidArr[i], passArr.map(e => e.value[i]))
     }
     res.set(data[passNum].passcount, passArr);
   }
@@ -27,7 +29,7 @@ export class boxplot{
   constructor(container) {
     this._container = container;
     this._g = this._container.append('g').attr('class', 'scaleGroup');
-    this._margin = {top: 20, right: 20, bottom: 30, left: 40};
+    this._margin = {top: 20, right: 20, bottom: 40, left: 40};
     this._height = 200;
     this._width = 1000;
     
@@ -35,6 +37,7 @@ export class boxplot{
     this._originData = null;
     this._passArr = null;
     this._passMap = null;
+    this._name = undefined;
     
     this._data = null;
     this._range = null;
@@ -56,11 +59,13 @@ export class boxplot{
   enter(options){
     this._originData = options.data;
     [this._passMap, this._upidMap] = options.func(this._originData);
+    // console.log(this._passMap);
     // console.log(this._upidMap);
     this._passArr = [...this._passMap.keys()];
     [this._minLen, this._maxLen]  = d3.extent(this._passArr);
     this._length = this._maxLen;
     this._range = this._passMap.get(this._length).range;
+    this._name = options.label;
     // this._data = options.func(options.data);
     this._g.attr('transform', `scale(${Math.min(options.height/this._height)})`); //options.width/this._width, 
     return this;
@@ -68,6 +73,7 @@ export class boxplot{
   render(){
     this._initBackground();
     this._initScale();
+    this._initStaticLine();
     this._initAttrs();
     this._initBox();
     let flag = true;
@@ -111,6 +117,20 @@ export class boxplot{
     this._g.append('g').attr('class', 'xAxis').call(this._xAxis);
     this._g.append('g').attr('class', 'yAxis').call(this._yAxis);
   }
+  _initStaticLine(){
+    this._g.append('rect').attr('class', 'bottomGantt')
+      .attr('transform', `translate(${this._margin.left},${this._height - this._margin.bottom / 2 - 1.5})`)
+        .attr('fill', '#999999')
+        .attr('height', 3)
+        .attr('width', this._width - this._margin.right - this._margin.left)
+    this._Gantt = this._g.append('g').attr('class', 'Gantt')
+      .attr('transform', `translate(${0},${this._height - this._margin.bottom / 2 - 5})`);
+    this._defs = this._g.append('linearGradient')
+      .attr('id', `${this._name}-gradient`)
+      .attr('gradientUnits', 'userSpaceOnUse')
+      .attr('x1', '0%')
+      .attr('x2', '100%')
+  }
   _initAttrs(){
     const boxWidth = 50;
     // const jitterWidth = 50;
@@ -137,7 +157,7 @@ export class boxplot{
       width: boxWidth,
       stroke: 'purple',
       fill: 'rgb(255, 255, 255)',
-      'fill-opacity': 0.7,
+      'fill-opacity': 0.5,
       // transform: d => `translate(${this._xLinear(d)}, 0)`
     };
     this._horizontalLineAttrs = {
@@ -152,10 +172,18 @@ export class boxplot{
     this._pointAttrs = {
       cx: 0,  //d => 0 - jitterWidth/2 + Math.random() * jitterWidth
       cy: d => this._yScale(d.value),
-      fill: '#af5f68',
-      'fill-opacity': 0.8,
+      fill: d => d.overflow ? labelColor[0] : labelColor[1],//'#af5f68',
+      'fill-opacity': d => d.overflow ? 1 : 0.75,
       r: 2
     };
+    this._passLineAttrs = {
+      class: 'passLine',
+      d: d => d3.line().x((d, i) => this._xLinear(i)).y(d => this._yScale(d)).curve(d3.curveLinear)(d),
+      stroke: `url(#${this._name}-gradient)`,//'#af5f68',
+      display: 'none',
+      'stroke-width': 1.5,
+      fill: 'none'
+    }
   }
   _initBox(){
     this._mainGroup = this._g.append('g')
@@ -212,6 +240,10 @@ export class boxplot{
     this._g.transition(t)
       .call(g => g.select('.xAxis').call(this._xAxis))
       .call(g => g.select('.yAxis').call(this._yAxis));
+
+    // this._g.transition(t).select('.bottomGantt')
+    //   .attr('x', this._xScale(0))
+    //   .attr('width', this._xScale(this._length - 1) - this._xScale(0))
     
     this._mainGroup.selectAll('g')
       .transition(t)
@@ -261,18 +293,17 @@ export class boxplot{
   }
   _initLine(upid){
     const datum = this._upidMap.get(upid);
+    this._defs.selectAll('stop').remove()
+    this._defs.selectAll('stop').data(new Array(this._length).fill(0).map((_, i) => i))
+      .join('stop')
+        .attr('offset', d => d/this._length)
+        .attr('stop-color', d =>  datum[d].overflow ? labelColor[0] : labelColor[1])
     this._g.select('.passLine').remove();
-    // console.log(datum);
-    const line = d3.line().x((d, i) => this._xLinear(i)).y(d => this._yScale(d)).curve(d3.curveLinear);
+    
     const path = this._mainGroup
       .append('path')
-      .datum(datum)
-      .attr('class', 'passLine')
-      .attr('d', d => line(d))
-      .attr('stroke', '#af5f68')
-      .attr('display', 'none')
-      .attr('stroke-width', 0.5)
-      .attr('fill', 'none');
+      .datum(datum.map(d => d.value))
+      .call(g => updateElement(g, this._passLineAttrs));
     const lineLength = path.node().getTotalLength();
     const t = d3.transition()
       .duration(1500)
@@ -287,5 +318,19 @@ export class boxplot{
       return d3.interpolate(`0,${length}`, `${length},${length}`);
     })
     // console.log(lineLength);
+
+    const rectAttrs = {
+      width: this._xScale.step(),
+      height: 10,
+      fill: labelColor[0],
+      x: d => this._xScale(d) - this._xScale.step()/2,
+      stroke: 'none'
+    }
+    this._Gantt
+      .selectAll('rect')
+      .data(datum.filter(d => d.overflow).map(d => d.pass))
+      .join(enter => addElement(enter, 'rect', rectAttrs),
+        update => updateElement(update.transition().duration(150).ease(d3.easeQuad), rectAttrs),
+        exit => exit.remove())
   }
 } 

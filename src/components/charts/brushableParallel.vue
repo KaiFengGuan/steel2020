@@ -783,7 +783,7 @@ export default {
 					leftText = {
 						x: 0,
 						y: 14,
-						text: (d, i) => this.vNode.diagnosisRange[i][0],
+						text: (d, i) => this.vNode.diagnosisRange[i][0].toFixed(2),
 						'text-anchor': 'middle',
 						'fill': '#94a7b7',
 						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,
@@ -810,7 +810,7 @@ export default {
 					rightText = {
 						x: 0,
 						y: 14,
-						text: (d, i) => this.vNode.diagnosisRange[i][1],
+						text: (d, i) => this.vNode.diagnosisRange[i][1].toFixed(2),
 						'text-anchor': 'middle',
 						'fill': '#94a7b7',
 						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,

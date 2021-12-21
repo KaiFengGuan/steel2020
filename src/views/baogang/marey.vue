@@ -1,7 +1,8 @@
 <template>
 	<div class="custom-marey">
+		<el-col :span="22">
 		<el-row :style="cssVars">
-			<el-col :span="4" style="margin-top:8px">
+			<el-col :span="5">
 				<el-row>
 					<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
 					<el-row>
@@ -27,8 +28,7 @@
 									<slider style="height:80px;width:100%" ref="brushSlider"></slider>
 								</el-row>
 								<el-row>
-								<!-- v-loading="scatterLoading" element-loading-text="拼命计算中" element-loading-spinner="el-icon-loading" element-loading-background="rgba(0, 0, 0, 0.3)" -->
-									<scatterlog ref="scatterCate" style="height:305px;" @scatterMouse="scatterMouse"></scatterlog>
+								<scatterlog ref="scatterCate" style="height:305px;" @scatterMouse="scatterMouse"></scatterlog>
 								</el-row>
 							</div>
 						</el-card>
@@ -44,12 +44,10 @@
 							<brush-slider ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse" :diagnosisState='diagnosisState'></brush-slider>
 						</div>
 						<!-- <el-col :span="4"> -->
-							
-						<!-- </el-col> -->
 					</el-card>
 				</el-row>
 			</el-col>
-			<el-col :span="20" style="margin-top:6px"
+			<el-col :span="19" style="margin-top:-2px"
 				v-loading="loadingDataLoading"
 				element-loading-text="loading..."
 				element-loading-spinner="el-icon-loading"
@@ -188,38 +186,10 @@
 							</el-col>
 						</div>
 						<div style="padding-right:5px; padding-bottom : 5px">
-						<el-col :span="4">
-							<!-- <div style="float:left;margin-top: 30px;position:relative;left: 25px;width: 1px;height: 450px; background: #c9c9c9;"></div> -->
-							<el-row>
-								<div style="overflow-y:scroll;height:500px">
-								<el-row v-for="item of upidSelect" :key = item>
-									<el-card class="myel-card myel-tab" :style="{border: sampleCss[item]}">
-										<div slot="header">
-												<el-row style="height:25px"> 
-													<el-col :span="16"><img src="../../assets/images/UPID.svg" class="upidicon">
-													<span class="upidtext">UPID {{item}}</span></el-col>
-													<el-col :span="8"></el-col>
-												</el-row>
-											</div>
-										<div class="my-card-body" @click="changeUpid(item)">
-											<monitor-arc :ref="item" style="height:223px" class="monitor_arc"></monitor-arc>
-										</div>
-									</el-card>
-								</el-row>
-								</div>
-							</el-row>
-						</el-col>
-						<el-col :span="20">
+						<el-col :span="24">
 							<el-card class="myel-card myelTab myel-upid">
-								<!-- <div slot="header">
-									<el-row>
-										<el-col :span="8"><img src="../../assets/images/UPID.svg" class="upidicon">
-										<span class="upidtext">{{selectedUpid}}</span></el-col>
-										<el-col :span="16" style="background-color:white"></el-col>
-									</el-row>
-								</div> -->
-								<div class="my-card-body" >
-									<wheeler ref="wheelering" style="height:490px" :contract="false" @wheelMouse="wheelMouse"></wheeler>
+								<div class="my-card-body">
+									<wheeler ref="wheelering" style="height:490px" @wheelMouse="wheelMouse"></wheeler>
 								</div>
 							</el-card>
 						</el-col>
@@ -240,8 +210,8 @@
 			</el-row> -->
 			</el-col>
 			<el-button circle  icon="el-icon-more" @click="changeDiagnosisVisible" id="diagnosis_button"></el-button>
-		</el-row>
-
+		</el-row>			
+		</el-col>
 	</div>
 </template>
 
@@ -254,7 +224,6 @@ import mareyChart from './mareyChart2.vue';
 import scatterlog from 'components/charts/scatterlog.vue';
 import timeBrush from './timeBrush.vue';
 import wheeler from 'components/composition/index.vue';
-import monitorArc from 'components/wheelChart/index.vue';
 import slider from './slider.vue'
 import brushSlider from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
@@ -264,14 +233,13 @@ import {filterMareyChartEventIcon} from '../../data/layout/mareyChartEventIcon.j
 import {getBatchHeader, updateRange} from '../../utils/marey.js'
 import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
-import Vue from 'vue';
 
 import jsonData from '../data/jsonData.json'
 import monitorData from '../data/monitorData.json'
 import scatterData from '../data/scatterData.json'
 
 export default {
-	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler , monitorArc, slider},
+	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler, slider},
 	data() {
 		return {
 			diagnosisVisible: false,
@@ -353,7 +321,6 @@ export default {
 			corrsize: 0.5,
 			multisize: 20,
 			curvesize: 0.5,
-			sampleCss:{},
 			usDiagnosis: {},
       batchDateStart: undefined,
       batchDateEnd: undefined,
@@ -395,7 +362,7 @@ export default {
     },
 		...mapGetters([
 			"isSwitch",
-			"trainBorder",
+			// "trainBorder",
 			"startDate",
 			"endDate",
 			// "diagnosisState"
@@ -436,9 +403,6 @@ export default {
 				message: h('i', { style: 'color: teal'}, notice)
 			});
 			this.loadingDataLoading = false
-		},
-		async changeUpid(upid){
-			this.paintUnderCharts(upid)
 		},
 		async changeTime() {
       this.req_count = 0;
@@ -498,22 +462,33 @@ export default {
 			for(let item of this.upidSelect){
 				this.usDiagnosis[item] = this.alldiagnosisData.get(item)[0];
       }
+      // this.corrdata = [];
 
-      // console.log( 'before paint: ', document.getElementById('diagnosis_view_id').style.height );
+			// await this.getVisCorrelation({
+      //     startDate: this.selectDateStart,
+      //     endDate: this.selectDateEnd,
+      //     nums: 1000
+      //   },   // time_select
+			// 	JSON.stringify([]),   // slabthickness
+			// 	JSON.stringify([]),   // tgtdischargetemp
+			// 	JSON.stringify([]),   // tgtplatethickness
+			// 	JSON.stringify([]),   // tgtwidth
+			// 	JSON.stringify([]),   // tgtplatelength2
+			// 	JSON.stringify([]),   // tgttmplatetemp
+			// 	JSON.stringify([]),   // cooling_start_temp
+			// 	JSON.stringify([]),   // cooling_stop_temp
+			// 	JSON.stringify([]),   // cooling_rate1
+			// 	JSON.stringify([]),   // productcategory
+			// 	JSON.stringify([]),   // steelspec
+			// 	0   // status_cooling
+			// 	).then(Response => {
+			// 	this.$nextTick(function() {
+			// 		// this.$refs[upid][0].paintChart(diagnosisData, Response.data)
+			// 		this.corrdata = Response.data
+			// 	})
+			// })
 
-      this.corrdata = [];
-      for(let item of this.upidSelect){
-				try{
-					await this.paintChordList(item)
-				}catch(e){
-					console.log(e)
-				}
-      }
-      // console.log( 'after paint scatterlist: ', document.getElementById('diagnosis_view_id').style.height );
-
-      await this.paintUnderCharts(this.upidSelect[0]);
-      
-    //   console.log( 'after paint: ', document.getElementById('diagnosis_view_id').style.height );
+      await this.paintRiverLike(this.upidSelect[0]);
 		},
 		mergeflag(){
 			let mergedata=[]
@@ -725,39 +700,6 @@ export default {
 			}
 			return batchData;
 		},
-		async paintChordList(upid){
-			// console.log(diagnosisData)
-			// console.log(this.corrdata)
-      var diagnosisData = this.usDiagnosis[upid];   //online
-      if(this.corrdata['label']) {
-				this.$nextTick(function() {this.$refs[upid][0].paintChart(diagnosisData, this.corrdata)})
-				return false
-			}
-      
-      await this.getVisCorrelation({
-          startDate: this.selectDateStart,
-          endDate: this.selectDateEnd,
-          nums: 1000
-        },   // time_select
-				JSON.stringify([]),   // slabthickness
-				JSON.stringify([]),   // tgtdischargetemp
-				JSON.stringify([]),   // tgtplatethickness
-				JSON.stringify([]),   // tgtwidth
-				JSON.stringify([]),   // tgtplatelength2
-				JSON.stringify([]),   // tgttmplatetemp
-				JSON.stringify([]),   // cooling_start_temp
-				JSON.stringify([]),   // cooling_stop_temp
-				JSON.stringify([]),   // cooling_rate1
-				JSON.stringify([]),   // productcategory
-				JSON.stringify([]),   // steelspec
-				0   // status_cooling
-				).then(Response => {
-				this.$nextTick(function() {
-					this.$refs[upid][0].paintChart(diagnosisData, Response.data)
-					this.corrdata = Response.data
-				})
-			})
-    },
     
 		async selectDataByTime(...args){
 			const [start, end] = args.map(d => new Date(d));
@@ -770,12 +712,9 @@ export default {
 
 			this.selectedUpid =  "UPID " + upid
 			var diagnosisData = this.usDiagnosis[upid]//online
-			this.sampleCss = {};
 			let data =  (await steel.getProcessData({upid, process: 'roll',limit: 1000, devation: 0.25}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
 			console.log('steel.getProcessData', data);
-			Vue.set(this.sampleCss, upid, "solid 0.45px " + this.trainBorder(diagnosisData))
-
-      if(this.corrdata['label']) this.$refs.wheelering.paintChart(diagnosisData, this.corrdata, this.batchData)
+			this.$refs.wheelering.paintChart(diagnosisData, this.batchData)
     },
 		mareyUpdate(){
       this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
@@ -814,9 +753,6 @@ export default {
 			this.diagnosisVisible = !this.diagnosisVisible;
 			this.animeTransition()
     },
-		paintUnderCharts(upid) {
-			this.paintRiverLike(upid);
-    	},
     clickDiagnosisButton() {
       if (this.diagnosisVisible) {  // 如果还没收起诊断面板
         this.diagnosisVisible = false;
@@ -981,8 +917,6 @@ export default {
 }
 .custom-marey {
 	background: white;
-	margin: -18px;
-	margin-top : -8px;
 	margin-right:4px;
 	// padding: 8px;
 	overflow: hidden;
@@ -1087,22 +1021,6 @@ export default {
 	.myel-upid{
 		.el-card__header {
 			background-color: #fcfcfc;
-		}
-	}
-	.myel-tab{
-		.el-card__header {
-			height: 25px;
-			background-color: #fcfcfc;
-		}
-
-		.upidtext{
-      font-family: var(--dt_family);
-			font-size: var(--dt_size);
-      font-weight: var(--dt_weight);
-      font-style: var(--dt_style);
-      color: var(--dt_color);
-			position: relative;
-      top: -3px
 		}
 	}
 	.myel-swtich{

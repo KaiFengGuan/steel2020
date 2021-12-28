@@ -1,6 +1,6 @@
 <template>
 	<div class="custom-marey">
-		<el-col :span="22">
+		<el-col :span="24">
 		<el-row :style="cssVars">
 			<el-col :span="5">
 				<el-row>
@@ -19,6 +19,15 @@
 						<el-card class="myel-card">
 							<div class="my-card-title" slot="header">
 								<span>Embedding View</span>
+                <el-radio-group
+                  v-model="scatterTabName"
+                  @change="scatterTabClick"
+                  class="scatter-tab"
+                  size="mini"
+                >
+                  <el-radio-button label="first">first</el-radio-button>
+                  <el-radio-button label="second">second</el-radio-button>
+                </el-radio-group>
 								<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData" class="card-select">
 									<el-option v-for="option in algorithmOptions" :key="option" :label="option" :value="option"></el-option>
 								</el-select>
@@ -118,7 +127,13 @@
 							</el-col>
 						</div>
 						<div class="my-card-body">
-							<marey-chart style="text-align: center; height: 1028px;width:100%;" ref="mareyChart"  @trainClick="trainClick" @trainMouse="trainMouse" @clickDiagnosisButton="clickDiagnosisButton"></marey-chart>
+							<marey-chart
+                style="text-align: center; height: 1028px;width:100%;"
+                ref="mareyChart"
+                @trainClick="trainClick"
+                @trainMouse="trainMouse"
+                @clickDiagnosisButton="clickDiagnosisButton"
+                @exitDiagStatus="exitDiagStatus"></marey-chart>
 						</div>
 					</el-card>
 				</el-row>
@@ -298,8 +313,12 @@ export default {
 				"T-SNE": "/newbaogangapi/v1.0/model/VisualizationTsne/",
 				"UMAP": "/newbaogangapi/v1.0/model/VisualizationUMAP/",
 				"ISOMAP": "/newbaogangapi/v1.0/model/VisualizationISOMAP/",
-				"PCA": "/newbaogangapi/v1.0/model/VisualizationPCA/"
-			},
+        "PCA": "/newbaogangapi/v1.0/model/VisualizationPCA/",
+        "T-SNE-cate": "/newbaogangapi/v1.0/model/CateVisualizationTsne/",
+				"UMAP-cate": "/newbaogangapi/v1.0/model/CateVisualizationUMAP/",
+				"ISOMAP-cate": "/newbaogangapi/v1.0/model/CateVisualizationISOMAP/",
+				"PCA-cate": "/newbaogangapi/v1.0/model/CateVisualizationPCA/"
+      },
 			algorithmSelected: "T-SNE",
 			plateTempProp: {
 				slabid: "44191730513",
@@ -325,7 +344,12 @@ export default {
       batchDateStart: undefined,
       batchDateEnd: undefined,
       req_count: 0,
-      monitorData: {}
+      monitorData: {},
+
+      scatterTabName: 'first',
+      scatterStatus: false,    // false: 非诊断状态;  true: 诊断状态
+      sameCateScatterData: [],
+      trainSelectedList: []
 		}
 	},
 	computed: {
@@ -365,7 +389,8 @@ export default {
 			// "trainBorder",
 			"startDate",
 			"endDate",
-			// "diagnosisState"
+      // "diagnosisState",
+      'hightlightGroup'
 		]),
 		dateselect : function(){
       var endmonth = new Date(this.startmonth.valueOf())
@@ -406,7 +431,7 @@ export default {
 		},
 		async changeTime() {
       this.req_count = 0;
-			await this.getTimeBrushData();
+      await this.getTimeBrushData();
 			await this.getAlgorithmData()
 			this.getHttpData();
 		},
@@ -451,7 +476,40 @@ export default {
         eventIconData: eventIconData
         }, this.isSwitch, this.isMerge);
 
-		},
+    },
+    async scatterTabClick(tabName) {
+      if (tabName === 'second' && this.scatterStatus) {
+        // console.log('切换为同类型')
+        let startDate = this.batchDateStart[0];
+        let endDate = this.batchDateEnd.slice(-1)[0];
+        if (!Object.keys(this.sameCateScatterData).length) {
+          await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected + '-cate']+ `${startDate}/${endDate}/${1000}`, this.req_body)
+            .then(Response => {
+              this.sameCateScatterData = Response.data
+            })
+        }
+        this.$refs.scatterCate.paintChart(this.sameCateScatterData, 1)
+        this.$refs.scatterCate.paintArc([new Date(startDate), new Date(endDate)])
+        // this.$watch('sameCateScatterData', () => {
+        //   console.log('in watch', this.sameCateScatterData)
+        //   if (tabName === 'second' && this.scatterStatus) {
+        //     this.$refs.scatterCate.paintChart(this.sameCateScatterData, 1)
+        //     this.$refs.scatterCate.paintArc([new Date(startDate), new Date(endDate)])
+        //   }
+        // })
+      } else if (tabName === 'second' && !this.scatterStatus) {
+        // console.log('此时显示空白页面')
+        this.$refs.scatterCate.paintChart({}, 1)
+      } else if (tabName === 'first') {
+        // console.log('切换为全部')
+        this.$refs.scatterCate.paintChart(this.scatterData, 1)
+				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
+      }
+      this.trainMouse({
+        upid: this.hightlightGroup,
+        mouse: 1
+      })
+    },
 		async newdiagnose() {
 			// this.diagnosisState = !this.diagnosisState;
 			this.animeTransition();
@@ -664,12 +722,19 @@ export default {
     },
 
 		async trainClick(value) {
-			console.log(value)
-			this.diagnosisVisible = true;
+      // console.log(value)
+      console.log('进入诊断状态')
+      this.diagnosisVisible = true;
+      this.scatterStatus = true;
+      this.scatterTabName = 'second';
+
 			this.upidSelect = []
       this.chooseList = value.batch;
       this.batchDateStart = value.date_s;
       this.batchDateEnd = value.date_e;
+      this.trainSelectedList = value.list;
+
+      this.scatterTabClick(this.scatterTabName);
 
 			if(value.type !== "group"){
 				value.upidSelect.unshift(value.list[value.list.length - 1])
@@ -752,6 +817,13 @@ export default {
     changeDiagnosisVisible() {
 			this.diagnosisVisible = !this.diagnosisVisible;
 			this.animeTransition()
+    },
+    exitDiagStatus() {
+      this.scatterStatus = false;
+      this.scatterTabName = 'first';
+      this.sameCateScatterData = {};
+      this.scatterTabClick(this.scatterTabName);
+      console.log('退出诊断状态')
     },
     clickDiagnosisButton() {
       if (this.diagnosisVisible) {  // 如果还没收起诊断面板
@@ -1040,6 +1112,11 @@ export default {
 			}
 		}
 	}
+  .scatter-tab {
+    // float: right;
+		margin-left: 20px;
+    margin-top: -3.5px;
+  }
 	.card-select{
 		float: right;
 		width: 100px;

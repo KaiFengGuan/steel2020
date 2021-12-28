@@ -762,7 +762,7 @@ export default {
 						datumRect.width = (d, i) => datumWidth[i] + 10;
 						datumRect.x = (d, i) => -datumWidth[i]/2 - 5 + datumText.x;
 						context.vNode.$nextTick(function() {
-							console.log('$nextTick success')
+							// console.log('$nextTick success')
 							datumG.selectAll('rect').call(g => updateElement(g, datumRect));})
 				}
 				_initAreaTooltip(status){//true init -- false update

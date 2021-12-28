@@ -361,6 +361,24 @@ export default {
               sub_extent.slice(14, 16)
             ]
           }
+
+          // 规格标尺计算
+          let tar_arr = {}, tar_extent = {},
+              target = ['tgtplatethickness', 'tgtwidth', 'tgtplatelength2'];
+          target.forEach(key => {tar_arr[key] = []; tar_extent[key] = null;});
+          for (let i in merge_plates) {
+            let item_data = merge_plates[i];
+            
+            for (let tar of target) {
+              tar_arr[tar].push(item_data[tar]);
+            }
+          }
+
+          for (let tar of target) {
+            tar_extent[tar] = d3.extent(tar_arr[tar]);
+          }
+          this._tar_extent = tar_extent;
+          // console.log(tar_extent)
           
           // 按steelspec计算标尺范围
           let cate_extend = {};
@@ -409,7 +427,8 @@ export default {
                   this._stationsdata,
                   labelStatistics,
                   {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
-                  cate_extend[category_name]);
+                  cate_extend[category_name],
+                  tar_extent);
 
                 one_batch_info.push(res);
               }
@@ -424,9 +443,10 @@ export default {
                 cannotMerge,
                 cannotMerge_flat,
                 this._stationsdata,
-                this.__getLabelStatistics(cannotMerge),
+                this.__getLabelStatistics(cannotMerge_flat),
                 {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
-                {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent}
+                {t: t_extent, fu: fu_extent, m: m_extent, c: c_extent, sub: sub_extent},
+                tar_extent
               ))
             }
 
@@ -567,6 +587,20 @@ export default {
             })
             batch_index_count++;
           }
+
+          for (let i = 0; i < this._mergeresult_1.length; i++) {
+            let batch = this._mergeresult_1[i];
+            for (let j = 0; j < batch.one_batch_info.length; j++) {
+              if (i === 0 && j === 0) {
+                batch.one_batch_info[j]['prev_targetInfo'] = null;
+              } else if (i > 0 && j === 0) {
+                batch.one_batch_info[j]['prev_targetInfo'] = this._mergeresult_1[i - 1].one_batch_info.slice(-1)[0]['targetInfo'];
+              } else {
+                batch.one_batch_info[j]['prev_targetInfo'] = batch.one_batch_info[j - 1]['targetInfo'];
+              }
+            }
+          }
+          
           console.log("处理成绘图数据：", this._mergeresult_1)
 
           // 统计整图监控结果占比
@@ -717,7 +751,7 @@ export default {
             .attr('width', this._width)
             .attr('height', this._y_height);
 
-          // this._shadowInit();
+          this._shadowInit();
 
           // this._renderMareyBackground();
 
@@ -734,6 +768,27 @@ export default {
         }
 
         _shadowInit() {
+          const markerBoxWidth = 5;
+					const markerBoxHeight = 5;
+					const refX = markerBoxWidth / 2;
+					const refY = markerBoxHeight / 2;
+					const markerWidth = markerBoxWidth / 2;
+					const markerHeight = markerBoxHeight / 2;
+					const arrowPoints = [[0, 0], [0, 5], [5, 2.5]];
+          this._container.append('defs')
+						.append('marker')
+						.attr('id', 'targetInfo-shape-arrow')
+						.attr('viewBox', [0, 0, markerBoxWidth, markerBoxHeight])
+						.attr('refX', refX)
+						.attr('refY', refY)
+						.attr('markerWidth', markerBoxWidth)
+						.attr('markerHeight', markerBoxHeight)
+						.attr('orient', 'auto-start-reverse')
+						.append('path')
+						.attr('d', d3.line()(arrowPoints))
+						.attr('fill', util.labelColor[0])
+						.attr('stroke', util.labelColor[0])
+
           const defs = this._container.append('defs')
             .attr('class', 'shadowGroup');
           const filtershadow =defs.append('filter')
@@ -1754,7 +1809,7 @@ export default {
               .attr('width', this._stations_size.s_w)
               .attr('height', this._stations_size.s_h));
           stationsNameGroup.append('g')
-            .call(xRect)
+            // .call(xRect)
             .call(xAxis);
           stationsNameGroup.append('g')
             .call(timedistance);
@@ -1926,6 +1981,7 @@ export default {
 
 
 
+          const tableoffset = 12;
           let rect_radius = 3;
           let monitorWidth = 360;
           let moni_rect_w = monitorWidth/3;
@@ -1938,7 +1994,7 @@ export default {
             .enter()
             .append('text')
             .attr('class', 'diagnosisTextGroup')
-            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i, 0]})`)
+            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i - tableoffset, -12]})`)
             .text(d => d)
             .attr('fill', (d, i) => d3.color(vm.processColor[i]))  //.darker(0.3)
             .style('font-size', 18)
@@ -1951,47 +2007,60 @@ export default {
           let statisticsInfoGroup = this._marey_g.append('g')
             .attr('transform', `translate(${[this._marey_size.w + 135, this._stations_size.h-10]})`)
             .attr('opacity', 0.8)
+          
           statisticsInfoGroup.selectAll('.statisticsInfoGroup')
-            .data(this._statistics)
-            .enter()
-            .append('path')
-            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i, 0]})`)
-            .attr('d', d => 
-              d3.arc()
-                .innerRadius(r)
-                .outerRadius(r+4)
-                .startAngle(angle_gap+0)
-                .cornerRadius(2)
-                .endAngle(angle_gap+remain_angle*(d.good/100))()
-            )
-            .attr('fill', (d, i) => vm.processColor[i])
-          // statisticsInfoGroup.selectAll('.statisticsInfoGroup')
-          //   .data(this._statistics)
-          //   .enter()
-          //   .append('path')
-          //   .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i, 0]})`)
-          //   .attr('d', d => {
-          //     let start = angle_gap*2+remain_angle*(d.good/100);
-          //     let end = start + remain_angle*(d.bad/100)
-          //     return d3.arc()
-          //       .innerRadius(r)
-          //       .outerRadius(r+5)
-          //       .startAngle(start)
-          //       .endAngle(end)()
-          //   })
-          //   .attr('fill', vm.labelColors[0])
-          statisticsInfoGroup.selectAll('.statisticsInfoGroup')
-            .data(this._statistics)
-            .enter()
-            .append('text')
-            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i, 3]})`)
-            .text(d => Math.round(d.bad))
-            .attr('fill', vm.labelColors[0])
-            .attr('font-size', 11)
-            .style('font-weight', 'bold')
-            .style('font-style', 'italic')
-            .attr('text-anchor', 'middle')
-            .attr('opacity', 0.8)
+          .data(this._statistics)
+          .enter()
+          .append('g')
+            .attr('class', 'statisticsInfoGroup')
+            .call(g => {
+              g.append('path')
+                .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i - tableoffset, -9]})`)
+                .attr('d', d => 
+                  d3.arc()
+                    .innerRadius(r)
+                    .outerRadius(r+4)
+                    .startAngle(angle_gap+0)
+                    .cornerRadius(2)
+                    .endAngle(angle_gap+remain_angle*(d.good/100))()
+                )
+                .attr('fill', (d, i) => vm.processColor[i])
+            })
+            .call(g => {
+              g.append('text')
+                .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i - tableoffset, -6]})`)
+                .text(d => Math.round(d.bad))
+                .attr('fill', vm.labelColors[0])
+                .attr('font-size', 11)
+                .style('font-weight', 'bold')
+                .style('font-style', 'italic')
+                .attr('text-anchor', 'middle')
+                .attr('opacity', 0.8)
+            })
+            .call(g => {
+              let height = 45;
+              g.append('rect')
+                .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i - 100, 15 - height]})`)
+                .attr('width', moni_rect_w)
+                .attr('height', height)
+                .attr('fill', 'none')
+                .attr('stroke', '#C9C9C9')
+                .attr('stroke-width', 1.5)
+                .attr('rx', 5)
+            })
+          statisticsInfoGroup
+            .append('line')
+            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i - 100, 10]})`)
+            .attr('x1', 0).attr('y1', 0)
+            .attr('x2', monitorWidth + 20).attr('y2', 0)
+            .attr('stroke', '#C9C9C9')
+            .attr('stroke-width', 1.5)
+          statisticsInfoGroup
+            .append('rect')
+            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i - 100, 11.25]})`)
+            .attr('height', 5)
+            .attr('width', monitorWidth + 20)
+            .attr('fill', 'white')
           
         }
 
@@ -2397,7 +2466,7 @@ export default {
             .attr('info_index', d => d.info_index)
             .attr('batch_index', d => d.link_rect[0].batch_index)
             .attr('merge_index', d => d.link_rect.map(e => ''+e.merge_index).join(' '))
-            .on('click', __singleClick)
+            // .on('click', __singleClick)
             .on('dblclick', __pathClick)
             .on('mouseenter', __pathOver)
             .on('mouseleave', __pathOut);
@@ -2419,13 +2488,13 @@ export default {
           // 具体内容
           let chartContentGroup = chartGroup.append('g')
             .attr('class', 'infoContent')
-            .attr('transform', `translate(${[this._circleR, this._circleR]})`);
+            .attr('transform', `translate(${[this._circleR, this._circleR]}) scale(0)`);
           this._renderInfoDetailCircle(chartContentGroup);
 
           // 规格信息
           let targetInfoGroup = chartGroup.append('g')
             .attr('class', 'targetInfo')
-            .attr('transform', `translate(${[this._circleR, this._circleR]}) scale(0)`);
+            .attr('transform', `translate(${[this._circleR, this._circleR]}) scale(1)`);
           this._renderInfoTargetInfo(targetInfoGroup);
 
           // let centerRect = oneBatchChartGroup.selectAll('centerRect')
@@ -2441,7 +2510,7 @@ export default {
           //   .on('mouseleave', __centerLeave);
           // this._renderCenterRect(centerRect);   // 中间正方形
 
-          let timer, status = true;
+          let timer;
           function __pathClick(e, d) {  // 双击触发诊断
             clearTimeout(timer);
             // console.log('双击')
@@ -2465,6 +2534,7 @@ export default {
               delete that._mergeClickValue[info_id];
               vm.hightLight([]);
               vm.$emit("clickDiagnosisButton");
+              vm.$emit('exitDiagStatus');
             } else {
               if (Object.keys(that._mergeClickValue).length !== 0) {
                 that._mergeClickValue = [];
@@ -2475,12 +2545,12 @@ export default {
                 merge_index_list: merge_index_list
               };
               // console.log(info_id)
-
-              that._trainClickHandle(info_id.split('_').map(d => (+d)));   // 点击后往父组件发送数据
               
               let merge_items_upid = selected_plates.map(d => d.upid);
-              let sort_res = d3.sort(merge_items_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0);
+              let sort_res = d3.sort(merge_items_upid, d => that._dataUCL.get(d)!==undefined ? -that._dataUCL.get(d)[0].flag : 0);
               vm.hightLight(sort_res);
+
+              that._trainClickHandle(info_id.split('_').map(d => (+d)));   // 点击后往父组件发送数据
             }
           }
           function __pathOver(e, d) {
@@ -3292,19 +3362,19 @@ export default {
 
           let button_w = 30
           let button_gap = 5;
-          changebutton.append('rect')
-            .attr('width', button_w)
-            .attr('height', button_w)
-            .attr('fill', 'white')
-            .attr('rx', 2)
-            .attr('ry', 2)
-            // .attr('stroke', '#aaa');
-          changebutton.append('image')
-            .attr('id', 'info_state')
-            .attr('width', button_w-button_gap)
-            .attr('height', button_w-button_gap)
-            .attr('transform', `translate(${[button_gap/2, button_gap/2]})`)
-            .attr('href', info_state)
+          // changebutton.append('rect')
+          //   .attr('width', button_w)
+          //   .attr('height', button_w)
+          //   .attr('fill', 'white')
+          //   .attr('rx', 2)
+          //   .attr('ry', 2)
+          //   // .attr('stroke', '#aaa');
+          // changebutton.append('image')
+          //   .attr('id', 'info_state')
+          //   .attr('width', button_w-button_gap)
+          //   .attr('height', button_w-button_gap)
+          //   .attr('transform', `translate(${[button_gap/2, button_gap/2]})`)
+          //   .attr('href', info_state)
 
           changebutton
             .on('click', (event, d) => {
@@ -3606,6 +3676,8 @@ export default {
             tgtwidth: {name: "W", unit: "m"},
             tgtplatethickness: {name: "T", unit: "mm"}
           }
+          target.forEach(d => targetMap[d]['extent'] = this._tar_extent[d]);
+          const labelColor = [vm.labelColors[1], vm.labelColors[0], vm.noflagColor];
 
           const width = this._detail_rect_w - this._targetMargin * 2;
           const headHeight = this._targetHeadHeight;
@@ -3648,7 +3720,7 @@ export default {
           chartGroup.append('g')
             .attr('transform', `translate(${[-width/2, -width/2]})`)
             .call(g => g.append('text')
-              .attr('transform', `translate(${[width/2, headHeight/2 + headFontSize/2 - headOffset]})`)
+              .attr('transform', `translate(${[width/2 - 20, headHeight/2 + headFontSize/2 - headOffset - 2]})`)
               .text(d => d.maxSteelspec)
               .attr("fill", d => d.maxSteelspecColor)
               .style("font-family", util.conditionMiniYAxisTextAttr.fontFamily)
@@ -3661,12 +3733,39 @@ export default {
               .attr('x2', width-headBottemMargin)
               .attr('stroke', '#ccc')
               .attr('stroke-width', 2))
+            .call(g => {
+              let p = g.append('g')
+                .attr('transform', `translate(${[width - 20, 10]})`)
+                .attr("stroke", 'white')
+                .attr("stroke-width", 1)
+              
+              p.selectAll('path')
+              .data(d => d3.pie()(d.label_statistics[0]))
+              .join('path')
+                .attr('fill', (_, i) => labelColor[i])
+                .attr('d', d3.arc().innerRadius(6).outerRadius(12))
+            })
+            .call(g => {
+              g.append('g')
+                .attr('transform', `translate(${[width - 12, 0]})`)
+                .attr("fill", labelColor[1])
+                .style("font-family", util.conditionMiniYAxisTextAttr.fontFamily)
+                .style("font-size", 10)
+                .style("font-weight", 'normal')
+                .append('text')
+                .text(d => (d.label_statistics[0][1] * 100).toFixed(1) + '%')
+            })
+          
 
           chartGroup.append('g')
             .attr('class', 'barChart')
             .attr('transform', `translate(${[-width/2 + this._targetTickWidth, -width/2 + headHeight]})`)
             .selectAll('rect')
-            .data(d => target.map(e => d.targetInfo[e]))
+            .data(d => {
+              const cmp = e => [...d.targetInfo[e],
+                d.prev_targetInfo ? d.targetInfo[e][1] - d.prev_targetInfo[e][1] : 0]
+              return target.map(cmp)
+            })
             .join('g')
             .attr('index', (_, i) => i)
             // .on('mouseenter', function (e, d) {
@@ -3688,15 +3787,15 @@ export default {
             // .on('mouseleave', function (e, d) {
             //   let barGroup = d3.select(this);
             //   barGroup.select('text').remove()
-            // })
+            // })   
             .call(g => g.append('rect')
               .attr('fill', 'white')
-              .attr('stroke', '#cbdcea')
-              .attr('stroke-width', 2)
+              .attr('stroke', '#999')
+              .attr('stroke-width', 1.5)
               .attr('x', xScale(0) + 2)
-              .attr('y', (_, i) => yScale(targetMap[target[i]].name))
+              .attr('y', (_, i) => yScale(targetMap[target[i]].name) - 0.75)
               .attr('width', d => xScale(1))
-              .attr('height', yScale.bandwidth()))
+              .attr('height', yScale.bandwidth() + 1.5))
             .call(g => g.append('rect')
               .attr('fill', '#cbdcea')
               .attr('x', xScale(0))
@@ -3716,13 +3815,33 @@ export default {
                 .style('font-style', 'normal')
                 .attr('text-anchor', 'middle')
             })
+            .call(g => {
+              g.append('path')
+                .attr('d', (d, i) => {
+                  const DIFF = targetMap[target[i]].extent[1] * 0.1;
+                  if (d[2] >= -DIFF && d[2] <= DIFF) return '';
+
+                  let x = xScale(0.98);
+                  let y = yScale(targetMap[target[i]].name) + yScale.bandwidth() / 2;
+                  return d3.line()([[x, y], [x - 10, y]]);
+                })
+                .attr('stroke', 'black')
+                .attr('marker-start', (d, i) => {
+                  const DIFF = targetMap[target[i]].extent[1] * 0.1;
+                  return d[2] > DIFF ? 'url(#targetInfo-shape-arrow)' : ''
+                })
+                .attr('marker-end', (d, i) => {
+                  const DIFF = targetMap[target[i]].extent[1] * 0.1;
+                  return d[2] < -DIFF ? 'url(#targetInfo-shape-arrow)' : ''
+                })
+            })
           
           chartGroup.append('g')
             .attr('transform', `translate(${[-width/2 + this._targetTickWidth, -width/2 + headHeight]})`)
             .style("font-family", util.conditionMiniYAxisTextAttr.fontFamily)
             .style("font-size", 10)
             .style("font-weight", 'normal')
-            .style("color", 'black')
+            .style("color", '#999')
             .call(yAxis)
 
         }

@@ -38,7 +38,8 @@ export function getOneBatchInfo(
   stationsdata,
   labelStatistics, 
   extend, 
-  cate_extend
+  cate_extend,
+  tar_extent
 ) {
   let fu_arr = [], m_arr = [], c_arr = [], t_arr = [];
   let sub_arr = [];
@@ -140,7 +141,7 @@ export function getOneBatchInfo(
   let targetInfo = {};
   targetKey.forEach(key => {
     let m = d3.mean(targetDataArr[key]);
-    let max = d3.max(targetDataArr[key]);
+    let max = tar_extent[key][1];
     targetInfo[key] = [m / max, m];
   });
 

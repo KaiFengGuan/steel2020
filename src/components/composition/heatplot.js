@@ -25,13 +25,13 @@ export function preRoll(data){
   }
   return [res, map];
 }
-export class boxplot{
+export class heatplot{
   constructor(container) {
     this._container = container;
     this._g = this._container.append('g').attr('class', 'scaleGroup');
     this._margin = {top: 20, right: 20, bottom: 40, left: 40};
-    this._height = 160;
-    this._width = 800;
+    this._height = 200;
+    this._width = 1000;
     
     //init data
     this._originData = null;
@@ -82,7 +82,6 @@ export class boxplot{
       flag = !flag;
       this._renderChart(flag ? "21222001000" : "21221360000")
     })
-    return this;
   }
   _initBackground(){
     this._g.append('rect')
@@ -112,8 +111,7 @@ export class boxplot{
       .call(d3.axisBottom(this._xScale));
     this._yAxis = g => g
     .attr('transform', `translate(${this._margin.left},0)`)
-    .call(d3.axisLeft(this._yScale).ticks(5, 's'))
-    // .ticks(null, 's'))
+    .call(d3.axisLeft(this._yScale).ticks(null, 's'))
     .call(g => g.select('.domain').remove());
 
     this._g.append('g').attr('class', 'xAxis').call(this._xAxis);
@@ -334,10 +332,5 @@ export class boxplot{
       .join(enter => addElement(enter, 'rect', rectAttrs),
         update => updateElement(update.transition().duration(150).ease(d3.easeQuad), rectAttrs),
         exit => exit.remove())
-  }
-  _removeLine(){
-    this._g.select('.passLine').remove();
-    this._Gantt
-      .selectAll('rect').remove();
   }
 } 

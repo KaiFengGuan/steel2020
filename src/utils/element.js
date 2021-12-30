@@ -60,3 +60,7 @@ export function sortedIndex(value, mode){
   arr.forEach((d, i) => {res[d[1]] = i});
   return res;
 }
+
+export function translate(x, y){
+  return `translate(${[x, y]})`;
+}

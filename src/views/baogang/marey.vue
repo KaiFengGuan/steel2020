@@ -710,11 +710,11 @@ export default {
 
 		async paintRiverLike(upid) {
 
-			this.selectedUpid =  "UPID " + upid
-			var diagnosisData = this.usDiagnosis[upid]//online
+			// this.selectedUpid =  "UPID " + upid
+			// var diagnosisData = this.usDiagnosis[upid]//online
 			let data =  (await steel.getProcessData({upid, process: 'roll',limit: 1000, devation: 0.25}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
 			console.log('steel.getProcessData', data);
-			this.$refs.wheelering.paintChart(diagnosisData, this.batchData)
+			this.$refs.wheelering.paintChart(this.batchData)
     },
 		mareyUpdate(){
       this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);

@@ -2488,8 +2488,6 @@ export default {
               let all_bad = merge_link.map(d => d[1].value);
               let all_no = merge_link.map(d => d[2].value);
 
-              // console.log(all_good, all_bad, all_no)
-
               merge_link.forEach(e => {
                 e[0].parentValue = d3.sum(all_good);
                 e[1].parentValue = d3.sum(all_bad);
@@ -2501,8 +2499,6 @@ export default {
               linkData.forEach(e => {
                 e.sourceArr = [all_good, all_bad, all_no];
               });
-
-              // console.log(linkData)
 
               return linkData;
             })
@@ -4788,8 +4784,6 @@ export default {
           // 改为桑基图
           const link_path = d => {
             let mergeWidth = this._y(d.parent.date_entry_e) - this._y(d.parent.date_entry_s);
-            console.log(d)
-            console.log(mergeWidth)
             
             let prevHeight = 0;
             let prevTimes = d.flagName === 'good' ? 0 : d.flagName === 'bad' ? 1 : 2;
@@ -4810,15 +4804,11 @@ export default {
             for (let i = 0; i < d.link_i; i++) {
               curPrev += this._sankeyScale(d.sourceArr[allPrevTimes][i]);
             }
-            // console.log(allPrev, curPrev)
-            // console.log(d)
 
             let pos = this._getLinkPosition(position_data, d);
             let startPos = pos[1] + this._detail_rect_w/2 - allWidth / 2;
             let source_x = pos[0];
             let source_y = startPos + allPrev + curPrev + width/2;
-
-            // console.log([source_x, source_y], [target_x, target_y])
 
             return d3.linkHorizontal()({
               source: [source_x, source_y],

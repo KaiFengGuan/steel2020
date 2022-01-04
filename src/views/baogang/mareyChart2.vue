@@ -742,6 +742,13 @@ export default {
               .range([-15, 15])
           }
 
+          let rect_data = this._mergeresult_1.map(d => {
+            return d.one_batch_info.map(e => e.link_rect_data.flat().length)
+          }).flat();
+          this._sankeyScale = d3.scaleLinear()
+            .domain([0, d3.extent(rect_data)[1]])
+            .range([0, 100])
+
           return this;
         }
 
@@ -2390,18 +2397,72 @@ export default {
               .attr("stroke-dasharray", "3 3")
               .attr("stroke-linecap", "round")
           
-          let link_path = d => {
-            let pathHeight = this._y(d.date_entry_e) - this._y(d.date_entry_s);
+          // // 原来画线的写法
+          // let link_path = d => {
+          //   let pathHeight = this._y(d.date_entry_e) - this._y(d.date_entry_s);
+
+          //   let source_x = this._coreX + this._rectWidth;
+          //   let source_y = this._y(d.batch_s) + d.info_index*(this._detail_rect_w+this._detail_gap);
+          //   let target_x = this._info_size.w - 20;
+          //   let target_y = this._y(d.date_entry_s) + pathHeight/2;
+
+          //   return d3.linkHorizontal()({
+          //     source: [source_x, source_y],
+          //     target: [target_x, target_y]
+          //   })
+          // }
+          // linkRectMerge.selectAll('steelspec_link_group')
+          //   .data(d => d.one_batch_info)
+          //   .enter()
+          //   .append('g')
+          //   .attr('class', 'steelspec_link_group')
+          //   .attr('id', d => `steelspec_link_group_${d.info_index}`)
+          // .selectAll('.linkRectLine')
+          //   .data(d => d.link_rect)
+          //   .enter()
+          //   .append('path')
+          //   .attr('class', 'linkRectLine')
+          //   .attr('id', d => `linkRectLine${
+          //     d.name.slice(0, 11) === "cannotMerge"
+          //     ? '_' + d.name
+          //     : d.merge_index
+          //   }`)
+          //   .attr('batch_index', d => d.batch_index)
+          //   .attr('info_index', d => d.info_index)
+          //   .attr('merge_index', d => d.merge_index)
+          //   .attr('d', link_path)
+          //   .attr("stroke", d => d.pathColor)
+          //   .attr("fill", "none")
+          //   .attr("stroke-width", 2)
+          //     .attr("stroke-linejoin", d => d.name.slice(0, 11) === "cannotMerge" ? "round" : "")
+          //     .attr("stroke-dasharray", d => d.name.slice(0, 11) === "cannotMerge" ? "4 4" : "")
+          //     .attr("stroke-linecap", d => d.name.slice(0, 11) === "cannotMerge" ? "round" : "")
+
+
+          // 改为桑基图
+          const link_path = d => {
+            let pathHeight = this._y(d.parent.date_entry_e) - this._y(d.parent.date_entry_s);
 
             let source_x = this._coreX + this._rectWidth;
-            let source_y = this._y(d.batch_s) + d.info_index*(this._detail_rect_w+this._detail_gap);
             let target_x = this._info_size.w - 20;
-            let target_y = this._y(d.date_entry_s) + pathHeight/2;
+            let source_y = this._y(d.parent.batch_s) + d.parent.info_index*(this._detail_rect_w+this._detail_gap);
+            let target_y = this._y(d.parent.date_entry_s) + pathHeight/2;
 
             return d3.linkHorizontal()({
               source: [source_x, source_y],
               target: [target_x, target_y]
             })
+          };
+          const link_width = d => {
+            return this._sankeyScale(d.value);
+          }
+          const link_color = d => {
+            let color = d.flagName === 'good'
+              ? vm.labelColors[1]
+              : d.flagName === 'bad'
+              ? vm.labelColors[0]
+              : vm.noflagColor
+            return color
           }
           linkRectMerge.selectAll('steelspec_link_group')
             .data(d => d.one_batch_info)
@@ -2410,26 +2471,69 @@ export default {
             .attr('class', 'steelspec_link_group')
             .attr('id', d => `steelspec_link_group_${d.info_index}`)
           .selectAll('.linkRectLine')
-            .data(d => d.link_rect)
-            .enter()
-            .append('path')
-            .attr('class', 'linkRectLine')
-            .attr('id', d => `linkRectLine${
-              d.name.slice(0, 11) === "cannotMerge"
-              ? '_' + d.name
-              : d.merge_index
-            }`)
-            .attr('batch_index', d => d.batch_index)
-            .attr('info_index', d => d.info_index)
-            .attr('merge_index', d => d.merge_index)
-            .attr('d', link_path)
-            .attr("stroke", d => d.pathColor)
+            .data(d => {
+              let merge_link = d.link_rect.map((e, i) => {
+                let good = e.merge_data.filter(f => f.flag == 1).length
+                let bad = e.merge_data.filter(f => f.flag == 0).length
+                let no = e.merge_data.filter(f => f.flag == 404).length
+                let arr = [good, bad, no];
+                
+                return [
+                  {link_i: i, value: good, flagName: 'good', parent: e, targetArr: arr},
+                  {link_i: i, value: bad, flagName: 'bad', parent: e, targetArr: arr},
+                  {link_i: i, value: no, flagName: 'no', parent: e, targetArr: arr}
+                ]
+              });
+              let all_good = merge_link.map(d => d[0].value);
+              let all_bad = merge_link.map(d => d[1].value);
+              let all_no = merge_link.map(d => d[2].value);
+
+              // console.log(all_good, all_bad, all_no)
+
+              merge_link.forEach(e => {
+                e[0].parentValue = d3.sum(all_good);
+                e[1].parentValue = d3.sum(all_bad);
+                e[2].parentValue = d3.sum(all_no);
+              });
+              let linkData = merge_link.flat();
+
+
+              linkData.forEach(e => {
+                e.sourceArr = [all_good, all_bad, all_no];
+              });
+
+              // console.log(linkData)
+
+              return linkData;
+            })
+            .join('path')
+            .attr('class', d => {
+              let cls = [];
+              cls.push('linkRectLine');
+              cls.push(`linkRectLine${
+                d.parent.name.slice(0, 11) === "cannotMerge"
+                ? '_' + d.parent.name
+                : d.parent.merge_index}`);
+              cls.push(`linkRectLine-${d.flagName}`);
+              
+              return cls.join(' ');
+            })
+            .attr('id', d => {
+              let id = [];
+              id.push('linkRectLine');
+              id.push(d.parent.name.slice(0, 11) === "cannotMerge"
+                ? d.parent.name
+                : d.parent.merge_index);
+              id.push(d.flagName);
+              
+              return id.join('-');
+            })
+            .attr('opacity', 0.5)
+            .attr("stroke", link_color)
             .attr("fill", "none")
-            .attr("stroke-width", 2)
-              .attr("stroke-linejoin", d => d.name.slice(0, 11) === "cannotMerge" ? "round" : "")
-              .attr("stroke-dasharray", d => d.name.slice(0, 11) === "cannotMerge" ? "4 4" : "")
-              .attr("stroke-linecap", d => d.name.slice(0, 11) === "cannotMerge" ? "round" : "")
-          
+            .attr("stroke-width", link_width)
+            .attr('d', link_path)
+
         }
         _renderInfoDetail() {
           const that = this;
@@ -4188,7 +4292,7 @@ export default {
         }
         _setLinkLine(batch_index_list, merge_index_list) {
           this._info_g.selectAll('.linkRectLine')
-            .attr('opacity', 0.4);
+            .attr('opacity', 0.2);
           this._info_g.selectAll('.linkRectMergeBatch')
             .attr('opacity', 0.4);
           this._info_g.selectAll('.linkRectMergeItem')
@@ -4199,8 +4303,8 @@ export default {
               .attr('opacity', 1);
 
             for (let merge_index of merge_index_list) {
-              this._info_g.select(`#linkRectMerge${batch_index} #linkRectLine${merge_index}`)
-                .attr('opacity', 1);
+              this._info_g.selectAll(`#linkRectMerge${batch_index} .linkRectLine${merge_index}`)
+                .attr('opacity', 0.5);
               this._info_g.select(`#linkRectMerge${batch_index} #linkRectMergeItem${merge_index}`)
                 .attr('opacity', 1);
             }
@@ -4208,7 +4312,7 @@ export default {
         }
         _resetLinkLine() {
           this._info_g.selectAll('.linkRectLine')
-            .attr('opacity', 1);
+            .attr('opacity', 0.5);
           
           this._info_g.selectAll('.linkRectMergeBatch')
             .attr('opacity', 1);
@@ -4660,35 +4764,85 @@ export default {
               return `translate(${[pos[0], pos[1]]})`
             })
 
-          let link_path = d => {
-            let pathHeight = this._y(d.date_entry_e) - this._y(d.date_entry_s);
-            let target_x = this._info_size.w - 12;
-            let target_y = this._y(d.date_entry_s) + pathHeight/2;
-            let pos = this._getLinkPosition(position_data, d);
-            let source_x = pos[0];
-            let source_y = pos[1]+this._detail_rect_w/2;
+          // let link_path = d => {
+          //   let pathHeight = this._y(d.date_entry_e) - this._y(d.date_entry_s);
+          //   let target_x = this._info_size.w - 12;
+          //   let target_y = this._y(d.date_entry_s) + pathHeight/2;
+          //   let pos = this._getLinkPosition(position_data, d);
+          //   let source_x = pos[0];
+          //   let source_y = pos[1]+this._detail_rect_w/2;
 
-            if (source_y < -pathHeight * 0.5) {
-              return d3.linkHorizontal()({
-                source: [target_x, target_y],
-                target: [target_x, target_y]
-              })
-            } else {
-              return d3.linkHorizontal()({
-                source: [source_x, source_y],
-                target: [target_x, target_y]
-              })
+          //   if (source_y < -pathHeight * 0.5) {
+          //     return d3.linkHorizontal()({
+          //       source: [target_x, target_y],
+          //       target: [target_x, target_y]
+          //     })
+          //   } else {
+          //     return d3.linkHorizontal()({
+          //       source: [source_x, source_y],
+          //       target: [target_x, target_y]
+          //     })
+          //   }
+          // }
+
+          // 改为桑基图
+          const link_path = d => {
+            let mergeWidth = this._y(d.parent.date_entry_e) - this._y(d.parent.date_entry_s);
+            console.log(d)
+            console.log(mergeWidth)
+            
+            let prevHeight = 0;
+            let prevTimes = d.flagName === 'good' ? 0 : d.flagName === 'bad' ? 1 : 2;
+            for (let i = 0; i < prevTimes; i++) {
+              prevHeight += this._sankeyScale(d.targetArr[i]);
             }
-          }
+            let width = this._sankeyScale(d.value);
+            let target_x = this._info_size.w - 12;
+            let target_y = this._y(d.parent.date_entry_s) + prevHeight + width/2 + mergeWidth/2;
+
+            let allWidth = this._sankeyScale(d3.sum(d.sourceArr.flat()));
+            let allPrev = 0; // 已用的总宽度
+            let allPrevTimes = d.flagName === 'good' ? 0 : d.flagName === 'bad' ? 1 : 2;
+            for (let i = 0; i < allPrevTimes; i++) {
+              allPrev += this._sankeyScale(d3.sum(d.sourceArr[i]));
+            }
+            let curPrev = 0;  // 当前flag前面已用的宽度
+            for (let i = 0; i < d.link_i; i++) {
+              curPrev += this._sankeyScale(d.sourceArr[allPrevTimes][i]);
+            }
+            // console.log(allPrev, curPrev)
+            // console.log(d)
+
+            let pos = this._getLinkPosition(position_data, d);
+            let startPos = pos[1] + this._detail_rect_w/2 - allWidth / 2;
+            let source_x = pos[0];
+            let source_y = startPos + allPrev + curPrev + width/2;
+
+            // console.log([source_x, source_y], [target_x, target_y])
+
+            return d3.linkHorizontal()({
+              source: [source_x, source_y],
+              target: [target_x, target_y]
+            })
+          };
           linkRectMerge.selectAll('.linkRectLine')
             .attr('d', link_path);
         }
         _getLinkPosition(position_data, data) {
+          // let chart_x = this._coreX + this._rectWidth;
+          // let chart_y;
+          // let path_y0 = data.info_index*(this._detail_rect_w+this._detail_gap);
+
+          // chart_y = position_data[data.batch_index][0] + path_y0;
+          
+          // return [chart_x, chart_y];
+
+          // 改为桑基图
           let chart_x = this._coreX + this._rectWidth;
           let chart_y;
-          let path_y0 = data.info_index*(this._detail_rect_w+this._detail_gap);
+          let path_y0 = data.parent.info_index*(this._detail_rect_w+this._detail_gap);
 
-          chart_y = position_data[data.batch_index][0] + path_y0;
+          chart_y = position_data[data.parent.batch_index][0] + path_y0;
           
           return [chart_x, chart_y];
         }

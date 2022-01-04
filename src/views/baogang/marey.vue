@@ -442,9 +442,11 @@ export default {
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
       // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
       this.jsonData = jsonData
+      // this.jsonData = (await this.getJsonData('2021-05-10 00:00:00', '2021-05-11 00:00:00')).data;
       // console.log('原始：', this.jsonData);
 			await this.$refs.parallel.paintChart(this.jsonData);
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
+      // console.log(this.mergeresult)
       let eventIconData = filterMareyChartEventIcon(this.jsonData);
       // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
       this.monitorData = monitorData

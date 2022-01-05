@@ -14,7 +14,15 @@ import { addElement,
 	} from 'utils/element';
 import clickIcon from 'assets/images/wheel/fixed.svg'
 import util from 'views/baogang/util.js';
-import { divideData, arrowData, mergeColor, diagnosticSort, queryIcon, getSortIndex} from "utils/data.js"
+import { 
+	divideData,
+	arrowData,
+	mergeColor,
+	diagnosticSort,
+	queryIcon,
+	getSortIndex,
+	sortDomain
+} from "utils/data.js"
 import {preRoll, boxplot} from './boxplot.js';
 import {heatplot, preHeat} from './heatplot.js';
 import {processJson} from './index.js';
@@ -114,7 +122,7 @@ export default {
 							['p1', 'p2', 'p3', 'p4', 'p6']
 					];
 					this._boxkeys = this._keys.flat();
-					this._boxChart = {h: 100, w: 500, gap: 20};
+					this._boxChart = {h: 120, w: 600, gap: 20};
 					this._boxMap = null;
 					this._wheelBox = 0;//wheel 数量
 					this._BoxGroup = null;
@@ -258,22 +266,31 @@ export default {
 							}
 							)),
 						maxLength = this._batchData.length,  //batch numbers
-						rectArray = new Array(maxLength).fill(0).map((d, i) => (this._batchData[i].length + 1) * 6.5),   //batch position
-						mergeOffset = Array.from(d3.cumsum(rectArray)),	// card offset mergeOffset
-						RectWidth = mergeOffset[mergeOffset.length - 1],
+						// rectArray = new Array(maxLength).fill(0).map((d, i) => (this._batchData[i].length + 1) * 6.5),   //batch position
+						// mergeOffset = Array.from(d3.cumsum(rectArray)),	// card offset mergeOffset
+						// RectWidth = mergeOffset[mergeOffset.length - 1],
+						RectWidth = 480,
 						minRect = RectWidth / (maxLength + 0.5),
 						batchEX = this._divideBacthData(dataInfo, this._batchData);
+
+					let batchNum = new Array(maxLength).fill(0).map((_, i) => (this._batchData[i].length + 1)),
+						batchArray = Array.from(d3.cumsum(batchNum)),
+						blockWidth = RectWidth/batchArray[batchArray.length - 1],
+						rectArray = new Array(maxLength).fill(0).map((_, i) => (this._batchData[i].length + 1) * blockWidth),   //batch position
+						mergeOffset = Array.from(d3.cumsum(rectArray));	// card offset mergeOffset
+					
 					var merge_g = 0,
 						chartHeight = this._sliderValue,   //rect max height
 						chartPadding = { left: 3, right: 3, top: 2, bottom: 2, horizen: 6, vertical: 4 },
 						boxMargin = { bottom: 5, top: 5, left: 5, right: 5, horizen: 12, vertical: 10 },
 						chartMargin = 10,
-						textWidth = 100,
+						textWidth = 110,
 						textMargin = { bottom: 5, top: 5, margin: 5, left: 5, right: 0, horizen: 5, vertical: 10 },
 						cardWidth = boxMargin.horizen + RectWidth + textWidth + textMargin.horizen,
 						cardMargin = 20,
 						tepaHeight = chartHeight,	//Tepamoral View
 						mergeHeight = 1.5 * chartHeight;//mergeChart View
+
 					var rectNum = undefined,
 						displayfunc = null,
 						barVisObject = Object.assign({}, ...dataInfo.map(d => { return { [d.indexName]: this._barVis } })),
@@ -308,11 +325,9 @@ export default {
 					console.log('batchEX', batchEX)
 					console.log(batchEX.map(d => getSortIndex(d.flat())));
 					let orderkeys = ['firstTime', 'timeInterval', 'speNum', 't2Num', 'extremum', 'overNum'],
-						orderData = batchEX.map(d => getSortIndex(d.flat()));
-						
-					
-					// {firstTime,timeInterval, speNum, t2Num, extremum, overNum}
-					// var allValue = 
+						orderData = batchEX.map(d => getSortIndex(d.flat())),
+						orderDatum = sortDomain(orderData);
+						//['overNum', 'speNum', 'extremum'].map(d => orderData.map(e => e[d]))
 
 					initOrdinal.call(this);
 					renderyScale();
@@ -693,8 +708,7 @@ export default {
 						}
 						const barWidth = textWidth,
 							originX = -textMargin.right,
-							orderDatum = ['overNum', 'speNum', 'extremum'].map(d => orderData.map(e => e[d])),
-							orderScale = orderDatum.map(d => d3.scaleLinear().domain([0, d3.max(d)]).range([0, barWidth/ 2]));
+							orderScale = orderDatum.map(d => d3.scaleLinear().domain([0, d3.max(d)]).range([0, barWidth * 2 / 3]));
 						arrowAttrs.orderLabel = {
 							class: 'orderLabel',
 							width: d => orderScale[d[1]](orderDatum[d[1]][d[0]]),
@@ -767,7 +781,6 @@ export default {
 							.attr('stroke', mergeColor[0]))
 					}
 					function initOrdinal() {
-						const orderDatum = ['overNum', 'speNum', 'extremum'].map(d => orderData.map(e => e[d]));
 						scaleArray = orderDatum.map(d => d3.scaleOrdinal().domain(indexArray).range(sortedIndex(d, true)))
 						indexScale = this._indexScale !== undefined ? scaleArray[this._indexScale] : scaleArray[0];
 					}
@@ -1408,6 +1421,7 @@ export default {
 					}
 					function updateSort(d){
 						indexScale = scaleArray[d];
+						merge_g = 0;
 						renderyScale()
 						renderSort()
 					}
@@ -1935,6 +1949,7 @@ export default {
 				}
 
 				_divideBacthData(arr, totalData){
+					console.log(totalData)
 					let result = [];
 					for(let i = 0; i < arr.length; i++){
 						let index = this._label.indexOf(arr[i].indexName),
@@ -1974,6 +1989,8 @@ export default {
 								s.over = Math.abs(s.over);
 								s.range = this._rangeLevel(s);
 								s.ovrage = Math.abs(s.range) > 2 ?  true : false;
+								s.tjOrder = e['tjOrder'][index],
+								s.tqOrder = e['tqOrder'][index],
 								s.dia_Status = e['tjOrder'][index] < 10 && e['tqOrder'][index] < 10 ? true : false;
 								return s
 							});

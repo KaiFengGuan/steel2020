@@ -58,8 +58,8 @@ export class heatplot{
   enter(options){
     this._originData = options.data;
     [this._passMap, this._upidMap] = options.func(this._originData);
-    console.log(this._passMap);
-    console.log(this._upidMap);
+    // console.log(this._passMap);
+    // console.log(this._upidMap);
     this._length = this._passMap.length;
     this._name = options.label;
     this._data = options.func(options.data);
@@ -74,7 +74,7 @@ export class heatplot{
     this._initBox();
     let flag = true;
     this._g.on('click', ()=>{
-      console.log('click')
+      // console.log('click')
       flag = !flag;
       this._renderChart(flag ? "21221361000" : "21221360000")
     })

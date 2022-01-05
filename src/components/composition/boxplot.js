@@ -78,7 +78,7 @@ export class boxplot{
     this._initBox();
     let flag = true;
     this._g.on('click', ()=>{
-      console.log('click')
+      // console.log('click')
       flag = !flag;
       this._renderChart(flag ? "21222001000" : "21221360000")
     })

@@ -147,7 +147,7 @@ export default {
           this._coreX = 0;
           this._rectWidth = 60;
           this._info_bgc_w = 195;
-          this._detail_rect_w = this._rectWidth * 2.5;
+          this._detail_rect_w = 150;
           this._detail_gap = 10;
           this._mergeClickValue = [];
           this._trainSelectedList = [];
@@ -649,9 +649,9 @@ export default {
           this._height = height;
           this._main_magin.top += this._polygon_offset;
           
-          this._info_size.w = 2.6 * this._main_magin.left;
+          this._info_size.w = 345;
           this._info_size.h = this._height;
-          this._marey_size.w = this._width - this._info_size.w - 7.6 * this._main_magin.right;
+          this._marey_size.w = 750;
           this._marey_size.norm_h = this._height;
           this._marey_size.mini_h = 500;
           this._brush_size.w = 75;
@@ -666,7 +666,7 @@ export default {
           this._stations_size.p_w = (this._width - 1.5 * this._main_magin.right - this._info_size.w) / 1.414 + this._stations_size.p_h + 3;
           // this._stations_size.p_w = this._stations_size.p_w + 100;
 
-          this._coreX = this._info_size.w * 0.55;
+          this._coreX = this._info_size.w * 0.35;
 
           return this;
         }
@@ -2001,7 +2001,7 @@ export default {
             .enter()
             .append('text')
             .attr('class', 'diagnosisTextGroup')
-            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i - tableoffset, -12]})`)
+            .attr('transform', (d, i) => `translate(${[(moni_rect_w+10)*i - tableoffset - 20, -12]})`)
             .text(d => d)
             .attr('fill', (d, i) => d3.color(vm.processColor[i]))  //.darker(0.3)
             .style('font-size', 18)
@@ -2012,7 +2012,7 @@ export default {
           let angle_gap = 0.1;
           let remain_angle = 2*Math.PI-angle_gap*2;
           let statisticsInfoGroup = this._marey_g.append('g')
-            .attr('transform', `translate(${[this._marey_size.w + 135, this._stations_size.h-10]})`)
+            .attr('transform', `translate(${[this._marey_size.w + 115, this._stations_size.h-10]})`) // 原来偏移是135
             .attr('opacity', 0.8)
           
           statisticsInfoGroup.selectAll('.statisticsInfoGroup')
@@ -2347,7 +2347,7 @@ export default {
             .join('g')
             .attr('class', 'linkRectMerge')
             .attr('id', d => `linkRectMerge${d.batch_index}`)
-            .attr("opacity", 0.4)
+            // .attr("opacity", 0.4)
           
           // 批次提示线
           linkRectMerge
@@ -2502,34 +2502,90 @@ export default {
 
               return linkData;
             })
-            .join('path')
-            .attr('class', d => {
-              let cls = [];
-              cls.push('linkRectLine');
-              cls.push(`linkRectLine${
-                d.parent.name.slice(0, 11) === "cannotMerge"
-                ? '_' + d.parent.name
-                : d.parent.merge_index}`);
-              cls.push(`linkRectLine-${d.flagName}`);
-              
-              return cls.join(' ');
+            .join('g')
+            .call(g => {
+              g.append('path')
+                .attr('class', d => {
+                  let cls = [];
+                  cls.push('linkRectLine');
+                  cls.push(`linkRectLine${
+                    d.parent.name.slice(0, 11) === "cannotMerge"
+                    ? '_' + d.parent.name
+                    : d.parent.merge_index}`);
+                  cls.push(`linkRectLine-${d.flagName}`);
+                  
+                  return cls.join(' ');
+                })
+                .attr('id', d => {
+                  let id = [];
+                  id.push('linkRectLine');
+                  id.push(d.parent.name.slice(0, 11) === "cannotMerge"
+                    ? d.parent.name
+                    : d.parent.merge_index);
+                  id.push(d.flagName);
+                  
+                  return id.join('-');
+                })
+                .attr('opacity', 0.5)
+                .attr("stroke", link_color)
+                .attr("fill", "none")
+                .attr("stroke-width", link_width)
+                .attr('d', link_path)
             })
-            .attr('id', d => {
-              let id = [];
-              id.push('linkRectLine');
-              id.push(d.parent.name.slice(0, 11) === "cannotMerge"
-                ? d.parent.name
-                : d.parent.merge_index);
-              id.push(d.flagName);
-              
-              return id.join('-');
+            .call(g => {
+              g.append('rect')
+                .attr('class', d => {
+                  let cls = [];
+                  cls.push('linkRectSourceNode');
+                  cls.push(`linkRectSourceNode${
+                    d.parent.name.slice(0, 11) === "cannotMerge"
+                    ? '_' + d.parent.name
+                    : d.parent.merge_index}`);
+                  cls.push(`linkRectNode-${d.flagName}`);
+                  
+                  return cls.join(' ');
+                })
+                .attr('id', d => {
+                  let id = [];
+                  id.push('linkRectSourceNode');
+                  id.push(d.parent.name.slice(0, 11) === "cannotMerge"
+                    ? d.parent.name
+                    : d.parent.merge_index);
+                  id.push(d.flagName);
+                  
+                  return id.join('-');
+                })
+                .attr('width', 5)
+                .attr('height', 20)
+                .attr('fill', link_color)
             })
-            .attr('opacity', 0.5)
-            .attr("stroke", link_color)
-            .attr("fill", "none")
-            .attr("stroke-width", link_width)
-            .attr('d', link_path)
-
+            .call(g => {
+              g.append('rect')
+                .attr('class', d => {
+                  let cls = [];
+                  cls.push('linkRectTargetNode');
+                  cls.push(`linkRectTargetNode${
+                    d.parent.name.slice(0, 11) === "cannotMerge"
+                    ? '_' + d.parent.name
+                    : d.parent.merge_index}`);
+                  cls.push(`linkRectNode-${d.flagName}`);
+                  
+                  return cls.join(' ');
+                })
+                .attr('id', d => {
+                  let id = [];
+                  id.push('linkRectTargetNode');
+                  id.push(d.parent.name.slice(0, 11) === "cannotMerge"
+                    ? d.parent.name
+                    : d.parent.merge_index);
+                  id.push(d.flagName);
+                  
+                  return id.join('-');
+                })
+                .attr('width', 3)
+                .attr('height', 0)
+                .attr('fill', link_color)
+            })
         }
         _renderInfoDetail() {
           const that = this;
@@ -3986,7 +4042,7 @@ export default {
           this._moni_g === undefined ? undefined : this._moni_g.remove();
           this._moni_g = this._container.append('g')
             .attr('class', 'monitorContentGroup')
-            .attr('transform', `translate(${[this._info_size.w + this._marey_size.w + 35, 0]})`);
+            .attr('transform', `translate(${[this._info_size.w + this._marey_size.w + 15, 0]})`); // 原来偏移是35
 
           // this._renderMonitorContent();
 
@@ -4289,6 +4345,10 @@ export default {
         _setLinkLine(batch_index_list, merge_index_list) {
           this._info_g.selectAll('.linkRectLine')
             .attr('opacity', 0.2);
+          this._info_g.selectAll('.linkRectSourceNode')
+            .attr('opacity', 0.4);
+          this._info_g.selectAll('.linkRectTargetNode')
+            .attr('opacity', 0.5);
           this._info_g.selectAll('.linkRectMergeBatch')
             .attr('opacity', 0.4);
           this._info_g.selectAll('.linkRectMergeItem')
@@ -4301,6 +4361,10 @@ export default {
             for (let merge_index of merge_index_list) {
               this._info_g.selectAll(`#linkRectMerge${batch_index} .linkRectLine${merge_index}`)
                 .attr('opacity', 0.5);
+              this._info_g.selectAll(`#linkRectMerge${batch_index} .linkRectSourceNode${merge_index}`)
+                .attr('opacity', 1);
+              this._info_g.selectAll(`#linkRectMerge${batch_index} .linkRectTargetNode${merge_index}`)
+                .attr('opacity', 1);
               this._info_g.select(`#linkRectMerge${batch_index} #linkRectMergeItem${merge_index}`)
                 .attr('opacity', 1);
             }
@@ -4309,6 +4373,10 @@ export default {
         _resetLinkLine() {
           this._info_g.selectAll('.linkRectLine')
             .attr('opacity', 0.5);
+          this._info_g.selectAll('.linkRectSourceNode')
+            .attr('opacity', 1);
+          this._info_g.selectAll('.linkRectTargetNode')
+            .attr('opacity', 1);
           
           this._info_g.selectAll('.linkRectMergeBatch')
             .attr('opacity', 1);
@@ -4782,23 +4850,30 @@ export default {
           // }
 
           // 改为桑基图
-          const link_path = d => {
+          const computeSourceTarget = d => {
+            const sankeyPadding = 5;
             let mergeWidth = this._y(d.parent.date_entry_e) - this._y(d.parent.date_entry_s);
+            let batchWidth = this._y(d.parent.batch_e) - this._y(d.parent.batch_s);
+            // console.log(d)
+            // console.log(mergeWidth, batchWidth)
             
             let prevHeight = 0;
             let prevTimes = d.flagName === 'good' ? 0 : d.flagName === 'bad' ? 1 : 2;
             for (let i = 0; i < prevTimes; i++) {
-              prevHeight += this._sankeyScale(d.targetArr[i]);
+              prevHeight += this._sankeyScale(d.targetArr[i]) + sankeyPadding;
             }
+            let targetAllWidth = this._sankeyScale(d3.sum(d.targetArr.flat()));
             let width = this._sankeyScale(d.value);
+            let targetLineCount = d.targetArr.filter(e => e > 0).length;
+            let targetStartPos = this._y(d.parent.date_entry_s) - targetAllWidth/2 - sankeyPadding * (targetLineCount - 1);
             let target_x = this._info_size.w - 12;
-            let target_y = this._y(d.parent.date_entry_s) + prevHeight + width/2 + mergeWidth/2;
+            let target_y = targetStartPos + prevHeight + width/2 + mergeWidth/2;
 
-            let allWidth = this._sankeyScale(d3.sum(d.sourceArr.flat()));
+            let sourceAllWidth = this._sankeyScale(d3.sum(d.sourceArr.flat()));
             let allPrev = 0; // 已用的总宽度
             let allPrevTimes = d.flagName === 'good' ? 0 : d.flagName === 'bad' ? 1 : 2;
             for (let i = 0; i < allPrevTimes; i++) {
-              allPrev += this._sankeyScale(d3.sum(d.sourceArr[i]));
+              allPrev += this._sankeyScale(d3.sum(d.sourceArr[i])) + sankeyPadding;
             }
             let curPrev = 0;  // 当前flag前面已用的宽度
             for (let i = 0; i < d.link_i; i++) {
@@ -4806,17 +4881,54 @@ export default {
             }
 
             let pos = this._getLinkPosition(position_data, d);
-            let startPos = pos[1] + this._detail_rect_w/2 - allWidth / 2;
+            // let sourceLineCount = d.sourceArr.flat().filter(e => e > 0).length;
+            let sourceLineCount = d.sourceArr.length;
+            let startPos = pos[1] + this._detail_rect_w/2 - sourceAllWidth/2 - sankeyPadding * (sourceLineCount - 1);
             let source_x = pos[0];
             let source_y = startPos + allPrev + curPrev + width/2;
 
-            return d3.linkHorizontal()({
+            return {
               source: [source_x, source_y],
-              target: [target_x, target_y]
-            })
+              target: [target_x, target_y],
+              sourceWidth: width,
+              targetWidth: width,
+              mergeWidth,
+              batchWidth
+            };
+          }
+          const link_path = d => {
+            let {source, target, mergeWidth, batchWidth} = computeSourceTarget(d);
+            let range = 0.5 * (this._stations_size.h + this._stations_size.gap);
+
+            if (target[1] < range || source[1] < 0) {
+              return d3.linkHorizontal()({ source: target, target: target });
+            }
+            else {
+              return d3.linkHorizontal()({ source: source, target: target });
+            }
+            // return d3.linkHorizontal()({ source: source, target: target });
           };
+
           linkRectMerge.selectAll('.linkRectLine')
             .attr('d', link_path);
+          linkRectMerge.selectAll('.linkRectSourceNode')
+            .attr('transform', d => {
+              let {source, sourceWidth} = computeSourceTarget(d);
+              return `translate(${[source[0] - 2.5, source[1] - sourceWidth/2]})`
+            })
+            .attr('height', d => {
+              let {sourceWidth} = computeSourceTarget(d);
+              return sourceWidth
+            });
+          linkRectMerge.selectAll('.linkRectTargetNode')
+            .attr('transform', d => {
+              let {target, targetWidth} = computeSourceTarget(d);
+              return `translate(${[target[0] - 3, target[1] - targetWidth/2]})`
+            })
+            .attr('height', d => {
+              let {targetWidth} = computeSourceTarget(d);
+              return targetWidth
+            });
         }
         _getLinkPosition(position_data, data) {
           // let chart_x = this._coreX + this._rectWidth;
@@ -4839,11 +4951,19 @@ export default {
         _getDetailPosition(position_data, data) {
           let chart_x = this._coreX - 1.8*65 + (this._info_bgc_w - this._detail_rect_w)/2 + 3;
           let chart_y;
+
           let path_y0 = this._y(data.batch_s);
           let path_y1 = this._y(data.batch_e);
           let path_height = path_y1 - path_y0;
 
-          if (path_y0 >= 20 && path_y0 <= this._height) {  // 判断是否在屏幕现实范围内
+          let visualRange = [
+            0.5 * (this._stations_size.h + this._stations_size.gap),
+            this._height + 200
+          ];
+          let judgmentPoint = path_y0 + path_height / 2;
+
+          // 判断是否在屏幕显示范围内
+          if (judgmentPoint >= visualRange[0] && judgmentPoint <= visualRange[1]) {
             if (position_data.length === 0) {
               // chart_y = path_y0 - 50;
               chart_y = path_y0 + path_height/2 - this._detail_rect_w/2 - 15;
@@ -4855,7 +4975,17 @@ export default {
                 chart_y = path_y0 + path_height/2 - this._detail_rect_w/2 - 15;
               }
             }
-          } else if (path_y0 < 20) {
+            
+            // 如果批次中点达到了某个区域，强制固定批次状态图元
+            if ( true
+              // && chart_y >= 50
+              // && chart_y <= 250
+              && judgmentPoint > -0.5 * (this._stations_size.h + this._stations_size.gap)
+              && judgmentPoint <  1.5 * (this._stations_size.h + this._stations_size.gap)
+            ) {
+              chart_y = 100
+            }
+          } else if (judgmentPoint < visualRange[0]) {
             chart_y = path_y0 - 1000;
           } else {
             chart_y = path_y0;

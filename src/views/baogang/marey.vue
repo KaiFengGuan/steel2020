@@ -2,7 +2,7 @@
 	<div class="custom-marey">
 		<el-col :span="24">
 		<el-row :style="cssVars">
-			<el-col :span="5">
+			<el-col :span="4">
 				<el-row>
 					<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
 					<el-row>
@@ -24,9 +24,10 @@
                   @change="scatterTabClick"
                   class="scatter-tab"
                   size="mini"
+                  fill="#94A7B7"
                 >
-                  <el-radio-button label="first">first</el-radio-button>
-                  <el-radio-button label="second">second</el-radio-button>
+                  <el-radio-button label="first">norm</el-radio-button>
+                  <el-radio-button label="second">diag</el-radio-button>
                 </el-radio-group>
 								<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData" class="card-select">
 									<el-option v-for="option in algorithmOptions" :key="option" :label="option" :value="option"></el-option>
@@ -56,7 +57,7 @@
 					</el-card>
 				</el-row>
 			</el-col>
-			<el-col :span="19" style="margin-top:-2px"
+			<el-col :span="20" style="margin-top:-2px"
 				v-loading="loadingDataLoading"
 				element-loading-text="loading..."
 				element-loading-spinner="el-icon-loading"
@@ -1121,12 +1122,13 @@ export default {
   }
 	.card-select{
 		float: right;
-		width: 100px;
+		width: 80px;
 		margin: -3.5px;
-		margin-right: 5%;
+		margin-right: 2%;
 		.el-input .el-input__inner{
 			font-family : DIN;
 			color: #6d7885;
+      padding: 0px 30px 0px 10px;
 		}
 	}
 
@@ -1293,6 +1295,17 @@ export default {
 		border-color: #909399;
 		color: #FFF;
 	}
+}
+.scatter-tab {
+  .el-radio-button__inner {
+    padding: 2.5px 5px;
+  }
+  .is-active .el-radio-button__inner:hover {
+    color: #ffffff;
+  }
+  .el-radio-button__inner:hover {
+    color: #94A7B7;
+  }
 }
 </style>
 

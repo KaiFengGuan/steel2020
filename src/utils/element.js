@@ -64,3 +64,26 @@ export function sortedIndex(value, mode){
 export function translate(x, y){
   return `translate(${[x, y]})`;
 }
+
+export function stringify(num, digits){
+  if(num % 1 === 0)return num;
+  let str = '';
+  if(digits !== undefined){
+    str = num.toFixed(digits)
+  }else{
+    if(Math.floor(num) === 0){
+      str = num.toFixed(3)
+    }else{
+      str = num.toFixed(2)
+    }
+  }
+  let len = str.length;
+  while(str[len - 1] === '.' || str[len - 1] === '0'){
+    if(str[len - 1] === '.'){
+      len --;
+      break;
+    }
+    len --;
+  }
+  return str.slice(0, len)
+}

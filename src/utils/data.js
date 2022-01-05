@@ -74,6 +74,22 @@ export function arrowData(data){
   // if(obj.intersection.length !== 0)console.log(obj.intersection)
   return obj;
 }
+
+export function getSortIndex(data){
+  let [start, end] = d3.extent(data.map(d => new Date(d.time)));
+  let firstTime = 1,
+      timeInterval = 1;
+  let badSteel = data.filter(d => d.flag === 0);
+  let time = badSteel.map(d => new Date(d.time)),
+    interval = d3.pairs(time, (a, b) => b - a);
+  time[0] && (firstTime = (new Date(time[0]) - start)/(end - start));
+  interval[0] && (timeInterval = (d3.min(interval))/(end - start));
+  let speNum = badSteel.filter(d => d.dia_Status).length,
+      t2Num = data.filter(d => d.ovrage).length,
+      extremum = d3.max(badSteel.map(d => d.over)),
+      overNum = data.filter(d => d.ovrage).length;
+  return {firstTime,timeInterval, speNum, t2Num, extremum, overNum};
+}
 export const mergeColor = ["#e3ad92",   "#b9c6cd"]
 
 export function diagnosticSort(batchData){
@@ -126,3 +142,18 @@ export function brushPre(json){
   }
   return result;
 }
+// {
+//   slabthickness: JSON.stringify([]),
+//   tgtdischargetemp: JSON.stringify([]),
+//   tgtplatethickness: JSON.stringify([]),
+//   tgtwidth: JSON.stringify([]),
+//   tgtplatelength2: JSON.stringify([]),
+//   tgttmplatetemp: JSON.stringify([]),
+//   cooling_start_temp: JSON.stringify([]),
+//   cooling_stop_temp: JSON.stringify([]),
+//   cooling_rate1: JSON.stringify([]),
+//   productcategory: JSON.stringify([]),
+//   steelspec: JSON.stringify([]),
+//   status_cooling:0,
+//   fqcflag:0
+// }

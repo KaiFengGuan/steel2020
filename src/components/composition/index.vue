@@ -5,22 +5,24 @@
 <script>
 import * as d3 from 'd3';
 
-import { addElement, updateElement, updateAsyncElement, sortedIndex, translate} from 'utils/element';
+import { addElement,
+	updateElement,
+	updateAsyncElement,
+	sortedIndex,
+	translate,
+	stringify
+	} from 'utils/element';
 import clickIcon from 'assets/images/wheel/fixed.svg'
 import util from 'views/baogang/util.js';
-// import processJson from "assets/json/processJson.json"
-import { divideData, arrowData, mergeColor, diagnosticSort, queryIcon} from "utils/data.js"
+import { divideData, arrowData, mergeColor, diagnosticSort, queryIcon, getSortIndex} from "utils/data.js"
 import {preRoll, boxplot} from './boxplot.js';
-import {heatplot} from './heatplot.js';
+import {heatplot, preHeat} from './heatplot.js';
 import {processJson} from './index.js';
-import rollData from 'views/data/rollData.json';
+import heatData from './heatVisualizationData.json'
+import coolData from './coolingVisualizationData.json'
+import rollData from './rollData.json';
 export default {
 	props: {
-		// contract: {
-		// 	default: false,
-		// 	type: Boolean,
-		// 	require: true
-		// }
 	},
 	data() {
 			return {
@@ -109,7 +111,7 @@ export default {
 							['seg_u', 'seg_d', 'plate', 'time'],
 							['bendingforce', 'bendingforcebot', 'bendingforcetop', 'rollforce', 'rollforceds', 'rollforceos',
 							'screwdown', 'shiftpos', 'speed', 'torque', 'torquebot', 'torquetop'],
-							['p1', 'p2', 'p3', 'p4', 'p6', 'Scanner']
+							['p1', 'p2', 'p3', 'p4', 'p6']
 					];
 					this._boxkeys = this._keys.flat();
 					this._boxChart = {h: 100, w: 500, gap: 20};
@@ -234,6 +236,7 @@ export default {
 
 					this._barInstance = this._renderMainBar.bind(this)();
 					this._renderMainBox();
+					this._initLinkG();
 					this._initBoxLine();
 					this._initProcessButton();
 				}
@@ -271,9 +274,8 @@ export default {
 						cardMargin = 20,
 						tepaHeight = chartHeight,	//Tepamoral View
 						mergeHeight = 1.5 * chartHeight;//mergeChart View
-
 					var rectNum = undefined,
-						opacityCache = null,
+						displayfunc = null,
 						barVisObject = Object.assign({}, ...dataInfo.map(d => { return { [d.indexName]: this._barVis } })),
 						indexArray = d3.map(dataInfo, (d, i) => i),
 						indexSort = d3.map(dataInfo, d => d.indexName),
@@ -288,7 +290,6 @@ export default {
 						sliderAttrs = null,
 						rectAttrs = null,
 						dragAttrs = null,
-						iconAttrs = null,
 						linearGradientAttrs = null,
 						mergeAttrs = null,
 						horizenAttrs = null,
@@ -297,18 +298,25 @@ export default {
 						clickAttrs = null,	//sliderG点击事件
 						clickStatus = false,
 						heatMapAttrs = null,
+						axisAttrs = null,
 						arrowAttrs = null,
 						timeScale = null,
-						symbolAttrs = null;
+						arrowAttrs = null;
 
 					this._cardWidth = cardWidth;
+
+					console.log('batchEX', batchEX)
+					console.log(batchEX.map(d => getSortIndex(d.flat())));
+					let orderkeys = ['firstTime', 'timeInterval', 'speNum', 't2Num', 'extremum', 'overNum'],
+						orderData = batchEX.map(d => getSortIndex(d.flat()));
+						
+					
+					// {firstTime,timeInterval, speNum, t2Num, extremum, overNum}
+					// var allValue = 
 
 					initOrdinal.call(this);
 					renderyScale();
 					initAttrs.call(this); //init Element Attrs
-
-					var cardG = mainG.append('g').attr('class', 'cardG');
-					initCardG.call(this);
 
 					var sliderG = mainG.append('g').attr('class', 'sliderG')
 						.attr('transform', sliderAttrs.transform);
@@ -340,7 +348,6 @@ export default {
 
 					const defG = this._container.select('.defsG');
 					initSymbolDefs();
-					initArrow();
 					var rectG = mainG.append('g').attr('class', 'rectG');
 
 					var dragG = sliderG.append('g').attr('class', 'dragG');
@@ -357,20 +364,15 @@ export default {
 					if (rectArray.some(d => d === chartHeight)) initRectG()
 					initAxisG(timeScale);
 
-					var triangleG = mainG.append('g').attr('class', 'triangleG');
-					initTriangleG();
-
 					var barG = mainG.append('g').attr('class', 'barG');
 					initBarG.call(this);
-
-					var symbolG = mainG.append('g').attr('class', 'symbolG');
-					initSymbol.call(this);
 
 					var mouseInfo = this._mouseDis !== undefined ? mouseText(this._mouseDis) : undefined,
 						textG = sliderG.append('g').attr('class', 'textG');
 					initMouseG.call(this);
 
-					const arrowGroup = sliderG.append('g').attr('class', 'arrowGroup');
+					
+					const tepaChart = sliderG.append('g').attr('class', 'tepaChart');
 					initArrowGroup();
 					// const 
 					// const heatMapG = mainG.append('g').attr('class', 'heatMapGroup');
@@ -393,70 +395,11 @@ export default {
 							mergeCard = {
 								height: mergeHeight + chartPadding.vertical,
 								width: RectWidth
-							},
-							displayfunc  = (_, i) => merge_g <= indexScale(i) && indexScale(i) < rectNum + merge_g ? 'block' : 'none';
+							};
 						// tepamoral
 						const cardHeight = d => (barVisObject[d.indexName] ? mergeCard.height : 0) + tepaCard.height +
 								+ boxMargin.vertical + chartMargin * (barVisObject[d.indexName] ? 1 : 0);
-						cardAttrs = {
-							body:{
-								display: displayfunc,
-								// opacity: 0,
-								transform: (d, i) => `translate(${[0, yScale(i) - tepaCard.height - boxMargin.top]})`
-							},
-							tepaCard:{
-								class: 'shapeCard',
-								transform: translate(chartStart, boxMargin.top),
-								height: tepaCard.height,
-								width: tepaCard.width,
-								stroke: this._borderStyle.color,
-								'stroke-width': 0.25,
-								fill: 'none'
-							},
-							mergeCard:{
-								class: 'mergeCard',
-								transform: `translate(${[chartStart, tepaCard.height + chartMargin + boxMargin.top]})`,
-								height: mergeCard.height,
-								width: mergeCard.width,
-								stroke: this._borderStyle.color,
-								'stroke-width': 0.25,
-								fill: 'none',
-								display: d => barVisObject[d.indexName] ? 'block' : 'none'
-							},
-							outerCard:{
-								class: 'outer',
-								height: cardHeight,
-								width: cardWidth,
-								stroke: this._borderStyle.color,
-								'stroke-width': 0.25,
-								fill: 'none',
-								rx: this._borderStyle.rx,
-								ry: this._borderStyle.ry,
-								filter: 'url(#card-shadow)'
-							},
-							rightLine:{
-								stroke: d => d3.color(lc[d.month]).darker(0.5),
-								y1: 0,//tepaHeight * 0.4,
-								y2: cardHeight,
-								x1: cardWidth,
-								x2: cardWidth,
-								'stroke-width': 2.5,
-							},
-							maskLayer:{
-								class: 'backgroundLayer',
-								height: 10,
-								width: d => d.indexName.length * 6.3 + 12,
-								fill: 'white',
-								transform: translate(boxMargin.left + textMargin.left, - boxMargin.top/ 2)
-							},
-							text:{
-								class: 'cardName',
-								text: d => d.indexName,
-								'text-anchor': 'start',
-								fill: d => d3.color(lc[d.month]).darker(1),
-								transform: translate(boxMargin.left + textMargin.left, 0)
-							}
-						}
+
 						sliderAttrs = {
 							transform: `translate(${[chartStart, 0]})`
 						}
@@ -498,15 +441,6 @@ export default {
 								opacity: 0
 							}
 						}
-						iconAttrs = {
-							position: `translate(${[0 + chartStart + RectWidth - chartHeight, 0]})`,
-							transform: (d, i) => `translate(${[0, yScale(i) - chartHeight - 10 - boxMargin.top - chartMargin / 2]})`,
-							opacity: opacityCache,
-							elementOpacity: d => barVisObject[d.indexName] ? 'visible' : 'hidden',
-							rectTransform: `translate(${[chartHeight / 2, chartHeight / 2]})`,
-							rectFill: d => lc[d.month],
-							icon: d => barVisObject[d.indexName] ? 'M-5,-2.5l10,0l-5,5l-5,-5zM-5,-2.5z' : 'M-2.5,0l0,-5l5,5l-5,5zM-2.5,0z'
-						}
 						mergeAttrs = {
 							body: {
 								class: 'batchElement',
@@ -547,20 +481,26 @@ export default {
 							'stroke-width': 0.25
 						};
 						barAttrs.goodSteel = {
+							class: 'goodSteel',
 							fill: this._flagColor[1],
+							stroke: this._flagColor[1],
+							'stroke-width': 0.1,
 							x: d => barAttrs.barXscale[d.index](d.x0),
 							height: d => barAttrs.barYscale[d.index](d.length),
 							width: d => barAttrs.barXscale[d.index](d.x1) - barAttrs.barXscale[d.index](d.x0),
 							y: d => barAttrs.borderHeight - barAttrs.barYscale[d.index](d.length),
-							opacity: 1
+							// opacity: 1
 						},
 						barAttrs.badSteel = {
+							class: 'badSteel',
 							fill: this._flagColor[0],
+							stroke: this._flagColor[0],
+							'stroke-width': 0.1,
 							x: d => barAttrs.barXscale[d.index](d.x0),
 							height: d => barAttrs.barYscale[d.index](d.length),
 							width: d => barAttrs.barXscale[d.index](d.x1) - barAttrs.barXscale[d.index](d.x0),
 							y: d => barAttrs.borderHeight - barAttrs.barYscale[d.index](d.length),
-							opacity: 1
+							// opacity: 1
 						};
 						textAttrs = {
 							line:{
@@ -574,7 +514,7 @@ export default {
 							text:{
 								display: displayfunc,
 								fill: 'black',
-								text: (_, i) => mouseInfo !== undefined ? (+mouseInfo[i]).toFixed(2) : '',
+								text: (_, i) => mouseInfo !== undefined ? stringify(+mouseInfo[i]) : '',
 								transform: (d, i) => `translate(${[mouseInfo ? wm._mouseDis + 30 : 0,
 									yScale(i) + (barVisObject[d.indexName] ? mergeHeight / 2 : -tepaHeight / 2)]})`
 							}
@@ -603,7 +543,7 @@ export default {
 						heatMapAttrs = {
 							position: `translate(${[0 + chartStart, 0]})`,
 							transform: (_, i) => `translate(${[i == 0 ? 0 : mergeOffset[i - 1], 0]})`,
-							opacity: opacityCache,
+							opacity: null,
 							elementTrans: (_, i) => `translate(${[0, yScale(i)]})`,
 							rectHeight: chartHeight / 2,
 							qY: -chartHeight / 2,
@@ -656,13 +596,13 @@ export default {
 							arrowScale = d3.scaleLinear().domain([-3, 3]).range([10, -10]);
 						arrowAttrs = {
 							body:{
-								transform: (_, i) => translate(0, yScale(i) - tepaHeight / 2),
-								class: 'arrowElement',
+								transform: (_, i) => translate(0, yScale(i)),
+								class: 'tepaElement',
 								display: displayfunc
 							},
 							singleAttrs: {
 								class: 'single',
-								transform: d => translate(t_scale(d), 0),
+								transform: d => translate(t_scale(d), - tepaHeight / 2),
 								stroke: mergeColor[0],
 								fill: 'none',
 								'marker-end': 'url(#shape-arrow)',
@@ -677,96 +617,106 @@ export default {
 								d: e => d3.linkVertical().x(d => d.x).y(d => d.y)
 									({ source: { x: 0, y: 0 }, target: {x: 0, y: arrowScale(e[0].range)} }), 
 								'marker-end': 'url(#shape-arrow)',
-								interArrow: d => `translate(${[(t_scale(d[0]) + t_scale(d[d.length - 1])) / 2, 0]})`,
+								transform: d => `translate(${[(t_scale(d[0]) + t_scale(d[d.length - 1])) / 2, - tepaHeight / 2]})`,
 							},
 							interLine:{
 								class: 'interLine',
-								transform: d => translate(t_scale(d[0]), - 0.75 * baseRadius),
+								transform: d => translate(t_scale(d[0]), - 0.75 * baseRadius - tepaHeight / 2),
 								width: d => t_scale(d[d.length - 1]) - t_scale(d[0]),
 								height: 1.25 * baseRadius,
 								fill: mergeColor[0],
 								stroke: 'none'
+							},
+							icon:{
+								class: 'iconElement',
+								transform: `translate(${[RectWidth - tepaHeight, - tepaHeight - 10 - boxMargin.top - chartMargin / 2]})`
 							}
 						}
-						arrowAttrs.multiAttrs = {	//multivariate
-							fill: 'green',//util.delabelColor[0],//mergeColor[0],
+						cardAttrs = {
+							body:{
+								class: 'card',
+								transform: `translate(${[- chartStart,  - tepaCard.height - boxMargin.top]})`
+							},
+							tepaCard:{
+								class: 'shapeCard',
+								transform: translate(chartStart, boxMargin.top),
+								height: tepaCard.height,
+								width: tepaCard.width,
+								stroke: this._borderStyle.color,
+								'stroke-width': 0.25,
+								fill: 'none'
+							},
+							mergeCard:{
+								class: 'mergeCard',
+								transform: `translate(${[chartStart, tepaCard.height + chartMargin + boxMargin.top]})`,
+								height: mergeCard.height,
+								width: mergeCard.width,
+								stroke: this._borderStyle.color,
+								'stroke-width': 0.25,
+								fill: 'none',
+								display: d => barVisObject[d.indexName] ? 'block' : 'none'
+							},
+							outerCard:{
+								class: 'outer',
+								height: cardHeight,
+								width: cardWidth,
+								stroke: this._borderStyle.color,
+								'stroke-width': 0.25,
+								fill: 'none',
+								rx: this._borderStyle.rx,
+								ry: this._borderStyle.ry,
+								filter: 'url(#card-shadow)'
+							},
+							rightLine:{
+								stroke: d => d3.color(lc[d.month]).darker(0.5),
+								y1: 0,//tepaHeight * 0.4,
+								y2: cardHeight,
+								x1: cardWidth,
+								x2: cardWidth,
+								'stroke-width': 2.5,
+								class: 'rightLine'
+							},
+							maskLayer:{
+								class: 'backgroundLayer',
+								height: 10,
+								width: d => d.indexName.length * 6.3 + 12,
+								fill: 'white',
+								transform: translate(boxMargin.left + textMargin.left, - boxMargin.top/ 2)
+							},
+							text:{
+								class: 'cardName',
+								text: d => d.indexName,
+								'text-anchor': 'start',
+								fill: d => d3.color(lc[d.month]).darker(1),
+								transform: translate(boxMargin.left + textMargin.left, 0)
+							}
+						}
+						const barWidth = textWidth,
+							originX = -textMargin.right,
+							orderDatum = ['overNum', 'speNum', 'extremum'].map(d => orderData.map(e => e[d])),
+							orderScale = orderDatum.map(d => d3.scaleLinear().domain([0, d3.max(d)]).range([0, barWidth/ 2]));
+						arrowAttrs.orderLabel = {
+							class: 'orderLabel',
+							width: d => orderScale[d[1]](orderDatum[d[1]][d[0]]),
+							height: tepaHeight/4,
 							stroke: 'none',
-							height: baseRadius * 1.25,
-							transform: d => `translate(${[mergeAttrs.translateX[d.i](d.time) - 0.75 * baseRadius, 0 - 0.75 * baseRadius]})`,
-							width: baseRadius * 1.25
-						};
-
-						symbolAttrs = {
-							position: `translate(${[0 + boxMargin.left, - chartHeight - chartMargin / 2]})`,
-							transform: (d, i) => `translate(${[chartPadding.left + textWidth, yScale(i)]})`,
-							opacity: opacityCache,
-							borderHeight: chartHeight - chartPadding.vertical,
-							borderWidth: textWidth - chartPadding.horizen,
-							borderStroke: (d, i) => lc[dataInfo[i].month],
-							rectHeight: chartHeight / 4,
-							singleNum: d3.map(batchEX, d => d.flat().filter(e => e.dia_Status).length),
-							multiNum: d3.map(batchEX, d => d.flat().filter(e => e.ovrage).length)
+							fill: d => d[1] === wm._indexScale ? 'url(#sort_pattern)' : util.delabelColor[0],
+							transform: d => translate(originX - orderScale[d[1]](orderDatum[d[1]][d[0]]),
+								- 23/24 * tepaHeight + (d[1] === wm._indexScale ? 0 : 
+								(d[1] > wm._indexScale ?  tepaHeight/3 * d[1] :  tepaHeight/3 * (d[1] + 1))))
 						}
-						let position = [5, (chartHeight - chartPadding.vertical) / 2 + 5],
-							singleScale = d3.scaleLinear().domain([0, d3.max(symbolAttrs.singleNum)]).range([0, symbolAttrs.borderWidth / 2]),
-							multiScale = d3.scaleLinear().domain([0, d3.max(symbolAttrs.multiNum)]).range([0, symbolAttrs.borderWidth / 2]),
-							siTransform = (d, i) => `translate(${[-singleScale(symbolAttrs.singleNum[i]), position[1 - wm._indexScale]]})`,
-							muTransform = (d, i) => `translate(${[- multiScale(symbolAttrs.multiNum[i]), position[wm._indexScale]]})`,
-							rectColor = wm._indexScale === 0 ? [util.delabelColor[0], 'url(#sort_pattern)'] : ['url(#sort_pattern)', util.delabelColor[0]];
-						if (wm._indexScale === 2) {
-							siTransform = (d, i) => `translate(${[-symbolAttrs.borderWidth / 2 - singleScale(symbolAttrs.singleNum[i]), d3.mean(position)]})`;
-							muTransform = (d, i) => `translate(${[-symbolAttrs.borderWidth / 2, d3.mean(position)]})`;
-							rectColor = ['url(#sort_pattern)', 'url(#sort_pattern)'];
-						}
-						symbolAttrs.sIndice = {	//singleIndice
-							transform: siTransform,
-							class: 'single',
-							width: (d, i) => singleScale(symbolAttrs.singleNum[i]),
-							height: symbolAttrs.rectHeight,
-							fill: rectColor[0],	//util.delabelColor[0]
-							stroke: 'none'
-						},
-						symbolAttrs.sText = {	//singleIndice
-							x: -10,
-							class: 'singleText',
-							y: position[1 - wm._indexScale] + 9,
-							text: (d, i) => symbolAttrs.singleNum[i],
+						arrowAttrs.orderText = {
+							class: 'orderText',
+							'text-anchor': 'end',
+							transform: d => translate(originX - orderScale[d[1]](orderDatum[d[1]][d[0]]),
+								- 23/24 * tepaHeight + (d[1] === wm._indexScale ? 0 : 
+								(d[1] > wm._indexScale ?  tepaHeight/3 * d[1] :  tepaHeight/3 * (d[1] + 1))) + tepaHeight/6),
+							text: d => stringify(orderDatum[d[1]][d[0]]),
 							fill: 'rgb(142, 154, 164)',
 							'font-weight': 'normal',
 							'font-style': 'normal',
-							'font-size': 11,
-							'text-anchor': 'middle'
-						},
-						symbolAttrs.mIndice = {	//multivariateAttrs
-							transform: muTransform,
-							class: 'multivariate',
-							width: (d, i) => multiScale(symbolAttrs.multiNum[i]),
-							height: symbolAttrs.rectHeight,
-							fill: rectColor[1],
-							stroke: 'none'
-						},
-						symbolAttrs.mText = {	//multivariateAttrs
-							// transform: muTransform,
-							x: -10,
-							class: 'multiText',
-							y: position[wm._indexScale] + 9,
-							text: (d, i) => symbolAttrs.multiNum[i],
-							fill: 'rgb(142, 154, 164)',
-							'font-weight': 'normal',
-							'font-style': 'normal',
-							'font-size': 11,
-							'text-anchor': 'middle'
-						};
-						// const 
-						// symbolAttrs.scale = {
-
-						// }
-						// const yScale = d3.scaleBand()
-						//         .domain(target.map(d => targetMap[d].name))
-						//         .range([0, width - headHeight])
-						//         .padding(0.35);
-						//       const yAxis = d3.axisLeft(yScale)
-						//         .tickSizeOuter(0);
+							'font-size': 11
+						}
 					}
 					function initSymbolDefs() {
 						defG
@@ -790,8 +740,6 @@ export default {
 								.attr('stroke-width', 4)
 								.attr('stroke-opacity', 1)
 								.attr('fill', util.delabelColor[0])))
-					}
-					function initArrow() {
 						const markerBoxWidth = 5;
 						const markerBoxHeight = 5;
 						const refX = markerBoxWidth / 2;
@@ -819,80 +767,39 @@ export default {
 							.attr('stroke', mergeColor[0]))
 					}
 					function initOrdinal() {
-						var singleNum = d3.map(batchEX, (d, i) => d.flat().filter(e => e.ovrage).length);
-						var multiNum = d3.map(batchEX, (d, i) => d.flat().filter(e => e.dia_Status).length);
-						scaleArray = [
-							d3.scaleOrdinal().domain(indexArray).range(sortedIndex(singleNum, true)),
-							d3.scaleOrdinal().domain(indexArray).range(sortedIndex(multiNum, true)),
-							d3.scaleOrdinal().domain(indexArray).range(indexArray)
-						];
+						const orderDatum = ['overNum', 'speNum', 'extremum'].map(d => orderData.map(e => e[d]));
+						scaleArray = orderDatum.map(d => d3.scaleOrdinal().domain(indexArray).range(sortedIndex(d, true)))
 						indexScale = this._indexScale !== undefined ? scaleArray[this._indexScale] : scaleArray[0];
 					}
 					function renderyScale() {
+						tepaHeight = chartHeight,
+						mergeHeight = 1.5 * chartHeight;
 						// clearAttrs();
 						const cardHeight = d => (barVisObject[d] ? mergeHeight + chartPadding.vertical : 0) 
-							+ tepaHeight  + chartPadding.vertical + boxMargin.vertical 
+							+ tepaHeight  
+							+ chartPadding.vertical + boxMargin.vertical 
 							+ chartMargin * (barVisObject[d] ? 1 : 0);
 						let invert = d3.scaleOrdinal().domain(indexScale.range()).range(indexScale.domain())
 						rectHeight = indexArray.map((d, i) => cardHeight(indexSort[invert(+d)])+ cardMargin)
-						// console.log(rectHeight)
-						rectHeight.unshift(0)   //定位第一个元素
-						let translateY = Array.from(d3.cumsum(rectHeight)).map(d => -wm._height / 2 + wm._margin.top + tepaHeight + d);
-						rectNum = translateY.filter(d => d < wm._height / 2 - wm._margin.bottom).length;
-						opacityCache = (d, i) => merge_g <= indexScale(i) && indexScale(i) < rectNum + merge_g ? 1 : 0;
-						var baseHeight = translateY[0] - translateY[merge_g];
-						yScaleCache = translateY.map(d => d + baseHeight);
-						// console.log(yScaleCache[merge_g]);
+						
+						rectHeight.unshift(0);
+						let arr = Array.from(d3.cumsum(rectHeight));
+						let translateY = arr.map(d => d - arr[merge_g]);
+						translateY.pop();
+						rectNum = translateY.filter((d, i) => d >= 0 && d + rectHeight[i + 1] - tepaHeight < 
+							wm._height - wm._margin.bottom - wm._margin.bottom).length;
+						yScaleCache = translateY.map(d => d - wm._height / 2 + wm._margin.top + tepaHeight);
 						yScale = i => yScaleCache[indexScale(i)];
-						lastY = wm._height / 2 - chartHeight;
+						displayfunc  = (_, i) => merge_g <= indexScale(i) && indexScale(i) < rectNum + merge_g 
+							? 'block' : 'none';
+						lastY = yScaleCache[rectNum + merge_g - 1] - tepaHeight + rectHeight[rectNum + merge_g] - cardMargin;
 						initAttrs.call(wm);
-					}
-					function initTriangleG() {// init triangleG
-						triangleG.attr('transform', iconAttrs.position)
-							.selectAll('g')
-							.data(dataInfo)
-							.join('g')
-							.attr('class', 'iconElement')
-							.attr('opacity', iconAttrs.opacity)
-							.attr('transform', iconAttrs.transform)
-							.call(g => g.append('circle').attr('transform', 'translate(10, 10)')
-								.attr('fill', 'white')
-								.attr('stroke', 'black')
-								.attr('stroke-width', 0.25)
-								.attr('filter', 'url(#card-shadow)')
-								.attr('r', 10))
-							.call(g => g.append('g').attr('transform', 'scale(0.02)')
-								.call(g => g.append('path').attr('d', queryIcon[0]).attr('fill', '#0B72B6'))
-								.call(g => g.append('path').attr('d', queryIcon[1]).attr('fill', '#0B72B6')))
-							.on('click', function (e, d) {
-								barVisObject[d.indexName] = !barVisObject[d.indexName];
-								renderyScale();
-								renderSort();
-							})
-					}
-					function initCardG() {
-						cardG
-							.selectAll('g').data(dataInfo).join('g')
-							.call(g => updateElement(g, cardAttrs.body))
-							.call(g => addElement(g, 'rect', cardAttrs.outerCard))
-							.call(g => addElement(g, 'rect', cardAttrs.tepaCard))
-							.call(g => addElement(g, 'rect', cardAttrs.mergeCard))
-							.call(g => addElement(g, 'line', cardAttrs.rightLine))
-							.call(g => addElement(g, 'rect', cardAttrs.maskLayer))
-							.call(g => addElement(g, 'text', cardAttrs.text))
-					}
-					function updateCardG(t) {
-						cardG
-							.transition(t)
-							.call(g => g.selectAll('g').call(g => updateElement(g, cardAttrs.body)))
-							.call(g => g.selectAll('.outer')
-								.call(g => updateElement(g, cardAttrs.outerCard)))
-							.call(g => g.selectAll('.mergeCard')
-								.call(g => updateElement(g, cardAttrs.mergeCard)))
-							.call(g => g.selectAll('.shapeCard')
-								.call(g => updateElement(g, cardAttrs.tepaCard)))
-							.call(g => g.selectAll('line')
-								.call(g => updateElement(g, cardAttrs.rightLine)))
+						dataInfo.forEach((d, i) => {
+							d.display = displayfunc(d, i);
+							d.y = yScale(i) + cardHeight(d.indexName)/2 
+							- tepaHeight - chartPadding.vertical - boxMargin.top;
+						})
+						wm._linkG && wm._renderLinkG();
 					}
 					function initDragG() {
 						dragG.selectAll('dragGroup')
@@ -937,19 +844,16 @@ export default {
 							x_coor = index === 0 ? dis : dis - mergeOffset[index],
 							mouseDate = new Date(timeScale[index].invert(x_coor)),
 							allLabel = batchEX.map(d => d3.least(d[index], e => mouseDate > e.time));
+						selectBarG(allLabel);
 						wm._upid = allLabel[0].upid;
 						// console.log(dis, mergeOffset, index, x_coor, mouseDate, allLabel, batchEX)
-						return allLabel.map(d => d.ovalue)
+						return allLabel.map(d => d.value)
 					}
 					function renderSort() {//render sortG
 						const t = d3.transition()
 							.duration(300)
 							.ease(d3.easeLinear);
-						arrowGroup.selectAll('.arrowElement')
-							.transition(t)
-							.call(g => updateElement(g, arrowAttrs.body))
-						updateCardG(t);
-						updateSymbol(t);
+						updateCard(t);
 						mergeG
 							.transition(t)
 							.call(g => updateElement(g.selectAll('.batchElement'), mergeAttrs.body))
@@ -965,10 +869,7 @@ export default {
 						barG.selectAll('g')
 							.transition(t)
 							.call(g => updateElement(g, barAttrs.body))
-						
-						triangleG
-							.transition(t)
-							.call(g => g.selectAll('.iconElement').attr('transform', iconAttrs.transform).attr('opacity', iconAttrs.opacity))
+						renderAxisG(timeScale);
 						textG
 							.transition(t)
 							.call(g => g.selectAll('text').call(t => updateElement(t, textAttrs.text)))
@@ -978,7 +879,7 @@ export default {
 							var mouseInfo = mouseText(wm._mouseDis);
 							textG.selectAll('text')
 								.transition(t)
-								.text((d, i) => (+mouseInfo[i]).toFixed(2))
+								.text((d, i) => stringify(+mouseInfo[i]))
 						}
 						// heatMapG.selectAll('.heatMapElement')
 						//   .transition(t)
@@ -987,9 +888,7 @@ export default {
 						//   .attr('transform', heatMapAttrs.elementTrans)
 						barG.raise()
 						dragG.raise()
-						cardG.raise()
 						clickG.raise()
-						triangleG.raise()
 					}
 					function renderShape() {
 						const t = d3.transition()
@@ -1020,7 +919,7 @@ export default {
 								.call(g => g.selectAll('use').attr('transform', (d, i) => `translate(0,${(horizenAttrs.overlapNum[i] + 1) * (horizenAttrs.elementHeight)})`))
 						}
 						updateShape();
-						updateBarG(t)
+						updateBarG(t);
 						textG
 							.transition(t)
 							.call(g => updateElement(g.select('line'), textAttrs.line))
@@ -1040,29 +939,6 @@ export default {
 						renderyScale();
 						renderSort();
 					}
-					function initAxisG(batchTimeScale) { //init timeTick
-						sliderG.selectAll('.axisG').data(mergeOffset)
-							.join('g')
-							.attr('class', 'axisG')
-							// .attr('transform', (d, i) => `translate(${[i == 0 ? 0 : mergeOffset[i - 1], lastY]})`)
-							.call(g => g
-								.style('font', '6px')
-								.style('font-weight', 'normal')
-								.style('color', 'grey')
-								.each(function (d, i) {
-									d3.select(this)
-										.call(d3.axisBottom(batchTimeScale[i])
-											.ticks(rectArray[i] < 60 ? 1 : 3)
-											.tickFormat((d, i) => i === 0 ? d3.timeFormat('%d %H:%M')(d) : d3.timeFormat('%d %H:%M')(d))
-											.tickSize(2)
-											.tickPadding(2.5)
-										)
-								})
-							)
-							// .call(g => g.select('.domain').remove()))
-							.call(g => g.selectAll('text')
-								.attr('transform', 'translate(0, 12)rotate(45)'))
-					}
 					function initBarG() {  //init BarG
 						barG
 							.selectAll('g').data(dataInfo).join('g')
@@ -1079,6 +955,15 @@ export default {
 								.attr('class', 'badSteel')
 								.call(g => updateElement(g, barAttrs.badSteel)))
 					}
+					function selectBarG(datum){
+						datum.forEach(d => {
+							barG.selectAll('g').filter(e => e.indexName === d.indexName)
+								.call(g => g.selectAll('rect').attr('opacity', 0.5))
+								.call(g => g.selectAll(d.flag ? '.badSteel' : '.goodSteel')
+								
+								.attr('opacity', e => d.value >= e.x0 && d.value <= e.x1 ?  1 : 0.5))
+						})
+					}
 					function updateBarG(t) {
 						barG
 							.transition(t)
@@ -1088,7 +973,7 @@ export default {
 							.call(g => updateElement(g.selectAll('.badSteel'), barAttrs.badSteel))
 					}
 					function initBarData() {
-						const barValue = dataInfo.map((d, i) => horizenEX.map(e => e[i]).flat()),
+						const barValue = dataInfo.map((_, i) => batchEX[i].flat()),
 							barData = barValue.map((d, i) => d3.bin().thresholds(30)(d.map(e => e.value)).map(e => { e.index = i; return e })),
 							barYscale = barData.map(d => d3.scaleLinear().domain([0, d3.max(d, f => f.length) * 1.1]).range([chartPadding.top, barAttrs.borderHeight])),
 							barXscale = barData.map(d => d3.scaleLinear().domain([d3.min(d, f => f.x0), d3.max(d, f => f.x1)]).range([chartPadding.left, barAttrs.borderWidth])),
@@ -1165,13 +1050,40 @@ export default {
 								.call(g => addElement(g, 'polygon', rectAttrs.rightPolygon)))
 						rectG.raise()
 					}
+					function initAxisG(batchTimeScale) { //init timeTick
+						sliderG.selectAll('.axisG').data(mergeOffset)
+							.join('g')
+							.attr('class', 'axisG')
+							.attr('transform', translate(0, lastY))
+							.call(g => g
+								.style('font', '6px')
+								.style('font-weight', 'normal')
+								.style('color', 'grey')
+								.each(function (_, i) {
+									d3.select(this)
+										.call(d3.axisBottom(batchTimeScale[i])
+											.ticks(Math.floor(rectArray[i]/35))
+											.tickFormat((d, i) => i === 0 ? d3.timeFormat('%d %H:%M')(d) : d3.timeFormat('%d %H:%M')(d))
+											.tickSize(2)
+											.tickPadding(2.5)
+										)
+								})
+							)
+					}
 					function renderAxisG(batchTimeScale) {// render timeTick
+						axisAttrs = {
+							'transform': 'translate(0, 10) rotate(25)',
+							fill: 'grey',
+							'font-weight': 'bold',
+							'font-size': '8px',
+							'font-family': "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif"
+						}
 						sliderG.selectAll('.axisG')
 							.transition(d3.transition()
 								.duration(200)
 								.ease(d3.easeLinear))
-							.attr('transform', (d, i) => `translate(${[i == 0 ? 0 : mergeOffset[i - 1], lastY]})`)
-							.each(function (d, i) {
+							.attr('transform', translate(0, lastY))
+							.each(function (_, i) {
 								d3.select(this)
 									.call(d3.axisBottom(batchTimeScale[i])
 										.ticks(rectArray[i] < 60 ? 1 : 3)
@@ -1180,8 +1092,7 @@ export default {
 										.tickPadding(2.5)
 									)
 							})
-							.call(g => g.selectAll('text')
-								.attr('transform', 'translate(0, 12)rotate(45)'))
+							.call(g => updateElement(g.selectAll('text'), axisAttrs));
 					}
 					function updateArea() {
 						const t = d3.transition()
@@ -1414,52 +1325,86 @@ export default {
 									.attr('x', (d, i) => heatMapAttrs.xBatch[d.i](d.time.toString()))))
 					}
 					function initArrowGroup() {
-						arrowGroup.selectAll('arrowElement')
-							.data(batchEX)
+						tepaChart.selectAll('.tepaElement')
+							.data(dataInfo)
 							.join('g')
 							.call(g => updateElement(g, arrowAttrs.body))
-							// .call(g => g.selectAll('.multivariate').data((d, i) => arrowAttrs.batch[i].multivariate)
-							//   .join('rect').attr('class', 'multivariate')
-							//   .call(g => updateElement(g, arrowAttrs.multiAttrs)))
+
+							.call(g => g.selectAll('.orderLabel').data(
+								(_, i) => new Array(3).fill(0).map((_, f) => [i, f]))
+									.join('g')
+										.call(g => addElement(g, 'rect', arrowAttrs.orderLabel))
+										.call(g => addElement(g, 'text', arrowAttrs.orderText))
+								)
+
+							.call(
+								g => g.append('g')
+									.call(g => updateElement(g, cardAttrs.body))
+									.call(g => addElement(g, 'rect', cardAttrs.outerCard))
+									.call(g => addElement(g, 'rect', cardAttrs.tepaCard))
+									.call(g => addElement(g, 'rect', cardAttrs.mergeCard))
+									.call(g => addElement(g, 'line', cardAttrs.rightLine))
+									.call(g => addElement(g, 'rect', cardAttrs.maskLayer))
+									.call(g => addElement(g, 'text', cardAttrs.text))
+							)
+
 							.call(g => g.selectAll('.single')
-								.data(d => arrowData(d.flat()).single)
+								.data((d, i) => arrowData(batchEX[i].flat()).single)
 								.join('path')
 								.call(g => updateElement(g, arrowAttrs.singleAttrs)))
 							.call(g => g.selectAll('.intersection')
-								.data(d => arrowData(d.flat()).intersection)
+								.data((d, i) => arrowData(batchEX[i].flat()).intersection)
 								.join('g')
 									.attr('class', 'intersection')
 									.call(g => addElement(g, 'path', arrowAttrs.interArrow))
-									.call(g => addElement(g, 'rect', arrowAttrs.interLine))
+									.call(g => addElement(g, 'rect', arrowAttrs.interLine)))
+
+							.call(g => g.append('g')
+								.call(g => updateElement(g, arrowAttrs.icon))
+									.call(g => g.append('circle').attr('transform', 'translate(10, 10)')
+									.attr('fill', 'white')
+									.attr('stroke', 'black')
+									.attr('stroke-width', 0.25)
+									.attr('filter', 'url(#card-shadow)')
+									.attr('r', 10))
+								.call(g => g.append('g').attr('transform', 'scale(0.02)')
+									.call(g => g.append('path').attr('d', queryIcon[0]).attr('fill', '#0B72B6'))
+									.call(g => g.append('path').attr('d', queryIcon[1]).attr('fill', '#0B72B6')))
+								.on('click', function (e, d) {
+									barVisObject[d.indexName] = !barVisObject[d.indexName];
+									renderyScale();
+									renderSort();
+								})
 							)
+
+							.on('click', e =>{
+								e.stopPropagation();
+								e.preventDefault();
+							})
+							.on('mousemove', e =>{
+								e.stopPropagation();
+								e.preventDefault();
+							})
+					}
+					function updateCard(t){
+						tepaChart.selectAll('.tepaElement')
+							.transition(t)
+							.call(g => updateElement(g, arrowAttrs.body))
+						.call(g => updateElement(g.select('.card'), cardAttrs.body))
+							.call(g => updateElement(g.select('.outer'), cardAttrs.outerCard))
+							.call(g => updateElement(g.select('.mergeCard'), cardAttrs.mergeCard))
+							.call(g => updateElement(g.select('.shapeCard'), cardAttrs.tepaCard))
+							.call(g => updateElement(g.select('.rightLine'), cardAttrs.rightLine))
+						.call(g => updateElement(g.selectAll('.orderText'), arrowAttrs.orderText))
+						.call(g => updateElement(g.selectAll('.orderLabel'), arrowAttrs.orderLabel))
 					}
 					function updateShape() {
 						const t = d3.transition().duration(150).ease(d3.easeLinear);
-						arrowGroup.transition(t)
+						tepaChart.transition(t)
 							.call(g => updateElement(g.selectAll('.single'), arrowAttrs.singleAttrs))
-							.call(g => updateElement(g.selectAll('.multivariate'), arrowAttrs.multiAttrs))
 							.call(g => updateElement(g.selectAll('.interArrow'), arrowAttrs.interArrow))
 							.call(g => updateElement(g.selectAll('.interLine'), arrowAttrs.interLine))
-					}
-					function initSymbol() {
-						symbolG.attr('transform', symbolAttrs.position)
-							.call(g => g.selectAll('g')
-								.data(dataInfo).join('g').attr('transform', symbolAttrs.transform).attr('opacity', symbolAttrs.opacity)
-								.call(g => addElement(g, 'rect', symbolAttrs.sIndice))
-								.call(g => addElement(g, 'text', symbolAttrs.sText))
-								.call(g => addElement(g, 'rect', symbolAttrs.mIndice))
-								.call(g => addElement(g, 'text', symbolAttrs.mText)))
-					}
-					function updateSymbol(t) {
-						symbolG.transition(t)
-							.attr('transform', symbolAttrs.position)
-							.selectAll('g')
-							.call(g => g.attr('transform', symbolAttrs.transform).attr('opacity', symbolAttrs.opacity))
-						symbolG.transition(t)
-							.call(g => updateElement(g.selectAll('.single'), symbolAttrs.sIndice))
-							.call(g => updateElement(g.selectAll('.multivariate'), symbolAttrs.mIndice))
-							.call(g => updateElement(g.selectAll('.singleText'), symbolAttrs.sText))
-							.call(g => updateElement(g.selectAll('.multiText'), symbolAttrs.mText))
+							.call(g => updateElement(g.selectAll('.iconElement'), arrowAttrs.icon))
 					}
 					function updateSort(d){
 						indexScale = scaleArray[d];
@@ -1488,7 +1433,7 @@ export default {
 					const plot_offset = this._boxChart,
 						allData = this._keys.map((d, i) => d.map(e => {return {'name' : e, process: i, sort_value: Math.random()}})).flat(),
 						plot_coordinate = [this._cardWidth + this._horizonPadding, -wm._height / 2 + wm._margin.top],
-						plotG = mainG.append('g').attr('class', 'plotGroup').attr('transform', translate(...plot_coordinate)),
+						plotG = mainG.append('g').attr('id', 'plotGroup').attr('transform', translate(...plot_coordinate)),
 						valueMap = Object.fromEntries(allData.map(d => [d.name, d.value]));
 					this._boxMap = valueMap;
 					let plotGroup = null,
@@ -1499,8 +1444,10 @@ export default {
 						let item = allData[index];
 						if(item.process == 1){
 							item.datum = rollData[item.name];
+						}else if(item.process == 0){
+							item.datum = heatData[item.name];
 						}else{
-							item.datum = rollData["bendingforce"];//[0]['result'];
+							item.datum = coolData[item.name];
 						}
 					}
 					function initAttrs(){
@@ -1555,9 +1502,9 @@ export default {
 							}).render()
 							return res;
 						}else{
-							let res = new boxplot(plotG.select(`#${d.name}`)).enter({
+							let res = new heatplot(plotG.select(`#${d.name}`)).enter({
 								data: d.datum,
-								func: preRoll,
+								func: preHeat,
 								width: plot_offset.w,
 								height: plot_offset.h,
 								label: d.name
@@ -1588,6 +1535,7 @@ export default {
 							e.stopPropagation();
 							e.preventDefault();
 						});
+					
 				}
 
 				_scaleBox(flag){
@@ -1602,20 +1550,65 @@ export default {
 						rectHeight = new Array(keys.length).fill(box.h + box.gap);
 					rectHeight.unshift(0);   //定位第一个元素
 					let yCoordinate = Array.from(d3.cumsum(rectHeight)),
-					plot_num = Math.floor((this._height - this._margin.top - this._margin.bottom
-						+ box.gap)/(box.gap + box.h));
-					let display = d => (keys.indexOf(d.name) !== -1) 
-						&& this._wheelBox <= order(d.name) 
-						&& order(d.name) < plot_num + this._wheelBox
+					plot_num = yCoordinate.filter(d => d + box.h < this._height - this._margin.top - this._margin.bottom).length;
+					let display = d => (keys.indexOf(d) !== -1) 
+						&& this._wheelBox <= order(d) 
+						&& order(d) < plot_num + this._wheelBox
 						? 'block' : 'none';
 					let baseHeight = yCoordinate[0] - yCoordinate[this._wheelBox];
 					let transform = d => `translate(${[0, yCoordinate[order(d.name)] + baseHeight]})`;
-
-					
+					this._boxYScale = d => yCoordinate[order(d)] + baseHeight - this._height / 2 + this._margin.top + box.h/2;
+					this._boxDisplay = display;
 					let t = d3.transition().duration(150).ease(d3.easeLinear);
 					this._BoxGroup.transition(t)
-						.attr('display', display)
+						.attr('display', d => display(d.name))
 						.call(g => g.filter(d => keys.indexOf(d.name) !== -1).attr('transform', transform))
+					
+					this._linkG && this._renderLinkG();
+				}
+
+				_initLinkG(){
+					this._linkG = this._mainG.append('g')
+						.attr('class', 'indexNameLinkGroup')
+						.attr('transform', translate(this._cardWidth + this._horizonPadding, 0));
+					this._linkGroupAttrs = {
+						'id': d => `link_group_${d.indexName}`,
+						'class': 'linkElement',
+						display: d => d.display
+					},
+					this._linkAttrs = {
+						'stroke-width': 1.5,
+						fill: 'none',
+						stroke: d => d3.color(this._labelcolor[d[0].process]).darker(0.5),
+						class: d => `link_${d[1]}`,
+						display: d => this._boxDisplay(d[1]),
+						d: d =>  d3.line().x(e => e[0])
+							.y(e => e[1]).curve(d3.curveBumpX)
+							([[-this._horizonPadding, d[0].y], [0, this._boxYScale(d[1])]])
+					}
+					const linkData = d => {
+						let res = this._keys[d.process].map(e => [d, e]);
+						return res;
+					}
+
+					this._linkG.selectAll('.linkElement')
+						.data(this._chartData)
+						.join('g')
+						.call(g => updateElement(g, this._linkGroupAttrs))
+						.call(g => g.selectAll('path').data(linkData)
+							.join('path')
+							.call(g => updateElement(g, this._linkAttrs))
+							.on('mouseover', this._stopPropagation)
+        			.on('mouseout', this._stopPropagation))
+				}
+
+				_renderLinkG(){
+					let t = d3.transition().duration(150).ease(d3.easeLinear);
+					this._linkG
+						.transition(t)
+						.selectAll('.linkElement')
+						.call(g => updateElement(g, this._linkGroupAttrs))
+						.call(g => updateElement(g.selectAll('path'), this._linkAttrs))
 				}
 
 				_initDefs(){
@@ -1787,13 +1780,13 @@ export default {
 							.attr('fill', sortAttrs.sortChange('#fff', this._buttonColor))
 							.text(sortAttrs.text))
 						.on('click', (_, d) => {
-							let t = d3.transition().duration(150).ease(d3.easeLinear);
+							let t = d3.transition().duration(50).ease(d3.easeLinear);
+							this._indexScale = d;
 							sortG
 							.transition(t)
 							.call(g => g.selectAll('rect').attr('fill', sortAttrs.sortChange(this._buttonColor, '#fff')))
 							.call(g => g.selectAll('text').attr('fill', sortAttrs.sortChange('#fff', this._buttonColor)))
 							// merge_g = 0; //when sort indexes, save merge_g status or not
-							this._indexScale = d;
 							this._barInstance.updateSort(d);
 						})
 				}
@@ -1868,7 +1861,8 @@ export default {
 					this._chartData = this._batchData[0][0]['one_dimens'].map(d => {
 						return {
 							indexName: d.name,
-							month: this.getIndex(d.name)
+							month: this.getIndex(d.name),
+							process: this.getIndex(d.name)
 						}
 					}).filter(d => d.month !== undefined);
 					console.log(this._chartData)
@@ -1930,7 +1924,6 @@ export default {
 												d: f,
 												ovalue: e['one_dimens'][i].original_value,
 										};
-										s.self = e.upid == vm.upid ? true : false ,
 										s.max = Math.max(s.h, s.exh, s.value, s.sxh),
 										s.min = Math.min(s.l, s.exl, s.value, s.sxl),
 										s.over = s.h >= s.value && s.value >= s.l ? 0 : (s.h >= s.value ? s.value - s.l : s.h - s.value);
@@ -1975,10 +1968,10 @@ export default {
 									i: batch,
 									ovalue: e['one_dimens'][index].original_value,
 								};
-								s.self = e.upid == vm.upid ? true : false ,
 								s.max = Math.max(s.h, s.exh, s.value, s.sxh),
 								s.min = Math.min(s.l, s.exl, s.value, s.sxl),
-								s.over = s.h >= s.value && s.value >= s.l ? 0 : (s.h >= s.value ? s.value - s.l : s.h - s.value);
+								s.over = s.h >= s.value && s.value >= s.l ? 0 : (s.h >= s.value ? s.l - s.value : s.h - s.value);
+								s.over = Math.abs(s.over);
 								s.range = this._rangeLevel(s);
 								s.ovrage = Math.abs(s.range) > 2 ?  true : false;
 								s.dia_Status = e['tjOrder'][index] < 10 && e['tqOrder'][index] < 10 ? true : false;

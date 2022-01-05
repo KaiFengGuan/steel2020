@@ -5,7 +5,7 @@
 <script>
 import * as d3 from 'd3';
 import util from 'src/views/baogang/util.js';
-import { addElement, updateElement, updateAsyncElement , updateStyles} from 'utils/element';
+import { addElement, updateElement, updateAsyncElement , updateStyles, stringify} from 'utils/element';
 import {brushPre} from  'utils/data.js';
 import {mapGetters} from 'vuex';
 import success from 'assets/images/success.svg';

@@ -223,6 +223,7 @@ export class boxplot{
         .call(g => updateElement(g, this._horizontalLineAttrs)))
   }
   _renderChart(upid){
+    if(this._upidMap.get(upid) === undefined)return;
     this._length = this._upidMap.get(upid).length;
     const renderData = this._passMap.get(this._length);
     this._xScale.domain(renderData.map(d => d.key));

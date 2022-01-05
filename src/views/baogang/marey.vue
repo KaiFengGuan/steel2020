@@ -1,6 +1,6 @@
 <template>
 	<div class="custom-marey">
-		<el-col :span="22">
+		<el-col :span="24">
 		<el-row :style="cssVars">
 			<el-col :span="5">
 				<el-row>
@@ -463,6 +463,20 @@ export default {
 				this.usDiagnosis[item] = this.alldiagnosisData.get(item)[0];
       }
       // this.corrdata = [];
+			const request = {
+				startDate: this.batchDateStart[0],
+				endDate: this.batchDateEnd[this.batchDateEnd.length - 1],
+				limit: 1000,
+				devation: 0.25
+			};
+			console.log(Object.assign({number: 3}, request))
+			console.log(Object.assign({number: 3, header: 5}, request))
+			// let roll = (await steel.getRollData(request, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			// let heat = (await steel.getHeatData(Object.assign({number: 3}, request), updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			// let cool = (await steel.getCoolData(Object.assign({number: 3, header: 5}, request), updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			// console.log(roll, cool)
+			// let heat = (await steel.getHeatData({number: 3, limit: 1000, devation: 0.25, start}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			// let cool = (await steel.getCoolData({number: 3, limit: 1000, devation: 0.25}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
 
 			// await this.getVisCorrelation({
       //     startDate: this.selectDateStart,
@@ -712,8 +726,8 @@ export default {
 
 			// this.selectedUpid =  "UPID " + upid
 			// var diagnosisData = this.usDiagnosis[upid]//online
-			let data =  (await steel.getProcessData({upid, process: 'roll',limit: 1000, devation: 0.25}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
-			console.log('steel.getProcessData', data);
+			// let data =  (await steel.getProcessData({upid, process: 'roll',limit: 1000, devation: 0.25}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			// console.log('steel.getProcessData', data);
 			this.$refs.wheelering.paintChart(this.batchData)
     },
 		mareyUpdate(){

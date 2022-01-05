@@ -1,47 +1,46 @@
 import * as d3 from 'd3';
 import { addElement, updateElement, attrTween} from 'utils/element';
 const labelColor = [ "#c65b24", "#94a7b7"];
-export function preRoll(data){
-  let res = new Map(),
-    map = new Map();
-  for(let passNum in data){
-    let datum = data[passNum].result;
-    let passArr = new Array(data[passNum].passcount).fill(0).map((d, i) => {
-      let arr = datum['sample'][i];
-      arr.quartiles = [datum['min'][i], datum['mean'][i], datum['max'][i]];
-      arr.min = Math.min(...arr.map(d => d.value), datum['emin'][i]);
-      arr.max = Math.max(...arr.map(d => d.value), datum['emax'][i]);
-      arr.range = [datum['emin'][i], datum['emax'][i]];
+export function preHeat(data){
+  let map = new Map();
+    let passArr = new Array(data.length).fill(0).map((d, i) => {
+      let datum = data[i];
+      let arr = datum['sample'];
+      arr.quartiles = [datum['min'], datum['mean'], datum['max']];
+      arr.min = datum['emin'];
+      arr.max = datum['emax'];
+      arr.range = [ arr.min, arr.max];
       arr.forEach(e => {e.pass = i, e.overflow = 
         e.value > arr.range[1] || e.value < arr.range[0] ? true : false});
+
+      for(let item in arr){
+        if(arr[item].upid == undefined)continue;
+        let temp = map.get(arr[item].upid);
+        if(temp == undefined){
+          map.set(arr[item].upid, [arr[item]])
+        }else{
+          temp.push(arr[item])
+        }
+      }
       return {key: i,value: arr}
     });
-    passArr.upid = passArr[0].value.map(e => e.upid);
-    let upidArr = passArr.upid;
-    for(let i in upidArr){
-      map.set(upidArr[i], passArr.map(e => e.value[i]))
-    }
-    res.set(data[passNum].passcount, passArr);
-  }
-  return [res, map];
+  return [passArr, map];
 }
 export class heatplot{
   constructor(container) {
     this._container = container;
     this._g = this._container.append('g').attr('class', 'scaleGroup');
     this._margin = {top: 20, right: 20, bottom: 40, left: 40};
-    this._height = 200;
-    this._width = 1000;
+    this._height = 160;
+    this._width = 800;
     
     //init data
     this._originData = null;
-    this._passArr = null;
     this._passMap = null;
     this._name = undefined;
     
     this._data = null;
     this._range = null;
-    this._minLen = null;
     this._maxLen = null;
     
     // init scale
@@ -59,14 +58,11 @@ export class heatplot{
   enter(options){
     this._originData = options.data;
     [this._passMap, this._upidMap] = options.func(this._originData);
-    // console.log(this._passMap);
-    // console.log(this._upidMap);
-    this._passArr = [...this._passMap.keys()];
-    [this._minLen, this._maxLen]  = d3.extent(this._passArr);
-    this._length = this._maxLen;
-    this._range = this._passMap.get(this._length).range;
+    console.log(this._passMap);
+    console.log(this._upidMap);
+    this._length = this._passMap.length;
     this._name = options.label;
-    // this._data = options.func(options.data);
+    this._data = options.func(options.data);
     this._g.attr('transform', `scale(${Math.min(options.height/this._height)})`); //options.width/this._width, 
     return this;
   }
@@ -80,8 +76,9 @@ export class heatplot{
     this._g.on('click', ()=>{
       console.log('click')
       flag = !flag;
-      this._renderChart(flag ? "21222001000" : "21221360000")
+      this._renderChart(flag ? "21221361000" : "21221360000")
     })
+    return this;
   }
   _initBackground(){
     this._g.append('rect')
@@ -92,7 +89,7 @@ export class heatplot{
       .attr('height', this._height - this._margin.top - this._margin.bottom)
   }
   _initScale(){
-    const renderData = this._passMap.get(this._length);
+    const renderData = this._passMap;
     this._xScale = d3.scaleBand()
       .range([this._margin.left, this._width - this._margin.right])
       .domain(renderData.map(d => d.key))
@@ -102,7 +99,7 @@ export class heatplot{
       .range([this._xScale(renderData[0].key), this._xScale(renderData[renderData.length - 1].key)])
       .domain(d3.extent(renderData, d => d.key));
     this._yScale = d3.scaleLinear()
-    .domain([d3.min(renderData, d => d.value.min * 0.8), d3.max(renderData, d => d.value.max * 1.2)])
+    .domain([d3.min(renderData, d => d.value.min * 0.9), d3.max(renderData, d => d.value.max * 1.1)])
     // .domain(this._range)
     .nice()
     .range([this._height - this._margin.bottom, this._margin.top]);
@@ -111,7 +108,8 @@ export class heatplot{
       .call(d3.axisBottom(this._xScale));
     this._yAxis = g => g
     .attr('transform', `translate(${this._margin.left},0)`)
-    .call(d3.axisLeft(this._yScale).ticks(null, 's'))
+    .call(d3.axisLeft(this._yScale).ticks(5, 's'))
+    // .ticks(null, 's'))
     .call(g => g.select('.domain').remove());
 
     this._g.append('g').attr('class', 'xAxis').call(this._xAxis);
@@ -133,8 +131,13 @@ export class heatplot{
   }
   _initAttrs(){
     const boxWidth = 50;
-    // const jitterWidth = 50;
-  
+    const jitterWidth = 50;
+
+    const boxScale = this._passMap.map(d => {
+      let range = d3.extent(d.value, d => d.position);
+      if(range[0] === undefined)return 'no Scale';
+      return d3.scaleLinear().range([-jitterWidth/2, jitterWidth/2]).domain(range);
+    })
     // console.log(this);
     // console.log(this._passMap);
 
@@ -144,16 +147,16 @@ export class heatplot{
       'stroke-width': '1px',
       x1: 0,
       x2: 0,
-      y1: d => this._yScale(this._passMap.get(this._length)[d].value.range[0]),
-      y2: d => this._yScale(this._passMap.get(this._length)[d].value.range[1]),
+      y1: d => this._yScale(this._passMap[d].value.range[0]),
+      y2: d => this._yScale(this._passMap[d].value.range[1]),
       // transform: d => `translate(${this._xLinear(d)}, 0)`
     };
     this._boxAttrs = {
       class: 'box',
       x: -boxWidth/2,
-      y: d => this._yScale(this._passMap.get(this._length)[d].value.quartiles[2]),
-      height: d => this._yScale(this._passMap.get(this._length)[d].value.quartiles[0])
-        - this._yScale(this._passMap.get(this._length)[d].value.quartiles[2]),
+      y: d => this._yScale(this._passMap[d].value.quartiles[2]),
+      height: d => this._yScale(this._passMap[d].value.quartiles[0])
+        - this._yScale(this._passMap[d].value.quartiles[2]),
       width: boxWidth,
       stroke: 'purple',
       fill: 'rgb(255, 255, 255)',
@@ -170,7 +173,8 @@ export class heatplot{
       y2: d => this._yScale(d)
     };
     this._pointAttrs = {
-      cx: 0,  //d => 0 - jitterWidth/2 + Math.random() * jitterWidth
+      // cx: 0,  //d => 0 - jitterWidth/2 + Math.random() * jitterWidth
+      cx: d => boxScale[d.pass](d.position),
       cy: d => this._yScale(d.value),
       fill: d => d.overflow ? labelColor[0] : labelColor[1],//'#af5f68',
       'fill-opacity': d => d.overflow ? 1 : 0.75,
@@ -178,7 +182,7 @@ export class heatplot{
     };
     this._passLineAttrs = {
       class: 'passLine',
-      d: d => d3.line().x((d, i) => this._xLinear(i)).y(d => this._yScale(d)).curve(d3.curveLinear)(d),
+      d: d => d3.line().x(d => this._xLinear(d.pass) + boxScale[d.pass](d.position)).y(d => this._yScale(d.value)).curve(d3.curveLinear)(d),
       stroke: `url(#${this._name}-gradient)`,//'#af5f68',
       display: 'none',
       'stroke-width': 1.5,
@@ -190,7 +194,7 @@ export class heatplot{
       .attr('class', 'mainGroup');
     const groups = this._mainGroup
       .selectAll('g')
-      .data(new Array(this._maxLen).fill(0).map((d, i) => i))
+      .data(new Array(this._length).fill(0).map((d, i) => i))
       .join('g')
       .attr('transform', d => `translate(${this._xLinear(d)}, 0)`)
       .attr('display', d => d < this._length ? 'block' : 'none');
@@ -209,26 +213,28 @@ export class heatplot{
       // .call(g => addElement(g, 'rect', this._boxAttrs))
     enter
       .call(g => g.selectAll('points')
-        .data(d => this._passMap.get(this._length)[d].value)
+        .data(d => this._passMap[d].value)
         .join('circle')
         .call(g => updateElement(g, this._pointAttrs)))
       .call(g => g.selectAll('.horizontalLine')
         .data(d => {
-          let datum = this._passMap.get(this._length)[d].value;
+          let datum = this._passMap[d].value;
           return [datum.range[0], datum.quartiles[1], datum.range[1]];
         })
         .join('line')
         .call(g => updateElement(g, this._horizontalLineAttrs)))
   }
   _renderChart(upid){
-    this._length = this._upidMap.get(upid).length;
-    const renderData = this._passMap.get(this._length);
-    this._xScale.domain(renderData.map(d => d.key));
-    this._yScale.domain([d3.min(renderData, d => d.value.min * 0.8), d3.max(renderData, d => d.value.max * 1.2)])
-    this._xLinear.domain(d3.extent(renderData, d => d.key))
-      .range([this._xScale(renderData[0].key), this._xScale(renderData[renderData.length - 1].key)]);
+    // this._length = this._upidMap.get(upid).length;
+    // const renderData = this._passMap;
+    // this._xScale.domain(renderData.map(d => d.key));
+    // this._yScale.domain([d3.min(renderData, d => d.value.min * 0.8), d3.max(renderData, d => d.value.max * 1.2)])
+    // this._xLinear.domain(d3.extent(renderData, d => d.key))
+    //   .range([this._xScale(renderData[0].key), this._xScale(renderData[renderData.length - 1].key)]);
 
-    this._updateBox();
+    // this._updateBox();
+    if(this._upidMap.get(upid) === undefined)return;
+    this._g.selectAll('circle').attr('opacity', d => d.upid === upid ? 1 : 0.4)
     this._initLine(upid);
   }
   _updateBox(){
@@ -273,7 +279,7 @@ export class heatplot{
 
     enter.selectAll('.horizontalLine')
         .data(d => {
-          let datum = this._passMap.get(this._length)[d].value;
+          let datum = this._passMap[d].value;
           return [datum.range[0], datum.quartiles[1], datum.range[1]];
         })
         .join(enter => addElement(enter, 'line', this._horizontalLineAttrs)
@@ -284,7 +290,7 @@ export class heatplot{
         .call(g => updateElement(g.transition(t), this._horizontalLineAttrs));
 
     enter.selectAll('circle')
-        .data(d => this._passMap.get(this._length)[d].value)
+        .data(d => this._passMap[d].value)
         .join(enter => addElement(enter, 'circle', this._pointAttrs).attr('cy', d => this._yScale(d.value) - 10),
           update => update,
           exit => exit.transition(t).remove().attr('cy', d => this._yScale(d.value) + 10)
@@ -292,17 +298,19 @@ export class heatplot{
         .call(g => updateElement(g.transition(t), this._pointAttrs));
   }
   _initLine(upid){
-    const datum = this._upidMap.get(upid);
-    this._defs.selectAll('stop').remove()
+    const datum = this._upidMap.get(upid),
+      badX = [...new Set(datum.filter(d => d.overflow).map(d => d.pass))]
+    this._defs.selectAll('stop').remove();
+
     this._defs.selectAll('stop').data(new Array(this._length).fill(0).map((_, i) => i))
       .join('stop')
         .attr('offset', d => d/this._length)
-        .attr('stop-color', d =>  datum[d].overflow ? labelColor[0] : labelColor[1])
+        .attr('stop-color', d =>  badX.indexOf(d) !== -1 ? labelColor[0] : labelColor[1])
     this._g.select('.passLine').remove();
     
     const path = this._mainGroup
       .append('path')
-      .datum(datum.map(d => d.value))
+      .datum(datum)
       .call(g => updateElement(g, this._passLineAttrs));
     const lineLength = path.node().getTotalLength();
     const t = d3.transition()
@@ -328,9 +336,15 @@ export class heatplot{
     }
     this._Gantt
       .selectAll('rect')
-      .data(datum.filter(d => d.overflow).map(d => d.pass))
+      .data(badX)
       .join(enter => addElement(enter, 'rect', rectAttrs),
         update => updateElement(update.transition().duration(150).ease(d3.easeQuad), rectAttrs),
         exit => exit.remove())
+  }
+  _removeLine(){
+    this._g.selectAll('circle').attr('opacity', 1)
+    this._g.select('.passLine').remove();
+    this._Gantt
+      .selectAll('rect').remove();
   }
 } 

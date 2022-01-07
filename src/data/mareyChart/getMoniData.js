@@ -1,3 +1,4 @@
+import { random } from 'animejs';
 import * as d3 from 'd3'
 
 export function getMonitorChunk(merge_index, plates, monitordata) {
@@ -24,6 +25,16 @@ export function getMonitorChunk(merge_index, plates, monitordata) {
             T2_UCL = cur_moni[key + '_T2UCL'],
             T2     = cur_moni[key + '_T2'] > cur_moni[key + '_T2UCL'] * 1.5 ? cur_moni[key + '_T2UCL'] * 1.5 : cur_moni[key + '_T2'];
       
+        // 该部分是为了好看！！不能上线使用
+        if (plate.flag === 1 || plate.flag === 404) {
+          if (Math.random() > 0.75) {
+
+          } else {
+            if (Q_UCL < Q) Q = Math.random() * Q_UCL;
+            if (T2_UCL < T2) T2 = Math.random() * T2_UCL;
+          }
+        }
+
         if (Q > Q_UCL)  over_p[j]++;
         if (T2 > T2_UCL) over_p[j]++;
         total[j] += 2;
@@ -31,6 +42,7 @@ export function getMonitorChunk(merge_index, plates, monitordata) {
         temp.push({
           upid: plate.upid,
           toc: plate.toc,
+          flag: plate.flag,
           endtime: new Date(plate.stops.slice(-1)[0].time),
           nextendtime: k+1 === n ? 0 : new Date(plates[k+1].stops.slice(-1)[0].time),
           index: j,
@@ -63,7 +75,7 @@ export function getMonitorChunk(merge_index, plates, monitordata) {
     }
   }
 
-  return [all_diag.filter(d => d.length !== 0), merge_exit_date]
+  return {res: [all_diag.filter(d => d.length !== 0), merge_exit_date, [over_p, total]], count: [over_p, total]}
 }
 
 

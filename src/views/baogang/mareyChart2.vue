@@ -395,6 +395,7 @@ export default {
 
           // 合并相关图元 绘图数据
           let batch_index_count = 0;
+          let over_p = [], total = [];
           for (let item in this._mergeresult) {
             let mergeItem = this._mergeresult[item].merge_result.merge;
             let mergeSelect = this._mergeresult[item].merge_result.select;
@@ -540,17 +541,19 @@ export default {
               let one_merge_item = mergeItem[key];
 
               // [new_diag, new_chunk]
-              let res = getMonitorChunk(key, one_merge_item, monitordata);
+              let { res, count } = getMonitorChunk(key, one_merge_item, monitordata);
               if (res[1].length !== 0) one_batch_diag_data.push(res);
-              // console.log('合并块：', key, res[0], res[1])
+              over_p.push(count[0]);
+              total.push(count[1]);
             }
             for (let key = 0; key < cannotMerge.length; key++) {
               let one_cannotMerge = cannotMerge[key];
 
               // [new_diag, new_chunk]
-              let res = getMonitorChunk(-1, one_cannotMerge, monitordata);
+              let { res, count } = getMonitorChunk(-1, one_cannotMerge, monitordata);
               if (res[1].length !== 0) one_batch_diag_data.push(res);
-              // console.log('非合并块：', key, res[0], res[1])
+              over_p.push(count[0]);
+              total.push(count[1]);
             }
             let batch_chunk_s = new Date(batch_all_plate[0].stops.slice(-1)[0].time);
             let batch_chunk_e = new Date(batch_all_plate[batch_all_plate.length - 1].stops.slice(-1)[0].time);
@@ -604,8 +607,18 @@ export default {
           console.log("处理成绘图数据：", this._mergeresult_1)
 
           // 统计整图监控结果占比
-          let [heat_bad, roll_bad, cool_bad] = countTotalDiagPercent(this._timesdata, monitordata);
-
+          // console.log(over_p, total)
+          // let [heat_bad, roll_bad, cool_bad] = countTotalDiagPercent(this._timesdata, monitordata);
+          let allOver = [0, 0, 0], allTotal = [0, 0, 0];
+          for (let _i = 0; _i < over_p.length; _i++) {
+            for (let _j = 0; _j < 3; _j++) {
+              allOver[_j] += over_p[_i][_j];
+              allTotal[_j] += total[_i][_j];
+            }
+          }
+          let heat_bad = (allOver[0] / allTotal[0]) * 100,
+              roll_bad = (allOver[1] / allTotal[1]) * 100,
+              cool_bad = (allOver[2] / allTotal[2]) * 100;
           this._statistics = [
             {bad: heat_bad, good: 100-heat_bad},
             {bad: roll_bad, good: 100-roll_bad},
@@ -2464,13 +2477,16 @@ export default {
               : vm.noflagColor
             return color
           }
-          linkRectMerge.selectAll('steelspec_link_group')
+          let steelspec_link_group = linkRectMerge.selectAll('steelspec_link_group')
             .data(d => d.one_batch_info)
             .enter()
             .append('g')
             .attr('class', 'steelspec_link_group')
             .attr('id', d => `steelspec_link_group_${d.info_index}`)
-          .selectAll('.linkRectLine')
+          
+          
+
+          steelspec_link_group.selectAll('.linkRectLine')
             .data(d => {
               let merge_link = d.link_rect.map((e, i) => {
                 let good = e.merge_data.filter(f => f.flag == 1).length
@@ -2541,7 +2557,7 @@ export default {
                     d.parent.name.slice(0, 11) === "cannotMerge"
                     ? '_' + d.parent.name
                     : d.parent.merge_index}`);
-                  cls.push(`linkRectNode-${d.flagName}`);
+                  cls.push(`linkRectSourceNode-${d.flagName}`);
                   
                   return cls.join(' ');
                 })
@@ -2568,7 +2584,7 @@ export default {
                     d.parent.name.slice(0, 11) === "cannotMerge"
                     ? '_' + d.parent.name
                     : d.parent.merge_index}`);
-                  cls.push(`linkRectNode-${d.flagName}`);
+                  cls.push(`linkRectTargetNode-${d.flagName}`);
                   
                   return cls.join(' ');
                 })
@@ -2631,15 +2647,25 @@ export default {
           chartGroup
             .append('g')
             .attr('class', 'infoBackground')
-            .append('rect')
-						.attr('class', 'lineRect')
-            .attr('width', this._detail_rect_w)
-            .attr('height', this._detail_rect_w)
-            .attr('stroke', d => d.pathColor)
-            .attr('stroke-width', 2)
-            .attr('stroke-opacity', 0.4)
-            .attr('fill', 'white')
-            .attr('filter', 'url(#shadow-card)');
+            .call(g => {
+              g.append('rect')
+                .attr('class', 'lineRect')
+                .attr('width', this._detail_rect_w)
+                .attr('height', this._detail_rect_w)
+                .attr('stroke', d => d.pathColor)
+                .attr('stroke-width', 2)
+                .attr('stroke-opacity', 0.4)
+                .attr('fill', 'white')
+                .attr('filter', 'url(#shadow-card)');
+            })
+            .call(g => {
+              g.append('rect')
+                .attr('transform', `translate(${[this._detail_rect_w, this._detail_rect_w/2]})`)
+                .attr('class', 'linkRectSourceBGC')
+                .attr('width', 8)
+                .attr('height', 50)
+                .attr('fill', 'white')
+            });
           
           // 具体内容
           let chartContentGroup = chartGroup.append('g')
@@ -2665,6 +2691,8 @@ export default {
           //   .on('mouseenter', __centerRect)
           //   .on('mouseleave', __centerLeave);
           // this._renderCenterRect(centerRect);   // 中间正方形
+
+          InfoDetailGroup.lower();
 
           let timer;
           function __pathClick(e, d) {  // 双击触发诊断
@@ -4860,6 +4888,7 @@ export default {
             let prevHeight = 0;
             let prevTimes = d.flagName === 'good' ? 0 : d.flagName === 'bad' ? 1 : 2;
             for (let i = 0; i < prevTimes; i++) {
+              if (d.targetArr[i] === 0) continue;
               prevHeight += this._sankeyScale(d.targetArr[i]) + sankeyPadding;
             }
             let targetAllWidth = this._sankeyScale(d3.sum(d.targetArr.flat()));
@@ -4873,6 +4902,7 @@ export default {
             let allPrev = 0; // 已用的总宽度
             let allPrevTimes = d.flagName === 'good' ? 0 : d.flagName === 'bad' ? 1 : 2;
             for (let i = 0; i < allPrevTimes; i++) {
+              if (d.sourceArr[i].every(e => e === 0)) continue;
               allPrev += this._sankeyScale(d3.sum(d.sourceArr[i])) + sankeyPadding;
             }
             let curPrev = 0;  // 当前flag前面已用的宽度
@@ -4882,8 +4912,8 @@ export default {
 
             let pos = this._getLinkPosition(position_data, d);
             // let sourceLineCount = d.sourceArr.flat().filter(e => e > 0).length;
-            let sourceLineCount = d.sourceArr.length;
-            let startPos = pos[1] + this._detail_rect_w/2 - sourceAllWidth/2 - sankeyPadding * (sourceLineCount - 1);
+            let sourceLineCount = d.sourceArr.filter(e => e.every(f => f !== 0)).length;
+            let startPos = pos[1] + this._detail_rect_w/2 - sourceAllWidth/2 - sankeyPadding*(sourceLineCount - 1)/2;
             let source_x = pos[0];
             let source_y = startPos + allPrev + curPrev + width/2;
 
@@ -4928,6 +4958,31 @@ export default {
             .attr('height', d => {
               let {targetWidth} = computeSourceTarget(d);
               return targetWidth
+            });
+          
+          const computeBGC = d => {
+            let plates = d.link_rect.map(e => e.merge_data).flat();
+            let arr = [
+              plates.filter(e => e.flag === 1).length,
+              plates.filter(e => e.flag === 0).length,
+              plates.filter(e => e.flag === 404).length
+            ];
+            let spanNum = arr.filter(e => e !== 0).length - 1;
+
+            return {
+              height: this._sankeyScale(d3.sum(arr)) + spanNum * 5
+            }
+          }          
+          this._info_g.selectAll('.linkRectSourceBGC')
+            .attr('transform', d => {
+              let { height } = computeBGC(d);
+              let x = this._detail_rect_w - 4;
+              let y = this._detail_rect_w/2 - height/2 - 10;
+              return `translate(${[x, y]})`;
+            })
+            .attr('height', d => {
+              let { height } = computeBGC(d);
+              return height + 20;
             });
         }
         _getLinkPosition(position_data, data) {

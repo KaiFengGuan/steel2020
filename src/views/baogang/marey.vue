@@ -1117,8 +1117,17 @@ export default {
 	}
   .scatter-tab {
     // float: right;
-		margin-left: 20px;
+		margin-left: 30px;
     margin-top: -3.5px;
+    .el-radio-button__inner {
+      padding: 2.5px 5px;
+    }
+    .is-active .el-radio-button__inner:hover {
+      color: #ffffff;
+    }
+    .el-radio-button__inner:hover {
+      color: #94A7B7;
+    }
   }
 	.card-select{
 		float: right;
@@ -1295,17 +1304,6 @@ export default {
 		border-color: #909399;
 		color: #FFF;
 	}
-}
-.scatter-tab {
-  .el-radio-button__inner {
-    padding: 2.5px 5px;
-  }
-  .is-active .el-radio-button__inner:hover {
-    color: #ffffff;
-  }
-  .el-radio-button__inner:hover {
-    color: #94A7B7;
-  }
 }
 </style>
 

@@ -23,12 +23,15 @@ import {
 	getSortIndex,
 	sortDomain
 } from "utils/data.js"
-import {preRoll, boxplot} from './boxplot.js';
-import {heatplot, preHeat} from './heatplot.js';
+import {
+	preRoll,
+	boxplot,
+	heatplot,
+	preHeat,
+	createToolTip
+} from './boxplot.js';
 import {processJson} from './index.js';
-import heatData from './heatVisualizationData.json'
-import coolData from './coolingVisualizationData.json'
-import rollData from './rollData.json';
+import { mapMutations } from 'vuex';
 export default {
 	props: {
 	},
@@ -43,24 +46,28 @@ export default {
 			}
 	},
 	methods: {
-		paintChart(batchData) {
+		...mapMutations([
+			'showTooltip',
+			'removeTooltip'
+		]),
+		paintChart(batchData, processData) {
 			const vm = this;
 			this.wheelChart.svg !== undefined && this.wheelChart.svg.remove()
 			this.wheelChart.svg = d3.select('#' + this.menuId)
 				.append('svg')
-				.attr('viewBox', `${-50} ${-this.height / 2} ${this.width} ${this.height}`)
+				.attr('viewBox', `${-60} ${-this.height / 2} ${this.width} ${this.height}`)
 				.style('width', this.width)
 				.style('height', this.height);
 			class wheelRound{
-				constructor(container, vNode) {
+				constructor(container, vNode, options) {
 					this._container = container;
-					this._vN = vNode;
+					this._vNode = vNode;
 					this._staticGroup = null;
 					this._g = null;
 
-					this._width = 640;
-					this._height = 640;
-					this._margin = {top: 40, bottom: 25, left: 0, right: 0};
+					this._width = options.width;
+					this._height = options.height;
+					this._margin = {top: 30, bottom: 20, left: 0, right: 0};
 					this._fontSize = {
 						info: 10,
 						center: 24,
@@ -134,6 +141,13 @@ export default {
 						textX: 20,
 						textY:  12
 					};
+					this._buttonGroup = {
+						x: -50,
+						gap: 32,
+						outset: - this._height / 2 + 25
+					},
+					this._buttonPosition = num => translate(this._buttonGroup.x, this._buttonGroup.outset + (+num) * this._buttonGroup.gap)
+					//  `translate(${[60 + 60 * (1 - d), - this._height / 2 + 2.5]})`,
 					this._staticButton = {
 						rect:{
 							rx: 5,
@@ -160,8 +174,9 @@ export default {
 					}
 				}
 
-				dataInit(batchData) {
+				dataInit(batchData, processData) {
 					this._batchData = batchData;
+					this._processData = processData;
 					return this;
 				}
 
@@ -247,6 +262,7 @@ export default {
 					this._initLinkG();
 					this._initBoxLine();
 					this._initProcessButton();
+					this._initBoxSort();
 				}
 				_renderMainBar() {
 					const wm = this,
@@ -541,7 +557,7 @@ export default {
 								transform: `translate(${[0, 0]})`
 							},
 							line:{
-								y1: -wm._height/2 + wm._margin.top - 10,
+								y1: -wm._height/2 + wm._margin.top - 15,
 								y2: wm._height/2 - wm._margin.bottom,
 								stroke: 'black',
 								'stroke-width': 1,
@@ -552,7 +568,7 @@ export default {
 								href: clickIcon,
 								height: 40,
 								width: 40,
-								transform: `translate(${-0.5 * 40},${ -wm._height/2 + wm._margin.top + 15 - 40})`
+								transform: `translate(${-0.5 * 40},${ -wm._height/2 + wm._margin.top + 15 - 45})`
 							}
 						}
 						heatMapAttrs = {
@@ -1039,7 +1055,7 @@ export default {
 								.attr('display', 'block');
 							//this._plotC_renderChart(upid);
 
-							// this._vN.$watch(this.steelSpec, ()=>{	})
+							// this._vNode.$watch(this.steelSpec, ()=>{	})
 							
 							console.log(upid);
 						})
@@ -1442,7 +1458,7 @@ export default {
 					const wm = this,
 						lc = this._labelcolor,
 						mainG = this._mainG;
-										// Object.fromEntries
+					// Object.fromEntries
 					
 					const plot_offset = this._boxChart,
 						allData = this._keys.map((d, i) => d.map(e => {return {'name' : e, process: i, sort_value: Math.random()}})).flat(),
@@ -1456,13 +1472,7 @@ export default {
 					initAttrs.call(this);
 					for(let index in allData){
 						let item = allData[index];
-						if(item.process == 1){
-							item.datum = rollData[item.name];
-						}else if(item.process == 0){
-							item.datum = heatData[item.name];
-						}else{
-							item.datum = coolData[item.name];
-						}
+						item.datum = this._processData[item.name];
 					}
 					function initAttrs(){
 						boxPlotAttrs = {
@@ -1482,12 +1492,33 @@ export default {
 								filter: 'url(#card-shadow)',
 								stroke: this._borderStyle.color
 							},
+							text: {
+								text: d => d.name,
+								'text-anchor': 'start',
+								transform: translate(10, 2),
+								fill: d => d3.color(lc[d.process]).darker(0.2),
+								'font-size': '12px',
+								'class': 'processLabel',
+								'font-family': "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif"
+							},
+							textBackGround: {
+								transform: translate(6, -5),
+								height: 10,
+								width: d => {
+									const width = plotGroup
+										.filter(e => e.name === d.name)
+										.select('.processLabel')
+										.node().getBBox().width;
+									return width + 8;
+								},
+								fill: 'white'
+							},
 							body: {
 								id: d => d.name,
 								class: 'plotChart'
 							},
 							leftLine:{
-								stroke: d => d3.color(lc[d.process]).darker(0.5),
+								stroke: d => lc[d.process],//d3.color(lc[d.process]).darker(0.5),
 								y1: 0,
 								y2: plot_offset.h,
 								'stroke-width': 2.5
@@ -1503,11 +1534,14 @@ export default {
 					this._scaleBox(false);
 					plotGroup
 						.call(g => addElement(g, 'rect', boxPlotAttrs.border))
+						.call(g => addElement(g, 'rect', {}).attr('class', 'textBack'))
+						.call(g => addElement(g, 'text', boxPlotAttrs.text))
+						.call(g => updateElement(g.selectAll('.textBack'), boxPlotAttrs.textBackGround))
 						.call(g => addElement(g, 'line', boxPlotAttrs.leftLine))
-						.call(g => addElement(g, 'g', boxPlotAttrs.body));
+						.call(g => addElement(g, 'g', boxPlotAttrs.body))
 					this._boxInstances = allData.map(d => {
 						if(d.process === 1){
-							let res = new boxplot(plotG.select(`#${d.name}`)).enter({
+							let res = new boxplot(plotG.select(`#${d.name}`), this._vNode).enter({
 								data: d.datum,
 								func: preRoll,
 								width: plot_offset.w,
@@ -1516,12 +1550,13 @@ export default {
 							}).render()
 							return res;
 						}else{
-							let res = new heatplot(plotG.select(`#${d.name}`)).enter({
+							let res = new heatplot(plotG.select(`#${d.name}`), this._vNode).enter({
 								data: d.datum,
 								func: preHeat,
 								width: plot_offset.w,
 								height: plot_offset.h,
-								label: d.name
+								label: d.name,
+								color: lc[d.process]
 							}).render()
 							return res;
 						}
@@ -1641,7 +1676,7 @@ export default {
 				_initSlider(){
 					const sliderGroup = this._staticGroup.append('g')
 						.attr('class', 'sliderGroup')
-						.attr('transform', `translate(${[475, - this._height/2 + 2.5]})`);
+						.attr('transform', `translate(${[100, - this._height/2 + 2.5]})`);
 					const wm = this;
 					let offsetX = 0,
 							width = 40,
@@ -1708,7 +1743,7 @@ export default {
 				_initZoom(){
 					const zoomG = this._staticGroup.append('g').attr('class', 'zoomG');
 					zoomG
-						.attr('transform', `translate(${[0, - this._height / 2 + 2.5]})`)
+						.attr('transform', this._buttonPosition(0))
 						.call(g => addElement(g, 'rect', this._staticButton.rect)
 							.attr('fill', this._zoomStatus ? this._buttonColor : 'white'))
 						.call(g => addElement(g, 'text', this._staticButton.text)
@@ -1729,12 +1764,12 @@ export default {
 				_initSwitch(){//init switchG
 					const switchG = this._staticGroup.append('g').attr('class', 'switchG'),
 						switchAttrs = {
-							transform: d => `translate(${[60 + 60 * (1 - d), - this._height / 2 + 2.5]})`,
+							transform: d => this._buttonPosition(d + 1),
 							text: ['Horizon', 'River'],
 							color: this._buttonColor,
 							colorfunc: (v1, v2) => d => this._horizonView == Boolean(d) ? v1 : v2
 						};
-					switchG.selectAll('g').data([1, 0]).join('g')
+					switchG.selectAll('g').data([0, 1]).join('g')
 						.attr('transform', switchAttrs.transform)//280  - 100
 						.call(g => addElement(g, 'rect', this._staticButton.rect)
 							.attr('fill', switchAttrs.colorfunc(switchAttrs.color, '#fff')))
@@ -1753,7 +1788,7 @@ export default {
 								switchG.selectAll('text')
 									.transition(t)
 									.attr('fill', switchAttrs.colorfunc('#fff', switchAttrs.color));
-								this._barInstance.renderMergeChart();
+								this._barInstance.renderMergeChart.call(this);
 							}
 						})
 				}
@@ -1761,8 +1796,7 @@ export default {
 				_initVisG(){
 					const visG = this._staticGroup.append('g').attr('class', 'visG');
 					visG
-							.attr('transform', `translate(${[180, - this._height / 2 + 2.5]})`)
-					visG
+						.attr('transform', this._buttonPosition(3))
 						.call(g => addElement(g, 'rect', this._staticButton.rect)
 							.attr('fill', this._barVis ? this._buttonColor : 'white'))
 						.call(g => addElement(g, 'text', this._staticButton.text)
@@ -1779,10 +1813,10 @@ export default {
 				_initSort() {//init sortG
 					const text = ['Single', 'Indicators', 'Total'],
 						sortAttrs = {
-						transform: d => `translate(${[240 + d * 60, -this._height / 2 + 2.5]})`,
-						text: d => text[d],
-						sortChange: (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1 : value2
-					},
+							transform: d => this._buttonPosition(4 + d),
+							text: d => text[d],
+							sortChange: (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1 : value2
+						},
 						sortG = this._staticGroup.append('g').attr('class', 'sortG');
 					sortG.selectAll('g')
 						.data([0, 1, 2])
@@ -1809,7 +1843,8 @@ export default {
 					const lineButtonG = this._staticGroup.append('g').attr('class', 'lineButtonG');
 					lineButtonG
 						.attr('cursor', 'pointer')
-						.attr('transform', `translate(${[this._cardWidth + this._horizonPadding + 20, - this._height / 2 + 2.5]})`)
+						.attr('transform', this._buttonPosition(7))
+						// .attr('transform', `translate(${[this._cardWidth + this._horizonPadding + 20, - this._height / 2 + 2.5]})`)
 					lineButtonG
 						.call(g => addElement(g, 'rect', this._staticButton.rect)
 							.attr('fill', this._lineVis ? this._buttonColor : 'white'))
@@ -1839,7 +1874,8 @@ export default {
 
 				_initProcessButton(){
 					const deviceAttrs = {
-						transform: d => `translate(${[this._cardWidth + this._horizonPadding + 80 + d * 60, -this._height / 2 + 2.5]})`,
+						transform: d => this._buttonPosition(8 + d),
+						// transform: d => `translate(${[this._cardWidth + this._horizonPadding + 80 + d * 60, -this._height / 2 + 2.5]})`,
 						text: d => this._deviceName[d],
 						deviceChange: (value1, value2) => d => d === (this._selectDevice !== undefined ? this._selectDevice : 0) ? value1 : value2
 					},
@@ -1867,6 +1903,39 @@ export default {
 							.transition(t)
 							.call(g => g.selectAll('rect').attr('fill', deviceAttrs.deviceChange(this._buttonColor, '#fff')))
 							.call(g => g.selectAll('text').attr('fill', deviceAttrs.deviceChange('#fff', this._buttonColor)))
+						})
+				}
+
+				_initBoxSort(){
+					const boxAttrs = {
+						transform: d => this._buttonPosition(11 + d),
+						text: d => ['steel', 'complex'][d],
+						boxChange: (value1, value2) => d => d === (this._selectDevice !== undefined ? this._selectDevice : 0) ? value1 : value2
+					},
+						boxG = this._staticGroup.append('g').attr('class', 'boxG');
+					boxG.selectAll('g')
+						.data([0, 1])
+						.join('g')
+						.attr('transform', boxAttrs.transform)
+						.call(g => addElement(g, 'rect', this._staticButton.rect)
+							.attr('fill', boxAttrs.boxChange(this._buttonColor, '#fff')))
+						.call(g => addElement(g, 'text', this._staticButton.text)
+							.attr('fill', boxAttrs.boxChange('#fff', this._buttonColor))
+							.text(boxAttrs.text))
+						.on('click', (_, d) => {
+							this._wheelBox = 0;
+							// if(this._selectDevice !== d){
+								
+							// 	this._selectDevice = d;
+							// }else{
+							// 	this._selectDevice = false;
+							// }
+							// this._scaleBox(this._selectDevice)
+							let t = d3.transition().duration(150).ease(d3.easeLinear);
+							boxG
+							.transition(t)
+							.call(g => g.selectAll('rect').attr('fill', boxAttrs.boxChange(this._buttonColor, '#fff')))
+							.call(g => g.selectAll('text').attr('fill', boxAttrs.boxChange('#fff', this._buttonColor)))
 						})
 				}
 
@@ -2014,9 +2083,12 @@ export default {
 					else if(s.value < s.sxl)return -3;
 				}
 			}
-			this.wheelChart.instance = new wheelRound(this.wheelChart.svg, this)
-				.size([this.width, this.height])
-				.dataInit(batchData)
+			this.wheelChart.instance = new wheelRound(this.wheelChart.svg, this, {
+				width: this.width,
+				height: this.height
+			})
+				// .size([this.width, this.height])
+				.dataInit(batchData, processData)
 				.process(processJson)
 				.render();
 			console.log(this.wheelChart)

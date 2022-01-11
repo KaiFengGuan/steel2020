@@ -212,6 +212,7 @@
 			<el-button circle  icon="el-icon-more" @click="changeDiagnosisVisible" id="diagnosis_button"></el-button>
 		</el-row>			
 		</el-col>
+		<tooltip></tooltip>
 	</div>
 </template>
 
@@ -222,6 +223,7 @@ import util from './util.js';
 // import mareyChart from './mareyChart_copy.vue';
 import mareyChart from './mareyChart2.vue';
 import scatterlog from 'components/charts/scatterlog.vue';
+import tooltip from 'components/tooltip.vue';
 import timeBrush from './timeBrush.vue';
 import wheeler from 'components/composition/index.vue';
 import slider from './slider.vue'
@@ -239,7 +241,7 @@ import monitorData from '../data/monitorData.json'
 import scatterData from '../data/scatterData.json'
 
 export default {
-	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler, slider},
+	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler, slider, tooltip},
 	data() {
 		return {
 			diagnosisVisible: false,
@@ -287,7 +289,6 @@ export default {
 			corrdata:[],
 			selectedTrainColor: 'green',
 			interval: 4,
-			selectedUpid: "UPID",
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
 				"T-SNE", "UMAP", "ISOMAP", "PCA"
@@ -316,7 +317,6 @@ export default {
 			loadingDataLoading: false,
 			radio: 0,
 			chooseList: [],
-			processTurn: null, 
 			upidSelect: ["", "  "],
 			corrsize: 0.5,
 			multisize: 20,
@@ -469,14 +469,10 @@ export default {
 				limit: 1000,
 				devation: 0.25
 			};
-			console.log(Object.assign({number: 3}, request))
-			console.log(Object.assign({number: 3, header: 5}, request))
-			// let roll = (await steel.getRollData(request, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
-			// let heat = (await steel.getHeatData(Object.assign({number: 3}, request), updateRange({}, this.$refs.parallel.diagnosisRange))).data;
-			// let cool = (await steel.getCoolData(Object.assign({number: 3, header: 5}, request), updateRange({}, this.$refs.parallel.diagnosisRange))).data;
-			// console.log(roll, cool)
-			// let heat = (await steel.getHeatData({number: 3, limit: 1000, devation: 0.25, start}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
-			// let cool = (await steel.getCoolData({number: 3, limit: 1000, devation: 0.25}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			let roll = (await steel.getRollData(request, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			let heat = (await steel.getHeatData(Object.assign({number: 4}, request), updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			let cool = (await steel.getCoolData(Object.assign({number: 4, header: 5}, request), updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			this.processData.main = {...roll, ...cool, ...heat};
 
 			// await this.getVisCorrelation({
       //     startDate: this.selectDateStart,
@@ -502,7 +498,7 @@ export default {
 			// 	})
 			// })
 
-      await this.paintRiverLike(this.upidSelect[0]);
+      await this.paintRiverLike();
 		},
 		mergeflag(){
 			let mergedata=[]
@@ -614,15 +610,6 @@ export default {
 			})
 		},
 
-		paintProcess(value) {
-			this.processTurn = value
-			this.paintDetailPro(value)
-		},
-
-		switchSort() {
-			this.paintDetailPro(this.radio)
-		},
-
 		getJsonData(startDate, endDate) {
 			// return baogangAxios(`/myf/RollingTimeVisualizationMaretoController/selectRollingTimeVisualizationMaretoDataDto/${startDate}/${endDate}/0/5/all/all/40/40/40/40/all/50/`)
       //   .catch(error => {
@@ -722,14 +709,11 @@ export default {
 			return request;
 		},
 
-		async paintRiverLike(upid) {
-
-			// this.selectedUpid =  "UPID " + upid
-			// var diagnosisData = this.usDiagnosis[upid]//online
-			// let data =  (await steel.getProcessData({upid, process: 'roll',limit: 1000, devation: 0.25}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
-			// console.log('steel.getProcessData', data);
-			this.$refs.wheelering.paintChart(this.batchData)
+		async paintRiverLike() {
+			this.$refs.wheelering.paintChart(this.batchData, this.processData.main)
     },
+		// let data =  (await steel.getProcessData({upid, process: 'roll',limit: 1000, devation: 0.25}, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+		// console.log('steel.getProcessData', data);
 		mareyUpdate(){
       this.$refs.mareyChart.reRender(this.isMerge, this.minrange, this.minconflict);
 		},
@@ -931,7 +915,6 @@ export default {
 }
 .custom-marey {
 	background: white;
-	margin-right:4px;
 	// padding: 8px;
 	overflow: hidden;
 	.el-button--danger {

@@ -23,21 +23,21 @@ export function getBatchHeader(data, toc) {
   0   // fqcflag
   ]
 }
-export function updateRange (obj, selection){
-  // var keys = ['tgtthickness', 'tgtplatelength2', 'tgtwidth', 'slab_thickness', 'tgtdischargetemp', 'tgttmplatetemp']
+export function updateRange (selection, objStatus){
+  console.log(selection)
   var values = [
-    JSON.stringify([]),   // slabthickness  //selection[3].map(d => d / 1000)
-    JSON.stringify(selection[4]),   // tgtdischargetemp
-    JSON.stringify(selection[0]),   // tgtplatethickness
-    JSON.stringify([]),   // tgtwidth //selection[2]
-    JSON.stringify(selection[1]),   // tgtplatelength2
-    JSON.stringify(selection[5]),   // tgttmplatetemp
-    JSON.stringify([]),   // cooling_start_temp
-    JSON.stringify([]),   // cooling_stop_temp
-    JSON.stringify([]),   // cooling_rate1
+    JSON.stringify(objStatus.slab_thickness ? [] : []),   // slabthickness  //selection[3].map(d => d / 1000)
+    JSON.stringify(objStatus.tgtdischargetemp ? selection[4] : []),   // tgtdischargetemp
+    JSON.stringify(objStatus.tgtthickness ? selection[0] : []),   // tgtplatethickness
+    JSON.stringify(objStatus.tgtwidth ? [] : []),   // tgtwidth //selection[2]
+    JSON.stringify(objStatus.tgtplatelength2 ? selection[1] : []),   // tgtplatelength2
+    JSON.stringify(objStatus.tgttmplatetemp ? selection[5] : []),   // tgttmplatetemp
+    JSON.stringify(objStatus.cooling_start_temp ? [] : []),   // cooling_start_temp
+    JSON.stringify(objStatus.cooling_stop_temp ? [] : []),   // cooling_stop_temp
+    JSON.stringify(objStatus.cooling_rate1 ? [] : []),   // cooling_rate1
     JSON.stringify([]),   // productcategory
     JSON.stringify([]),   // steelspec
-    selection[6][0],   // status_cooling
+    0,   // status_cooling //selection[6][0]
     0   // fqcflag
     ]
   var keys = ["slabthickness", "tgtdischargetemp", "tgtplatethickness", "tgtwidth",
@@ -50,8 +50,8 @@ export function updateRange (obj, selection){
   }
     return object;
     // Object.fromEntries([keys, values]);
-  }
-    // {
+}
+// {
 //   "slabthickness":"[]",
 //   "tgtdischargetemp":"[]",
 //   "tgtplatethickness":"[17.25,21.25]",

@@ -144,7 +144,7 @@ export default {
 			const keys = this.keys;
 			const newkeys = [...keys, 'status_cooling'];
 			brushdata = brushdata.filter(d => keys.every(e => typeof d[e] === 'number'));
-			var margin = {top: 40, right: 30, bottom: 50, left: 20};	// var margin = {top: 40, right: 20, bottom: 40, left: 20},
+			var margin = {top: 40, right: 40, bottom: 50, left: 20};	// var margin = {top: 40, right: 20, bottom: 40, left: 20},
 			const allArray = [0, 1].map(d => d3.filter(brushdata, (e, f) => e['status_cooling'] == d));	//coolingArray nocoolingArray
 			var xCooling = d3
 					.scaleBand() //Ordinal scale
@@ -240,12 +240,12 @@ export default {
 					this._x = x;
 					this._y = y;
 					this._objStatus = {
-						tgtthickness: false,
-						tgtplatelength2: false,
+						tgtthickness: true,
+						tgtplatelength2: true,
 						tgtwidth: false,
 						slab_thickness: false,
-						tgtdischargetemp: false,
-						tgttmplatetemp: false,
+						tgtdischargetemp: true,
+						tgttmplatetemp: true,
 						cooling_start_temp: false,
 						cooling_stop_temp: false,
 						cooling_rate1: false,
@@ -270,13 +270,13 @@ export default {
 				_initAttrs(){
 					this._cardAttrs = {
 						// class: (d, i) => 'card' + i,
-						transform: d => `translate(${10},${y(d) - 42})`,
+						transform: d => `translate(${margin.left - 10},${y(d) - 42})`,
 						fill: d => this._objStatus[d] ? '#f7f7f7' : 'white',
 						'fill-opacity': d => this._objStatus[d] ? 0.7 : 1,
 						stroke: '#e0e0e0',
 						'stroke-width': 1,
 						'stroke-opacity': d => this._objStatus[d] ? 1 : 0,
-						width: 307,
+						width: width - margin.right - margin.left + 20,
 						height: 70,
 						rx: 10,
 						ry: 10
@@ -355,9 +355,9 @@ export default {
 					const goodBarAttrs = (item) => {
 						return {
 							fill: util.delabelColor[1],
-							stroke: '#000',
+							stroke: '#eee',
 							class: 'rect' + item,
-							'stroke-width': 1,
+							'stroke-width': 0.5,
 							x: d => 0.75 * x.get(keys[item])(d.x0) + 0.25 * x.get(keys[item])(d.x0),
 							y: d => -barScale[item](d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 1)
 								.length) + 1,
@@ -369,9 +369,9 @@ export default {
 					badBarAttrs = (item) => {
 						return {
 							fill: util.delabelColor[0],
-							stroke: '#000',
+							stroke: '#eee',
 							class: 'rect' + item,
-							'stroke-width': 1,
+							'stroke-width': 0.5,
 							x: d => 0.75 * x.get(keys[item])(d.x0) + 0.25 * x.get(keys[item])(d.x0),
 							y: 10,
 							height: d => barScale[item](d3.filter(brushdata, e => e[keys[item]] <= d.x1 && d.x0 <= e[keys[item]] && +e.label === 0)
@@ -412,7 +412,7 @@ export default {
 						width: 20,
 						fill: util.delabelColor[1],
 						opacity: 0.5,
-						stroke: '#000',
+						stroke: '#eee',
 						'stroke-width': 1
 					},
 					badAttrs = {
@@ -422,7 +422,7 @@ export default {
 						width: 20,
 						fill: util.delabelColor[0],
 						opacity: 0.5,
-						stroke: '#000',
+						stroke: '#eee',
 						'stroke-width': 1
 					};
 					const coolBarG = this._mainG.append('g');
@@ -487,8 +487,9 @@ export default {
 						.on('start brush end', basebrushed);
 					const context = this;
 					function basebrushed({selection}, key) {
-						if(vm.diagnosisState || vm.svgChart['instance']._objStatus[key])return;
+						if(vm.diagnosisState)return;
 						d3.select(this).call(brushHandle, selection);
+						if(vm.diagnosisState && vm.svgChart['instance']._objStatus[key])return;
 						// var tempValue = selections.get(key).map(d => x.get(key)(d));
 						// if (!tempValue.every((d, i) => d === selection[i])) {
 						// 	d3.select(this).call(brush.move, selections.get(key).map(d => x.get(key)(d)));
@@ -528,7 +529,7 @@ export default {
 							.attr('transform', `translate(${0},${height - margin.bottom - 15})`)
 							.attr('x', 20)
 							.attr('y', 10)
-							.attr('width', 261)
+							.attr('width', width - margin.left - margin.right)
 							.attr('height', this._brushHeight)
 							.attr('class', 'overlay')
 							.raise();
@@ -602,7 +603,7 @@ export default {
 					const plusG = this._mainG.append('g').attr('class', 'plusG');
 					const textG = this._mainG.append('g').attr('class', 'textG');
 					const minusAttrs ={
-						transform: d => `translate(${width - margin.right / 2 - 7.5},${y(d) + 25 - 7.5})  scale(0.8)`
+						transform: d => `translate(${width - margin.right / 2},${y(d) + 25 - 7.5})  scale(0.8)`
 					},
 					minusRect = {
 						height: 15,
@@ -626,7 +627,7 @@ export default {
 						'cursor': 'pointer'
 					},
 					plusAttrs ={
-						transform: d => `translate(${width - margin.right / 2 - 7.5},${y(d) - 25 + 7.5})  scale(0.8)`
+						transform: d => `translate(${width - margin.right / 2 },${y(d) - 25 + 7.5})  scale(0.8)`
 					},
 					plusRect = {
 						height: 15,
@@ -656,6 +657,7 @@ export default {
 							.call(g => addElement(g, 'text', minusText))
 							.on('click', function(e, d){
 								const i = keys.indexOf(d);
+								if(!context._objStatus[d])return;
 								if(vN.diagnosisRange[i][1] - vN.diagnosisRange[i][0] < 2 * vN.brushStep[i])return;
 								vN.diagnosisArr[i] = +(vN.diagnosisArr[i] - vN.brushStep[i]).toFixed(1);
 								vN.diagnosisRange = vN.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *vN.diagnosisArr[i])).slice(0, -1);
@@ -668,13 +670,14 @@ export default {
 							.call(g => addElement(g, 'text', plusText))
 							.on('click', function(e, d){
 								const i = keys.indexOf(d);
+								if(!context._objStatus[d])return;
 								if(vN.diagnosisRange[i][0] < vN.brushStep[i] || vN.brushStep[i] + vN.diagnosisArr[i] > vN.maxStep[i])return;
 								vN.diagnosisArr[i] = +(vN.diagnosisArr[i] + vN.brushStep[i]).toFixed(1);
 								vN.diagnosisRange = vN.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *vN.diagnosisArr[i])).slice(0, -1);
 								context._updateDiagnosis()
 							});
 					const valueAttrs ={
-						transform: d => `translate(${width - margin.right / 2 - 7.5 - 2},${y(d)})  scale(0.8)`
+						transform: d => `translate(${width - margin.right / 2 - 2},${y(d)})  scale(0.8)`
 					},
 					valueText = {
 						x: 12,
@@ -762,7 +765,7 @@ export default {
 						datumRect.width = (d, i) => datumWidth[i] + 10;
 						datumRect.x = (d, i) => -datumWidth[i]/2 - 5 + datumText.x;
 						context.vNode.$nextTick(function() {
-							console.log('$nextTick success')
+							// console.log('$nextTick success')
 							datumG.selectAll('rect').call(g => updateElement(g, datumRect));})
 				}
 				_initAreaTooltip(status){//true init -- false update
@@ -783,7 +786,7 @@ export default {
 					leftText = {
 						x: 0,
 						y: 14,
-						text: (d, i) => this.vNode.diagnosisRange[i][0].toFixed(2),
+						text: (d, i) => stringify(this.vNode.diagnosisRange[i][0]),
 						'text-anchor': 'middle',
 						'fill': '#94a7b7',
 						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,
@@ -810,7 +813,7 @@ export default {
 					rightText = {
 						x: 0,
 						y: 14,
-						text: (d, i) => this.vNode.diagnosisRange[i][1].toFixed(2),
+						text: (d, i) => stringify(this.vNode.diagnosisRange[i][1]),
 						'text-anchor': 'middle',
 						'fill': '#94a7b7',
 						'font-family': util.buttonTextAttr.baseTextAttr.fontFamily,

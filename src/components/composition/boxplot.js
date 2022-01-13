@@ -30,7 +30,7 @@ class box {
     this._container = container;
     this._vNode = vNode;
     this._g = this._container.append('g').attr('class', 'scaleGroup');
-    this._margin = {top: 20, right: 20, bottom: 40, left: 40};
+    this._margin = {top: 20, right: 20, bottom: 40, left: 50};
     this._height = 160;
     this._width = 750;
     
@@ -58,11 +58,44 @@ class box {
     this._mainGroup = null;
 
     //box
-    this._boxWidth = 35;
+    this._boxWidth = 30;
 
     this._selectKey = '';
     this._selectNums = 0;
     this._selectOver = 0;
+
+    this._bottomShadowAttrs = {
+      'class': 'bottomGantt',
+      'display': 'none',
+      'fill': '#999999',
+      y: -1.5,
+      height: 3,
+      width: this._width - this._margin.right - this._margin.left,
+      transform: `translate(${this._margin.left},${this._height - this._margin.bottom / 2 + 5})`
+    }
+
+    this._ganttAttrs = {
+      class: 'Gantt',
+      transform: `translate(${0},${this._height - this._margin.bottom / 2 + 5})`
+    }
+
+    this._vertLineAttrs = {
+      class: 'vertLine',
+      stroke: '#C0C0C0',
+      'stroke-width': '1px',
+    };
+
+    this._boxAttrs = {
+      class: 'box',
+      stroke: '#94a7b7',
+      fill: 'white',
+    };
+
+    this._horizontalLineAttrs = {
+      'class': 'horizontalLine',
+      'stroke': '#94a7b7',
+      'stroke-width': '1px'
+    };
   }
 }
 export class boxplot extends box{
@@ -115,30 +148,27 @@ export class boxplot extends box{
       .range([this._xScale(renderData[0].key), this._xScale(renderData[renderData.length - 1].key)])
       .domain(d3.extent(renderData, d => d.key));
     this._yScale = d3.scaleLinear()
-    .domain([d3.min(renderData, d => d.value.min * 0.8), d3.max(renderData, d => d.value.max * 1.2)])
-    // .domain(this._range)
-    .nice()
-    .range([this._height - this._margin.bottom, this._margin.top]);
+      .domain([d3.min(renderData, d => d.value.min) * 0.98, d3.max(renderData, d => d.value.max) * 1.02])
+      .clamp(true)
+      // .domain([ d3.min(renderData, d => d3.quantile(d.value, 0.05, e => e.value)), d3.max(renderData, d => d3.quantile(d.value, 0.95, e => e.value))])
+      // .domain(this._range)
+      .nice()
+      .range([this._height - this._margin.bottom, this._margin.top]);
     this._xAxis = g => g
       .attr('transform', `translate(0,${this._height - this._margin.bottom})`)
       .call(d3.axisBottom(this._xScale));
     this._yAxis = g => g
-    .attr('transform', `translate(${this._margin.left},0)`)
-    .call(d3.axisLeft(this._yScale).ticks(5, 's'))
-    // .ticks(null, 's'))
-    .call(g => g.select('.domain').remove());
+      .attr('transform', `translate(${this._margin.left},0)`)
+      .call(d3.axisLeft(this._yScale).ticks(3, 's'))
+      // .ticks(null, 's'))
+      .call(g => g.select('.domain').remove());
 
     this._g.append('g').attr('class', 'xAxis').call(this._xAxis);
     this._g.append('g').attr('class', 'yAxis').call(this._yAxis);
   }
   _initStaticLine(){
-    this._g.append('rect').attr('class', 'bottomGantt')
-      .attr('transform', `translate(${this._margin.left},${this._height - this._margin.bottom / 2 - 1.5})`)
-        .attr('fill', '#999999')
-        .attr('height', 3)
-        .attr('width', this._width - this._margin.right - this._margin.left)
-    this._Gantt = this._g.append('g').attr('class', 'Gantt')
-      .attr('transform', `translate(${0},${this._height - this._margin.bottom / 2 - 5})`);
+    this._g.call(g => addElement(g, 'rect', this._bottomShadowAttrs))
+    this._Gantt = this._g.append('g').call(g => updateElement(g, this._ganttAttrs));
     this._defs = this._g.append('linearGradient')
       .attr('id', `${this._name}-gradient`)
       .attr('gradientUnits', 'userSpaceOnUse')
@@ -146,40 +176,26 @@ export class boxplot extends box{
       .attr('x2', '100%')
   }
   _initAttrs(){
-    const boxWidth = this._boxWidth;
+    const boxWidth = this._xScale.step() / 3;;
     // const jitterWidth = this._boxWidth;
 
-    this._vertLineAttrs = {
-      class: 'vertLine',
-      stroke: '#C0C0C0',
-      'stroke-width': '1px',
-      x1: 0,
-      x2: 0,
+    Object.assign(this._vertLineAttrs, {
       y1: d => this._yScale(this._passMap.get(this._length)[d].value.range[0]),
-      y2: d => this._yScale(this._passMap.get(this._length)[d].value.range[1]),
-      // transform: d => `translate(${this._xLinear(d)}, 0)`
-    };
-    this._boxAttrs = {
-      class: 'box',
+      y2: d => this._yScale(this._passMap.get(this._length)[d].value.range[1])
+    })
+    Object.assign(this._boxAttrs, {
       x: -boxWidth/2,
       y: d => this._yScale(this._passMap.get(this._length)[d].value.quartiles[2]),
       height: d => this._yScale(this._passMap.get(this._length)[d].value.quartiles[0])
         - this._yScale(this._passMap.get(this._length)[d].value.quartiles[2]),
       width: boxWidth,
-      stroke: '#94a7b7',
-      fill: 'rgb(255, 255, 255)',
-      'fill-opacity': 0.5,
-      // transform: d => `translate(${this._xLinear(d)}, 0)`
-    };
-    this._horizontalLineAttrs = {
-      'class': 'horizontalLine',
-      'stroke': '#94a7b7',
-      'stroke-width': '1px',
+    });
+    Object.assign(this._horizontalLineAttrs, {
       'x1': -boxWidth/2,
       x2: +boxWidth/2,
       y1: d => this._yScale(d),
       y2: d => this._yScale(d)
-    };
+    });
     this._pointAttrs = {
       cx: 0,  //d => 0 - jitterWidth/2 + Math.random() * jitterWidth
       cy: d => this._yScale(d.value),
@@ -232,17 +248,6 @@ export class boxplot extends box{
     // groups
     const enter = groups.filter(d => d < this._length);
     enter
-      .call(g => g.selectAll('.vertLine')
-        .data(d => [d])
-          .join('line')
-          .call(g => updateElement(g, this._vertLineAttrs)))
-      .call(g => g.selectAll('.box')
-        .data(d => [d])
-          .join('rect')
-          .call(g => updateElement(g, this._boxAttrs)))
-      // addElement(g, 'line', this._vertLineAttrs))
-      // .call(g => addElement(g, 'rect', this._boxAttrs))
-    enter
       .call(g => g.selectAll('points')
         .data(d => this._passMap.get(this._length)[d].value)
         .join('circle')
@@ -257,13 +262,26 @@ export class boxplot extends box{
         })
         .join('line')
         .call(g => updateElement(g, this._horizontalLineAttrs)))
+    enter
+      .call(g => g.selectAll('.vertLine')
+        .data(d => [d])
+          .join('line')
+          .call(g => updateElement(g, this._vertLineAttrs)))
+      .call(g => g.selectAll('.box')
+        .data(d => [d])
+          .join('rect')
+          .call(g => updateElement(g, this._boxAttrs)))
+      // addElement(g, 'line', this._vertLineAttrs))
+      // .call(g => addElement(g, 'rect', this._boxAttrs))
   }
   _renderChart(upid){
+    this._removeLine();
+    this._selectKey = upid;
     if(this._upidMap.get(upid) === undefined)return;
     this._length = this._upidMap.get(upid).length;
     const renderData = this._passMap.get(this._length);
     this._xScale.domain(renderData.map(d => d.key));
-    this._yScale.domain([d3.min(renderData, d => d.value.min * 0.8), d3.max(renderData, d => d.value.max * 1.2)])
+    this._yScale.domain([d3.min(renderData, d => d.value.min), d3.max(renderData, d => d.value.max)])
     this._xLinear.domain(d3.extent(renderData, d => d.key))
       .range([this._xScale(renderData[0].key), this._xScale(renderData[renderData.length - 1].key)]);
 
@@ -271,7 +289,7 @@ export class boxplot extends box{
     this._selectCircle(upid);
   }
   _updateBox(){
-    const that = this;
+    this._initAttrs();
     const t = d3.transition()
       .duration(300)
       .ease(d3.easeLinear);
@@ -292,6 +310,18 @@ export class boxplot extends box{
 
     const enter = this._mainGroup.selectAll('g').filter(d => d < this._length);
     
+    enter.selectAll('circle')
+    .data(d => this._passMap.get(this._length)[d].value)
+    .join(enter => addElement(enter, 'circle', this._pointAttrs)
+      .attr('cy', d => this._yScale(d.value) - 10)
+      .on('mousemove', this._circleEvents.mousemove)
+      .on('mouseleave', this._circleEvents.mouseleave)
+      .on('click', this._circleEvents.click),
+      update => update,
+      exit => exit.transition(t).remove().attr('cy', d => this._yScale(d.value) + 10)
+    )
+    .call(g => updateElement(g.transition(t), this._pointAttrs));
+
       enter
       .call(g => g.selectAll('.vertLine')
         .data(d => [d])
@@ -323,17 +353,6 @@ export class boxplot extends box{
         )
         .call(g => updateElement(g.transition(t), this._horizontalLineAttrs));
 
-    enter.selectAll('circle')
-        .data(d => this._passMap.get(this._length)[d].value)
-        .join(enter => addElement(enter, 'circle', this._pointAttrs)
-          .attr('cy', d => this._yScale(d.value) - 10)
-          .on('mousemove', this._circleEvents.mousemove)
-          .on('mouseleave', this._circleEvents.mouseleave)
-          .on('click', this._circleEvents.click),
-          update => update,
-          exit => exit.transition(t).remove().attr('cy', d => this._yScale(d.value) + 10)
-        )
-        .call(g => updateElement(g.transition(t), this._pointAttrs));
   }
   _updateCircle(upid){ //hightlight points
     const t = d3.transition()
@@ -341,7 +360,9 @@ export class boxplot extends box{
       .ease(d3.easeQuad);
     this._mainGroup.selectAll('circle')
       .transition(t)
-      .attr('opacity', d => d.upid === upid || d.upid === this._selectKey ? 1 : 0.2)
+      .attr('opacity', d => d.upid === upid || d.upid === this._selectKey ? 1 : 0.2);
+
+    this._mainGroup.selectAll('circle').filter(d => d.upid === upid || d.upid === this._selectKey || d.overflow).raise()
   }
   _selectCircle(upid){
     this._selectKey = upid;
@@ -362,15 +383,20 @@ export class boxplot extends box{
       return arr[0] >= value ? (arr[0] -value)/arr[0] : (arr[2] <= value ? (value - arr[2])/arr[2] : 0)
     })
     this._selectOver = 1 * Math.max(...temp1) + 0 * Math.max(...temp2)
-    this._initCircle();
     this._initLine(upid);
+    this._initCircle();
   }
   _initCircle(){
     // const t = d3.transition()
     //   .duration(150)
     //   .ease(d3.easeQuad);
     this._mainGroup.selectAll('circle')
-      .attr('opacity', this._selectKey !== '' ? (d => d.upid === this._selectKey ? 1 : 0.2) : 1)
+      .attr('opacity', this._selectKey !== '' ? (d => d.upid === this._selectKey ? 1 : 0.2) : 1);
+
+    ['horizontalLine', 'box', 'vertLine', 'passLine'].map( d => this._mainGroup.selectAll(`.${d}`).raise())
+    this._mainGroup.selectAll('circle')
+      .call(g => g.filter(d => d.upid !== this._selectKey || !d.overflow).lower())
+      .call(g => g.filter(d => d.upid === this._selectKey || d.overflow).raise())
   }
   _initLine(upid){
     const datum = this._upidMap.get(upid);
@@ -399,9 +425,14 @@ export class boxplot extends box{
       return d3.interpolate(`0,${length}`, `${length},${length}`);
     })
 
+    this._g.transition(d3.transition()
+      .duration(150)
+      .ease(d3.easeQuad)).select('.bottomGantt').attr('display', 'block')
+
     const rectAttrs = {
       width: this._xScale.step(),
       height: 10,
+      y: -5,
       fill: labelColor[0],
       x: d => this._xScale(d) - this._xScale.step()/2,
       stroke: 'none'
@@ -415,6 +446,7 @@ export class boxplot extends box{
   }
   _removeLine(){
     this._g.select('.passLine').remove();
+    this._g.select('.bottomGantt').attr('display', 'none')
     this._Gantt
       .selectAll('rect').remove();
   }
@@ -485,10 +517,10 @@ export class heatplot extends box{
       .range([this._xScale(renderData[0].key), this._xScale(renderData[renderData.length - 1].key)])
       .domain(d3.extent(renderData, d => d.key));
     this._yScale = d3.scaleLinear()
-    .domain([d3.min(renderData, d => d.value.min * 0.9), d3.max(renderData, d => d.value.max * 1.1)])
-    // .domain(this._range)
-    .nice()
-    .range([this._height - this._margin.bottom, this._margin.top]);
+      .domain([d3.min(renderData, d => d.value.min === 0 ? Infinity : d.value.min) * 0.98 , d3.max(renderData, d => d.value.max) * 1.02])
+      .clamp(true)
+      .nice()
+      .range([this._height - this._margin.bottom, this._margin.top]);
     this._xAxis = g => g
       .attr('transform', `translate(0,${this._height - this._margin.bottom})`)
       .call(d3.axisBottom(this._xScale));
@@ -502,13 +534,8 @@ export class heatplot extends box{
     this._g.append('g').attr('class', 'yAxis').call(this._yAxis);
   }
   _initStaticLine(){
-    this._g.append('rect').attr('class', 'bottomGantt')
-      .attr('transform', `translate(${this._margin.left},${this._height - this._margin.bottom / 2 - 1.5})`)
-        .attr('fill', '#999999')
-        .attr('height', 3)
-        .attr('width', this._width - this._margin.right - this._margin.left)
-    this._Gantt = this._g.append('g').attr('class', 'Gantt')
-      .attr('transform', `translate(${0},${this._height - this._margin.bottom / 2 - 5})`);
+    this._g.call(g => addElement(g, 'rect', this._bottomShadowAttrs));
+    this._Gantt = this._g.append('g').call(g => updateElement(g, this._ganttAttrs));
     this._defs = this._g.append('linearGradient')
       .attr('id', `${this._name}-gradient`)
       .attr('gradientUnits', 'userSpaceOnUse')
@@ -516,6 +543,7 @@ export class heatplot extends box{
       .attr('x2', '100%')
   }
   _initAttrs(){
+    this._boxWidth = this._xScale.step() / 3;
     const boxWidth = this._boxWidth;
     const jitterWidth = this._boxWidth;
 
@@ -525,37 +553,23 @@ export class heatplot extends box{
       return d3.scaleLinear().range([-jitterWidth/2, jitterWidth/2]).domain(range);
     })
 
-    this._vertLineAttrs = {
-      class: 'vertLine',
-      stroke: '#C0C0C0',
-      'stroke-width': '1px',
-      x1: 0,
-      x2: 0,
+    Object.assign(this._vertLineAttrs, {
       y1: d => this._yScale(this._passMap[d].value.range[0]),
-      y2: d => this._yScale(this._passMap[d].value.range[1]),
-      // transform: d => `translate(${this._xLinear(d)}, 0)`
-    };
-    this._boxAttrs = {
-      class: 'box',
+      y2: d => this._yScale(this._passMap[d].value.range[1])
+    });
+    Object.assign(this._boxAttrs, {
       x: -boxWidth/2,
       y: d => this._yScale(this._passMap[d].value.quartiles[2]),
       height: d => this._yScale(this._passMap[d].value.quartiles[0])
         - this._yScale(this._passMap[d].value.quartiles[2]),
       width: boxWidth,
-      stroke: '#94a7b7',
-      fill: 'rgb(255, 255, 255)',
-      'fill-opacity': 0.5,
-      // transform: d => `translate(${this._xLinear(d)}, 0)`
-    };
-    this._horizontalLineAttrs = {
-      'class': 'horizontalLine',
-      'stroke': '#94a7b7',
-      'stroke-width': '1px',
+    });
+    Object.assign(this._horizontalLineAttrs, {
       'x1': -boxWidth/2,
       x2: +boxWidth/2,
       y1: d => this._yScale(d),
       y2: d => this._yScale(d)
-    };
+    });
     this._pointAttrs = {
       // cx: 0,  //d => 0 - jitterWidth/2 + Math.random() * jitterWidth
       // cx: d => boxScale[d.pass](d.position),
@@ -566,7 +580,8 @@ export class heatplot extends box{
     };
     this._passLineAttrs = {
       class: 'passLine',
-      d: d => d3.line().x(d => this._xLinear(d.pass) + boxScale[d.pass](d.position)).y(d => this._yScale(d.value)).curve(d3.curveLinear)(d),
+      d: d => d3.line().x(d => this._xLinear(d.pass)).y(d => this._yScale(d.value)).curve(d3.curveLinear)(d),
+      // d: d => d3.line().x(d => this._xLinear(d.pass) + boxScale[d.pass](d.position)).y(d => this._yScale(d.value)).curve(d3.curveLinear)(d),
       stroke: `url(#${this._name}-gradient)`,//'#af5f68',
       display: 'none',
       'stroke-width': 1.5,
@@ -585,17 +600,7 @@ export class heatplot extends box{
       .attr('display', d => d < this._length ? 'block' : 'none');
     // groups
     const enter = groups.filter(d => d < this._length);
-    enter
-      .call(g => g.selectAll('.vertLine')
-        .data(d => [d])
-          .join('line')
-          .call(g => updateElement(g, this._vertLineAttrs)))
-      .call(g => g.selectAll('.box')
-        .data(d => [d])
-          .join('rect')
-          .call(g => updateElement(g, this._boxAttrs)))
-      // addElement(g, 'line', this._vertLineAttrs))
-      // .call(g => addElement(g, 'rect', this._boxAttrs))
+    
     enter
       .call(g => g.selectAll('points')
         .data(d => this._passMap[d].value)
@@ -629,10 +634,20 @@ export class heatplot extends box{
           return [datum.range[0], datum.quartiles[1], datum.range[1]];
         })
         .join('line')
-        .call(g => updateElement(g, this._horizontalLineAttrs)))
+        .call(g => updateElement(g, this._horizontalLineAttrs)));
+    enter
+        .call(g => g.selectAll('.vertLine')
+          .data(d => [d])
+            .join('line')
+            .call(g => updateElement(g, this._vertLineAttrs)))
+        .call(g => g.selectAll('.box')
+          .data(d => [d])
+            .join('rect')
+            .call(g => updateElement(g, this._boxAttrs)))
   }
   _renderChart(upid){
-
+    this._removeLine();
+    this._selectKey = upid;
     if(this._upidMap.get(upid) === undefined)return;
     this._selectCircle(upid);
   }
@@ -715,8 +730,8 @@ export class heatplot extends box{
       return arr[0] >= value ? (arr[0] -value)/arr[0] : (arr[2] <= value ? (value - arr[2])/arr[2] : 0)
     })
     this._selectOver = 1 * Math.max(...temp1) + 0 * Math.max(...temp2)
-    this._initCircle();
     this._initLine(upid);
+    this._initCircle();
   }
   _updateCircle(upid){ //hightlight points
     const t = d3.transition()
@@ -724,14 +739,21 @@ export class heatplot extends box{
       .ease(d3.easeQuad);
     this._mainGroup.selectAll('circle')
       .transition(t)
-      .attr('opacity', d => d.upid === upid || d.upid === this._selectKey ? 1 : 0.2)
+      .attr('opacity', d => d.upid === upid || d.upid === this._selectKey ? 1 : 0.2);
+
+    this._mainGroup.selectAll('circle').filter(d => d.upid === upid || d.upid === this._selectKey || d.overflow).raise()
   }
   _initCircle(){
     // const t = d3.transition()
     //   .duration(150)
     //   .ease(d3.easeQuad);
     this._mainGroup.selectAll('circle')
-      .attr('opacity', this._selectKey !== '' ? (d => d.upid === this._selectKey ? 1 : 0.2) : 1)
+      .attr('opacity', this._selectKey !== '' ? (d => d.upid === this._selectKey ? 1 : 0.2) : 1);
+
+    ['horizontalLine', 'box', 'vertLine', 'passLine'].map( d => this._mainGroup.selectAll(`.${d}`).raise())
+    this._mainGroup.selectAll('circle')
+      .call(g => g.filter(d => d.upid !== this._selectKey || !d.overflow).lower())
+      .call(g => g.filter(d => d.upid === this._selectKey || d.overflow).raise())
   }
   _initLine(upid){
     const datum = this._upidMap.get(upid),
@@ -743,15 +765,20 @@ export class heatplot extends box{
         .attr('offset', d => d/this._length)
         .attr('stop-color', d =>  badX.indexOf(d) !== -1 ? labelColor[0] : labelColor[1])
     this._g.select('.passLine').remove();
-    
+
     const path = this._mainGroup
       .append('path')
-      .datum(datum)
+      .datum(filterPass(datum))
       .call(g => updateElement(g, this._passLineAttrs));
     const lineLength = path.node().getTotalLength();
     const t = d3.transition()
       .duration(1500)
       .ease(d3.easeQuad);
+    
+    this._g.transition(d3.transition()
+      .duration(150)
+      .ease(d3.easeQuad)).select('.bottomGantt').attr('display', 'block')
+
     path
       .attr('stroke-dasharray', `${0},${lineLength}`)
       .attr('display', 'block');
@@ -761,11 +788,11 @@ export class heatplot extends box{
       const length = this.getTotalLength();
       return d3.interpolate(`0,${length}`, `${length},${length}`);
     })
-    // console.log(lineLength);
 
     const rectAttrs = {
       width: this._xScale.step(),
       height: 10,
+      y: -5,
       fill: labelColor[0],
       x: d => this._xScale(d) - this._xScale.step()/2,
       stroke: 'none'
@@ -780,11 +807,23 @@ export class heatplot extends box{
   _removeLine(){
     this._g.selectAll('circle').attr('opacity', 1)
     this._g.select('.passLine').remove();
+    this._g.select('.bottomGantt').attr('display', 'none')
     this._Gantt
       .selectAll('rect').remove();
   }
 } 
 
+function filterPass(datum){
+  return d3.groups(datum, d => d.pass).map(d => {
+    let arr = d[1];
+    if(arr.filter(e => e.overflow).length === 0){
+      return Object.assign(arr[0], { value : d3.mean(arr, e => e.value)});
+    }else{
+      let temp = arr.filter(e => e.overflow);
+      return Object.assign(temp[0], { value : d3.mean(temp, e => e.value)});
+    }
+  })
+}
 
 export function createToolTip({
     background = 'pink',

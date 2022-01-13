@@ -11,7 +11,7 @@ import { addElement,
 	sortedIndex,
 	translate,
 	stringify
-	} from 'utils/element';
+} from 'utils/element';
 import clickIcon from 'assets/images/wheel/fixed.svg'
 import util from 'views/baogang/util.js';
 import { 
@@ -129,7 +129,7 @@ export default {
 							['p1', 'p2', 'p3', 'p4', 'p6']
 					];
 					this._boxkeys = this._keys.flat();
-					this._boxChart = {h: 120, w: 600, gap: 20};
+					this._boxChart = {h: 120, w: 75/2 * 15, gap: 20};
 					this._boxMap = null;
 					this._wheelBox = 0;//wheel 数量
 					this._BoxGroup = null;
@@ -165,6 +165,8 @@ export default {
 
 					// 高亮
 					this._upid = null;
+
+					this._checkUpid = '';
 				}
 				getIndex(_){
 					for (let item in this._process){
@@ -234,7 +236,7 @@ export default {
 					// this._batchEX = this._divideBacthData(dataInfo, this._batchData);
 				}
 				_initAttrs(){
-					console.log(this._batchData)
+					console.log('bacthData: ', this._batchData)
 					// const	maxLength = this._batchData.length,  //batch numbers
 					// 	rectArray = new Array(maxLength).fill(0).map((d, i) => (this._batchData[i].length + 1) * 4.75),   //batch position
 					// 	mergeOffset = Array.from(d3.cumsum(rectArray)),
@@ -414,6 +416,7 @@ export default {
 					clickG
 						.call(g => addElement(g, 'line', clickAttrs.line))
 						.call(g => addElement(g, 'image', clickAttrs.icon))
+						.call(g => addElement(g, 'text', clickAttrs.text))
 
 					renderSort()
 
@@ -557,7 +560,7 @@ export default {
 								transform: `translate(${[0, 0]})`
 							},
 							line:{
-								y1: -wm._height/2 + wm._margin.top - 15,
+								y1: -wm._height/2 + wm._margin.top - 15 - 5,
 								y2: wm._height/2 - wm._margin.bottom,
 								stroke: 'black',
 								'stroke-width': 1,
@@ -568,7 +571,15 @@ export default {
 								href: clickIcon,
 								height: 40,
 								width: 40,
-								transform: `translate(${-0.5 * 40},${ -wm._height/2 + wm._margin.top + 15 - 45})`
+								transform: `translate(${-0.5 * 40},${ -wm._height/2 + wm._margin.top + 15 - 45 - 5})`
+							},
+							text: {
+								transform: `translate(${[10, -wm._height/2 + wm._margin.top - 15 ]})`,
+								'text-anchor': 'start',
+								fill: '#ccc',
+								'font-size': '12px',
+								'font-family': "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif",
+								'text': ''
 							}
 						}
 						heatMapAttrs = {
@@ -870,12 +881,12 @@ export default {
 					}
 					function mouseText(dis) {// calculate abscissa
 						let index = d3.leastIndex(mergeOffset, d => dis > d),//定位 position
-							x_coor = index === 0 ? dis : dis - mergeOffset[index],
-							mouseDate = new Date(timeScale[index].invert(x_coor)),
+							//index === 0 ? dis : dis - mergeOffset[index],
+							mouseDate = new Date(timeScale[index].invert(dis)),
 							allLabel = batchEX.map(d => d3.least(d[index], e => mouseDate > e.time));
 						selectBarG(allLabel);
 						wm._upid = allLabel[0].upid;
-						// console.log(dis, mergeOffset, index, x_coor, mouseDate, allLabel, batchEX)
+						// console.log(dis, mergeOffset, index, mouseDate, allLabel, batchEX)
 						return allLabel.map(d => d.value)
 					}
 					function renderSort() {//render sortG
@@ -1017,16 +1028,16 @@ export default {
 						textG
 							.call(g => addElement(g, 'line', textAttrs.line));
 						textG.selectAll('text').data(dataInfo).join('text')
-							.call(g => updateElement(g, textAttrs.text))
-						sliderG.on('mousemove', e => {
-							let x = d3.pointer(e)[0];//mouse distance
-							if (x <= 0) return;
-							mouseInfo = mouseText(x);
+							.call(g => updateElement(g, textAttrs.text));
+						let timer = null;
+						let func = x => {
+							
 							textG.select('.mouseG')
 								.attr('transform', `translate(${[x, 0]})`)
 								.attr('stroke', '#bbbcbd')
+							textG.raise();
 							let upid = wm._upid;
-							// console.log(upid);
+							mouseInfo = mouseText(x);
 							if (upid !== wm._upid) {
 								vm.$emit('wheelMouse', { upid: [upid], mouse: 1 });
 								vm.$emit('wheelMouse', { upid: [wm._upid], mouse: 0 });
@@ -1034,6 +1045,16 @@ export default {
 							wm._mouseDis = x;
 							textG.selectAll('text')
 								.call(g => updateElement(g, textAttrs.text));
+						};
+						sliderG.on('mousemove', e => {
+							let x = d3.pointer(e)[0];
+							if (x <= 0) return;
+							if(timer){
+								clearTimeout(timer)
+							}
+							timer = setTimeout(() => {
+								func(x)
+							}, 20);
 						})
 						.on('mouseleave', (e, d) => {
 							vm.$emit('wheelMouse', { upid: [wm._upid], mouse: 1 });
@@ -1042,22 +1063,24 @@ export default {
 							let x = d3.pointer(e)[0];
 							if (x <= 0 || x > mergeOffset[mergeOffset.length - 1])return;
 
-							let batchIndex = d3.leastIndex(mergeOffset, d => x > d),
-								mouseDate = new Date(timeScale[batchIndex].invert(batchIndex === 0 ? x : x - mergeOffset[batchIndex]));
-							let upid = d3.least(batchEX[0][batchIndex], e => mouseDate > e.time).upid;
-							if(upid === this._steelKey){
-								clickG.attr('display', 'none')
-								return;
-							}
-							this._steelKey = upid;
-							clickG
-								.attr('transform', `translate(${[x, 0]})`)
-								.attr('display', 'block');
-							//this._plotC_renderChart(upid);
+							let index = d3.leastIndex(mergeOffset, d => x > d),//定位 position
+								mouseDate = new Date(timeScale[index].invert(x)),
+								allLabel = batchEX.map(d => d3.least(d[index], e => mouseDate > e.time)),
+								upid = allLabel[0].upid;
 
-							// this._vNode.$watch(this.steelSpec, ()=>{	})
-							
-							console.log(upid);
+							if(upid === this._checkUpid){
+								this._checkUpid = '';
+								this._lineVis = false;
+								clickG.attr('display', 'none');
+							}else{
+								this._checkUpid = upid;
+								clickG
+									.attr('transform', `translate(${[x, 0]})`)
+									.attr('display', 'block');
+								this._lineVis = true;
+							}
+							clickG.select('text').text(this._checkUpid);
+							this._updateBoxLine();
 						})
 					}
 					function initRectG() {
@@ -1457,15 +1480,13 @@ export default {
 				_renderMainBox(){
 					const wm = this,
 						lc = this._labelcolor,
-						mainG = this._mainG;
-					// Object.fromEntries
-					
-					const plot_offset = this._boxChart,
-						allData = this._keys.map((d, i) => d.map(e => {return {'name' : e, process: i, sort_value: Math.random()}})).flat(),
-						plot_coordinate = [this._cardWidth + this._horizonPadding, -wm._height / 2 + wm._margin.top],
-						plotG = mainG.append('g').attr('id', 'plotGroup').attr('transform', translate(...plot_coordinate)),
-						valueMap = Object.fromEntries(allData.map(d => [d.name, d.value]));
-					this._boxMap = valueMap;
+						mainG = this._mainG,
+						plot_offset = this._boxChart,
+						allData = this._keys.map((d, i) => d.map(e => {return {'name' : e, process: i, value: Math.random()}})).flat(),
+						coordinate = [this._cardWidth + this._horizonPadding, -wm._height / 2 + wm._margin.top],
+						plotG = mainG.append('g').attr('id', 'plotGroup').attr('transform', translate(...coordinate));
+					this._boxMap = Object.fromEntries(allData.map(d => [d.name, d.value]));
+					this._boxData = Object.fromEntries(allData.map(d => [d.name, d]));
 					let plotGroup = null,
 						boxPlotAttrs = null;
 
@@ -1547,7 +1568,8 @@ export default {
 								width: plot_offset.w,
 								height: plot_offset.h,
 								label: d.name
-							}).render()
+							}).render();
+							d.chart = res;
 							return res;
 						}else{
 							let res = new heatplot(plotG.select(`#${d.name}`), this._vNode).enter({
@@ -1558,6 +1580,7 @@ export default {
 								label: d.name,
 								color: lc[d.process]
 							}).render()
+							d.chart = res;
 							return res;
 						}
 					})
@@ -1595,7 +1618,7 @@ export default {
 					}else{
 						keys = this._keys[flag];
 					}
-					let order = d3.scaleOrdinal().domain(keys).range(sortedIndex(keys.map(d => this._boxMap[d]))),
+					let order = d3.scaleOrdinal().domain(keys).range(sortedIndex(keys.map(d => this._boxMap[d]), true)),
 						rectHeight = new Array(keys.length).fill(box.h + box.gap);
 					rectHeight.unshift(0);   //定位第一个元素
 					let yCoordinate = Array.from(d3.cumsum(rectHeight)),
@@ -1851,19 +1874,29 @@ export default {
 						.call(g => addElement(g, 'text', this._staticButton.text)
 							.attr('fill', this._lineVis ? 'white' : this._buttonColor)
 							.text('line'));
+					let temp = 0;
 					lineButtonG.on('click', () => {
+						this._lineVis = !this._lineVis;
+						if(!this._lineVis){
+							temp = this._checkUpid;
+							this._checkUpid = '1';
+						}else{
+							this._checkUpid = temp;
+						}
 						this._updateBoxLine();
 					})
 					this._lineButtonG = lineButtonG;
 				}
 
 				_updateBoxLine(){
-					if(this._lineVis){
-						this._boxInstances.forEach(d => d._removeLine());
-					}else{
-						this._boxInstances.forEach(d => d._renderChart("21221360000"));
+					this._boxInstances.forEach(d => d._renderChart(this._checkUpid));//'21311185000'
+					if(this._checkUpid !== ''){
+						this._wheelBox = 0;
+						this._sortDevice = true;
 					}
-					this._lineVis = !this._lineVis;
+					this._boxSort();
+					this._scaleBox(this._selectDevice);
+					// console.log(this._boxMap, this._boxData)
 					let t = d3.transition().duration(150).ease(d3.easeLinear);
 					this._lineButtonG.transition(t)
 						.call(g => g.select('rect')
@@ -1892,7 +1925,6 @@ export default {
 						.on('click', (_, d) => {
 							this._wheelBox = 0;
 							if(this._selectDevice !== d){
-								
 								this._selectDevice = d;
 							}else{
 								this._selectDevice = false;
@@ -1907,36 +1939,45 @@ export default {
 				}
 
 				_initBoxSort(){
-					const boxAttrs = {
+					this._sortDevice = false;
+					this._boxSortAttrs = {
 						transform: d => this._buttonPosition(11 + d),
-						text: d => ['steel', 'complex'][d],
-						boxChange: (value1, value2) => d => d === (this._selectDevice !== undefined ? this._selectDevice : 0) ? value1 : value2
-					},
-						boxG = this._staticGroup.append('g').attr('class', 'boxG');
-					boxG.selectAll('g')
-						.data([0, 1])
+						text: d => d ? 'steel':  'complex',
+						boxChange: (value1, value2) => d => d === this._sortDevice ? value1 : value2
+					};
+					this._boxSortG = this._staticGroup.append('g').attr('class', 'boxSortG');
+					this._boxSortG.selectAll('g')
+						.data([true, false])
 						.join('g')
-						.attr('transform', boxAttrs.transform)
+						.attr('transform', this._boxSortAttrs.transform)
 						.call(g => addElement(g, 'rect', this._staticButton.rect)
-							.attr('fill', boxAttrs.boxChange(this._buttonColor, '#fff')))
+							.attr('fill', this._boxSortAttrs.boxChange(this._buttonColor, '#fff')))
 						.call(g => addElement(g, 'text', this._staticButton.text)
-							.attr('fill', boxAttrs.boxChange('#fff', this._buttonColor))
-							.text(boxAttrs.text))
+							.attr('fill', this._boxSortAttrs.boxChange('#fff', this._buttonColor))
+							.text(this._boxSortAttrs.text))
 						.on('click', (_, d) => {
 							this._wheelBox = 0;
-							// if(this._selectDevice !== d){
-								
-							// 	this._selectDevice = d;
-							// }else{
-							// 	this._selectDevice = false;
-							// }
-							// this._scaleBox(this._selectDevice)
-							let t = d3.transition().duration(150).ease(d3.easeLinear);
-							boxG
-							.transition(t)
-							.call(g => g.selectAll('rect').attr('fill', boxAttrs.boxChange(this._buttonColor, '#fff')))
-							.call(g => g.selectAll('text').attr('fill', boxAttrs.boxChange('#fff', this._buttonColor)))
+							this._sortDevice = d;
+							this._boxSort();
+							this._scaleBox(this._selectDevice)
 						})
+				}
+
+				_boxSort(){
+					if(this._sortDevice){
+						for(let item in this._boxData){
+							this._boxMap[item] = 0.9 * this._boxData[item].chart._selectNums +  0.1 * this._boxData[item].chart._selectOver
+						}
+					}else{
+						for(let item in this._boxData){
+							this._boxMap[item] = this._boxData[item].value
+						}
+					}
+					let t = d3.transition().duration(150).ease(d3.easeLinear);
+							this._boxSortG
+								.transition(t)
+								.call(g => g.selectAll('rect').attr('fill', this._boxSortAttrs.boxChange(this._buttonColor, '#fff')))
+								.call(g => g.selectAll('text').attr('fill', this._boxSortAttrs.boxChange('#fff', this._buttonColor)))
 				}
 
 				_initdata() {
@@ -1948,7 +1989,7 @@ export default {
 							process: this.getIndex(d.name)
 						}
 					}).filter(d => d.month !== undefined);
-					console.log(this._chartData)
+					console.log('chartData', this._chartData)
 					this._label = this._chartData.map(d => d.indexName)
 				}
 
@@ -2018,7 +2059,7 @@ export default {
 				}
 
 				_divideBacthData(arr, totalData){
-					console.log(totalData)
+					// console.log(totalData)
 					let result = [];
 					for(let i = 0; i < arr.length; i++){
 						let index = this._label.indexOf(arr[i].indexName),
@@ -2091,7 +2132,6 @@ export default {
 				.dataInit(batchData, processData)
 				.process(processJson)
 				.render();
-			console.log(this.wheelChart)
 		}
 	},
 	mounted() {

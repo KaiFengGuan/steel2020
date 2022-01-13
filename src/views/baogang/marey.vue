@@ -239,6 +239,8 @@ import { mapGetters, mapMutations} from 'vuex'
 import jsonData from '../data/jsonData.json'
 import monitorData from '../data/monitorData.json'
 import scatterData from '../data/scatterData.json'
+// import processData from './processData.json'
+// import batchData from './batchData.json'
 
 export default {
 	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler, slider, tooltip},
@@ -293,7 +295,6 @@ export default {
 			algorithmOptions: [
 				"T-SNE", "UMAP", "ISOMAP", "PCA"
 			],
-			alldiagnosisData: [],
 			batchData: [],
 			algorithmUrls: {
 				"T-SNE": "/newbaogangapi/v1.0/model/VisualizationTsne/",
@@ -318,10 +319,10 @@ export default {
 			radio: 0,
 			chooseList: [],
 			upidSelect: ["", "  "],
+			requestHeader: [],
 			corrsize: 0.5,
 			multisize: 20,
 			curvesize: 0.5,
-			usDiagnosis: {},
       batchDateStart: undefined,
       batchDateEnd: undefined,
       req_count: 0,
@@ -455,24 +456,23 @@ export default {
 		async newdiagnose() {
 			// this.diagnosisState = !this.diagnosisState;
 			this.animeTransition();
-      this.batchData = (await this.requestBatchData());
-			this.alldiagnosisData = d3.group(this.batchData.flat(), d => d.upid);
-			this.upidSelect = [...d3.intersection(this.upidSelect, [...this.alldiagnosisData.keys()])]
+			this.requestHeader = updateRange(this.$refs.parallel.diagnosisRange, this.$refs.parallel.svgChart['instance']._objStatus)
+			// console.log(this.requestHeader)
+      this.batchData = await this.requestBatchData();
+			// this.batchData = batchData;
 
-			for(let item of this.upidSelect){
-				this.usDiagnosis[item] = this.alldiagnosisData.get(item)[0];
-      }
-      // this.corrdata = [];
+			// this.corrdata = [];
 			const request = {
 				startDate: this.batchDateStart[0],
 				endDate: this.batchDateEnd[this.batchDateEnd.length - 1],
 				limit: 1000,
 				devation: 0.25
 			};
-			let roll = (await steel.getRollData(request, updateRange({}, this.$refs.parallel.diagnosisRange))).data;
-			let heat = (await steel.getHeatData(Object.assign({number: 4}, request), updateRange({}, this.$refs.parallel.diagnosisRange))).data;
-			let cool = (await steel.getCoolData(Object.assign({number: 4, header: 5}, request), updateRange({}, this.$refs.parallel.diagnosisRange))).data;
+			let roll = (await steel.getRollData(request, this.requestHeader)).data;
+			let heat = (await steel.getHeatData(Object.assign({number: 4}, request), this.requestHeader)).data;
+			let cool = (await steel.getCoolData(Object.assign({number: 4, header: 5}, request), this.requestHeader)).data;
 			this.processData.main = {...roll, ...cool, ...heat};
+			// this.processData.main = processData;
 
 			// await this.getVisCorrelation({
       //     startDate: this.selectDateStart,
@@ -492,10 +492,7 @@ export default {
 			// 	JSON.stringify([]),   // steelspec
 			// 	0   // status_cooling
 			// 	).then(Response => {
-			// 	this.$nextTick(function() {
-			// 		// this.$refs[upid][0].paintChart(diagnosisData, Response.data)
-			// 		this.corrdata = Response.data
-			// 	})
+				// this.corrdata = Response.data
 			// })
 
       await this.paintRiverLike();

@@ -22,7 +22,7 @@ module.exports = {
             '/newbaogangapi': {
               target: 'http://219.216.80.146:5502',  // 613服务器后台
               // target: 'http://202.118.21.236:7205',
-              // target: 'http://localhost:5502',     // 宝钢出差 后台
+              // target: 'http://localhost:5502',     // 本机服务器 后台
               changeOrigin: true,
               pathRewrite: {
                 '^/newbaogangapi': '/api'

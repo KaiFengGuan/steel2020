@@ -17,3 +17,6 @@ export function getMonitorData(url, params) {
 export function getProcessData(url, params){
   return service.post(APIs.GET_Steel_Process_Data + `/${url.upid}/${url.process}/${url.devation}/${url.limit}`, params)
 }
+export function getEventIconData(url) {
+  return service.get(APIs.GET_Event_Icon_Data + `/${url.startDate}/${url.endDate}/30/${url.threshold}/${url.operation}/`)
+}

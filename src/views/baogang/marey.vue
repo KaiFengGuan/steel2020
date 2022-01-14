@@ -26,7 +26,7 @@
                   size="mini"
                   fill="#94A7B7"
                 >
-                  <el-radio-button label="first">norm</el-radio-button>
+                  <el-radio-button label="first">overview</el-radio-button>
                   <el-radio-button label="second">diag</el-radio-button>
                 </el-radio-group>
 								<el-select size="mini" v-model="algorithmSelected" @change="getAlgorithmData" class="card-select">
@@ -245,7 +245,7 @@ import brushSlider from "components/charts/brushableParallel.vue"
 import { baogangAxios, baogangPlotAxios } from 'services/index.js'
 import mergeTimesData from '../../data/layout/mergeTimesData.js'
 import {mareyChartBatchSpec} from '../../data/layout/monitor.js'
-import {filterMareyChartEventIcon} from '../../data/layout/mareyChartEventIcon.js'
+import { filterMareyChartEventIcon, eventIconDataProcess } from '../../data/layout/mareyChartEventIcon.js'
 import {getBatchHeader, updateRange} from '../../utils/marey.js'
 import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
@@ -253,6 +253,7 @@ import { mapGetters, mapMutations} from 'vuex'
 import jsonData from '../data/jsonData.json'
 import monitorData from '../data/monitorData.json'
 import scatterData from '../data/scatterData.json'
+import importIconData from '../data/eventIconData.json'
 
 export default {
 	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler, slider},
@@ -439,31 +440,27 @@ export default {
 		async getHttpData() {
 			this.plateTempPropvalue=['All']
       this.loadingDataLoading = true
+
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
       // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      this.jsonData = jsonData
-      // this.jsonData = (await this.getJsonData('2021-05-10 00:00:00', '2021-05-11 00:00:00')).data;
-      // console.log('原始：', this.jsonData);
-			await this.$refs.parallel.paintChart(this.jsonData);
+      this.jsonData = jsonData;
+
+      if (typeof(this.jsonData) === 'string') {
+        this.jsonData = {};
+        this.getNotification('数据中存在NaN值');
+      }
+
+      await this.$refs.parallel.paintChart(this.jsonData);
+      
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
-      // console.log(this.mergeresult)
-      let eventIconData = filterMareyChartEventIcon(this.jsonData);
+      
+      // let eventIconData = filterMareyChartEventIcon(this.jsonData);
+      // let eventIconData = await this.getEventIconData();
+      let eventIconData = importIconData;
+
       // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
       this.monitorData = monitorData
-			// console.log('过滤：', this.jsonData.filter(d => d.stops.length === 17))
-      // console.log('监控：', this.monitorData)
-      // console.log(eventIconData)
-
-			// let flagData = (await baogangAxios(`/newbaogangapi/v1.0/getFlag/${this.startDateString}/${this.endDateString}/`)).data;
-			// let allDataArr = []
-			// for (let item of this.jsonData) {
-			// 		let upid = item['upid']
-			// 		allDataArr.push(flagData[upid])
-			// }
-			// for (let i = 0; i < this.jsonData.length; i++) {
-			// 	this.jsonData[i]['flag'] = allDataArr[i]
-			// }
 
 			// paint
 			this.loadingDataLoading = false
@@ -479,8 +476,18 @@ export default {
         eventIconData: eventIconData
         }, this.isSwitch, this.isMerge);
 
+      // 联动马雷图
+      this.$refs.mareyChart.changePlateStatus({
+        upid: '21311224000',
+        activate: true
+      })
+
     },
     async scatterTabClick(tabName) {
+      this.$refs.mareyChart.changePlateStatus({
+        upid: '21311224000',
+        activate: false
+      })
       if (tabName === 'second' && this.scatterStatus) {
         // console.log('切换为同类型')
         let startDate = this.batchDateStart[0];
@@ -924,7 +931,17 @@ export default {
 					
 				}
 			})
-		},
+    },
+    async getEventIconData() {
+      let res = (await steel.getEventIconData({
+        startDate: this.startDateString,
+        endDate: this.endDateString,
+        threshold: 5,
+        operation: 0.00001
+      })).data;
+
+      return res;
+    },
 		async getTimeBrushData() {
 			await baogangAxios(`/newbaogangapi/v1.0/model/plateYieldStaistics/${this.interval}/${this.selectDateStart}/${this.selectDateEnd}/`)
 			.then(Response => {
@@ -1117,7 +1134,7 @@ export default {
 	}
   .scatter-tab {
     // float: right;
-		margin-left: 30px;
+		margin-left: 18px;
     margin-top: -3.5px;
     .el-radio-button__inner {
       padding: 2.5px 5px;

@@ -5483,6 +5483,7 @@ export default {
         // 外部调用的方法
         changePlateStatus({upid, activate=true} = {}) {
           let plate = this._timesDataMap.get(upid);
+          if (!plate) return;
 
           if (activate) {
             this._marey_g.select('#id' + upid)

@@ -469,11 +469,11 @@ export default {
         eventIconData: eventIconData
         }, this.isSwitch, this.isMerge);
 
-      // // 联动马雷图
-      // this.$refs.mareyChart.changePlateStatus({
-      //   upid: '21311224000',
-      //   activate: true  // true: 视图联动显示  |  false: 取消显示
-      // })
+      // 联动马雷图
+      this.$refs.mareyChart.changePlateStatus({
+        upid: '21311224000',
+        activate: true  // true: 视图联动显示  |  false: 取消显示
+      })
 
     },
     async scatterTabClick(tabName) {

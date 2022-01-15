@@ -1048,8 +1048,13 @@ export default {
 							mouseInfo = mouseText(x);
 							if (upid !== wm._mouseList) {
 								// mouseCircle(upid);
+								// if(upid !== this._checkUpid)
 								vm.$emit('wheelMouse', { upid: [upid], mouse: 1 });
 								vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 0 });
+								if(upid !== this._checkUpid){
+									vm.$emit('boxMouse', { upid: upid, activate: false });
+									vm.$emit('boxMouse', { upid: wm._mouseList, activate: true });
+								}
 								mergeG.selectAll('circle').attr('r', d => d.upid === this._mouseList || d.upid === this._checkUpid? 2.5 : 1.5)
 							}
 							wm._mouseDis = x;
@@ -1068,6 +1073,7 @@ export default {
 						})
 						.on('mouseleave', (e, d) => {
 							vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 1 });
+							if(wm._mouseList !== this._checkUpid)vm.$emit('boxMouse', { upid: wm._mouseList, activate: false })
 							mergeG.selectAll('circle').attr('r', d => d.upid === this._checkUpid ? 2.5 : 1.5);
 						})
 						.on('click', e => {
@@ -1080,10 +1086,12 @@ export default {
 								upid = allLabel[0].upid;
 
 							if(upid === this._checkUpid){
+								vm.$emit('boxMouse', { upid: this._checkUpid, activate: false })
 								this._checkUpid = '';
 								this._lineVis = false;
 								clickG.attr('display', 'none');
 							}else{
+								// vm.$emit('boxMouse', { upid: this.upid, activate: true })
 								this._checkUpid = upid;
 								clickG
 									.attr('transform', `translate(${[x, 0]})`)

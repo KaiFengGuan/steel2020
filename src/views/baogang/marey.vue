@@ -200,7 +200,7 @@
 						</div>
 						<div style="padding-right:5px; padding-bottom : 5px">
 						<el-col :span="24">
-							<wheeler ref="wheelering" style="height:490px" @wheelMouse="wheelMouse"></wheeler>
+							<wheeler ref="wheelering" style="height:490px" @wheelMouse="wheelMouse" @boxMouse="boxMouse"></wheeler>
 								<!-- <div class="my-card-body">
 									
 								</div> -->
@@ -796,9 +796,17 @@ export default {
 			this.$refs.parallel && this.$refs.parallel.mouse(value);
 		},
 		parallMouse(value){
-			// this.$refs.scatterCate.mouse(value)
-			// this.$refs.mareyChart.mouse(value)
+			this.$refs.scatterCate && this.$refs.scatterCate.mouse(value);
+			this.$refs.mareyChart && this.$refs.mareyChart.mouse(value);
     },
+		boxMouse(value){
+			      // // 联动马雷图
+      this.$refs.mareyChart && this.$refs.mareyChart.changePlateStatus(value)
+			// {
+      //   upid: '21311224000',
+      //   activate: true  // true: 视图联动显示  |  false: 取消显示
+      // }
+		},
 		wheelMouse(value){
 			this.$refs.scatterCate.mouse(value)
 			this.$refs.mareyChart.mouse(value)

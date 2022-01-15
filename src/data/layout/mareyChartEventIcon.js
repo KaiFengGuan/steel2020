@@ -1,4 +1,5 @@
 import * as d3 from 'd3'
+import { time } from 'echarts';
 import {convertTime} from '../../utils/index.js'
 
 const OprationThreshold = 0.00100;  // 单位: m, 范围: -0.004m ~ 0.004m
@@ -64,4 +65,37 @@ export function filterMareyChartEventIcon(timesData) {
   }
 
   return eventIconData;
+}
+
+export function eventIconDataProcess (eventData, jsonData) {
+  let jsonDataMap = new Map();
+  jsonData.forEach(d => jsonDataMap.set(d.upid, d));
+
+  // console.log(eventData)
+  // console.log(jsonDataMap)
+  let keys = Object.keys(eventData);
+  for (let key of keys) {
+    let keyData = eventData[key];
+    let newKeyData = [];
+    for (let i = 0; i < keyData.length; i++) {
+      // console.log(keyData[i].upid);
+      // console.log(jsonDataMap.get(keyData[i].upid));
+
+      let plate = jsonDataMap.get(keyData[i].upid);
+      if (!plate) continue;
+
+      let upidStop = new Map();
+      plate.stops.forEach(d => {
+        upidStop.set(d.station.distance, d.time);
+      });
+      // console.log(keyData[i].distance)
+      // console.log(upidStop)
+      let time = upidStop.get(keyData[i].distance);
+      keyData[i]['time'] = time;
+      // console.log(upidStop)
+      newKeyData.push(keyData[i]);
+    }
+    eventData[key] = newKeyData;
+  }
+  return eventData;
 }

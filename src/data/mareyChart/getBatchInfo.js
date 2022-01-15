@@ -38,7 +38,8 @@ export function getOneBatchInfo(
   stationsdata,
   labelStatistics, 
   extend, 
-  cate_extend
+  cate_extend,
+  tar_extent
 ) {
   let fu_arr = [], m_arr = [], c_arr = [], t_arr = [];
   let sub_arr = [];
@@ -132,6 +133,7 @@ export function getOneBatchInfo(
       merge_data: one_merge_item,
       pathColor: merge_color === undefined ? 'red' : merge_color,
       batch_s: new Date(mergeItem[0][0].stops[0].time),
+      batch_e: new Date(mergeItem.slice(-1)[0].slice(-1)[0].stops[0].time),
       date_entry_s: new Date(one_merge_item[0].stops[0].time),
       date_entry_e: new Date(one_merge_item[one_merge_item.length - 1].stops[0].time)
     })
@@ -140,7 +142,7 @@ export function getOneBatchInfo(
   let targetInfo = {};
   targetKey.forEach(key => {
     let m = d3.mean(targetDataArr[key]);
-    let max = d3.max(targetDataArr[key]);
+    let max = tar_extent[key][1];
     targetInfo[key] = [m / max, m];
   });
 

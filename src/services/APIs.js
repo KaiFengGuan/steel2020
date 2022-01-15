@@ -10,3 +10,4 @@ export const GET_Steel_Process_Data = newbaseUrl + '/v1.0/model/newVisualization
 export const GET_Steel_COOL_DATA = newbaseUrl + '/v1.0/model/newCoolVisualizationByBatch'
 export const GET_Steel_HEAT_DATA = newbaseUrl + '/v1.0/model/newHeatVisualizationByBatch'
 export const GET_Steel_ROLL_DATA = newbaseUrl + '/v1.0/model/newRollVisualizationByBatch'
+export const GET_Event_Icon_Data = newbaseUrl + '/v1.0/eventDataApi'

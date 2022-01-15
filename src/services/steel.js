@@ -27,3 +27,6 @@ export function getHeatData (url, params){
 export function getCoolData (url, params){
     return service.post(APIs.GET_Steel_COOL_DATA + `/${url.startDate}/${url.endDate}/${url.number}/${url.header}/${url.devation}/${url.limit}`, params)
 }
+export function getEventIconData (url) {
+    return service.get(APIs.GET_Event_Icon_Data + `/${url.startDate}/${url.endDate}/30/${url.threshold}/${url.operation}/`)
+}

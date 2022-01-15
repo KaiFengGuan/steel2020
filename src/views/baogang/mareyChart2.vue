@@ -324,8 +324,8 @@ export default {
           this._stationsdata = stationsdata;
           this._mergeresult = mergeresult;
           this._eventIconData = [...eventIconData.rm_event_change, ...eventIconData.fm_event_change];
-          console.log(eventIconData)
-          console.log(this._eventIconData)
+          // console.log(eventIconData)
+          // console.log(this._eventIconData)
 
           this._allEventData = eventIconData;
           
@@ -619,7 +619,7 @@ export default {
             }
           }
           
-          console.log("处理成绘图数据：", this._mergeresult_1)
+          // console.log("处理成绘图数据：", this._mergeresult_1)
 
           // 统计整图监控结果占比
           // console.log(over_p, total)
@@ -1611,6 +1611,7 @@ export default {
                 this._setMergeRect([batch_index], [merge_index]);
                 this._setMergeBin(selected_plates);
                 this._emitToScatter(selected_plates, 0);
+                this._setIconPlate(selected_plates.map(d => d.upid));
                 // this._setInfoDetail(batch_index, info_index);
                 if (info_index != undefined) {
                   this._setInfoDetail(batch_index, info_index);
@@ -1700,6 +1701,7 @@ export default {
                 this._resetInfoDetail();
                 this._keepClickedStatus();
                 this._resetMoniBlock(batch_index, [merge_index]);
+                this._resetIconPlate();
 
                 that._keepClickedStatus();
                 return;
@@ -4485,6 +4487,7 @@ export default {
               that._setMoniBlock(batch_index, [merge_index]);
               that._emitToScatter(selected_plates, 0);
               that._setMergeBin(selected_plates);
+              that._setIconPlate(selected_plates.map(d => d.upid));
 
               if (merge_index === -1) {
                 let link_rect = __data__.one_batch_info.slice(-1)[0].link_rect.map(e => '_' + e.name);
@@ -4511,6 +4514,7 @@ export default {
               that._resetLinkLine();
               that._emitToScatter(selected_plates, 1);
               that._resetMergeBin();
+              that._resetIconPlate();
               
 
               if (merge_index === -1) {
@@ -4849,6 +4853,9 @@ export default {
               this._setMoniBlock(batch_index, merge_index_list)
             }
           }
+          if (vm.activatePlate.activate) {
+            this.KeepAlivePlate();
+          }
         }
         _setNoMergeInfoArc(batch_index, upid) {
           const batchGroup = this._info_g.select(`#oneBatchChartGroup${batch_index}`);
@@ -4937,11 +4944,25 @@ export default {
             .attr('opacity', 0.4);
           this._marey_g.selectAll('.eventIcon')
             .attr('opacity', 0.4);
+          
+          this._marey_g.selectAll('.ACCEventIcon')
+            .attr('opacity', 0.4);
+          this._marey_g.selectAll('.DQEventIcon')
+            .attr('opacity', 0.4);
+          this._marey_g.selectAll('.FmTotalEventIcon')
+            .attr('opacity', 0.4);
         }
         _raiseIconOpacity() {
           this._marey_g.selectAll('.iconLinkGroup')
             .attr('opacity', 1);
           this._marey_g.selectAll('.eventIcon')
+            .attr('opacity', 1);
+
+          this._marey_g.selectAll('.ACCEventIcon')
+            .attr('opacity', 1);
+          this._marey_g.selectAll('.DQEventIcon')
+            .attr('opacity', 1);
+          this._marey_g.selectAll('.FmTotalEventIcon')
             .attr('opacity', 1);
         }
         _setIconPlate(upids) {
@@ -4950,6 +4971,13 @@ export default {
             this._marey_g.selectAll('#iconLinkGroup' + upid)
               .attr('opacity', 1);
             this._marey_g.selectAll('#eventIcon_' + upid)
+              .attr('opacity', 1);
+            
+            this._marey_g.selectAll('#ACCEventIcon_' + upid)
+              .attr('opacity', 1);
+            this._marey_g.selectAll('#DQEventIcon_' + upid)
+              .attr('opacity', 1);
+            this._marey_g.selectAll('#FmTotalEventIcon_' + upid)
               .attr('opacity', 1);
           }
         }
@@ -5040,6 +5068,19 @@ export default {
               .voronoi([0, this._stations_size.h, this._marey_size.w, this._stations_size.h + this._y_height]);
           this._marey_g.selectAll('.mareyTooltipCell')
             .attr('d', (d, i) => this._voronoi.renderCell(i))
+
+          if (vm.activatePlate.activate) {
+            let plate = this._timesDataMap.get(vm.activatePlate.upid);
+            let tooltipGroup = this._marey_g.select('#activateMareyLineTooltip .tooltipGroup')
+            let text = tooltipGroup.select('.tooltipContent');
+            let box = text.node().getBBox();
+            tooltipGroup
+              .attr('transform', `translate(${[
+                this._x(plate.stops[3].station.distance) - box.width / 2,
+                this._y(new Date(plate.stops[3].time)) + 37
+              ]})`);
+            this._marey_g.select('.stationsNameGroup').raise();
+          }
         }
         _translateInfoChart() {
           let that = this;
@@ -5400,23 +5441,23 @@ export default {
               })
             })
 
-          let accDisplay = this.__computeDisplayIcon(cx, this._allEventData.acc_event_change);
+          this._accDisplay = this.__computeDisplayIcon(cx, this._allEventData.acc_event_change);
           this._marey_g.selectAll('.ACCEventIcon')
             .transition(line_tran)
             .attr('transform', d => `translate(${[this._x(d.distance), this._y(new Date(d.time))]})`)
-            .attr('display', d => accDisplay.get(d.upid) ? null : 'none')
+            .attr('display', d => this._accDisplay.get(d.upid) ? null : 'none')
           
-          let dqDisplay = this.__computeDisplayIcon(cx, this._allEventData.dq_event_change);
+          this._dqDisplay = this.__computeDisplayIcon(cx, this._allEventData.dq_event_change);
           this._marey_g.selectAll('.DQEventIcon')
             .transition(line_tran)
             .attr('transform', d => `translate(${[this._x(d.distance), this._y(new Date(d.time))]})`)
-            .attr('display', d => dqDisplay.get(d.upid) ? null : 'none')
+            .attr('display', d => this._dqDisplay.get(d.upid) ? null : 'none')
 
-          let fmtotalDisplay = this.__computeDisplayIcon(cx, this._allEventData.fmtotal_acc_event_change);
+          this._fmtotalDisplay = this.__computeDisplayIcon(cx, this._allEventData.fmtotal_acc_event_change);
           this._marey_g.selectAll('.FmTotalEventIcon')
             .transition(line_tran)
             .attr('transform', d => `translate(${[this._x(d.distance), this._y(new Date(d.time))]})`)
-            .attr('display', d => fmtotalDisplay.get(d.upid) ? null : 'none')
+            .attr('display', d => this._fmtotalDisplay.get(d.upid) ? null : 'none')
         }
 
         _deepCopy(obj) {
@@ -5433,6 +5474,12 @@ export default {
           return newObj;
         }
 
+        
+        KeepAlivePlate() {
+          if (vm.activatePlate.activate) {
+            this.changePlateStatus(vm.activatePlate);
+          }
+        }
         // 外部调用的方法
         changePlateStatus({upid, activate=true} = {}) {
           let plate = this._timesDataMap.get(upid);
@@ -5441,9 +5488,16 @@ export default {
             this._marey_g.select('#id' + upid)
               .attr('stroke-width', this._highLightStrokeWidth)
             
-            let toopcolor = this._trainGroupStyle(plate)
-            const mareyLineTooltip = this._marey_g.select('#mareyLineTooltip');
-            let tooltip = mareyLineTooltip.append('g');
+            let toopcolor = this._trainGroupStyle(plate);
+
+            let ele = d3.select('#activateMareyLineTooltip')._groups[0][0];
+            if (ele) return;  // 如果还存在，不继续画了
+            
+            const mareyLineTooltip = this._marey_g.append('g')
+              .attr('id', 'activateMareyLineTooltip')
+            
+            let tooltip = mareyLineTooltip.append('g')
+              .attr('class', 'tooltipGroup');
             let path = tooltip.append('path')
               .attr('class', 'tooltipContent')
               .attr('stroke', 'rgba(148, 167, 183, 0.4)')
@@ -5475,7 +5529,7 @@ export default {
             tooltip
               .style('display', null)
               .attr('fill', toopcolor);
-            console.log(plate)
+            
             let t_info = plate.toc.toLocaleString(undefined, { hour: "numeric", minute: "numeric" });
             line1.text(`upid: ${plate.upid}`);
             line2.text(`steelspec: ${plate.steelspec}`);
@@ -5494,11 +5548,11 @@ export default {
             `);
             tooltip.attr('transform', `translate(${this._x(plate.stops[3].station.distance) - box.width / 2}, ${this._y(new Date(plate.stops[3].time)) + 37})`);
           } else {
-            d3.select('#id' + upid)
+            this._marey_g.select('#id' + upid)
               .attr('stroke-width', d => this._defaultStrokeWidth(d.tgtplatethickness2))
             
-            this._marey_g.select('#mareyLineTooltip')
-              .selectAll('g').remove()
+            let ele = this._marey_g.selectAll('#activateMareyLineTooltip');
+            ele.remove()
           }
           
         }

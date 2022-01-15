@@ -476,18 +476,14 @@ export default {
         eventIconData: eventIconData
         }, this.isSwitch, this.isMerge);
 
-      // 联动马雷图
-      this.$refs.mareyChart.changePlateStatus({
-        upid: '21311224000',
-        activate: true
-      })
+      // // 联动马雷图
+      // this.$refs.mareyChart.changePlateStatus({
+      //   upid: '21311224000',
+      //   activate: true  // true: 视图联动显示  |  false: 取消显示
+      // })
 
     },
     async scatterTabClick(tabName) {
-      this.$refs.mareyChart.changePlateStatus({
-        upid: '21311224000',
-        activate: false
-      })
       if (tabName === 'second' && this.scatterStatus) {
         // console.log('切换为同类型')
         let startDate = this.batchDateStart[0];

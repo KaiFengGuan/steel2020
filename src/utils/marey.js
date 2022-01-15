@@ -26,10 +26,10 @@ export function getBatchHeader(data, toc) {
 export function updateRange (selection, objStatus){
   console.log(selection)
   var values = [
-    JSON.stringify(objStatus.slab_thickness ? [] : []),   // slabthickness  //selection[3].map(d => d / 1000)
+    JSON.stringify(objStatus.slab_thickness ? selection[3].map(d => d / 1000) : []),   // slabthickness  //selection[3].map(d => d / 1000)
     JSON.stringify(objStatus.tgtdischargetemp ? selection[4] : []),   // tgtdischargetemp
     JSON.stringify(objStatus.tgtthickness ? selection[0] : []),   // tgtplatethickness
-    JSON.stringify(objStatus.tgtwidth ? [] : []),   // tgtwidth //selection[2]
+    JSON.stringify(objStatus.tgtwidth ? selection[2] : []),   // tgtwidth //selection[2]
     JSON.stringify(objStatus.tgtplatelength2 ? selection[1] : []),   // tgtplatelength2
     JSON.stringify(objStatus.tgttmplatetemp ? selection[5] : []),   // tgttmplatetemp
     JSON.stringify(objStatus.cooling_start_temp ? [] : []),   // cooling_start_temp

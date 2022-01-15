@@ -36,9 +36,11 @@
 				</el-row>
 				<el-row>
 					<el-card class="myel-card">		 
-						<div class="my-card-title" slot="header" >
+						<div class="my-card-title" slot="header" :class="{statusStyle: diagnosisState, deStatusStyle : !diagnosisState}" >
 								<span style="margin-left:5px">Tabular View</span>
-								<el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search" :disabled='!diagnosisState'></el-button>
+								<!-- <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search" :disabled='!diagnosisState'></el-button> -->
+								<el-button size="mini" round  type="info" plain @click="newdiagnose" :disabled='!diagnosisState'>
+									<img src="../../assets/images/query.svg"></el-button>
 						</div>
 						<div class="my-card-body" style="padding-top:5px; overflow:scroll">
 							<brush-slider ref="parallel" style="height:490px;width:100%" @parallMouse="parallMouse" :diagnosisState='diagnosisState'></brush-slider>
@@ -126,7 +128,7 @@
 				<el-row>
 					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height: 540px; transform: translateY(540px);">
 						<div class="my-card-title" slot="header">
-							<el-col :span="14"><span>Diagnosis View</span></el-col>
+							<el-col :span="17"><span>Diagnosis View</span></el-col>
 							<el-col :span="1" style="font-size: 12px;margin:2px 0px">CurveSize</el-col>
 							<el-col :span="2">
 								<el-slider v-model="curvesize" :step="0.01" :min="0" :max="1" class="my-slider"
@@ -136,11 +138,6 @@
 							<el-col :span="2">
 								<el-slider v-model="multisize" :step="1" :min="10" :max="40" class="my-slider"
 									style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="multiUpdate"></el-slider>
-							</el-col>
-							<el-col :span="1" style="font-size: 12px;margin:2px 0px;">CorrConfig</el-col>
-							<el-col :span="2">
-								<el-slider v-model="corrsize" :step="0.1" :min="0" :max="1" class="my-slider"
-									style="margin:0px 0;color:#999a9d;width: 80%;margin-top:-8px;padding-left:20px" input-size="mini" @change="corrUpdate"></el-slider>
 							</el-col>
 							<el-col :span="1">
 								<el-popover placement="bottom" width="350" trigger="hover" style="margin-right:11px;padding:25px">
@@ -187,11 +184,10 @@
 						</div>
 						<div style="padding-right:5px; padding-bottom : 5px">
 						<el-col :span="24">
-							<el-card class="myel-card myelTab myel-upid">
-								<div class="my-card-body">
-									<wheeler ref="wheelering" style="height:490px" @wheelMouse="wheelMouse"></wheeler>
-								</div>
-							</el-card>
+							<wheeler ref="wheelering" style="height:490px" @wheelMouse="wheelMouse"></wheeler>
+								<!-- <div class="my-card-body">
+									
+								</div> -->
 						</el-col>
 						</div>
 					</el-card>		
@@ -320,7 +316,6 @@ export default {
 			chooseList: [],
 			upidSelect: ["", "  "],
 			requestHeader: [],
-			corrsize: 0.5,
 			multisize: 20,
 			curvesize: 0.5,
       batchDateStart: undefined,
@@ -366,6 +361,7 @@ export default {
 			// "trainBorder",
 			"startDate",
 			"endDate",
+			"hightlightGroup"
 			// "diagnosisState"
 		]),
 		dateselect : function(){
@@ -392,7 +388,6 @@ export default {
 	methods: {
 		...mapMutations([
 			"changeLabelColor",
-			"setCorrSize",
 			"setmultiPara",
 			"setCurveSize",
 			"changeDiagnosisState"
@@ -457,7 +452,7 @@ export default {
 			// this.diagnosisState = !this.diagnosisState;
 			this.animeTransition();
 			this.requestHeader = updateRange(this.$refs.parallel.diagnosisRange, this.$refs.parallel.svgChart['instance']._objStatus)
-			// console.log(this.requestHeader)
+			console.log(this.requestHeader)
       this.batchData = await this.requestBatchData();
 			// this.batchData = batchData;
 
@@ -718,9 +713,6 @@ export default {
 			this.isMerge = !this.isMerge
 			this.mareyUpdate()
 		},
-		corrUpdate(){
-			this.setCorrSize(this.corrsize)
-		},
 		multiUpdate(){
 			this.setmultiPara(this.multisize)
 		},
@@ -879,7 +871,16 @@ export default {
 			if(this.scatterData.length == 0)return
 			this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
 			this.getHttpData()
-		}
+		},
+		hightlightGroup: function() {
+			if (this.hightlightGroup.length === 0) {
+				// trainClick
+				this.diagnosisVisible = false;
+				this.diagnosisState = false;
+				this.animeTransition();
+			} else {
+			}
+		},
 	}
 	
 }
@@ -999,22 +1000,6 @@ export default {
 			line-height:1.5;
 			margin-right:5px;
 			margin-left:-5px
-		}
-	}
-	.myelTab{
-		.el-card__header {
-			height: 28px;
-		}
-		.upidicon{
-			margin-top:0px;
-		}
-		.upidtext{
-			font-size: 10px;
-		}
-	}
-	.myel-upid{
-		.el-card__header {
-			background-color: #fcfcfc;
 		}
 	}
 	.myel-swtich{
@@ -1206,6 +1191,51 @@ export default {
 	.el-button--info.is-plain:focus, .el-button--info.is-plain:hover {
 		background: #FFF;
 		border-color: #909399;
+		color: #FFF;
+	}
+}
+
+.statusStyle{
+	.el-button{
+		height:25px;
+		float:right;
+		margin-top: -1px;
+		img{
+			height:16px;
+			width:16px;
+			transform: translate(0px, -2px)
+		}
+	}
+	.el-button--info.is-plain{
+		background: #f8f6f6;
+		border-color: #909399;
+		color: #FFF;
+	}
+	.el-button--info.is-plain:focus, .el-button--info.is-plain:hover {
+		background: #f8f6f6;
+		border-color: #909399;
+		color: #FFF;
+	}
+}
+.deStatusStyle{
+	.el-button{
+		height:25px;
+		float:right;
+		margin-top: -1px;
+		img{
+			height:16px;
+			width:16px;
+			transform: translate(0px, -2px)
+		}
+	}
+	.el-button--info.is-plain{
+		background: #FFF;
+		border-color: #e1e3e7;
+		color: #FFF;
+	}
+	.el-button--info.is-plain:focus, .el-button--info.is-plain:hover {
+		background: #FFF;
+		border-color: #e1e3e7;
 		color: #FFF;
 	}
 }

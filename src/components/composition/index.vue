@@ -63,6 +63,8 @@ export default {
 					this._container = container;
 					this._vNode = vNode;
 					this._staticGroup = null;
+					this._leftGroup = null;
+					this._rightGroup = null;
 					this._g = null;
 
 					this._width = options.width;
@@ -146,8 +148,10 @@ export default {
 						gap: 32,
 						outset: - this._height / 2 + 25
 					},
-					this._buttonPosition = num => translate(this._buttonGroup.x, this._buttonGroup.outset + (+num) * this._buttonGroup.gap)
+					this._leftButton = num => translate(this._buttonGroup.x, this._buttonGroup.outset + (+num) * this._buttonGroup.gap);
+					this._rightButton = num => translate(this._width + 2 * this._buttonGroup.x - 10, this._buttonGroup.outset + (+num) * this._buttonGroup.gap);
 					//  `translate(${[60 + 60 * (1 - d), - this._height / 2 + 2.5]})`,
+					this._xCenter = (this._width + 2 * this._buttonGroup.x - 10 + this._buttonGroup.x)/2 - this._buttonGroup.x/2;
 					this._staticButton = {
 						rect:{
 							rx: 5,
@@ -164,7 +168,7 @@ export default {
 					}
 
 					// 高亮
-					this._upid = null;
+					this._mouseList = null;	//mouse highlight
 
 					this._checkUpid = '';
 				}
@@ -195,18 +199,17 @@ export default {
 				}
 
 				render() {
-					this._staticGroup = this._container
-						.append('g')
-						.attr('class', 'staticGroup');
+					this._staticGroup = this._container.append('g').attr('class', 'staticGroup');
+					this._leftGroup = this._staticGroup.append('g').attr('class', 'leftGroup');
+					this._rightGroup = this._staticGroup.append('g').attr('class', 'rightGroup');
 					
 					this._initZoom();
 					this._initSwitch();	//button
 					this._initVisG();
-					this._initSlider();
+					// this._initSlider();
 					this._initSort();
 
 					this._initDefs();
-
 					this._renderMerge()
 					return this;
 				}
@@ -221,6 +224,7 @@ export default {
 					this._initAttrs();
 					this._initMainG();
 					this._staticGroup.raise();
+					this._leftGroup.raise();
 
 					const svg = this._g;
 					const zoom = d3.zoom().on('zoom', e => {
@@ -246,9 +250,10 @@ export default {
 							class: 'mainG'
 						},
 						'background': {
-							transform: `translate(${[0, - this._height / 2]})`,
-							width: this._width,
-							height: this._height,
+							// transform: `translate(${[-10, - this._height / 2]})`,
+							width: 0,
+							id: 'mainBackground',
+							height: 0,
 							fill: 'white',
 							stroke: 'none'
 						}
@@ -262,9 +267,35 @@ export default {
 					this._barInstance = this._renderMainBar.bind(this)();
 					this._renderMainBox();
 					this._initLinkG();
+					const node = this._mainG.node().getBBox();
+					this._mainG.select('#mainBackground')
+						.attr('x', -10)
+						.attr('width', 20 + this._cardWidth + this._horizonPadding + this._boxChart.w)
+						.attr('height', node.height + 10)
+						.attr('y', node.y - 5)
+						.attr('stroke', '#ccc')
+						.attr('stroke-width', 0.5);
+					this._mainG
+						.attr('transform', translate(this._xCenter + 10 - this._mainG.node().getBBox().width/2, 0))
+						.attr('clip-path','url("#polygon-clip-triangle-equilateral")');
+					this._container.select('.defsG')
+						.append('defs')
+						.call(g => g.append('clipPath')
+							.attr('id', 'polygon-clip-triangle-equilateral')
+							.attr('clipPathUnits', 'objectBoundingBox')
+							.call(g => g.append('polygon')
+								.attr('points', '0 0, 0 1, 1 1, 1 0, 0 0')));
+					// console.log(this._mainG.node().getBBox());
+	// 				<defs>
+  //   <clipPath id="polygon-clip-triangle-equilateral" clipPathUnits="objectBoundingBox">
+  //     <polygon points="0 0.87, 0.5 0, 0.5 0, 1 0.87" />
+  //   </clipPath>
+  // </defs>
 					this._initBoxLine();
 					this._initProcessButton();
 					this._initBoxSort();
+					this._leftGroup.attr('transform', translate(0,  Math.abs(this._buttonGroup.outset) - this._leftGroup.node().getBBox().height/2))
+					this._rightGroup.attr('transform', translate(0, Math.abs(this._buttonGroup.outset) - this._rightGroup.node().getBBox().height/2))
 				}
 				_renderMainBar() {
 					const wm = this,
@@ -332,7 +363,6 @@ export default {
 						textAttrs = null,
 						clickAttrs = null,	//sliderG点击事件
 						clickStatus = false,
-						heatMapAttrs = null,
 						axisAttrs = null,
 						arrowAttrs = null,
 						timeScale = null,
@@ -393,7 +423,6 @@ export default {
 					var mergeG = sliderG.append('g').attr('class', 'mergeG');
 					var horizenG = sliderG.append('g').attr('class', 'horizenG');
 					renderMergeChart.call(this);
-					// this._horizonView ? initMergeArea() : initHorizenArea();
 					if (rectArray.some(d => d === chartHeight)) initRectG()
 					initAxisG(timeScale);
 
@@ -407,10 +436,6 @@ export default {
 					
 					const tepaChart = sliderG.append('g').attr('class', 'tepaChart');
 					initArrowGroup();
-					// const 
-					// const heatMapG = mainG.append('g').attr('class', 'heatMapGroup');
-					// initMapArea()
-					// heatMapG.raise();
 					const clickG = sliderG.append('g')
 						.call(g => updateElement(g, clickAttrs.body));
 					clickG
@@ -582,16 +607,6 @@ export default {
 								'text': ''
 							}
 						}
-						heatMapAttrs = {
-							position: `translate(${[0 + chartStart, 0]})`,
-							transform: (_, i) => `translate(${[i == 0 ? 0 : mergeOffset[i - 1], 0]})`,
-							opacity: null,
-							elementTrans: (_, i) => `translate(${[0, yScale(i)]})`,
-							rectHeight: chartHeight / 2,
-							qY: -chartHeight / 2,
-							t2Y: -chartHeight
-						};
-						Object.assign(heatMapAttrs, heatMapParameter(rectArray, horizenEX))
 
 						rectAttrs = {
 							body:{
@@ -885,7 +900,7 @@ export default {
 							mouseDate = new Date(timeScale[index].invert(dis)),
 							allLabel = batchEX.map(d => d3.least(d[index], e => mouseDate > e.time));
 						selectBarG(allLabel);
-						wm._upid = allLabel[0].upid;
+						wm._mouseList = allLabel[0].upid;
 						// console.log(dis, mergeOffset, index, mouseDate, allLabel, batchEX)
 						return allLabel.map(d => d.value)
 					}
@@ -921,11 +936,6 @@ export default {
 								.transition(t)
 								.text((d, i) => stringify(+mouseInfo[i]))
 						}
-						// heatMapG.selectAll('.heatMapElement')
-						//   .transition(t)
-						//   .attr('opacity', heatMapAttrs.opacity)
-						//   .attr('class', 'heatMapElement')
-						//   .attr('transform', heatMapAttrs.elementTrans)
 						barG.raise()
 						dragG.raise()
 						clickG.raise()
@@ -963,7 +973,6 @@ export default {
 						textG
 							.transition(t)
 							.call(g => updateElement(g.select('line'), textAttrs.line))
-						// initMapArea()
 					}
 					function renderMergeChart() { //init switchG
 						if (this._horizonView) {
@@ -1000,7 +1009,6 @@ export default {
 							barG.selectAll('g').filter(e => e.indexName === d.indexName)
 								.call(g => g.selectAll('rect').attr('opacity', 0.5))
 								.call(g => g.selectAll(d.flag ? '.badSteel' : '.goodSteel')
-								
 								.attr('opacity', e => d.value >= e.x0 && d.value <= e.x1 ?  1 : 0.5))
 						})
 					}
@@ -1036,11 +1044,13 @@ export default {
 								.attr('transform', `translate(${[x, 0]})`)
 								.attr('stroke', '#bbbcbd')
 							textG.raise();
-							let upid = wm._upid;
+							let upid = wm._mouseList;
 							mouseInfo = mouseText(x);
-							if (upid !== wm._upid) {
+							if (upid !== wm._mouseList) {
+								// mouseCircle(upid);
 								vm.$emit('wheelMouse', { upid: [upid], mouse: 1 });
-								vm.$emit('wheelMouse', { upid: [wm._upid], mouse: 0 });
+								vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 0 });
+								mergeG.selectAll('circle').attr('r', d => d.upid === this._mouseList || d.upid === this._checkUpid? 2.5 : 1.5)
 							}
 							wm._mouseDis = x;
 							textG.selectAll('text')
@@ -1057,7 +1067,8 @@ export default {
 							}, 20);
 						})
 						.on('mouseleave', (e, d) => {
-							vm.$emit('wheelMouse', { upid: [wm._upid], mouse: 1 });
+							vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 1 });
+							mergeG.selectAll('circle').attr('r', d => d.upid === this._checkUpid ? 2.5 : 1.5);
 						})
 						.on('click', e => {
 							let x = d3.pointer(e)[0];
@@ -1304,77 +1315,6 @@ export default {
 								.attr('fill', (d, i) => horizenAttrs.horizenColor(horizenAttrs.overlapNum[i]))
 								.attr('transform', (d, i) => `translate(0,${(horizenAttrs.overlapNum[i] + 1) * (horizenAttrs.elementHeight)})`)
 								.attr('href', d => `#path-def${d[0].d}`))
-					}
-					function heatMapParameter(array, data) {
-						let xBatch = array.map((d, i) => {
-							let l = array[i],
-								// scale = d3.scaleLinear()
-								//     .range([chartPadding.left, l - chartPadding.right])
-								//     .domain(d3.extent(data[i][0], (e, f)=> e.time));
-								scale = d3.scaleBand()
-									.domain(d3.map(data[i][0], e => e.time.toString()))
-									.range([chartPadding.left, l - chartPadding.right]);
-							return scale
-						});
-						// let xLabelData = array.map((d,i) =>{
-						//     let temp = data[i][0].map(d => xBatch[i](d.time));
-						//     temp.unshift(chartPadding.left)
-						//     let subtemp = d3.pairs(temp, (a, b) => b -a);
-						//     let key = 2.2;
-						//     let padding = subtemp.map((d, i) => {
-						//         if(i !== temp.length - 1){
-						//             return subtemp[i] > subtemp[i + 1] ? subtemp[i+1]/key : subtemp[i]/key;
-						//         }
-						//         return subtemp[i]/key
-						//     })
-						//     return padding
-						// })
-						let yBatch1 = d3.scaleLinear()
-							.range([0, heatMapAttrs.rectHeight - chartPadding.top / 2])
-							.domain(d3.extent(d3.map(data, d => d3.map(d, e => d3.map(e, f => f.Q))).flat(2)));
-						let yBatch2 = d3.scaleLinear()
-							.range([0, heatMapAttrs.rectHeight - chartPadding.top / 2])
-							.domain(d3.extent(d3.map(data, d => d3.map(d, e => d3.map(e, f => f.T2))).flat(2)));
-						let yColor = d3.scaleLinear()
-							.domain([0, 0.25, 0.5, 0.75, 1])
-							.range(util.levelColor);
-						return { xBatch, yBatch1, yBatch2, yColor }
-					}
-					function initMapArea() {
-						heatMapG
-							.attr('transform', heatMapAttrs.position)
-							.selectAll('.heatMapG').data(mergeOffset)
-							.join('g')
-							.attr('class', 'heatMapG')
-							.attr('transform', heatMapAttrs.elementTrans)
-							.call(g => g.selectAll('g')
-								.data((d, i) => horizenEX[i])
-								.join('g')
-								.attr('opacity', heatMapAttrs.opacity)
-								.attr('class', 'heatMapElement')
-								.attr('transform', heatMapAttrs.elementTrans)
-								.call(g => g.selectAll('.mapQ')
-									.data(d => d).join('rect')
-									.attr('fill', d => heatMapAttrs.yColor(d.Q))
-									.attr('stroke', '#e0e4e7')
-									.attr('class', 'mapQ')
-									.attr('y', heatMapAttrs.qY)
-									// .attr('y', d => -qBatch(d.Q))
-									// .attr('height', d => qBatch(d.Q))
-									.attr('height', heatMapAttrs.rectHeight)
-									.attr('width', (d, i) => heatMapAttrs.xBatch[d.i].bandwidth())
-									.attr('x', (d, i) => heatMapAttrs.xBatch[d.i](d.time.toString())))
-								.call(g => g.selectAll('.mapT2')
-									.data(d => d).join('rect')
-									.attr('fill', d => heatMapAttrs.yColor(d.T2))
-									.attr('stroke', '#e0e4e7')
-									.attr('class', 'mapT2')
-									.attr('y', heatMapAttrs.t2Y)
-									// .attr('y', d => -t2Batch(d.T2) - chartHeight/2)
-									// .attr('height', d => t2Batch(d.T2))
-									.attr('height', heatMapAttrs.rectHeight)
-									.attr('width', (d, i) => heatMapAttrs.xBatch[d.i].bandwidth())
-									.attr('x', (d, i) => heatMapAttrs.xBatch[d.i](d.time.toString()))))
 					}
 					function initArrowGroup() {
 						tepaChart.selectAll('.tepaElement')
@@ -1764,9 +1704,9 @@ export default {
 				}
 
 				_initZoom(){
-					const zoomG = this._staticGroup.append('g').attr('class', 'zoomG');
+					const zoomG = this._leftGroup.append('g').attr('class', 'zoomG');
 					zoomG
-						.attr('transform', this._buttonPosition(0))
+						.attr('transform', this._leftButton(0))
 						.call(g => addElement(g, 'rect', this._staticButton.rect)
 							.attr('fill', this._zoomStatus ? this._buttonColor : 'white'))
 						.call(g => addElement(g, 'text', this._staticButton.text)
@@ -1785,9 +1725,9 @@ export default {
 				}
 
 				_initSwitch(){//init switchG
-					const switchG = this._staticGroup.append('g').attr('class', 'switchG'),
+					const switchG = this._leftGroup.append('g').attr('class', 'switchG'),
 						switchAttrs = {
-							transform: d => this._buttonPosition(d + 1),
+							transform: d => this._leftButton(d + 1),
 							text: ['Horizon', 'River'],
 							color: this._buttonColor,
 							colorfunc: (v1, v2) => d => this._horizonView == Boolean(d) ? v1 : v2
@@ -1817,9 +1757,9 @@ export default {
 				}
 
 				_initVisG(){
-					const visG = this._staticGroup.append('g').attr('class', 'visG');
+					const visG = this._leftGroup.append('g').attr('class', 'visG');
 					visG
-						.attr('transform', this._buttonPosition(3))
+						.attr('transform', this._leftButton(3))
 						.call(g => addElement(g, 'rect', this._staticButton.rect)
 							.attr('fill', this._barVis ? this._buttonColor : 'white'))
 						.call(g => addElement(g, 'text', this._staticButton.text)
@@ -1836,11 +1776,11 @@ export default {
 				_initSort() {//init sortG
 					const text = ['Single', 'Indicators', 'Total'],
 						sortAttrs = {
-							transform: d => this._buttonPosition(4 + d),
+							transform: d => this._leftButton(4 + d),
 							text: d => text[d],
 							sortChange: (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1 : value2
 						},
-						sortG = this._staticGroup.append('g').attr('class', 'sortG');
+						sortG = this._leftGroup.append('g').attr('class', 'sortG');
 					sortG.selectAll('g')
 						.data([0, 1, 2])
 						.join('g')
@@ -1863,10 +1803,10 @@ export default {
 				}
 				
 				_initBoxLine(){
-					const lineButtonG = this._staticGroup.append('g').attr('class', 'lineButtonG');
+					const lineButtonG = this._rightGroup.append('g').attr('class', 'lineButtonG');
 					lineButtonG
 						.attr('cursor', 'pointer')
-						.attr('transform', this._buttonPosition(7))
+						.attr('transform', this._rightButton(0))
 						// .attr('transform', `translate(${[this._cardWidth + this._horizonPadding + 20, - this._height / 2 + 2.5]})`)
 					lineButtonG
 						.call(g => addElement(g, 'rect', this._staticButton.rect)
@@ -1907,12 +1847,12 @@ export default {
 
 				_initProcessButton(){
 					const deviceAttrs = {
-						transform: d => this._buttonPosition(8 + d),
+						transform: d => this._rightButton(1 + d),
 						// transform: d => `translate(${[this._cardWidth + this._horizonPadding + 80 + d * 60, -this._height / 2 + 2.5]})`,
 						text: d => this._deviceName[d],
 						deviceChange: (value1, value2) => d => d === (this._selectDevice !== undefined ? this._selectDevice : 0) ? value1 : value2
 					},
-						deviceG = this._staticGroup.append('g').attr('class', 'deviceG');
+						deviceG = this._rightGroup.append('g').attr('class', 'deviceG');
 					deviceG.selectAll('g')
 						.data([0, 1, 2])
 						.join('g')
@@ -1941,11 +1881,11 @@ export default {
 				_initBoxSort(){
 					this._sortDevice = false;
 					this._boxSortAttrs = {
-						transform: d => this._buttonPosition(11 + d),
+						transform: d => this._rightButton(4 + d),
 						text: d => d ? 'steel':  'complex',
 						boxChange: (value1, value2) => d => d === this._sortDevice ? value1 : value2
 					};
-					this._boxSortG = this._staticGroup.append('g').attr('class', 'boxSortG');
+					this._boxSortG = this._rightGroup.append('g').attr('class', 'boxSortG');
 					this._boxSortG.selectAll('g')
 						.data([true, false])
 						.join('g')

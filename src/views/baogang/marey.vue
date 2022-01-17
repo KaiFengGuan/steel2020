@@ -436,8 +436,8 @@ export default {
 
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      // this.jsonData = jsonData;
+      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      this.jsonData = jsonData;
 
       if (typeof(this.jsonData) === 'string') {
         this.jsonData = {};
@@ -448,12 +448,12 @@ export default {
       
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       
+      // let eventIconData = await this.getEventIconData();
+      // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      
       // let eventIconData = filterMareyChartEventIcon(this.jsonData);
-      let eventIconData = await this.getEventIconData();
-      // let eventIconData = importIconData;
-
-      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
-      // this.monitorData = monitorData
+      let eventIconData = importIconData;
+      this.monitorData = monitorData
 
 			// paint
 			this.loadingDataLoading = false

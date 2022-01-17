@@ -35,12 +35,12 @@ export function divideData(data){
   return res;
 }
 export function arrowData(data){
-  const multiIndex = [];
-  for(let i = 0; i < data.length; i++){
-    if(data[i].dia_Status && data[i].flag == 0){
-      multiIndex.push(i);
-    }
-  }
+  // const multiIndex = [];
+  // for(let i = 0; i < data.length; i++){
+  //   if(data[i].dia_Status && data[i].flag == 0){
+  //     multiIndex.push(i);
+  //   }
+  // }
   const singleIndex = [];
   for(let i = 0; i < data.length; i++){
     if(data[i].ovrage){
@@ -69,7 +69,7 @@ export function arrowData(data){
   // const multivariate = [...d3.difference(multiIndex, obj.intersection.flat())];
   
   obj.single = single.map(d => data[d]);
-  obj.multivariate = multiIndex.map(d => data[d]);
+  // obj.multivariate = multiIndex.map(d => data[d]);
   obj.intersection = obj.intersection.map(d => d.map(e => data[e]));
   // if(obj.intersection.length !== 0)console.log(obj.intersection)
   return obj;

@@ -1278,7 +1278,7 @@ export default {
 							// 		.attr('fill', 'none')
 							// 		.datum(d => d.flat())
 							// 		.attr('d', mergeAttrs.mergeLine))
-							.call(g => g.selectAll('.line').data(d => divideData(d.flat()))	// batchEX.map(d => console.log('data', divideData(d.flat())))
+							.call(g => g.selectAll('.line').data(d => divideData(d.flat()))
 								.join('path')
 								.attr('class', 'line')
 								.datum(d => d)
@@ -1500,14 +1500,14 @@ export default {
 						lc = this._labelcolor,
 						mainG = this._mainG,
 						plot_offset = this._boxChart,
-						allData = this._keys.map((d, i) => d.map(e => {return {'name' : e, process: i, value: Math.random()}})).flat(),
+						allData = this._keys.map((d, i) => d.map(e => {return {'name' : e, process: i}})).flat(),
 						coordinate = [this._cardWidth + this._horizonPadding, -wm._height / 2 + wm._margin.top],
 						plotG = mainG.append('g').attr('id', 'plotGroup').attr('transform', translate(...coordinate));
-					this._boxMap = Object.fromEntries(allData.map(d => [d.name, d.value]));
+					this._boxMap = Object.fromEntries(allData.map(d => [d.name, 0]));
 					this._boxData = Object.fromEntries(allData.map(d => [d.name, d]));
 					let plotGroup = null,
 						boxPlotAttrs = null;
-
+					
 					initAttrs.call(this);
 					for(let index in allData){
 						let item = allData[index];
@@ -1578,7 +1578,7 @@ export default {
 						.data(allData)
 						.join('g');
 					this._BoxGroup = plotGroup;
-					this._scaleBox(3);
+					
 					plotGroup
 						.call(g => addElement(g, 'rect', boxPlotAttrs.border))
 						.call(g => addElement(g, 'rect', boxPlotAttrs.iconBackGround))
@@ -1610,7 +1610,9 @@ export default {
 							d.chart = res;
 							return res;
 						}
-					})
+					});
+					this._boxSort();
+					this._scaleBox(3);
 					plotG
 						.on('wheel', (e) => {
 							let num = this._wheelBox;
@@ -2184,7 +2186,7 @@ export default {
 						}
 					}else{
 						for(let item in this._boxData){
-							this._boxMap[item] = this._boxData[item].value
+							this._boxMap[item] = this._boxData[item].chart._batchNum
 						}
 					}
 					let t = d3.transition().duration(150).ease(d3.easeLinear);

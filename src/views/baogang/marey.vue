@@ -252,8 +252,8 @@ import jsonData from '../data/jsonData.json'
 import monitorData from '../data/monitorData.json'
 import scatterData from '../data/scatterData.json'
 import importIconData from '../data/eventIconData.json'
-// import batchData from './batchData.json'
-// import processData from './processData.json'
+// import batchDatademo from './batchData.json'
+// import processDatademo from './processData.json'
 
 export default {
 	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler, slider, tooltip},
@@ -517,7 +517,7 @@ export default {
 			this.requestHeader = updateRange(this.$refs.parallel.diagnosisRange, this.$refs.parallel.svgChart['instance']._objStatus)
 			console.log(this.requestHeader)
       this.batchData = await this.requestBatchData();
-			// this.batchData = batchData;
+			// this.batchData = batchDatademo;
 
 			// this.corrdata = [];
 			const request = {
@@ -530,7 +530,7 @@ export default {
 			let heat = (await steel.getHeatData(Object.assign({number: 4}, request), this.requestHeader)).data;
 			let cool = (await steel.getCoolData(Object.assign({number: 4, header: 5}, request), this.requestHeader)).data;
 			this.processData.main = {...roll, ...cool, ...heat};
-			// this.processData.main = processData;
+			// this.processData.main = processDatademo;
 
 			// await this.getVisCorrelation({
       //     startDate: this.selectDateStart,

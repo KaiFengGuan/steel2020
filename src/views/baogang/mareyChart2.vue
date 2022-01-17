@@ -41,8 +41,8 @@ export default {
       minconflict: 4,
 
       activatePlate: {
-        upid: '',
-        activate: false
+        upid: '21311224000',
+        activate: true
       }
     };
   },
@@ -619,7 +619,7 @@ export default {
             }
           }
           
-          // console.log("处理成绘图数据：", this._mergeresult_1)
+          console.log("处理成绘图数据：", this._mergeresult_1)
 
           // 统计整图监控结果占比
           // console.log(over_p, total)
@@ -2109,6 +2109,7 @@ export default {
           let text_list = ['Heat', 'Roll', 'Cool'];
 
           let diagnosisTextGroup = this._marey_g.append('g')
+            .attr('class', 'diagnosisTextGroupGroup')
             .attr('transform', `translate(${[this._marey_size.w + 75, this._stations_size.h]})`)
           diagnosisTextGroup.selectAll('.diagnosisTextGroup')
             .data(text_list)
@@ -2126,6 +2127,7 @@ export default {
           let angle_gap = 0.1;
           let remain_angle = 2*Math.PI-angle_gap*2;
           let statisticsInfoGroup = this._marey_g.append('g')
+            .attr('class', 'statisticsInfoGroupGroup')
             .attr('transform', `translate(${[this._marey_size.w + 115, this._stations_size.h-10]})`) // 原来偏移是135
             .attr('opacity', 0.8)
           
@@ -2143,7 +2145,7 @@ export default {
                     .outerRadius(r+4)
                     .startAngle(angle_gap+0)
                     .cornerRadius(2)
-                    .endAngle(angle_gap+remain_angle*(d.good/100))()
+                    .endAngle(angle_gap+remain_angle*(d.bad/100))()
                 )
                 .attr('fill', (d, i) => vm.processColor[i])
             })
@@ -2463,6 +2465,17 @@ export default {
             .attr('id', d => `linkRectMerge${d.batch_index}`)
             // .attr("opacity", 0.4)
           
+          let batchNum = this._mergeresult_1.map(d => {
+            let mergeNum = d.merge_data.map(e => e.mergeItem).flat().length;
+            let cannotNum = d.cannot_merge.map(e => e.merge_data).flat().length;
+            let timeSpan = (d.batch_e.getTime() - d.batch_s.getTime()) / 3600000;
+            return (mergeNum + cannotNum) / timeSpan;
+          })
+          console.log(batchNum)
+          const lineWidthScale = d3.scaleLinear()
+            .domain(d3.extent(batchNum))
+            .range([1, 3])
+
           // 批次提示线
           linkRectMerge
             .append("line")
@@ -2474,7 +2487,9 @@ export default {
             .attr("y1", 0)
             .attr("x2", 1)
             .attr("y2", d => this._y(d.batch_e)- this._y(d.batch_s))
-            .attr("stroke-width", 2)
+            .attr("stroke-width", (d, i) => {
+              return lineWidthScale(batchNum[i])
+            })
             .attr("stroke", d => d.batchColor)
 
           // 批次内合并块提示线
@@ -4853,9 +4868,9 @@ export default {
               this._setMoniBlock(batch_index, merge_index_list)
             }
           }
-          if (vm.activatePlate.activate) {
-            this.KeepAlivePlate();
-          }
+          // if (vm.activatePlate.activate) {
+          //   this.KeepAlivePlate();
+          // }
         }
         _setNoMergeInfoArc(batch_index, upid) {
           const batchGroup = this._info_g.select(`#oneBatchChartGroup${batch_index}`);
@@ -5071,7 +5086,13 @@ export default {
 
           if (vm.activatePlate.activate) {
             let plate = this._timesDataMap.get(vm.activatePlate.upid);
-            let tooltipGroup = this._marey_g.select('#activateMareyLineTooltip .tooltipGroup')
+
+            let mareyLineTooltip = this._marey_g.select('#activateMareyLineTooltip');
+            if (!mareyLineTooltip._groups[0][0]) return;  // 如果没有这个元素，不brush
+
+            mareyLineTooltip.transition(line_tran);
+
+            let tooltipGroup = mareyLineTooltip.selectAll('.tooltipGroup')
             let text = tooltipGroup.select('.tooltipContent');
             let box = text.node().getBBox();
             tooltipGroup
@@ -5079,7 +5100,15 @@ export default {
                 this._x(plate.stops[3].station.distance) - box.width / 2,
                 this._y(new Date(plate.stops[3].time)) + 37
               ]})`);
+            mareyLineTooltip.selectAll('#tooltipLine_' + plate.upid)
+              .attr('transform', `translate(0, ${this._y(new Date(plate.stops[0].time))})`)
+              .attr('d', this._line(plate.stops))
+            
+            this._marey_g.select('#mergeBlockTooltip').raise();
+            this._marey_g.select('#mareyLineTooltip').raise();
             this._marey_g.select('.stationsNameGroup').raise();
+            this._marey_g.select('.statisticsInfoGroupGroup').raise();
+            this._marey_g.selectAll('.diagnosisTextGroupGroup').raise();
           }
         }
         _translateInfoChart() {
@@ -5486,8 +5515,8 @@ export default {
           if (!plate) return;
 
           if (activate) {
-            this._marey_g.select('#id' + upid)
-              .attr('stroke-width', this._highLightStrokeWidth)
+            // this._marey_g.select('#id' + upid)
+            //   .attr('stroke-width', this._highLightStrokeWidth)
             
             let toopcolor = this._trainGroupStyle(plate);
 
@@ -5497,6 +5526,17 @@ export default {
             const mareyLineTooltip = this._marey_g.append('g')
               .attr('id', 'activateMareyLineTooltip')
             
+            // 画线
+            mareyLineTooltip.append('path')
+              .attr('class', 'tooltipLine')
+              .attr('id', 'tooltipLine_' + plate.upid)
+              .attr('transform', `translate(0, ${this._y(new Date(plate.stops[0].time))})`)
+              .attr('stroke-width', this._highLightStrokeWidth)
+              .attr('fill', 'none')
+              .attr('stroke', this._trainGroupStyle(plate))
+              .attr('d', this._line(plate.stops))
+
+            // 画框
             let tooltip = mareyLineTooltip.append('g')
               .attr('class', 'tooltipGroup');
             let path = tooltip.append('path')
@@ -5548,9 +5588,14 @@ export default {
               z
             `);
             tooltip.attr('transform', `translate(${this._x(plate.stops[3].station.distance) - box.width / 2}, ${this._y(new Date(plate.stops[3].time)) + 37})`);
+
+            this._marey_g.select('#mergeBlockTooltip').raise();
+            this._marey_g.select('#mareyLineTooltip').raise();
+            this._marey_g.select('.statisticsInfoGroupGroup').raise();
+            this._marey_g.selectAll('.diagnosisTextGroupGroup').raise();
           } else {
-            this._marey_g.select('#id' + upid)
-              .attr('stroke-width', d => this._defaultStrokeWidth(d.tgtplatethickness2))
+            // this._marey_g.select('#id' + upid)
+            //   .attr('stroke-width', d => this._defaultStrokeWidth(d.tgtplatethickness2))
             
             let ele = this._marey_g.selectAll('#activateMareyLineTooltip');
             ele.remove()

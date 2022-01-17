@@ -619,7 +619,7 @@ export default {
             }
           }
           
-          // console.log("处理成绘图数据：", this._mergeresult_1)
+          console.log("处理成绘图数据：", this._mergeresult_1)
 
           // 统计整图监控结果占比
           // console.log(over_p, total)
@@ -2465,6 +2465,17 @@ export default {
             .attr('id', d => `linkRectMerge${d.batch_index}`)
             // .attr("opacity", 0.4)
           
+          let batchNum = this._mergeresult_1.map(d => {
+            let mergeNum = d.merge_data.map(e => e.mergeItem).flat().length;
+            let cannotNum = d.cannot_merge.map(e => e.merge_data).flat().length;
+            let timeSpan = (d.batch_e.getTime() - d.batch_s.getTime()) / 3600000;
+            return (mergeNum + cannotNum) / timeSpan;
+          })
+          console.log(batchNum)
+          const lineWidthScale = d3.scaleLinear()
+            .domain(d3.extent(batchNum))
+            .range([1, 3])
+
           // 批次提示线
           linkRectMerge
             .append("line")
@@ -2476,7 +2487,9 @@ export default {
             .attr("y1", 0)
             .attr("x2", 1)
             .attr("y2", d => this._y(d.batch_e)- this._y(d.batch_s))
-            .attr("stroke-width", 2)
+            .attr("stroke-width", (d, i) => {
+              return lineWidthScale(batchNum[i])
+            })
             .attr("stroke", d => d.batchColor)
 
           // 批次内合并块提示线

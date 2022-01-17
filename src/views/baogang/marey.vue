@@ -436,8 +436,8 @@ export default {
 
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      this.jsonData = jsonData;
+      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      // this.jsonData = jsonData;
 
       if (typeof(this.jsonData) === 'string') {
         this.jsonData = {};
@@ -449,11 +449,11 @@ export default {
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       
       // let eventIconData = filterMareyChartEventIcon(this.jsonData);
-      // let eventIconData = await this.getEventIconData();
-      let eventIconData = importIconData;
+      let eventIconData = await this.getEventIconData();
+      // let eventIconData = importIconData;
 
-      // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
-      this.monitorData = monitorData
+      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      // this.monitorData = monitorData
 
 			// paint
 			this.loadingDataLoading = false
@@ -469,11 +469,11 @@ export default {
         eventIconData: eventIconData
         }, this.isSwitch, this.isMerge);
 
-      // 联动马雷图
-      this.$refs.mareyChart.changePlateStatus({
-        upid: '21311224000',
-        activate: true  // true: 视图联动显示  |  false: 取消显示
-      })
+      // // 联动马雷图
+      // this.$refs.mareyChart.changePlateStatus({
+      //   upid: '21311224000',
+      //   activate: true  // true: 视图联动显示  |  false: 取消显示
+      // })
 
     },
     async scatterTabClick(tabName) {

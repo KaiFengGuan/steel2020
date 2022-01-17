@@ -1,6 +1,8 @@
 .DS_Store
 node_modules
 src/views/baogang/sampledata
+src/views/baogang/batchData.json
+src/views/baogang/processData.json
 /dist
 package-lock.json
 

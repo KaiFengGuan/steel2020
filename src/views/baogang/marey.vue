@@ -141,7 +141,7 @@
 					</el-card>
 				</el-row>
 				<!-- <transition name="diagnosis"> -->
-				<el-row>
+				<el-row style="padding-left: 4px;">
 					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height: 540px; transform: translateY(540px);">
 						<div class="my-card-title" slot="header">
 							<el-col :span="17"><span>Diagnosis View</span></el-col>
@@ -252,6 +252,8 @@ import jsonData from '../data/jsonData.json'
 import monitorData from '../data/monitorData.json'
 import scatterData from '../data/scatterData.json'
 import importIconData from '../data/eventIconData.json'
+// import batchData from './batchData.json'
+// import processData from './processData.json'
 
 export default {
 	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler, slider, tooltip},

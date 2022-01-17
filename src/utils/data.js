@@ -102,15 +102,18 @@ export function getSortIndex(data){
     overDetails
   };
 }
-export function sortDomain(data){
-  let coefficient = [0.1, 0.3, 0.5, 0.1];
+
+export function sortDatum(data){
   let res = [];
-  res[0] = data.map(d => 0.2 * d.overDetails[0] + 0.3 * d.overDetails[1] + 0.5 * d.overDetails[2]);
-  res[1] = data.map(d => d.integrate);
-  // let timeScale = d3.scaleLinear().range([0, 1]).domain(d3.extent(data, d => d.firstTime))
-  // let 
-  res[2] = data.map(d => d.firstTime * coefficient[0] + coefficient[1] * d.overNum + coefficient[2] * d.extremum + coefficient[3] * (0.9 * d.speNum + 0.1 * d.t2Num))
+  res[0] = data.map(d => d.firstTime);
+  res[1] = data.map(d => d.overNum);
+  res[2] = data.map(d => d.extremum);
+  res[3] = data.map(d => 0.9 * d.speNum + 0.1 * d.t2Num);
   return res;
+}
+
+export function sortDomain(data, coefficient){
+  return data.map(d => d.firstTime * coefficient[0] + coefficient[1] * d.overNum + coefficient[2] * d.extremum + coefficient[3] * (0.9 * d.speNum + 0.1 * d.t2Num));
 }
 
 export const mergeColor = ["#e3ad92",   "#b9c6cd"]

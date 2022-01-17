@@ -81,7 +81,7 @@ class box {
 
     this._vertLineAttrs = {
       class: 'vertLine',
-      stroke: '#C0C0C0',
+      stroke: '#94a7b7',
       'stroke-width': '1px',
     };
 
@@ -454,15 +454,24 @@ export class boxplot extends box{
 export function preHeat(data){
   let map = new Map();
     let passArr = new Array(data.length).fill(0).map((d, i) => {
-      let datum = data[i];
-      let arr = datum['sample'];
+      let datum = data[i],
+        arr = [];
+      let temp = datum['sample'];
+      temp.forEach(e => {e.pass = i, e.overflow = 
+        e.value > datum['emax'] || e.value < datum['emin'] ? true : false});
+      let upidMap = d3.group(temp, d => d.upid);
+      for (let pass of upidMap.values()) {
+        if(pass.filter(d => d.overflow).length !== 0){
+          arr.push(...pass.filter(d => d.overflow))
+        }else{
+          pass[0].value = d3.mean(pass, d => d.value)
+          arr.push(pass[0]);
+        }
+      }
       arr.quartiles = [datum['min'], datum['mean'], datum['max']];
       arr.min = datum['emin'];
       arr.max = datum['emax'];
       arr.range = [ arr.min, arr.max];
-      arr.forEach(e => {e.pass = i, e.overflow = 
-        e.value > arr.range[1] || e.value < arr.range[0] ? true : false});
-
       for(let item in arr){
         if(arr[item].upid == undefined)continue;
         let temp = map.get(arr[item].upid);

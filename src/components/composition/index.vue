@@ -13,10 +13,40 @@ import { addElement,
 	stringify
 } from 'utils/element';
 import clickIcon from 'assets/images/wheel/fixed.svg'
-import heat from 'assets/images/wheel/heat.svg'
-import cool from 'assets/images/wheel/cool.svg'
-import roll from 'assets/images/wheel/roll.svg'
+import heat from 'assets/images/heat.svg'
+import cool from 'assets/images/wheel/ACCIcon.svg'
+import force from 'assets/images/wheel/force.svg'
+import temper from 'assets/images/wheel/temper.svg'
+import speed from 'assets/images/wheel/speed.svg'
+import torque from 'assets/images/wheel/torque.svg'
+import displacement from 'assets/images/wheel/displacement.svg'
+import screwdown from 'assets/images/wheel/screw.svg'
+import time from 'assets/images/wheel/time.svg'
+import roll from 'assets/images/roll.svg'
 const processIcon = [heat, roll, cool];
+const boxIcon = {
+	'seg_u': temper,
+	'seg_d': temper,
+	'plate': temper,
+	'time': time,
+	'speed': speed,
+	'screwdown': screwdown,
+	'shiftpos': displacement,
+	'torque': torque,
+	'torquebot': torque,
+	'torquetop': torque,
+	'bendingforce': force,
+	'bendingforcebot': force,
+	'bendingforcetop': force,
+	'rollforce': force,
+	'rollforceds': force,
+	'rollforceos': force,
+	'p1': temper,
+	'p2': temper,
+	'p3': temper,
+	'p4': temper,
+	'p6': temper
+};
 import util from 'views/baogang/util.js';
 import { 
 	divideData,
@@ -1542,6 +1572,13 @@ export default {
 								'stroke': d => d3.color(lc[d.process]).darker(0.5),
 								'stroke-width': 0.25
 							},
+							image:{
+								href: d => boxIcon[d.name],//padding=2.5
+								height: 15,
+								width: 15,
+								y: -7.5,
+								transform: translate(8 + 2.5, 0)
+							},
 							text: {
 								text: d => d.name,
 								transform: translate(36, 2),
@@ -1582,6 +1619,7 @@ export default {
 					plotGroup
 						.call(g => addElement(g, 'rect', boxPlotAttrs.border))
 						.call(g => addElement(g, 'rect', boxPlotAttrs.iconBackGround))
+						.call(g => addElement(g, 'image', boxPlotAttrs.image))
 						.call(g => addElement(g, 'rect', {}).attr('class', 'textBack'))
 						.call(g => addElement(g, 'text', boxPlotAttrs.text))
 						.call(g => updateElement(g.selectAll('.textBack'), boxPlotAttrs.textBackGround))

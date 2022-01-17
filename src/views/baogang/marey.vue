@@ -5,15 +5,15 @@
 			<el-col :span="4">
 				<el-row>
 					<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
-					<el-row>
-						<el-col :span="10" id="month-data"><span>Month Picker</span></el-col>
-						<el-col :span="10">
+					<el-row class="my-card-body">
+						<el-col :span="12" id="month-data"><span>Month Picker</span></el-col>
+						<el-col :span="12">
 							<el-date-picker v-model="startmonth" type="month" placeholder="选择月" @change="changeTime"
 								style="width:110px;margin:10px 0px 10px 20px" size="mini"></el-date-picker>
 						</el-col>
-						<el-col :span="4">
-							<el-button style="margin-top:10px" size="small" plain @click="getHttpData" icon="el-icon-search"></el-button>
-						</el-col>
+						<!-- <el-col :span="4"> -->
+							<!-- <el-button style="margin-top:10px" size="small" plain @click="getHttpData" icon="el-icon-search"></el-button> -->
+						<!-- </el-col> -->
 					</el-row>
 					<el-row>
 						<el-card class="myel-card">
@@ -722,7 +722,7 @@ export default {
 		async trainClick(value) {
       // console.log(value)
       console.log('进入诊断状态')
-      this.diagnosisVisible = true;
+      this.diagnosisVisible = false;
       this.scatterStatus = true;
       this.scatterTabName = 'second';
 
@@ -972,8 +972,9 @@ export default {
 				// trainClick
 				this.diagnosisVisible = false;
 				this.diagnosisState = false;
-				this.animeTransition();
+				// this.animeTransition();
 			} else {
+				this.diagnosisVisible = true;
 			}
 		},
 	}
@@ -1262,6 +1263,7 @@ export default {
 	border: solid 0.25px #e0e0e0;
 	box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
 	position: relative;
+	margin-left: 8px;
 }
 #title-first{
 	// margin: 6px;

@@ -165,7 +165,7 @@ export default {
 							'screwdown', 'shiftpos', 'speed', 'torque', 'torquebot', 'torquetop'],
 							['p1', 'p2', 'p3', 'p4', 'p6']
 					];
-					this._boxkeys = this._keys.flat();
+					this._boxkeys = null;
 					this._boxChart = {h: 120, w: 75/2 * 15, gap: 20};
 					this._boxMap = null;
 					this._wheelBox = 0;//wheel 数量
@@ -2234,12 +2234,19 @@ export default {
 				}
 
 				_initdata() {
-					const field = this._field;
-					this._chartData = this._batchData[0][0]['one_dimens'].map(d => {
+					// console.log(this._batchData.map(d => d.map(e => e['one_dimens'].length)));
+					let indexName = this._batchData.map(d => d.map(e => e['one_dimens'])).flat().sort()[0].map(d => d.name);
+					this._coolingStatus = indexName.length !== 92 ? true : false;
+					if(this._coolingStatus){
+						this._boxkeys =  this._keys.flat()
+					}else{
+						this._boxkeys =  this._keys.slice(0, 2).flat();
+					}
+					this._chartData = indexName.map(d => {
 						return {
-							indexName: d.name,
-							month: this.getIndex(d.name),
-							process: this.getIndex(d.name)
+							indexName: d,
+							month: this.getIndex(d),
+							process: this.getIndex(d)
 						}
 					}).filter(d => d.month !== undefined);
 					console.log('chartData', this._chartData)

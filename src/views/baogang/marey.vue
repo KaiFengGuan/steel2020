@@ -248,12 +248,10 @@ import {getBatchHeader, updateRange} from '../../utils/marey.js'
 import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
 
-import jsonData from '../data/jsonData.json'
-import monitorData from '../data/monitorData.json'
-import scatterData from '../data/scatterData.json'
-import importIconData from '../data/eventIconData.json'
-// import batchDatademo from './batchData.json'
-// import processDatademo from './processData.json'
+// import jsonData from '../data/jsonData.json'
+// import monitorData from '../data/monitorData.json'
+// import scatterData from '../data/scatterData.json'
+// import importIconData from '../data/eventIconData.json'
 
 export default {
 	components: { mareyChart, timeBrush, brushSlider, scatterlog, wheeler, slider, tooltip},
@@ -299,11 +297,11 @@ export default {
 				}],
 			orderselect:'Deviation',
 			plateTempPropvalue:['All'],
-			startmonth: new Date(2021, 2, 10, 0, 0),
+			startmonth: new Date(2021, 2, 1, 0, 0),
 			time: undefined,
 			corrdata:[],
 			selectedTrainColor: 'green',
-			interval: 4,
+			interval: 12,
 			intervalOptions: [6, 12, 24, 48],
 			algorithmOptions: [
 				"T-SNE", "UMAP", "ISOMAP", "PCA"
@@ -393,13 +391,13 @@ export default {
 		dateselect : function(){
       var endmonth = new Date(this.startmonth.valueOf())
       
-			// if(endmonth.getMonth() < 12){
-			// 	endmonth.setMonth(endmonth.getMonth() + 1)
-			// }else{
-			// 	endmonth.setFullYear(endmonth.getFullYear() + 1)
-			// 	endmonth.setMonth(1)
-      // }
-      endmonth.setDate(endmonth.getDate() + 10)
+			if(endmonth.getMonth() < 12){
+				endmonth.setMonth(endmonth.getMonth() + 1)
+			}else{
+				endmonth.setFullYear(endmonth.getFullYear() + 1)
+				endmonth.setMonth(1)
+      }
+      // endmonth.setDate(endmonth.getDate() + 10)
 
 			return [this.startmonth, endmonth]
 		},

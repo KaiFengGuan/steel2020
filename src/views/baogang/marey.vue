@@ -438,8 +438,8 @@ export default {
 
 			// response
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
-      // this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
-      this.jsonData = jsonData;
+      this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
+      // this.jsonData = jsonData;
 
       if (typeof(this.jsonData) === 'string') {
         this.jsonData = {};
@@ -450,12 +450,12 @@ export default {
       
       this.mergeresult = mergeTimesData(this.jsonData, this.stationsData, this.minrange, this.minconflict);
       
-      // let eventIconData = await this.getEventIconData();
-      // this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
+      let eventIconData = await this.getEventIconData();
+      this.monitorData = (await this.getAllBatchMonitorData(this.mergeresult, this.startDateString, this.endDateString)).data;
       
       // let eventIconData = filterMareyChartEventIcon(this.jsonData);
-      let eventIconData = importIconData;
-      this.monitorData = monitorData
+      // let eventIconData = importIconData;
+      // this.monitorData = monitorData
 
 			// paint
 			this.loadingDataLoading = false
@@ -754,7 +754,10 @@ export default {
 			for(let item in this.batchDateStart){
 				await this.selectDataByTime(this.batchDateStart[item], this.batchDateEnd[item]).then(response => {
 					console.log(this.batchDateStart[item], this.batchDateEnd[item], response.data)
-					let batch = response.data;
+          let batch = response.data;
+          // console.log(!!batch, batch, typeof(batch))
+          if (!batch) return
+
 					batch.forEach(d => {
 						d.toc = new Date(d.toc);
 					})
@@ -947,14 +950,14 @@ export default {
 		async getAlgorithmData() {
       this.req_count += 1;
 
-			// await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
-      //   this.scatterData = Response.data
-				this.scatterData = scatterData
+			await baogangPlotAxios(this.algorithmUrls[this.algorithmSelected]+ `${this.selectDateStart}/${this.selectDateEnd}/`, this.req_body).then(Response => {
+        this.scatterData = Response.data
+				// this.scatterData = scatterData
 
 				this.$refs.scatterCate.paintChart(this.scatterData, this.req_count)
 				this.$refs.scatterCate.paintArc([this.startDate, this.endDate])
         this.$refs.parallel.dataPre(Object.values(this.scatterData))
-			// })
+			})
 		},
 	},
 	mounted() {

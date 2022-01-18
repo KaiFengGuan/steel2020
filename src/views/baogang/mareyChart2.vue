@@ -1060,49 +1060,49 @@ export default {
             .append('g')
             .attr('class', 'mareyEventIconCroup')
           
-          // 画线
-          let iconLink = {};
-          let iconPlateData = Array.from(new Set(this._eventIconData.map(d => d.upid)));
-          for (let item of iconPlateData.map(d => this._timesdata[this._allupid.indexOf(d)])) {
-            if (!item) continue;
-            let len = item.stops.length;
-            let temp = [];
-            for (let i = 0; i < len - 1; i++) {
-              temp.push({
-                curr_dis: item.stops[i].station.distance,
-                curr_t: item.stops[i].time,
-                next_dis: item.stops[i + 1].station.distance,
-                next_t: item.stops[i + 1].time,
-                color: this._trainGroupStyle(item)
-              })
-            }
-            iconLink[item.upid] = temp;
-          }
-          // console.log(iconLink)
-          let iconLinkGroup = mareyEventIconCroup.selectAll('.iconLinkGroup')
-            .data(iconPlateData.filter(d => iconLink[d]))
-            .enter()
-            .append('g')
-            .attr('class', 'iconLinkGroup')
-            .attr('id', d => `iconLinkGroup${d}`)
-          iconLinkGroup.selectAll(".iconLinkHorizontal")
-            .data(d => iconLink[d])
-            .enter()
-            .append('path')
-            .attr('class', 'iconLinkHorizontal')
-            .attr('d', d => {
-              let source_x = this._x(d.curr_dis);
-              let source_y = this._y(new Date(d.curr_t));
-              let target_x = this._x(d.next_dis);
-              let target_y = this._y(new Date(d.next_t));
-              return d3.linkHorizontal()({
-                source: [source_x, source_y],
-                target: [target_x, target_y]
-              })
-            })
-            .attr('stroke', d => d.color)
-            .attr('stroke-width', 3)
-            .attr('fill', 'none')
+          // // 画线
+          // let iconLink = {};
+          // let iconPlateData = Array.from(new Set(this._eventIconData.map(d => d.upid)));
+          // for (let item of iconPlateData.map(d => this._timesdata[this._allupid.indexOf(d)])) {
+          //   if (!item) continue;
+          //   let len = item.stops.length;
+          //   let temp = [];
+          //   for (let i = 0; i < len - 1; i++) {
+          //     temp.push({
+          //       curr_dis: item.stops[i].station.distance,
+          //       curr_t: item.stops[i].time,
+          //       next_dis: item.stops[i + 1].station.distance,
+          //       next_t: item.stops[i + 1].time,
+          //       color: this._trainGroupStyle(item)
+          //     })
+          //   }
+          //   iconLink[item.upid] = temp;
+          // }
+          // // console.log(iconLink)
+          // let iconLinkGroup = mareyEventIconCroup.selectAll('.iconLinkGroup')
+          //   .data(iconPlateData.filter(d => iconLink[d]))
+          //   .enter()
+          //   .append('g')
+          //   .attr('class', 'iconLinkGroup')
+          //   .attr('id', d => `iconLinkGroup${d}`)
+          // iconLinkGroup.selectAll(".iconLinkHorizontal")
+          //   .data(d => iconLink[d])
+          //   .enter()
+          //   .append('path')
+          //   .attr('class', 'iconLinkHorizontal')
+          //   .attr('d', d => {
+          //     let source_x = this._x(d.curr_dis);
+          //     let source_y = this._y(new Date(d.curr_t));
+          //     let target_x = this._x(d.next_dis);
+          //     let target_y = this._y(new Date(d.next_t));
+          //     return d3.linkHorizontal()({
+          //       source: [source_x, source_y],
+          //       target: [target_x, target_y]
+          //     })
+          //   })
+          //   .attr('stroke', d => d.color)
+          //   .attr('stroke-width', 3)
+          //   .attr('fill', 'none')
 
           // 画圆
           this._displayIconData = this.__computeIconData(cx, this._eventIconData);
@@ -5457,18 +5457,18 @@ export default {
 
           this._marey_g.selectAll('.iconLinkGroup')
             .attr('display', d => this._displayIconData.has(d) ? null : 'none')
-          this._marey_g.selectAll('.iconLinkHorizontal')
-            .transition(line_tran)
-            .attr('d', d => {
-              let source_x = this._x(d.curr_dis);
-              let source_y = this._y(new Date(d.curr_t));
-              let target_x = this._x(d.next_dis);
-              let target_y = this._y(new Date(d.next_t));
-              return d3.linkHorizontal()({
-                source: [source_x, source_y],
-                target: [target_x, target_y]
-              })
-            })
+          // this._marey_g.selectAll('.iconLinkHorizontal')
+          //   .transition(line_tran)
+          //   .attr('d', d => {
+          //     let source_x = this._x(d.curr_dis);
+          //     let source_y = this._y(new Date(d.curr_t));
+          //     let target_x = this._x(d.next_dis);
+          //     let target_y = this._y(new Date(d.next_t));
+          //     return d3.linkHorizontal()({
+          //       source: [source_x, source_y],
+          //       target: [target_x, target_y]
+          //     })
+          //   })
 
           this._accDisplay = this.__computeDisplayIcon(cx, this._allEventData.acc_event_change);
           this._marey_g.selectAll('.ACCEventIcon')

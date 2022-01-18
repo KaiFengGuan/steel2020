@@ -77,7 +77,8 @@ export default {
 					upid: undefined,
 					wheelChart: {},
 					height: undefined,
-					width: undefined
+					width: undefined,
+					coefficient: [0.2, 0.2, 0.5, 0.1],
 			}
 	},
 	methods: {
@@ -398,7 +399,7 @@ export default {
 						orderDatum = sortDatum(orderData);
 						//['overNum', 'speNum', 'extremum'].map(d => orderData.map(e => e[d]))
 
-					initOrdinal.call(this, this._coefficient);
+					initOrdinal.call(this, this._vNode.coefficient);
 					renderyScale();
 					initAttrs.call(this); //init Element Attrs
 
@@ -2023,7 +2024,6 @@ export default {
 						width = 50,
 						sliderHeight = 6,
 						xScale = d3.scaleLinear().domain([-width, width]).range([0, 1]);
-					this._coefficient = [0.1, 0.3, 0.5, 0.1];
 					const text = ['firstTime', 'overNum', 'extremum', 'speNum'],
 						sortAttrs = {
 							transform: d => translate(abscissa + width, this._leftButton(num + d))
@@ -2051,7 +2051,7 @@ export default {
 							.attr('height', sliderHeight)
 							.attr('rx', sliderHeight/2)
 							.attr('ry', sliderHeight/2)
-							.attr('width', d =>  xScale.invert(this._coefficient[d]) + width))
+							.attr('width', d =>  xScale.invert(this._vNode.coefficient[d]) + width))
 						.call(g => g.append('text')
 								.attr('class', 'sortAttrs')
 								.attr('transform', translate(-35, 0))
@@ -2061,10 +2061,10 @@ export default {
 								.attr('class', 'sortNum')
 								.attr('transform', translate(0, 0))
 								.attr('fill', '#6d7885')
-								.text(d => `${stringify(this._coefficient[d])}`))
+								.text(d => `${stringify(this._vNode.coefficient[d])}`))
 						.call(g => g.append('circle')
 							.attr('r', 5)
-							.attr('cx', d => xScale.invert(this._coefficient[d]))
+							.attr('cx', d => xScale.invert(this._vNode.coefficient[d]))
 							.attr('cy', this._buttonStyle.height/2)
 							.attr('stroke', this._buttonColor)
 							.attr('stroke-width', 1.5)
@@ -2092,9 +2092,8 @@ export default {
 						debounce = (d, value) => {
 						clearTimeout(timer)
 						timer = setTimeout(() => {
-							this._coefficient[d] = value;
-							// console.log(this._coefficient);
-							this._barInstance.updateSort(this._coefficient);
+							this._vNode.coefficient[d] = value;
+							this._barInstance.updateSort(this._vNode.coefficient);
 						}, 200)
 					},
 					offsetX = new Array(4).fill(0);

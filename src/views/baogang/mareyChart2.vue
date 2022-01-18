@@ -4848,6 +4848,12 @@ export default {
             }
           }
 
+          // console.log(mergeData)
+          // console.log(mergeSelect)
+          
+          mergeData = mergeData.filter(d => d.length !== 0);
+          mergeSelect = mergeSelect.filter(d => d.length !== 0);
+
           const sortHandle = (a, b) => new Date(a[0].stops[0].time).getTime() - new Date(b[0].stops[0].time).getTime();
           mergeData.sort(sortHandle);
           mergeSelect.sort(sortHandle);

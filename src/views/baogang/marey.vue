@@ -754,7 +754,10 @@ export default {
 			for(let item in this.batchDateStart){
 				await this.selectDataByTime(this.batchDateStart[item], this.batchDateEnd[item]).then(response => {
 					console.log(this.batchDateStart[item], this.batchDateEnd[item], response.data)
-					let batch = response.data;
+          let batch = response.data;
+          // console.log(!!batch, batch, typeof(batch))
+          if (!batch) return
+
 					batch.forEach(d => {
 						d.toc = new Date(d.toc);
 					})

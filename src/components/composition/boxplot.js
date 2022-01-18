@@ -119,7 +119,7 @@ export class boxplot extends box{
     this._name = options.label;
     // this._data = options.func(options.data);
     this._g.attr('transform', `scale(${Math.min(options.height/this._height)})`); //options.width/this._width, 
-    this._batchNum = [...this._upidMap.values()].map(d => d.filter(e => e.overflow).length/d.length).reduce((prev, sum) => prev + sum, 0);
+    this._batchNum = [...this._upidMap.values()].map(d => d.filter(e => e.overflow).length/d.length).reduce((prev, sum) => prev + sum, 0)/[...this._upidMap.values()].length;;
     // console.log(this._batchNum)
     return this;
   }
@@ -500,7 +500,7 @@ export class heatplot extends box{
     this._data = options.func(options.data);
     this._color = options.color;
     this._g.attr('transform', `scale(${Math.min(options.height/this._height)})`); //options.width/this._width, 
-    this._batchNum = [...this._upidMap.values()].map(d => d.filter(d => d.overflow).length/this._passMap.length).reduce((prev, sum) => prev + sum, 0);
+    this._batchNum = [...this._upidMap.values()].map(d => d.filter(d => d.overflow).length/this._passMap.length).reduce((prev, sum) => prev + sum, 0)/[...this._upidMap.values()].length;
     // console.log(this._batchNum)
     return this;
   }

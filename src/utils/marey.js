@@ -1,5 +1,12 @@
 import * as d3 from 'd3';
 export function getBatchHeader(data, toc) {
+  
+  const flag = Array.from(d3.group(data, d => d.flag)).sort((a, b) => b[1] - a[1])[0][0],
+    fqcflag = flag === 404 ? 1 : 0,
+    stopsLength = Array.from(d3.group(data, d => d.stops.length)).sort((a, b) => b[1] - a[1])[0][0],
+    status_cooling = stopsLength < 15 ? 1 : 0;
+  console.log(flag, fqcflag, stopsLength, status_cooling);
+
   const steelspec_list = Array.from(d3.group(data, d => d.steelspec), ([key, value]) => key);
   const toc_list = toc;
   const thick_list = d3.extent(data, d => d.tgtplatethickness);
@@ -10,17 +17,17 @@ export function getBatchHeader(data, toc) {
   return [toc_list,   // time_select
   JSON.stringify([]),   // slabthickness
   JSON.stringify([]),   // tgtdischargetemp
-  JSON.stringify([thick_list[0] - 2, thick_list[1] + 2]),   // tgtplatethickness
+  JSON.stringify([]),   // tgtplatethickness//thick_list[0] - 2, thick_list[1] + 2
   JSON.stringify([]),   // tgtwidth
-  JSON.stringify([length_list[0] - 30, length_list[1] + 30]),   // tgtplatelength2
+  JSON.stringify([]),   // tgtplatelength2//length_list[0] - 30, length_list[1] + 30
   JSON.stringify([]),   // tgttmplatetemp
   JSON.stringify([]),   // cooling_start_temp
   JSON.stringify([]),   // cooling_stop_temp
   JSON.stringify([]),   // cooling_rate1
   JSON.stringify([]),   // productcategory
-  JSON.stringify(steelspec_list),   // steelspec
-  0,   // status_cooling
-  0   // fqcflag
+  JSON.stringify([]),   // steelspec// steelspec_list
+  status_cooling,   // status_cooling  //0
+  fqcflag   // fqcflag   //0
   ]
 }
 export function updateRange (selection, objStatus){

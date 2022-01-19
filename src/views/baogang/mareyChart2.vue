@@ -2491,6 +2491,18 @@ export default {
               return lineWidthScale(batchNum[i])
             })
             .attr("stroke", d => d.batchColor)
+          
+          // 批次提示线
+          const fontSize = 12;
+          linkRectMerge
+            .append("text")
+            .attr('class', 'linkRectMergeBatchText')
+            .attr('id', d => `linkRectMergeBatchText${d.batch_index}`)
+            .attr("transform", d => `translate(${[this._info_size.w - 10, this._y(d.batch_e) + fontSize]})`)
+            .text((d, i) => batchNum[i].toFixed(2))
+            .attr("fill", d => d.batchColor)
+            .attr('text-anchor', 'middle')
+            .style("font-size", fontSize)
 
           // 批次内合并块提示线
           linkRectMerge.selectAll('linkRectMergeItem')
@@ -5128,6 +5140,8 @@ export default {
           linkRectMerge.selectAll('.linkRectMergeBatch')
             .attr("transform", d => `translate(${[this._info_size.w - 8, this._y(d.batch_s)]})`)
             .attr("y2", d => this._y(d.batch_e)- this._y(d.batch_s))
+          linkRectMerge.selectAll('.linkRectMergeBatchText')
+            .attr("transform", d => `translate(${[this._info_size.w - 10, this._y(d.batch_e) + 12]})`)
           linkRectMerge.selectAll('.linkRectMergeItem')
             .attr("transform", d => `translate(${[this._info_size.w - 12, this._y(d.date_entry_s)]})`)
             .attr("y2", d => this._y(d.date_entry_e) - this._y(d.date_entry_s))

@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-export function getBatchHeader(data, toc) {
+export function getBatchHeader(data, toc,selection, objStatus) {
   
   const flag = Array.from(d3.group(data, d => d.flag)).sort((a, b) => b[1] - a[1])[0][0],
     fqcflag = flag === 404 ? 1 : 0,
@@ -7,20 +7,20 @@ export function getBatchHeader(data, toc) {
     status_cooling = stopsLength < 15 ? 1 : 0;
   console.log(flag, fqcflag, stopsLength, status_cooling);
 
-  const steelspec_list = Array.from(d3.group(data, d => d.steelspec), ([key, value]) => key);
+  // const steelspec_list = Array.from(d3.group(data, d => d.steelspec), ([key, value]) => key);
   const toc_list = toc;
-  const thick_list = d3.extent(data, d => d.tgtplatethickness);
-  const width_list = d3.extent(data, d => d.tgtwidth);
-  const length_list = d3.extent(data, d => d.tgtplatelength2);
+  // const thick_list = d3.extent(data, d => d.tgtplatethickness);
+  // const width_list = d3.extent(data, d => d.tgtwidth);
+  // const length_list = d3.extent(data, d => d.tgtplatelength2);
   // console.log(data)
   // console.log(d3.map(data, d => d.tgtwidth))
   return [toc_list,   // time_select
-  JSON.stringify([]),   // slabthickness
-  JSON.stringify([]),   // tgtdischargetemp
-  JSON.stringify([]),   // tgtplatethickness//thick_list[0] - 2, thick_list[1] + 2
-  JSON.stringify([]),   // tgtwidth
-  JSON.stringify([]),   // tgtplatelength2//length_list[0] - 30, length_list[1] + 30
-  JSON.stringify([]),   // tgttmplatetemp
+  JSON.stringify(objStatus.slab_thickness ? selection[3].map(d => d / 1000) : []),   // slabthickness
+  JSON.stringify(objStatus.tgtdischargetemp ? selection[4] : []),   // tgtdischargetemp
+  JSON.stringify(objStatus.tgtthickness ? selection[0] : []),   // tgtplatethickness//thick_list[0] - 2, thick_list[1] + 2
+  JSON.stringify(objStatus.tgtwidth ? selection[2] : []),   // tgtwidth
+  JSON.stringify(objStatus.tgtplatelength2 ? selection[1] : []),   // tgtplatelength2//length_list[0] - 30, length_list[1] + 30
+  JSON.stringify(objStatus.tgttmplatetemp ? selection[5] : []),   // tgttmplatetemp
   JSON.stringify([]),   // cooling_start_temp
   JSON.stringify([]),   // cooling_stop_temp
   JSON.stringify([]),   // cooling_rate1

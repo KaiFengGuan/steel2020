@@ -710,7 +710,6 @@ export default {
 			// // this.changeScatterColor();
 		},
     animeTransition(){
-			// this.diagnosisVisible = !this.diagnosisVisible;
 			anime({
 				targets: ['.diagnosis_view'],
 				translateY: this.diagnosisVisible ? '0px' : '1100px',
@@ -769,7 +768,7 @@ export default {
 		async selectDataByTime(...args){
 			const [start, end] = args.map(d => new Date(d));
 			const selectData = this.jsonData.filter(d => new Date(d.toc) <= end && new Date(d.toc) >= start);
-			let request = await this.getDiagnosisData(...getBatchHeader(selectData, args));
+			let request = await this.getDiagnosisData(...getBatchHeader(selectData, args, this.$refs.parallel.diagnosisRange, this.$refs.parallel.svgChart['instance']._objStatus));
 			return request;
 		},
 

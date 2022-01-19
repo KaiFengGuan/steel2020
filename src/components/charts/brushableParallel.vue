@@ -706,6 +706,7 @@ export default {
 					this._initAreaTooltip(true);
 
 					this._updateDiagnosis();
+					this._buttonG.raise();
 				}
 				_areaAttrs(){
 					const context = this;

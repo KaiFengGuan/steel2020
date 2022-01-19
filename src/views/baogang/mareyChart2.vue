@@ -1546,7 +1546,7 @@ export default {
           let tooltipGroup = MareyGroup.append('g')
             .attr('class', 'mareyTooltipGroup');
 
-          console.log(this._stops)
+          // console.log(this._stops)
 
           tooltipGroup.append('g')
             .attr('fill', 'none')

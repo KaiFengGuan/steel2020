@@ -245,7 +245,9 @@ import {getBatchHeader, updateRange} from '../../utils/marey.js'
 import * as steel from 'services/steel.js'
 import { mapGetters, mapMutations} from 'vuex'
 
-// import jsonData from '../data/jsonData.json'
+// import jsonDatademo from './jsondata.json'
+// import scatterDataDemo from './scatterData.json'
+// import trainValue from './trainValue.json'
 // import monitorData from '../data/monitorData.json'
 // import scatterData from '../data/scatterData.json'
 // import importIconData from '../data/eventIconData.json'
@@ -330,7 +332,6 @@ export default {
 			loadingDataLoading: false,
 			radio: 0,
 			chooseList: [],
-			upidSelect: ["", "  "],
 			requestHeader: [],
 			multisize: 20,
 			curvesize: 0.5,
@@ -435,6 +436,7 @@ export default {
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
       this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
       // this.jsonData = jsonData;
+			console.log(this.jsonData);
 
       if (typeof(this.jsonData) === 'string') {
         this.jsonData = {};
@@ -721,7 +723,6 @@ export default {
       this.scatterStatus = true;
       this.scatterTabName = 'second';
 
-			this.upidSelect = []
       this.chooseList = value.batch;
       this.batchDateStart = value.date_s;
       this.batchDateEnd = value.date_e;
@@ -729,16 +730,13 @@ export default {
 
       this.scatterTabClick(this.scatterTabName);
 
-			if(value.type !== "group"){
-				value.upidSelect.unshift(value.list[value.list.length - 1])
-			}
-      this.upidSelect = [...new Set(value.upidSelect)]//.filter(d => this.upidData.get(d) !== undefined)
-      
 			this.diagnosisState = false;
+			const data = this.jsonData.filter(d => new Date(d.toc) <= value.relevantDate[1] && new Date(d.toc) >= value.relevantDate[0]);
+			this.$refs.parallel.changeDiagnosis(data)
 			this.$nextTick(function() {
+				
 				this.diagnosisState = true;
-				const data = this.jsonData.filter(d => new Date(d.toc) <= value.relevantDate[1] && new Date(d.toc) >= value.relevantDate[0]);
-				this.$refs.parallel.changeDiagnosis(data)
+				
 			});
 			// newdiagnose
 		},
@@ -956,8 +954,18 @@ export default {
 	},
 	mounted() {
 		// console.log(this.startmonth.getMonth())
-		// this.trainClick(diagnosis_value)
+		// 
 		this.changeTime()
+		// this.$refs.parallel.dataPre(Object.values(scatterDataDemo))
+		// this.$refs.parallel.paintChart(jsonDatademo);
+		// this.trainClick(trainValue);
+
+		// this.diagnosisState = false;
+		// this.$nextTick(function() {
+		// this.diagnosisState = true;
+		// 	const data = jsonDatademo.filter(d => new Date(d.toc) <= trainValue.relevantDate[1] && new Date(d.toc) >= trainValue.relevantDate[0]);
+		// 	this.$refs.parallel.changeDiagnosis(data)
+		// });
 	},
 	watch: {
 		startDate:function(){

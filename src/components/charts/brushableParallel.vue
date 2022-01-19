@@ -45,7 +45,7 @@ export default {
 			//板坯厚度	386 +- 10
 			//实际出炉温度 770 +- 10
 			//终轧温度 840 +- 10
-			diagnosisArr: [20, 10, 1, 10, 5, 5, 0],
+			diagnosisArr: [0, 0, 0, 0, 0, 0, 0],//[20, 10, 1, 10, 5, 5, 0]
 			newBrushData: [
 							[25, 35],
 							[20, 35],
@@ -718,7 +718,7 @@ export default {
 						fill: util.delabelColor[1],
 						opacity: 0.5,
 						d: d3.area()
-						.y((d, i) => y(newkeys[i]) + context._brushHeight/2)
+						.y((d, i) => y(newkeys[i]) )//+ context._brushHeight/2
 						.x0((d, i) => context._x.get(newkeys[i])(d[0]))
 						.x1((d, i) => context._x.get(newkeys[i])(d[1])),
 					}

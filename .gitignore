@@ -3,6 +3,8 @@ node_modules
 src/views/baogang/sampledata
 src/views/baogang/batchData.json
 src/views/baogang/processData.json
+src/views/baogang/jsonData.json
+src/views/baogang/scatterData.json
 /dist
 package-lock.json
 

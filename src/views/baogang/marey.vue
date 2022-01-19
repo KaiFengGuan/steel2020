@@ -4,7 +4,7 @@
 		<el-row :style="cssVars">
 			<el-col :span="4">
 				<el-row>
-					<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
+					<div class="title-background"> <span id="title-first">iHPPMVis</span></div>
 					<el-row class="my-card-body">
 						<el-col :span="12" id="month-data"><span>Month Picker</span></el-col>
 						<el-col :span="12">
@@ -49,7 +49,7 @@
 						<div class="my-card-title" slot="header" :class="{statusStyle: diagnosisState, deStatusStyle : !diagnosisState}" >
 								<span style="margin-left:5px">Tabular View</span>
 								<!-- <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search" :disabled='!diagnosisState'></el-button> -->
-								<el-button size="mini" round  type="info" plain @click="newdiagnose" :disabled='!diagnosisState'>
+								<el-button size="mini" round  type="info" plain @click="newdiagnose" :disabled='!diagnosisState' style="margin-right: 6px">
 									<img src="../../assets/images/query.svg"></el-button>
 						</div>
 						<div class="my-card-body" style="padding-top:5px; overflow:scroll">

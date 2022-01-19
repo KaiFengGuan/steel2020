@@ -1816,14 +1816,14 @@ export default {
 						.append('g')
 						.attr('transform', translate(startX, this._leftButton(3.3)))
 						.call(g => addElement(g, 'line', lineAttrs))
-						.call(g => addElement(g, 'text', textAttrs).text('sortAttrs'))
+						.call(g => addElement(g, 'text', textAttrs).text('sort_attrs'))
 					this._initSort(10 + startX, 4.2);
 					
 					this._leftGroup
 						.append('g')
 						.attr('transform', translate(startX, this._leftButton(8.5)))
 						.call(g => addElement(g, 'line', lineAttrs))
-						.call(g => addElement(g, 'text', textAttrs).text('boxState'))
+						.call(g => addElement(g, 'text', textAttrs).text('box_state'))
 
 					this._initProcessButton(d => 10 + 60 * d + startX, 9.3);
 					this._initBoxSort(d => 10 + 60 * d + startX, 11.3);

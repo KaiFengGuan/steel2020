@@ -11,9 +11,6 @@
 							<el-date-picker v-model="startmonth" type="month" placeholder="选择月" @change="changeTime"
 								style="width:110px;margin:10px 0px 10px 20px" size="mini"></el-date-picker>
 						</el-col>
-						<!-- <el-col :span="4"> -->
-							<!-- <el-button style="margin-top:10px" size="small" plain @click="getHttpData" icon="el-icon-search"></el-button> -->
-						<!-- </el-col> -->
 					</el-row>
 					<el-row>
 						<el-card class="myel-card">
@@ -47,7 +44,7 @@
 				<el-row>
 					<el-card class="myel-card">		 
 						<div class="my-card-title" slot="header" :class="{statusStyle: diagnosisState, deStatusStyle : !diagnosisState}" >
-								<span style="margin-left:5px">Tabular View</span>
+								<span style="margin-left:5px">Category View</span>
 								<!-- <el-button style="height:25px; float:right;" size="small" plain @click="newdiagnose" icon="el-icon-search" :disabled='!diagnosisState'></el-button> -->
 								<el-button size="mini" round  type="info" plain @click="newdiagnose" :disabled='!diagnosisState' style="margin-right: 6px">
 									<img src="../../assets/images/query.svg"></el-button>
@@ -67,7 +64,7 @@
 				<el-row>
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
-							<el-col :span="15"><span>Condition View</span></el-col>
+							<el-col :span="15"><span>Monitor View</span></el-col>
 							<el-col :span="1" style="font-size: 12px;margin:2px 0px;padding-left:0px">MinRange</el-col>
 							<el-col :span="2">
 								<el-slider v-model="minrange" :step="1" :min="5" :max="40" class="my-slider"
@@ -144,7 +141,7 @@
 				<el-row style="padding-left: 4px;">
 					<el-card class="myel-card diagnosis_view" id="diagnosis_view_id" style="height: 540px; transform: translateY(540px);">
 						<div class="my-card-title" slot="header">
-							<el-col :span="17"><span>Diagnosis View</span></el-col>
+							<el-col :span="17"><span>Variable View</span></el-col>
 							<el-col :span="1" style="font-size: 12px;margin:2px 0px">CurveSize</el-col>
 							<el-col :span="2">
 								<el-slider v-model="curvesize" :step="0.01" :min="0" :max="1" class="my-slider"

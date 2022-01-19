@@ -53,17 +53,16 @@ import {
 	arrowData,
 	mergeColor,
 	diagnosticSort,
-	queryIcon,
-	getSortIndex,
-	sortDomain,
-	sortDatum
+	queryIcon
 } from "utils/data.js"
 import {
 	preRoll,
 	boxplot,
 	heatplot,
 	preHeat,
-	createToolTip
+	sortDatum,
+	sortDomain,
+	getSortIndex
 } from './boxplot.js';
 import {processJson} from './index.js';
 import { mapMutations } from 'vuex';
@@ -88,7 +87,8 @@ export default {
 		]),
 		paintChart(batchData, processData) {
 			const vm = this;
-			this.wheelChart.svg !== undefined && this.wheelChart.svg.remove()
+			this.wheelChart.svg !== undefined && this.wheelChart.svg.remove();
+			this.width = 1582;
 			this.wheelChart.svg = d3.select('#' + this.menuId)
 				.append('svg')
 				.attr('viewBox', `${-60} ${-this.height / 2} ${this.width} ${this.height}`)
@@ -129,16 +129,16 @@ export default {
 					this._label=null;
 
 					//staticGroup
-					this._zoomStatus = true;
+					this._zoomStatus = false;
 					this._sliderTimer = null;
 
 					this._process=[];
 					this._deviceName = ['heat', 'roll', 'cool'];
 					this._labelcolor = ['#fcd8a9', '#cce9c7', '#c1c9ee'];
 					this._flagColor = ["#e3ad92",   "#b9c6cd"];
-					this._sliderValue = 40;
+					this._sliderValue = 55;
 					this._horizonView = true;
-					this._indexScale = 0;
+					this._indexScale = 3;
 					this._mouseDis  = undefined;
 					this._barVis = false;
 					this._stopPropagation = (e, d) => e.stopPropagation();
@@ -180,7 +180,7 @@ export default {
 					};
 					this._buttonGroup = {
 						x: 0,
-						gap: 30,
+						gap: 18,
 						outset: - this._height / 2 + 25
 					},
 					this._leftButton = num => (+num) * this._buttonGroup.gap;
@@ -254,16 +254,6 @@ export default {
 					this._initMainG();
 					this._staticGroup.raise();
 					this._leftGroup.raise();
-
-					const svg = this._g;
-					const zoom = d3.zoom().on('zoom', e => {
-						if(!this._zoomStatus)return;
-						svg.attr('transform', e.transform);
-					})
-
-					this._container
-						.call(zoom)
-						.call(zoom.transform, d3.zoomIdentity);
 				}
 				_renderData(){
 					// this._batchEX = this._divideBacthData(dataInfo, this._batchData);
@@ -393,11 +383,11 @@ export default {
 
 					this._cardWidth = cardWidth;
 
-					console.log('batchEX', batchEX)
-					console.log(batchEX.map(d => getSortIndex(d.flat())));
 					let orderData = batchEX.map(d => getSortIndex(d.flat())),
 						orderDatum = sortDatum(orderData);
-						//['overNum', 'speNum', 'extremum'].map(d => orderData.map(e => e[d]))
+
+					console.log('batchEX', batchEX)
+					console.log(orderData);
 
 					initOrdinal.call(this, this._vNode.coefficient);
 					renderyScale();
@@ -595,7 +585,8 @@ export default {
 							},
 							text:{
 								display: displayfunc,
-								fill: 'black',
+								'class': 'mouseLabel',
+								fill: '#666',
 								text: (_, i) => mouseInfo !== undefined ? stringify(+mouseInfo[i]) : '',
 								transform: (d, i) => `translate(${[mouseInfo ? wm._mouseDis + 30 : 0,
 									yScale(i) + (barVisObject[d.indexName] ? mergeHeight / 2 : -tepaHeight / 2)]})`
@@ -796,25 +787,29 @@ export default {
 						arrowAttrs.orderLabel = {
 							class: 'orderLabel',
 							width: d => orderScale[d[1]](orderDatum[d[1]][d[0]]),
-							height: tepaHeight/5,
+							height: tepaHeight/6,
 							stroke: 'none',
 							fill: d => d[1] === wm._indexScale ? 'url(#sort_pattern)' : util.delabelColor[0],
 							transform: d => translate(originX - orderScale[d[1]](orderDatum[d[1]][d[0]]),
 								-tepaHeight + (d[1] === wm._indexScale ? 0 : 
-								(d[1] > wm._indexScale ?  tepaHeight/4 * d[1] :  tepaHeight/4 * (d[1] + 1))))
+								(d[1] > wm._indexScale ?  tepaHeight/5 * d[1] :  tepaHeight/5 * (d[1] + 1))))
 						}
 						arrowAttrs.orderText = {
 							class: 'orderText',
 							'text-anchor': 'end',
-							transform: d => translate(originX - orderScale[d[1]](orderDatum[d[1]][d[0]]),
+							transform: d => translate(originX - orderScale[d[1]](orderDatum[d[1]][d[0]]) - 5,
 								-tepaHeight + (d[1] === wm._indexScale ? 0 : 
-								(d[1] > wm._indexScale ?  tepaHeight/4 * d[1] :  tepaHeight/4 * (d[1] + 1))) + tepaHeight/6),
+								(d[1] > wm._indexScale ?  tepaHeight/5 * d[1] :  tepaHeight/5 * (d[1] + 1))) + tepaHeight/7),
 							text: d => stringify(orderDatum[d[1]][d[0]]),
-							fill: 'rgb(142, 154, 164)',
+							fill: '#666',
 							'font-weight': 'normal',
 							'font-style': 'normal',
 							'font-size': '9px'
 						}
+					}
+					function updateBatch(arr){
+						orderDatum[4] = arr;
+						updateSort(this._vNode.coefficient);
 					}
 					function initSymbolDefs() {
 						defG
@@ -867,7 +862,7 @@ export default {
 					function initOrdinal(coefficient) {
 						indexScale = d3.scaleOrdinal()
 							.domain(indexArray)
-							.range(sortedIndex(sortDomain(orderData, coefficient), true));
+							.range(sortedIndex(sortDomain(orderDatum, coefficient), true));
 					}
 					function renderyScale() {
 						tepaHeight = chartHeight,
@@ -1092,12 +1087,12 @@ export default {
 							if (upid !== wm._mouseList) {
 								// mouseCircle(upid);
 								// if(upid !== this._checkUpid)
-								vm.$emit('wheelMouse', { upid: [upid], mouse: 1 });
-								vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 0 });
-								if(upid !== this._checkUpid){
-									vm.$emit('boxMouse', { upid: upid, activate: false });
-									vm.$emit('boxMouse', { upid: wm._mouseList, activate: true });
-								}
+								// vm.$emit('wheelMouse', { upid: [upid], mouse: 1 });
+								// vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 0 });
+								// if(upid !== this._checkUpid){
+								// 	vm.$emit('boxMouse', { upid: upid, activate: false });
+								// 	vm.$emit('boxMouse', { upid: wm._mouseList, activate: true });
+								// }
 								mergeG.selectAll('circle').attr('r', d => d.upid === this._mouseList || d.upid === this._checkUpid? 2.5 : 1.5)
 							}
 							wm._mouseDis = x;
@@ -1115,8 +1110,8 @@ export default {
 							}, 20);
 						})
 						.on('mouseleave', (e, d) => {
-							vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 1 });
-							if(wm._mouseList !== this._checkUpid)vm.$emit('boxMouse', { upid: wm._mouseList, activate: false })
+							// vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 1 });
+							// if(wm._mouseList !== this._checkUpid)vm.$emit('boxMouse', { upid: wm._mouseList, activate: false })
 							mergeG.selectAll('circle').attr('r', d => d.upid === this._checkUpid ? 2.5 : 1.5);
 						})
 						.on('click', e => {
@@ -1129,7 +1124,7 @@ export default {
 								upid = allLabel[0].upid;
 
 							if(upid === this._checkUpid){
-								vm.$emit('boxMouse', { upid: this._checkUpid, activate: false })
+								// vm.$emit('boxMouse', { upid: this._checkUpid, activate: false })
 								this._checkUpid = '';
 								this._lineVis = false;
 								clickG.attr('display', 'none');
@@ -1386,7 +1381,7 @@ export default {
 									.call(g => addElement(g, 'text', cardAttrs.text))
 							)
 							.call(g => g.selectAll('.orderLabel').data(
-								(_, i) => new Array(4).fill(0).map((_, f) => [i, f]))
+								(_, i) => new Array(5).fill(0).map((_, f) => [i, f]))
 									.join('g')
 										.call(g => addElement(g, 'rect', arrowAttrs.orderLabel))
 										.call(g => addElement(g, 'text', arrowAttrs.orderText))
@@ -1422,10 +1417,10 @@ export default {
 								})
 							)
 
-							.on('click', e =>{
-								e.stopPropagation();
-								e.preventDefault();
-							})
+							// .on('click', e =>{
+							// 	e.stopPropagation();
+							// 	e.preventDefault();
+							// })
 							.on('mousemove', (e, d) =>{
 								// console.log('mouseenter')
 								steelMouse(d.indexName, d.month)
@@ -1510,7 +1505,8 @@ export default {
 					function updateSort(coefficient){
 						initOrdinal(coefficient);
 						merge_g = 0;
-						renderyScale()
+						renderyScale();
+						initAttrs.call(wm);
 						renderSort()
 					}
 					function updateBar() {
@@ -1523,7 +1519,8 @@ export default {
 						updateBar,
 						updateSort,
 						renderMergeChart,
-						toggleChart
+						toggleChart,
+						updateBatch
 					}
 				}
 				_renderMainBox(){
@@ -1675,7 +1672,6 @@ export default {
 							e.stopPropagation();
 							e.preventDefault();
 						});
-					
 				}
 
 				_scaleBox(flag){
@@ -1806,7 +1802,7 @@ export default {
 						fill: '#6d7885'
 					};
 					// || -margin- button - padding - button - margin ||
-					const margin = 0.8, padding = 0.2;
+					const margin = 1.1, padding = 0.6;
 					this._leftGroup
 						.append('rect')
 						.attr('id', 'backGround')
@@ -1822,24 +1818,33 @@ export default {
 						.append('g')
 						.attr('transform', translate(startX, this._leftButton(margin + padding + 1)))
 						.call(g => addElement(g, 'line', divideLine))
-					// this._initSwitch(d => 10 + 60 * d + startX, 1 + 0.8);
-					// this._initSlider(startX + 10, 2 + 0.8);
+					this._initSwitch(d => 10 + 60 * d + startX, margin + padding * 2 + 1);
+					this._initSlider(startX + 10, margin + padding * 3 + 2);
 
-					// this._leftGroup
-					// 	.append('g')
-					// 	.attr('transform', translate(startX, this._leftButton(3.3 + 0.8)))
-					// 	.call(g => addElement(g, 'line', lineAttrs))
-					// 	.call(g => addElement(g, 'text', textAttrs).text('sort_attrs'))
-					// this._initSort(10 + startX, 4.2 + 0.8);
+					this._leftGroup
+						.append('g')
+						.attr('transform', translate(startX, this._leftButton(margin * 2 + padding * 3 + 3)))
+						.call(g => addElement(g, 'line', lineAttrs))
+						.call(g => addElement(g, 'text', textAttrs).text('sort_attrs'))
+					this._initSort(10 + startX, d => margin * 3 + padding * (4 +  d * 1.5) + 3 + d);
 					
-					// this._leftGroup
-					// 	.append('g')
-					// 	.attr('transform', translate(startX, this._leftButton(9.5 + 0.8)))
-					// 	.call(g => addElement(g, 'line', lineAttrs))
-					// 	.call(g => addElement(g, 'text', textAttrs).text('box_state'))
+					this._leftGroup
+						.append('g')
+						.attr('transform', translate(startX, this._leftButton(margin * 4 + padding * 10 + 8)))
+						.call(g => addElement(g, 'line', lineAttrs))
+						.call(g => addElement(g, 'text', textAttrs).text('box_state'))
 
-					// this._initProcessButton(d => 10 + 60 * d + startX, 10.3 + 0.8);
-					// this._initBoxSort(d => 10 + 60 * d + startX, 12.3 + 0.8);
+					this._initProcessButton(d => 10 + 60 * d + startX, d => margin * 5 + padding * (10 + 1.5 * d) + 8 + d );
+					this._leftGroup
+						.append('g')
+						.attr('transform', translate(startX, this._leftButton(margin * 5 + padding * 14 + 9)))
+						.call(g => addElement(g, 'line', divideLine))
+					this._initBoxSort(d => 10 + 60 * d + startX, margin * 5 + padding * 15 + 9);
+
+					this._leftGroup
+						.append('g').attr('display', 'none')
+						.attr('transform', translate(startX, this._leftButton(margin * 6 + padding * 14 + 9)))
+						.call(g => addElement(g, 'line', divideLine))
 					const node = this._leftGroup.node().getBBox();
 					this._leftGroup.select('#backGround')
 						.attr('height', node.height + 20)
@@ -1863,8 +1868,19 @@ export default {
 					zoomG.on('click', () => {
 						this._zoomStatus = !this._zoomStatus;
 						let t = d3.transition().duration(150).ease(d3.easeLinear);
-						if(!this._zoomStatus){
-							this._g.transition(t).attr('transform', 'translate(0,0)');;
+
+						if(this._zoomStatus){
+							const svg = this._g;
+							const zoom = d3.zoom().on('zoom', e => {
+								if(!this._zoomStatus)return;
+								svg.attr('transform', e.transform);
+							})
+
+							this._container
+								.call(zoom)
+								.call(zoom.transform, d3.zoomIdentity);
+						}else{
+							this._g.transition(t).attr('transform', 'translate(0,0)');
 						}
 						zoomG.transition(t)
 							.call(g => g.select('rect').attr('fill', this._zoomStatus ? this._buttonColor : 'white'))
@@ -1925,11 +1941,10 @@ export default {
 					const wm = this,
 						width = 50,
 						sliderHeight = 6,
-						xScale = d3.scaleLinear().domain([-width, width]).range([25, 60]);
+						xScale = d3.scaleLinear().domain([-width, width]).range([50, 60]);
 					const sliderGroup = this._leftGroup.append('g')
 						.attr('class', 'sliderGroup')
 						.attr('transform', translate(abscissa + width, this._leftButton(num)));
-						// .attr('transform', `translate(${[100, - this._height/2 + 2.5]})`);
 					let debounce = (value) => {
 						clearTimeout(this._sliderTimer)
 						this._sliderTimer = setTimeout(() => {
@@ -2003,35 +2018,6 @@ export default {
 						})
 				}
 
-				// _initSort(abscissa, num) {//init sortG
-				// 	const text = ['Single', 'Indicators', 'Total'],
-				// 		sortAttrs = {
-				// 			transform: d => translate(abscissa(d), this._leftButton(num)),
-				// 			text: d => text[d],
-				// 			sortChange: (value1, value2) => d => d === (this._indexScale !== undefined ? this._indexScale : 0) ? value1 : value2
-				// 		},
-				// 		sortG = this._leftGroup.append('g').attr('class', 'sortG');
-				// 	sortG.selectAll('g')
-				// 		.data([0, 1, 2])
-				// 		.join('g')
-				// 		.attr('transform', sortAttrs.transform)
-				// 		.call(g => addElement(g, 'rect', this._staticButton.rect)
-				// 			.attr('fill', sortAttrs.sortChange(this._buttonColor, '#fff')))
-				// 		.call(g => addElement(g, 'text', this._staticButton.text)
-				// 			.attr('fill', sortAttrs.sortChange('#fff', this._buttonColor))
-				// 			.text(sortAttrs.text))
-				// 		.on('click', (_, d) => {
-				// 			let t = d3.transition().duration(50).ease(d3.easeLinear);
-				// 			this._indexScale = d;
-				// 			sortG
-				// 			.transition(t)
-				// 			.call(g => g.selectAll('rect').attr('fill', sortAttrs.sortChange(this._buttonColor, '#fff')))
-				// 			.call(g => g.selectAll('text').attr('fill', sortAttrs.sortChange('#fff', this._buttonColor)))
-				// 			// merge_g = 0; //when sort indexes, save merge_g status or not
-				// 			this._barInstance.updateSort(d);
-				// 		})
-				// }
-
 				_initSort(abscissa, num) {//init sortG
 					const wm = this,
 						width = 50,
@@ -2039,7 +2025,7 @@ export default {
 						xScale = d3.scaleLinear().domain([-width, width]).range([0, 1]);
 					const text = ['begin_time', 'count_num', 'ultralim_val', 'msa_count', 'stage_param'],
 						sortAttrs = {
-							transform: d => translate(abscissa + width, this._leftButton(num + d))
+							transform: d => translate(abscissa + width, this._leftButton(num(d)))
 						},
 						sortG = this._leftGroup.append('g').attr('class', 'sortG');
 					sortG.selectAll('g')
@@ -2067,7 +2053,7 @@ export default {
 							.attr('width', d =>  xScale.invert(this._vNode.coefficient[d]) + width))
 						.call(g => g.append('text')
 								.attr('class', 'sortAttrs')
-								.attr('transform', translate(-35, 0))
+								.attr('transform', translate(-width, 0))
 								.attr('fill', '#6d7885')
 								.text(d => `${text[d]}: ${stringify(this._vNode.coefficient[d])}`))
 						// .call(g => g.append('text')
@@ -2124,7 +2110,7 @@ export default {
 					function dragEnd(_, d){
 						offsetX[d] = d3.select(this).attr('cx');
 						sortG.selectAll('.overLayer').filter(e => e === d).attr('width', + offsetX[d] + width);
-						sortG.selectAll('.sortAttrs').filter(e => e === d).text(d => `${text[d]}: ${stringify(this._vNode.coefficient[d])}`);
+						sortG.selectAll('.sortAttrs').filter(e => e === d).text(d => `${text[d]}: ${stringify(xScale(offsetX[d]))}`);
 						debounce.bind(wm)(d, xScale(offsetX[d]))
 					}
 				}
@@ -2174,7 +2160,7 @@ export default {
 
 				_initProcessButton(abscissa, num){
 					const deviceAttrs = {
-						transform: d => translate(abscissa(d % 2), this._leftButton(num + (d >= 2 ? 1 : 0))),
+						transform: d => translate(abscissa(d % 2), this._leftButton(num(d > 1 ? 1 : 0))),
 						text: d => ['heat', 'roll', 'cool', 'all'][d],
 						deviceChange: (value1, value2) => d => d === this._selectDevice ? value1 : value2
 					},
@@ -2208,7 +2194,7 @@ export default {
 					this._sortDevice = false;
 					this._boxSortAttrs = {
 						transform: d => translate(abscissa(d), this._leftButton(num)),
-						text: d => d ? 'steel':  'complex',
+						text: d => d ? 'singal':  'batch',
 						boxChange: (value1, value2) => d => d === this._sortDevice ? value1 : value2
 					};
 					this._boxSortG = this._leftGroup.append('g').attr('class', 'boxSortG');
@@ -2238,12 +2224,28 @@ export default {
 						for(let item in this._boxData){
 							this._boxMap[item] = this._boxData[item].chart._batchNum
 						}
-					}
+					};
 					let t = d3.transition().duration(150).ease(d3.easeLinear);
-							this._boxSortG
-								.transition(t)
-								.call(g => g.selectAll('rect').attr('fill', this._boxSortAttrs.boxChange(this._buttonColor, '#fff')))
-								.call(g => g.selectAll('text').attr('fill', this._boxSortAttrs.boxChange('#fff', this._buttonColor)))
+					this._boxSortG
+						.transition(t)
+						.call(g => g.selectAll('rect').attr('fill', this._boxSortAttrs.boxChange(this._buttonColor, '#fff')))
+						.call(g => g.selectAll('text').attr('fill', this._boxSortAttrs.boxChange('#fff', this._buttonColor)))
+					this._scaleBatch();
+				}
+
+				_scaleBatch(){
+					let datum = [0, 1, 2].map(d => Object.values(this._boxData).filter(e => d === e.process)),
+						res = [0, 0, 0];
+					if(this._sortDevice){
+						for(let item in datum){
+							res[item] = datum[item].map(d => 0.9 * d.chart._selectNums +  0.1 * d.chart._selectOver).reduce((d, p) => d + p, 0)/datum[item].length;
+						}
+					}else{
+						for(let item in datum){
+							res[item] = datum[item].map(d => d.chart._batchNum).reduce((d, p) => d + p, 0)/datum[item].length;
+						}
+					};
+					this._barInstance.updateBatch.call(this, this._chartData.map(d => res[d.process]))
 				}
 
 				_initdata() {
@@ -2409,7 +2411,7 @@ export default {
 	},
 	mounted() {
 		this.height = document.getElementById(this.menuId).offsetHeight;	
-		this.width = document.getElementById(this.menuId).offsetWidth;	
+		// this.width = document.getElementById(this.menuId).offsetWidth;	
 	},
 	computed:{
 	},

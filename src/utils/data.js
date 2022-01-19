@@ -75,46 +75,6 @@ export function arrowData(data){
   return obj;
 }
 
-export function getSortIndex(data){
-  let [start, end] = d3.extent(data.map(d => new Date(d.time)));
-  let firstTime = 0,
-      timeInterval = 1;
-  let overSteel = data.filter(d => d.range !== 0),
-    time = overSteel.map(d => new Date(d.time)),
-    overDetails = [1, 2, 3].map(d => data.filter(e => Math.abs(e.range) === d).length);
-  time[0] && (firstTime = (end - new Date(time[0]))/(end - start));
-  let badSteel = data.filter(d => d.flag === 0),
-    speNum = badSteel.filter(d => d.tqOrder < 10).length,
-    t2Num = badSteel.filter(d => d.tjOrder < 10).length;
-  // let interval = d3.pairs(time, (a, b) => b - a);
-  // interval[0] && (timeInterval = (d3.min(interval))/(end - start));
-  let extremum = d3.max(badSteel.map(d => d.over)),
-      overNum = data.filter(d => d.ovrage).length,
-      integrate = badSteel.filter(d => d.dia_Status).length;
-  return {
-    firstTime,
-    // timeInterval,
-    speNum,
-    t2Num,
-    integrate,
-    extremum,
-    overNum,
-    overDetails
-  };
-}
-
-export function sortDatum(data){
-  let res = [];
-  res[0] = data.map(d => d.firstTime);
-  res[1] = data.map(d => d.overNum);
-  res[2] = data.map(d => d.extremum);
-  res[3] = data.map(d => 0.9 * d.speNum + 0.1 * d.t2Num);
-  return res;
-}
-
-export function sortDomain(data, coefficient){
-  return data.map(d => d.firstTime * coefficient[0] + coefficient[1] * d.overNum + coefficient[2] * d.extremum + coefficient[3] * (0.9 * d.speNum + 0.1 * d.t2Num));
-}
 
 export const mergeColor = ["#e3ad92",   "#b9c6cd"]
 

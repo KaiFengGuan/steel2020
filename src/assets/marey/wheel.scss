@@ -24,6 +24,7 @@
 }
 .axisG text{
     font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
+    font-style: italic;
 }
 .dragG{
     cursor: move;
@@ -40,7 +41,7 @@
 .sortG text{
     font-size: 9px;
     font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
-    text-anchor: middle;
+    text-anchor: start;
 }
 .sideTextG text{
     font-size: 10px;
@@ -65,19 +66,12 @@
     font-style: italic;
     text-anchor: start;
 }
-.outerElementG text{
+.mouseLabel{
     font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
-    font-size: 7px;
-    padding: 1px;
+    font-style: italic;
+    text-anchor: start;
 }
-.vis path{
-    opacity: 1;
-    stroke-width: 0.5;
-}
-.visoverlay{
-    fill:white;
-    opacity: 0;
-}
-.dailyInfo text{
+.orderText{
     font-family: "Gill Sans,Gill Sans MT,Calibri,Trebuchet MS,sans-serif";
+    font-style: italic;
 }

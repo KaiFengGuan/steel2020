@@ -1546,6 +1546,8 @@ export default {
           let tooltipGroup = MareyGroup.append('g')
             .attr('class', 'mareyTooltipGroup');
 
+          console.log(this._stops)
+
           tooltipGroup.append('g')
             .attr('fill', 'none')
             .attr('pointer-events', 'all')
@@ -5101,6 +5103,11 @@ export default {
               .voronoi([0, this._stations_size.h, this._marey_size.w, this._stations_size.h + this._y_height]);
           this._marey_g.selectAll('.mareyTooltipCell')
             .attr('d', (d, i) => this._voronoi.renderCell(i))
+            .attr('display', (d, i) => {
+              let y = this._y(new Date(d.train.toc));
+              let inScreen = y >= 0 && y <= this._height + 200;
+              return inScreen ? '' : 'none';
+            })
 
           if (vm.activatePlate.activate) {
             let plate = this._timesDataMap.get(vm.activatePlate.upid);

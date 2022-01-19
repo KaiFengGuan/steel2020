@@ -78,7 +78,7 @@ export default {
 					wheelChart: {},
 					height: undefined,
 					width: undefined,
-					coefficient: [0.2, 0.2, 0.5, 0.1],
+					coefficient: [0.2, 0.2, 0.5, 0.1, 0.1],
 			}
 	},
 	methods: {
@@ -1799,34 +1799,41 @@ export default {
 						transform: translate(60, 0),
 						fill: '#6d7885'
 					};
+					// || -boxPadding- button - buttonPadding - button - boxPadding ||
+					const boxPadding = 0.8, buttonPadding = 0.3;
 					this._leftGroup
 						.append('rect')
 						.attr('id', 'backGround')
 					this._leftGroup
 						.append('g')
-						.attr('transform', translate(startX, this._leftButton(-0.8)))
+						.attr('transform', translate(startX, this._leftButton(0)))
 						.call(g => addElement(g, 'line', lineAttrs))
 						.call(g => addElement(g, 'text', textAttrs).text('interactive'))
-					this._initZoom(startX + 10, 0);
-					this._initVisG(startX + 70, 0);//10 40 10 10 40 10 === 120
-					this._initSwitch(d => 10 + 60 * d + startX, 1);
-					this._initSlider(startX + 10, 2);
+					this._initZoom(startX + 10, boxPadding);
+					this._initVisG(startX + 70, boxPadding);//10 40 10 10 40 10 === 120
 
 					this._leftGroup
 						.append('g')
-						.attr('transform', translate(startX, this._leftButton(3.3)))
+						.attr('transform', translate(startX, this._leftButton(0.5 + 0.8)))
+						.call(g => addElement(g, 'line', lineAttrs).attr('x1', 20).attr('x2', 100))
+					this._initSwitch(d => 10 + 60 * d + startX, 1 + 0.8);
+					this._initSlider(startX + 10, 2 + 0.8);
+
+					this._leftGroup
+						.append('g')
+						.attr('transform', translate(startX, this._leftButton(3.3 + 0.8)))
 						.call(g => addElement(g, 'line', lineAttrs))
 						.call(g => addElement(g, 'text', textAttrs).text('sort_attrs'))
-					this._initSort(10 + startX, 4.2);
+					this._initSort(10 + startX, 4.2 + 0.8);
 					
 					this._leftGroup
 						.append('g')
-						.attr('transform', translate(startX, this._leftButton(8.5)))
+						.attr('transform', translate(startX, this._leftButton(9.5 + 0.8)))
 						.call(g => addElement(g, 'line', lineAttrs))
 						.call(g => addElement(g, 'text', textAttrs).text('box_state'))
 
-					this._initProcessButton(d => 10 + 60 * d + startX, 9.3);
-					this._initBoxSort(d => 10 + 60 * d + startX, 11.3);
+					this._initProcessButton(d => 10 + 60 * d + startX, 10.3 + 0.8);
+					this._initBoxSort(d => 10 + 60 * d + startX, 12.3 + 0.8);
 					const node = this._leftGroup.node().getBBox();
 					this._leftGroup.select('#backGround')
 						.attr('height', node.height + 20)
@@ -1899,7 +1906,7 @@ export default {
 							.attr('fill', this._barVis ? this._buttonColor : 'white'))
 						.call(g => addElement(g, 'text', this._staticButton.text)
 							.attr('fill', this._barVis ? 'white' : this._buttonColor)
-							.text('vis'));
+							.text('detail'));
 					visG.on('click', (e, d) => {
 						this._barVis = !this._barVis;
 						visG.select('rect').attr('fill', this._barVis ? this._buttonColor : 'white')
@@ -2024,13 +2031,13 @@ export default {
 						width = 50,
 						sliderHeight = 6,
 						xScale = d3.scaleLinear().domain([-width, width]).range([0, 1]);
-					const text = ['firstTime', 'overNum', 'extremum', 'speNum'],
+					const text = ['begin_time', 'count_num', 'ultralim_val', 'msa_count', 'stage_param'],
 						sortAttrs = {
 							transform: d => translate(abscissa + width, this._leftButton(num + d))
 						},
 						sortG = this._leftGroup.append('g').attr('class', 'sortG');
 					sortG.selectAll('g')
-						.data([0, 1, 2, 3])
+						.data([0, 1, 2, 3, 4])
 						.join('g')
 						.attr('transform', sortAttrs.transform)
 						.call(g => g.append('rect')
@@ -2056,12 +2063,12 @@ export default {
 								.attr('class', 'sortAttrs')
 								.attr('transform', translate(-35, 0))
 								.attr('fill', '#6d7885')
-								.text(d => `${text[d]}:`))
-						.call(g => g.append('text')
-								.attr('class', 'sortNum')
-								.attr('transform', translate(0, 0))
-								.attr('fill', '#6d7885')
-								.text(d => `${stringify(this._vNode.coefficient[d])}`))
+								.text(d => `${text[d]}: ${stringify(this._vNode.coefficient[d])}`))
+						// .call(g => g.append('text')
+						// 		.attr('class', 'sortNum')
+						// 		.attr('transform', translate(0, 0))
+						// 		.attr('fill', '#6d7885')
+						// 		.text(d => `${stringify(this._vNode.coefficient[d])}`))
 						.call(g => g.append('circle')
 							.attr('r', 5)
 							.attr('cx', d => xScale.invert(this._vNode.coefficient[d]))
@@ -2111,7 +2118,7 @@ export default {
 					function dragEnd(_, d){
 						offsetX[d] = d3.select(this).attr('cx');
 						sortG.selectAll('.overLayer').filter(e => e === d).attr('width', + offsetX[d] + width);
-						sortG.selectAll('.sortNum').filter(e => e === d).text(d => `${stringify(xScale(offsetX[d]))}`);
+						sortG.selectAll('.sortAttrs').filter(e => e === d).text(d => `${text[d]}: ${stringify(this._vNode.coefficient[d])}`);
 						debounce.bind(wm)(d, xScale(offsetX[d]))
 					}
 				}

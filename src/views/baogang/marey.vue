@@ -4,7 +4,7 @@
 		<el-row :style="cssVars">
 			<el-col :span="4">
 				<el-row>
-					<div class="title-background"> <span id="title-first">iPWIMVis</span></div>
+					<div class="title-background"> <span id="title-first">iHPPMVis</span></div>
 					<el-row class="my-card-body">
 						<el-col :span="12" id="month-data"><span>Month Picker</span></el-col>
 						<el-col :span="12">

@@ -1794,13 +1794,19 @@ export default {
 						'stroke-width': 0.5,
 						'stroke-dasharray': '30 60'
 					},
+					divideLine = {
+						'x1': 20,
+						'x2': 100,
+						'stroke': '#6d7885',
+						'stroke-width': 0.5
+					},
 					textAttrs = {
 						'class': 'leftTitle',
 						transform: translate(60, 0),
 						fill: '#6d7885'
 					};
-					// || -boxPadding- button - buttonPadding - button - boxPadding ||
-					const boxPadding = 0.8, buttonPadding = 0.3;
+					// || -margin- button - padding - button - margin ||
+					const margin = 0.8, padding = 0.2;
 					this._leftGroup
 						.append('rect')
 						.attr('id', 'backGround')
@@ -1809,31 +1815,31 @@ export default {
 						.attr('transform', translate(startX, this._leftButton(0)))
 						.call(g => addElement(g, 'line', lineAttrs))
 						.call(g => addElement(g, 'text', textAttrs).text('interactive'))
-					this._initZoom(startX + 10, boxPadding);
-					this._initVisG(startX + 70, boxPadding);//10 40 10 10 40 10 === 120
+					this._initZoom(startX + 10, margin);
+					this._initVisG(startX + 70, margin);//10 40 10 10 40 10 === 120
 
 					this._leftGroup
 						.append('g')
-						.attr('transform', translate(startX, this._leftButton(0.5 + 0.8)))
-						.call(g => addElement(g, 'line', lineAttrs).attr('x1', 20).attr('x2', 100))
-					this._initSwitch(d => 10 + 60 * d + startX, 1 + 0.8);
-					this._initSlider(startX + 10, 2 + 0.8);
+						.attr('transform', translate(startX, this._leftButton(margin + padding + 1)))
+						.call(g => addElement(g, 'line', divideLine))
+					// this._initSwitch(d => 10 + 60 * d + startX, 1 + 0.8);
+					// this._initSlider(startX + 10, 2 + 0.8);
 
-					this._leftGroup
-						.append('g')
-						.attr('transform', translate(startX, this._leftButton(3.3 + 0.8)))
-						.call(g => addElement(g, 'line', lineAttrs))
-						.call(g => addElement(g, 'text', textAttrs).text('sort_attrs'))
-					this._initSort(10 + startX, 4.2 + 0.8);
+					// this._leftGroup
+					// 	.append('g')
+					// 	.attr('transform', translate(startX, this._leftButton(3.3 + 0.8)))
+					// 	.call(g => addElement(g, 'line', lineAttrs))
+					// 	.call(g => addElement(g, 'text', textAttrs).text('sort_attrs'))
+					// this._initSort(10 + startX, 4.2 + 0.8);
 					
-					this._leftGroup
-						.append('g')
-						.attr('transform', translate(startX, this._leftButton(9.5 + 0.8)))
-						.call(g => addElement(g, 'line', lineAttrs))
-						.call(g => addElement(g, 'text', textAttrs).text('box_state'))
+					// this._leftGroup
+					// 	.append('g')
+					// 	.attr('transform', translate(startX, this._leftButton(9.5 + 0.8)))
+					// 	.call(g => addElement(g, 'line', lineAttrs))
+					// 	.call(g => addElement(g, 'text', textAttrs).text('box_state'))
 
-					this._initProcessButton(d => 10 + 60 * d + startX, 10.3 + 0.8);
-					this._initBoxSort(d => 10 + 60 * d + startX, 12.3 + 0.8);
+					// this._initProcessButton(d => 10 + 60 * d + startX, 10.3 + 0.8);
+					// this._initBoxSort(d => 10 + 60 * d + startX, 12.3 + 0.8);
 					const node = this._leftGroup.node().getBBox();
 					this._leftGroup.select('#backGround')
 						.attr('height', node.height + 20)

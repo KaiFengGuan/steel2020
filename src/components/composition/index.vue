@@ -136,7 +136,7 @@ export default {
 					this._deviceName = ['heat', 'roll', 'cool'];
 					this._labelcolor = ['#fcd8a9', '#cce9c7', '#c1c9ee'];
 					this._flagColor = ["#e3ad92",   "#b9c6cd"];
-					this._sliderValue = 55;
+					this._sliderValue = 50;
 					this._horizonView = true;
 					this._indexScale = 3;
 					this._mouseDis  = undefined;
@@ -352,7 +352,7 @@ export default {
 						cardWidth = boxMargin.horizen + RectWidth + textWidth + textMargin.horizen,
 						cardMargin = 20,
 						tepaHeight = chartHeight,	//Tepamoral View
-						mergeHeight = 1.5 * chartHeight;//mergeChart View
+						mergeHeight = chartHeight;//mergeChart View
 
 					var rectNum = undefined,
 						displayfunc = null,
@@ -866,7 +866,7 @@ export default {
 					}
 					function renderyScale() {
 						tepaHeight = chartHeight,
-						mergeHeight = 1.5 * chartHeight;
+						mergeHeight = chartHeight;
 						// clearAttrs();
 						const cardHeight = d => (barVisObject[d] ? mergeHeight + chartPadding.vertical : 0) 
 							+ tepaHeight  
@@ -1086,13 +1086,13 @@ export default {
 							mouseInfo = mouseText(x);
 							if (upid !== wm._mouseList) {
 								// mouseCircle(upid);
-								// if(upid !== this._checkUpid)
-								// vm.$emit('wheelMouse', { upid: [upid], mouse: 1 });
-								// vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 0 });
-								// if(upid !== this._checkUpid){
-								// 	vm.$emit('boxMouse', { upid: upid, activate: false });
-								// 	vm.$emit('boxMouse', { upid: wm._mouseList, activate: true });
-								// }
+								if(upid !== this._checkUpid)
+								vm.$emit('wheelMouse', { upid: [upid], mouse: 1 });
+								vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 0 });
+								if(upid !== this._checkUpid){
+									vm.$emit('boxMouse', { upid: upid, activate: false });
+									vm.$emit('boxMouse', { upid: wm._mouseList, activate: true });
+								}
 								mergeG.selectAll('circle').attr('r', d => d.upid === this._mouseList || d.upid === this._checkUpid? 2.5 : 1.5)
 							}
 							wm._mouseDis = x;
@@ -1110,8 +1110,8 @@ export default {
 							}, 20);
 						})
 						.on('mouseleave', (e, d) => {
-							// vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 1 });
-							// if(wm._mouseList !== this._checkUpid)vm.$emit('boxMouse', { upid: wm._mouseList, activate: false })
+							vm.$emit('wheelMouse', { upid: [wm._mouseList], mouse: 1 });
+							if(wm._mouseList !== this._checkUpid)vm.$emit('boxMouse', { upid: wm._mouseList, activate: false })
 							mergeG.selectAll('circle').attr('r', d => d.upid === this._checkUpid ? 2.5 : 1.5);
 						})
 						.on('click', e => {
@@ -1124,12 +1124,14 @@ export default {
 								upid = allLabel[0].upid;
 
 							if(upid === this._checkUpid){
-								// vm.$emit('boxMouse', { upid: this._checkUpid, activate: false })
+                // console.log('要往父组件取消这个事件 ' + upid)
+								vm.$emit('boxMouse', { upid: upid, activate: false })
 								this._checkUpid = '';
 								this._lineVis = false;
 								clickG.attr('display', 'none');
 							}else{
-								// vm.$emit('boxMouse', { upid: this.upid, activate: true })
+                // console.log('已经要发送到父组件 ' + upid)
+								vm.$emit('boxMouse', { upid: upid, activate: true })
 								this._checkUpid = upid;
 								clickG
 									.attr('transform', `translate(${[x, 0]})`)
@@ -1941,7 +1943,7 @@ export default {
 					const wm = this,
 						width = 50,
 						sliderHeight = 6,
-						xScale = d3.scaleLinear().domain([-width, width]).range([50, 60]);
+						xScale = d3.scaleLinear().domain([-width, width]).range([45, 55]);
 					const sliderGroup = this._leftGroup.append('g')
 						.attr('class', 'sliderGroup')
 						.attr('transform', translate(abscissa + width, this._leftButton(num)));

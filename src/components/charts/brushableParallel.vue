@@ -45,7 +45,7 @@ export default {
 			//板坯厚度	386 +- 10
 			//实际出炉温度 770 +- 10
 			//终轧温度 840 +- 10
-			diagnosisArr: [0, 0, 0, 0, 0, 0, 0],//[20, 10, 1, 10, 5, 5, 0]
+			diagnosisArr: [10, 1, 1, 10, 5, 5, 0],//[20, 10, 1, 10, 5, 5, 0]
 			newBrushData: [
 							[25, 35],
 							[20, 35],
@@ -671,7 +671,8 @@ export default {
 							.on('click', function(e, d){
 								const i = keys.indexOf(d);
 								if(!context._objStatus[d])return;
-								if(vN.diagnosisRange[i][0] < vN.brushStep[i] || vN.brushStep[i] + vN.diagnosisArr[i] > vN.maxStep[i])return;
+								if( vN.brushStep[i] + vN.diagnosisArr[i] > vN.maxStep[i])return;
+								// if(vN.diagnosisRange[i][0] < vN.brushStep[i] || vN.brushStep[i] + vN.diagnosisArr[i] > vN.maxStep[i])return;
 								vN.diagnosisArr[i] = +(vN.diagnosisArr[i] + vN.brushStep[i]).toFixed(1);
 								vN.diagnosisRange = vN.newBrushData.map((d, i) => d.map((e, f) => e  + (-1 + 2 * f) *vN.diagnosisArr[i])).slice(0, -1);
 								context._updateDiagnosis()

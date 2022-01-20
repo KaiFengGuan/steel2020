@@ -64,7 +64,7 @@
 				<el-row>
 					<el-card class="myel-card">
 						<div class="my-card-title" slot="header">
-							<el-col :span="15"><span>Monitor View</span></el-col>
+							<el-col :span="15"><span>Monitoring View</span></el-col>
 							<el-col :span="1" style="font-size: 12px;margin:2px 0px;padding-left:0px">MinRange</el-col>
 							<el-col :span="2">
 								<el-slider v-model="minrange" :step="1" :min="5" :max="40" class="my-slider"

@@ -2473,7 +2473,7 @@ export default {
             let timeSpan = (d.batch_e.getTime() - d.batch_s.getTime()) / 3600000;
             return (mergeNum + cannotNum) / timeSpan;
           })
-          console.log(batchNum)
+          // console.log(batchNum)
           const lineWidthScale = d3.scaleLinear()
             .domain(d3.extent(batchNum))
             .range([1, 3])
@@ -2783,7 +2783,8 @@ export default {
             .attr('batch_index', d => d.link_rect[0].batch_index)
             .attr('merge_index', d => d.link_rect.map(e => ''+e.merge_index).join(' '))
             // .on('click', __singleClick)
-            .on('dblclick', __pathClick)
+            // .on('dblclick', __pathClick)
+            .on('click', __pathClick)
             .on('mouseenter', __pathOver)
             .on('mouseleave', __pathOut);
           
@@ -2840,7 +2841,7 @@ export default {
 
           let timer;
           function __pathClick(e, d) {  // 双击触发诊断
-            clearTimeout(timer);
+            // clearTimeout(timer);
             // console.log('双击')
             let info_index = d3.select(this).attr('info_index');
             let batch_index = d3.select(this).attr('batch_index');

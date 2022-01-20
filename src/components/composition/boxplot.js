@@ -485,11 +485,15 @@ export class boxplot extends box{
       stroke: 'none'
     }
     this._Gantt
+      .selectAll('rect').remove();
+    this._Gantt
       .selectAll('rect')
       .data(datum.filter(d => d.overflow).map(d => d.pass))
-      .join(enter => addElement(enter, 'rect', rectAttrs),
-        update => updateElement(update.transition().duration(150).ease(d3.easeQuad), rectAttrs),
-        exit => exit.remove())
+      .join(enter => addElement(enter, 'rect', rectAttrs)
+      // ,
+      //   update => updateElement(update.transition().duration(150).ease(d3.easeQuad), rectAttrs),
+      //   exit => exit.remove()
+        )
   }
   _removeLine(){
     this._g.select('.passLine').remove();
@@ -855,11 +859,15 @@ export class heatplot extends box{
       stroke: 'none'
     }
     this._Gantt
+      .selectAll('rect').remove();
+    this._Gantt
       .selectAll('rect')
       .data(badX)
-      .join(enter => addElement(enter, 'rect', rectAttrs),
-        update => updateElement(update.transition().duration(150).ease(d3.easeQuad), rectAttrs),
-        exit => exit.remove())
+      .join(enter => addElement(enter, 'rect', rectAttrs)
+      // ,
+      //   update => updateElement(update.transition().duration(150).ease(d3.easeQuad), rectAttrs),
+      //   exit => exit.remove()
+        )
   }
   _removeLine(){
     this._g.selectAll('circle').attr('opacity', 1)

@@ -436,7 +436,7 @@ export default {
 			this.stationsData = (await this.getStationsData(this.startDateString, this.endDateString)).data;
       this.jsonData = (await this.getJsonData(this.startDateString, this.endDateString)).data;
       // this.jsonData = jsonData;
-			console.log(this.jsonData);
+			// console.log(this.jsonData);
 
       if (typeof(this.jsonData) === 'string') {
         this.jsonData = {};
@@ -513,7 +513,7 @@ export default {
 			this.diagnosisVisible = true;
 			this.animeTransition();
 			this.requestHeader = updateRange(this.$refs.parallel.diagnosisRange, this.$refs.parallel.svgChart['instance']._objStatus)
-			console.log(this.requestHeader)
+			// console.log(this.requestHeader)
       this.batchData = await this.requestBatchData();
 			// this.batchData = batchDatademo;
 
@@ -745,7 +745,7 @@ export default {
 			let batchData = [];
 			for(let item in this.batchDateStart){
 				await this.selectDataByTime(this.batchDateStart[item], this.batchDateEnd[item]).then(response => {
-					console.log(this.batchDateStart[item], this.batchDateEnd[item], response.data)
+					// console.log(this.batchDateStart[item], this.batchDateEnd[item], response.data)
           let batch = response.data;
           // console.log(!!batch, batch, typeof(batch))
           if (!batch) return

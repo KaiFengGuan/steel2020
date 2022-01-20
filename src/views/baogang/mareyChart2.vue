@@ -619,7 +619,7 @@ export default {
             }
           }
           
-          console.log("处理成绘图数据：", this._mergeresult_1)
+          // console.log("处理成绘图数据：", this._mergeresult_1)
 
           // 统计整图监控结果占比
           // console.log(over_p, total)
